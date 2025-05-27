@@ -1,0 +1,246 @@
+import React, { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import {
+  Home,
+  Users,
+  ShoppingCart,
+  Package,
+  Settings,
+  Bell,
+  User,
+  Store,
+  X,
+  Menu,
+  Image,
+  MessageSquare,
+  BarChart2,
+  TrendingUp,
+  FileText,
+  ChevronDown,
+  LayoutDashboard,
+  Tag,
+  Layers,
+  Palette,
+  Shield,
+  AlignLeft,
+} from 'lucide-react';
+
+const navigation = [
+  // {
+  //   name: 'Dashboard',
+  //   href: '/dashboard',
+  //   icon: LayoutDashboard,
+  // },
+  {
+    name: 'Product Management',
+    href: '#',
+    icon: Package,
+    section: 'Product Management',
+    subItems: [
+      { name: 'Product Setup', href: '/browse', icon: Settings },
+      { name: 'Products', href: '/productList', icon: Package },
+      { name: 'Orders', href: '/orders', icon: ShoppingCart },
+    ]
+  },
+  {
+    name: 'Store Management',
+    href: '#',
+    icon: Store,
+    section: 'Store Management',
+    subItems: [
+      { name: 'Stores', href: '/stores', icon: Store },
+      { name: 'Store Settings', href: '/store-settings', icon: Settings },
+    ]
+  },
+  {
+    name: 'User Management',
+    href: '#',
+    icon: Users,
+    section: 'User Management',
+    subItems: [
+      { name: 'Users', href: '/users', icon: Users },
+      { name: 'Roles', href: '/userRoles', icon: Shield },
+    ]
+  },
+  {
+    name: 'Content Management',
+    href: '#',
+    icon: FileText,
+    section: 'Content Management',
+    subItems: [
+      { name: 'Banners', href: '/banners', icon: Image },
+      { name: 'Blogs', href: '/blogs', icon: FileText },
+      { name: 'Pages', href: '/pages', icon: FileText },
+    ]
+  },
+  {
+    name: 'Settings',
+    href: '#',
+    icon: Settings,
+    section: 'Settings',
+    subItems: [
+      { name: 'Notifications', href: '/notifications', icon: Bell },
+      { name: 'General Settings', href: '/settings', icon: Settings },
+      { name: 'Analytics', href: '/analytics', icon: BarChart2 },
+    ]
+  },
+];
+
+const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
+  const location = useLocation();
+  const [nExpandedSection, setExpandedSection] = useState(null);
+  const [nHoveredSection, setHoveredSection] = useState(null);
+
+  const toggleSection = (section) => {
+    setExpandedSection(nExpandedSection === section ? null : section);
+  };
+
+  const renderNavigationItem = (item) => {
+    const isActive = location.pathname === item.href;
+    const Icon = item.icon;
+    const isHovered = nHoveredSection === item.name;
+    const isSectionActive = item.subItems?.some(subItem => location.pathname === subItem.href);
+    const isExpanded = nExpandedSection === item.name && !isCollapsed;
+
+    if (item.subItems) {
+      return (
+        <div
+          key={item.name}
+          className="relative transition"
+          onMouseEnter={() => setHoveredSection(item.name)}
+          onMouseLeave={() => setHoveredSection(null)}
+        >
+          <input
+            className="peer hidden"
+            type="checkbox"
+            id={`menu-${item.name}`}
+            checked={nExpandedSection === item.name}
+            onChange={() => toggleSection(item.name)}
+          />
+          {isExpanded && (
+            <div className={`absolute top-[34px] bottom-2 left-6 w-px ${isSectionActive ? 'bg-custom-bg' : 'bg-gray-400'} vertical-connector-line`}></div>
+          )}
+          <button
+            className={`flex peer relative w-full items-center py-3 px-4 text-sm font-medium outline-none transition-all duration-100 ease-in-out focus:outline-none ${isSectionActive ? 'text-gray-900 font-bold' : 'text-gray-600 hover:text-custom-bg'} ${isSectionActive ? 'border-l-4 border-custom-bg' : ''}`}
+          >
+            <span className={`flex mr-5 w-5 ${isSectionActive ? 'text-custom-bg' : ''}`}>
+              <Icon className="h-5 w-5" />
+            </span>
+            {!isCollapsed && item.name}
+            <label htmlFor={`menu-${item.name}`} className="absolute inset-0 h-full w-full cursor-pointer"></label>
+          </button>
+
+          {isCollapsed && (
+            <div className={`absolute left-full top-0 ml-1 w-48 rounded-lg bg-white shadow-lg transition-all duration-200 ${isHovered ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
+              <div className="py-2">
+                {item.subItems.map((subItem) => {
+                  const SubIcon = subItem.icon;
+                  const isSubActive = location.pathname === subItem.href;
+                  return (
+                    <Link
+                      key={subItem.name}
+                      to={subItem.href}
+                      className={`flex items-center px-4 py-2 text-sm ${isSubActive ? 'bg-gray-100 text-gray-900 font-bold' : 'text-gray-600 hover:bg-gray-50 hover:text-custom-bg'}`}
+                      onClick={isMobileOpen ? onClose : undefined}
+                    >
+                      <SubIcon className="mr-3 h-4 w-4" />
+                      {subItem.name}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {!isCollapsed && (
+            <ul className="duration-400 flex m-2 max-h-0 flex-col overflow-hidden rounded-xl bg-gray-100 font-medium transition-all duration-300 peer-checked:max-h-96">
+              {item.subItems.map((subItem) => {
+                const SubIcon = subItem.icon;
+                const isSubActive = location.pathname === subItem.href;
+                const showArrow = isSectionActive; // still can keep for arrow visibility logic if needed
+
+                const arrowBaseClass = 'absolute top-1/2 left-4 w-3.5 h-px transform -translate-y-1/2';
+                const arrowActiveClass = 'bg-custom-bg after:content-[\'\'] after:absolute after:left-full after:top-1/2 after:transform after:-translate-y-1/2 after:-ml-px after:border-t-[3px] after:border-t-transparent after:border-b-[3px] after:border-b-transparent after:border-l-[3px] after:border-l-custom-bg';
+                const arrowInactiveClass = 'bg-gray-400 after:content-[\'\'] after:absolute after:left-full after:top-1/2 after:transform after:-translate-y-1/2 after:-ml-px after:border-t-[3px] after:border-t-transparent after:border-b-[3px] after:border-b-transparent after:border-l-[3px] after:border-l-gray-400';
+
+                return (
+                  <li key={subItem.name} className="relative">
+                    <div
+                      className={`${arrowBaseClass} ${isSubActive ? arrowActiveClass : arrowInactiveClass
+                        }`}
+                    ></div>
+
+                    <Link
+                      to={subItem.href}
+                      className={`flex m-2 cursor-pointer py-2 pl-10 text-sm transition-all duration-100 ease-in-out ${isSubActive
+                          ? 'text-custom-bg font-bold'
+                          : 'text-gray-600 hover:bg-gray-200 hover:text-custom-bg'
+                        }`}
+                      onClick={isMobileOpen ? onClose : undefined}
+                    >
+                      <span className="mr-5">
+                        <SubIcon className="h-5 w-5" />
+                      </span>
+                      {subItem.name}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+
+
+          )}
+
+
+
+        </div>
+      );
+    }
+
+    return (
+      <Link
+        key={item.name}
+        to={item.href}
+        className={`flex cursor-pointer items-center py-2 px-4 text-sm font-medium outline-none transition-all duration-100 ease-in-out focus:outline-none ${isActive ? 'text-gray-900 border-l-4 border-custom-bg font-bold' : 'text-gray-600 hover:bg-gray-100 hover:text-custom-bg'}`}
+        onClick={isMobileOpen ? onClose : undefined}
+      >
+        <Icon className={`mr-4 h-5 w-5 align-middle ${isActive ? 'text-custom-bg' : ''}`} />
+        {!isCollapsed && item.name}
+        {!isCollapsed && item.badge && (
+          <span className="ml-auto rounded-full bg-custom-bg px-2 text-xs text-white">
+            {item.badge}
+          </span>
+        )}
+      </Link>
+    );
+  };
+
+  return (
+    <div className={`h-screen bg-gray-100 ${isMobileOpen ? 'block' : 'hidden lg:block'}`}>
+      <div className={`h-full transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-56'}`}>
+        <div className="flex h-full flex-col bg-white shadow-md">
+          {/* Header Section */}
+          <div className="bg-white">
+            <div className="hidden md:flex items-center justify-end px-4 py-4">
+              <button
+                onClick={onToggle}
+                className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 hover:text-custom-bg"
+              >
+                <AlignLeft className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Navigation Sections */}
+          <div className="flex-1">
+            <nav className="h-full">
+              {navigation.map((item) => renderNavigationItem(item))}
+            </nav>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Sidebar;
