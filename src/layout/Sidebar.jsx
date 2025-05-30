@@ -1,100 +1,82 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
-  Home,
   Users,
   ShoppingCart,
   Package,
   Settings,
   Bell,
-  User,
   Store,
-  X,
-  Menu,
   Image,
-  MessageSquare,
   BarChart2,
-  TrendingUp,
   FileText,
-  ChevronDown,
-  LayoutDashboard,
-  Tag,
-  Layers,
-  Palette,
   Shield,
   AlignLeft,
+  LayoutDashboard,
 } from 'lucide-react';
-
-const navigation = [
-  // {
-  //   name: 'Dashboard',
-  //   href: '/dashboard',
-  //   icon: LayoutDashboard,
-  // },
-  {
-    name: 'Product Management',
-    href: '#',
-    icon: Package,
-    section: 'Product Management',
-    subItems: [
-      { name: 'Product Setup', href: '/browse', icon: Settings },
-      { name: 'Products', href: '/productList', icon: Package },
-      { name: 'Orders', href: '/orders', icon: ShoppingCart },
-    ]
-  },
-  {
-    name: 'Store Management',
-    href: '#',
-    icon: Store,
-    section: 'Store Management',
-    subItems: [
-      { name: 'Stores', href: '/stores', icon: Store },
-      { name: 'Store Settings', href: '/store-settings', icon: Settings },
-    ]
-  },
-  {
-    name: 'User Management',
-    href: '#',
-    icon: Users,
-    section: 'User Management',
-    subItems: [
-      { name: 'Users', href: '/users', icon: Users },
-      { name: 'Roles', href: '/userRoles', icon: Shield },
-    ]
-  },
-  {
-    name: 'Content Management',
-    href: '#',
-    icon: FileText,
-    section: 'Content Management',
-    subItems: [
-      { name: 'Banners', href: '/banners', icon: Image },
-      { name: 'Blogs', href: '/blogs', icon: FileText },
-      { name: 'Pages', href: '/pages', icon: FileText },
-    ]
-  },
-  {
-    name: 'Settings',
-    href: '#',
-    icon: Settings,
-    section: 'Settings',
-    subItems: [
-      { name: 'Notifications', href: '/notifications', icon: Bell },
-      { name: 'General Settings', href: '/settings', icon: Settings },
-      { name: 'Analytics', href: '/analytics', icon: BarChart2 },
-    ]
-  },
-];
 
 const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
   const location = useLocation();
   const [nExpandedSection, setExpandedSection] = useState(null);
   const [nHoveredSection, setHoveredSection] = useState(null);
-
+  const { t } = useTranslation();
   const toggleSection = (section) => {
     setExpandedSection(nExpandedSection === section ? null : section);
   };
-
+  const aNavigation = [
+    {
+      name: t('sidebar.ProductManagement'),
+      href: '#',
+      icon: Package,
+      section: 'Product Management',
+      subItems: [
+        { name: t('sidebar.Dashboard'), href: '/dashboard', icon: LayoutDashboard },
+        { name: t('sidebar.ProductSetup'), href: '/browse', icon: Settings },
+        { name: t('sidebar.Products'), href: '/productList', icon: Package },
+        { name: t('sidebar.Orders'), href: '/orders', icon: ShoppingCart },
+      ]
+    },
+    {
+      name: t('sidebar.StoreManagement'),
+      href: '#',
+      icon: Store,
+      section: 'Store Management',
+      subItems: [
+        { name: t('sidebar.Stores'), href: '/stores', icon: Store },
+        { name: t('sidebar.StoreSettings'), href: '/store-settings', icon: Settings },
+      ]
+    },
+    {
+      name: t('sidebar.UserManagement'),
+      href: '#',
+      icon: Users,
+      section: 'User Management',
+      subItems: [
+        { name: t('sidebar.Users'), href: '/users', icon: Users },
+        { name: t('sidebar.Roles'), href: '/userRoles', icon: Shield },
+      ]
+    },
+    {
+      name: t('sidebar.ContentManagement'),
+      href: '#',
+      icon: FileText,
+      section: 'Content Management',
+      subItems: [
+        { name: t('sidebar.Banners'), href: '/banners', icon: Image },
+        { name: t('sidebar.Pages'), href: '/pages', icon: FileText },
+      ]
+    },
+    {
+      name: t('sidebar.Settings'),
+      href: '#',
+      icon: Settings,
+      section: 'Settings',
+      subItems: [
+        { name: t('sidebar.Notifications'), href: '/notifications', icon: Bell },
+      ]
+    },
+  ];
   const renderNavigationItem = (item) => {
     const isActive = location.pathname === item.href;
     const Icon = item.icon;
@@ -234,7 +216,7 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
           {/* Navigation Sections */}
           <div className="flex-1">
             <nav className="h-full">
-              {navigation.map((item) => renderNavigationItem(item))}
+              {aNavigation.map((item) => renderNavigationItem(item))}
             </nav>
           </div>
         </div>

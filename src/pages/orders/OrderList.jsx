@@ -1,17 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Filter, Download, LayoutGrid, List } from 'lucide-react';
+import React, { useState } from 'react';
+import { Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Toolbar from '../../components/Toolbar';
-// import {fetchData} from '../../utils/apiUtils';
+import Pagination from '../../components/Pagination';
+import { useTranslation } from 'react-i18next';
 const OrderList = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
-  const [viewMode, setViewMode] = useState('table'); // 'table' or 'grid'
-  const [currentPage, setCurrentPage] = useState(1);
-  const [aUsers, setUsers] = useState([]);
-  const [bLoading, setLoading] = useState(false);
-  const [sError, setError] = useState('');
+  const [sSearchTerm, setSearchTerm] = useState('');
+  const { t } = useTranslation();
+  const [sFilterStatus, setFilterStatus] = useState('all');
+  const [bShowFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [sViewMode, setViewMode] = useState('table'); // 'table' or 'grid'
+  const [nCurrentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 3;
   const [oFilters, setFilters] = useState({
     orderStatus: 'all',
@@ -26,14 +25,6 @@ const OrderList = () => {
       [filterName]: e.target.value,
     });
   };
-//   useEffect(() => {
-//   const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VySUQiOjEsIlJvbGVJRCI6MSwiVGVuYW50SUQiOjEsIlN0b3JlSURzIjpbXSwiUGVybWlzc2lvbklEIjpbMV0sIlBlcm1pc3Npb25zIjpbIkFkZCBVc2VyIl0sImlhdCI6MTc0NzkxMDQwNH0.RVoM8isbPJTkwYQRNzNN-33GkH3-dLYwogFCZGvqlB0'; // Replace with your actual token
-//   fetchData('/getAllOrders', setUsers, setLoading, setError, token);
-//   console.log("orders",aUsers.data)
-// }, []);
-
-
-  // Define the available filters
   const additionalFilters = [
     {
       label: 'Order Status',
@@ -60,7 +51,7 @@ const OrderList = () => {
       ],
     },
   ];
-  const orders = [
+  const aOrders = [
     {
       id: '1',
       orderNumber: 'ORD-2024-001',
@@ -605,11 +596,11 @@ const OrderList = () => {
 
   const getStatusColor = (status) => {
     const colors = {
-      pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      processing: 'bg-blue-100 text-blue-800 border-blue-200',
-      shipped: 'bg-purple-100 text-purple-800 border-purple-200',
-      delivered: 'bg-green-100 text-green-800 border-green-200',
-      cancelled: 'bg-red-100 text-red-800 border-red-200',
+      pending: 'status-pending',
+      processing: 'status-processing',
+      shipped: 'status-shipped',
+      delivered: 'status-delivered',
+      cancelled: 'status-cancelled',
     };
     return colors[status];
   };
@@ -618,15 +609,11 @@ const OrderList = () => {
     navigate(`/orders/${order.id}`);
   };
 
-  const handleDelete = (orderId) => {
-    alert('Delete order: ' + orderId);
-  };
-
-  const filteredOrders = orders.filter((order) => {
+  const filteredOrders = aOrders.filter((order) => {
     const matchesSearch =
-      order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer.email.toLowerCase().includes(searchTerm.toLowerCase());
+      order.orderNumber.toLowerCase().includes(sSearchTerm.toLowerCase()) ||
+      order.customer.name.toLowerCase().includes(sSearchTerm.toLowerCase()) ||
+      order.customer.email.toLowerCase().includes(sSearchTerm.toLowerCase());
 
     const matchStatus =
       oFilters.orderStatus === 'all' || order.status === oFilters.orderStatus;
@@ -641,8 +628,8 @@ const OrderList = () => {
   // Pagination logic
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
   const paginatedOrders = filteredOrders.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    (nCurrentPage - 1) * itemsPerPage,
+    nCurrentPage * itemsPerPage
   );
 
   const handlePrevPage = () => {
@@ -658,7 +645,7 @@ const OrderList = () => {
   // Reset to page 1 when oFilters/search change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterStatus]);
+  }, [sSearchTerm, sFilterStatus]);
 
   // Export all orders as CSV (placeholder)
   const handleExportOrders = () => {
@@ -672,36 +659,33 @@ const OrderList = () => {
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold text-gray-900">Orders</h1>
-            <p className="mt-1 text-sm text-gray-500">View and manage all orders</p>
+            <h1 className="text-2xl font-bold text-gray-900">{t('orders.title')}</h1>
+            <p className="mt-1 text-sm text-gray-500">{t('orders.subtitle')}</p>
           </div>
           <button
             onClick={() => handleExportOrders()}
             className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 gap-2"
           >
             <Download className="w-4 h-4" />
-            Export All Orders
+           {t('orders.exportButton')}
           </button>
         </div>
       </div>
-
       <Toolbar
-        searchTerm={searchTerm}
+        SearchTerm={sSearchTerm}
         setSearchTerm={setSearchTerm}
-        viewMode={viewMode}
+        viewMode={sViewMode}
         setViewMode={setViewMode}
-        showFilterDropdown={showFilterDropdown}
+        showFilterDropdown={bShowFilterDropdown}
         setShowFilterDropdown={setShowFilterDropdown}
-        filterStatus={filterStatus}
+        filterStatus={sFilterStatus}
         setFilterStatus={setFilterStatus}
         additionalFilters={additionalFilters}
         handleFilterChange={handleFilterChange}
-        searchPlaceholder="Search by Order No, Customer Name, Email..." // 👈 Custom placeholder
+        searchPlaceholder={t('orders.searchPlaceholder')}
       />
-
-
       {/* Table/Grid Section */}
-      {viewMode === 'table' ? (
+      {sViewMode === 'table' ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100">
           {/* Table Section */}
           <div className="overflow-x-auto">
@@ -709,22 +693,22 @@ const OrderList = () => {
               <thead className="table-head">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Order Number
+                   {t('orders.table.orderNumber')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Order Date
+                   {t('orders.table.orderDate')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Customer Info
+                   {t('orders.table.customerInfo')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Delivery Info
+                    {t('orders.table.deliveryInfo')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                    {t('orders.table.status')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+                  {t('orders.table.actions')}
                   </th>
                 </tr>
               </thead>
@@ -774,48 +758,13 @@ const OrderList = () => {
                         onClick={() => handleViewOrder(order)}
                         className="text-[#5B45E0] hover:text-[#4c39c7] font-medium transition-colors duration-150"
                       >
-                        View Details
+                       {t('orders.viewDetails')}
                       </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-
-          {/* Pagination Section */}
-          <div className="px-6 py-4 border-t border-gray-100">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-              <div className="text-sm text-gray-500">
-                Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredOrders.length)}</span> of{' '}
-                <span className="font-medium">{filteredOrders.length}</span> results
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  className="pagination-btn"
-                  onClick={handlePrevPage}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </button>
-                {[...Array(totalPages)].map((_, idx) => (
-                  <button
-                    key={idx + 1}
-                    className={`pagination-btn${currentPage === idx + 1 ? ' pagination-btn-active' : ''}`}
-                    onClick={() => handlePageClick(idx + 1)}
-                  >
-                    {idx + 1}
-                  </button>
-                ))}
-                <button
-                  className="pagination-btn"
-                  onClick={handleNextPage}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       ) : (
@@ -840,7 +789,7 @@ const OrderList = () => {
                   </div>
                 </div>
                 <div className="text-sm text-gray-900 mt-2 truncate">
-                  <span className="font-medium">Delivery:</span> {order.delivery.address}, {order.delivery.city}, {order.delivery.state} {order.delivery.zipCode}
+                  <span className="font-medium">{t('orders.delivery')}:</span> {order.delivery.address}, {order.delivery.city}, {order.delivery.state} {order.delivery.zipCode}
                 </div>
 
                 <div className="flex items-center justify-between mt-2">
@@ -851,47 +800,24 @@ const OrderList = () => {
                   onClick={() => handleViewOrder(order)}
                   className="mt-3 w-full inline-flex justify-center items-center px-4 py-2 border border-[#5B45E0] text-[#5B45E0] rounded-lg font-medium hover:bg-[#5B45E0]/10 transition-colors duration-150"
                 >
-                  View Details
+                  {t('orders.viewDetails')}
                 </button>
               </div>
             ))}
           </div>
-          {/* Pagination Section for Grid View */}
-          <div className="px-6 py-4 border-t border-gray-100 mt-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-              <div className="text-sm text-gray-500">
-                Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredOrders.length)}</span> of{' '}
-                <span className="font-medium">{filteredOrders.length}</span> results
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  className="pagination-btn"
-                  onClick={handlePrevPage}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </button>
-                {[...Array(totalPages)].map((_, idx) => (
-                  <button
-                    key={idx + 1}
-                    className={`pagination-btn${currentPage === idx + 1 ? ' pagination-btn-active' : ''}`}
-                    onClick={() => handlePageClick(idx + 1)}
-                  >
-                    {idx + 1}
-                  </button>
-                ))}
-                <button
-                  className="pagination-btn"
-                  onClick={handleNextPage}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          </div>
         </>
       )}
+
+      {/* Pagination component */}
+      <Pagination
+        currentPage={nCurrentPage}
+        totalPages={totalPages}
+        totalItems={filteredOrders.length}
+        itemsPerPage={itemsPerPage}
+        handlePrevPage={handlePrevPage}
+        handleNextPage={handleNextPage}
+        handlePageClick={handlePageClick}
+      />
     </div>
   );
 };

@@ -1,8 +1,8 @@
-import React, { useRef, useState } from 'react';
-import { Plus, ArrowLeft, ArrowRight, Trash2, MoreVertical, Image as ImageIcon } from 'lucide-react';
-import { IoIosSearch } from 'react-icons/io';
+import { useState } from 'react';
+import { Plus, ArrowLeft, ArrowRight, MoreVertical, Image as ImageIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-
+import Toolbar from '../components/Toolbar';
+import { useTranslation } from "react-i18next";
 const aInitialBanners = [
   {
     BannerID: 1,
@@ -60,24 +60,22 @@ const aInitialBanners = [
 ];
 
 const Banners = () => {
-  const [banners, setBanners] = useState(aInitialBanners);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [page, setPage] = useState(0);
+  const [aBanners, setBanners] = useState(aInitialBanners);
+  const [sSearchQuery, setSearchQuery] = useState('');
+  const [nPage, setPage] = useState(0);
   const rowsPerPage = 6;
-  const [activeMenu, setActiveMenu] = useState(null);
-  const [carouselIndex, setCarouselIndex] = useState({});
-  const fileInputRef = useRef();
+  const [nActiveMenu, setActiveMenu] = useState(null);
+  const [oCarouselIndex, setCarouselIndex] = useState({});
   const navigate = useNavigate();
-
+  const { t } = useTranslation();
   // Search
   const handleSearchChange = (e) => setSearchQuery(e.target.value);
-  const filteredBanners = banners.filter(b =>
-    b.BannerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    String(b.BannerID).includes(searchQuery)
+  const filteredBanners = aBanners.filter(b =>
+    b.BannerName.toLowerCase().includes(sSearchQuery.toLowerCase()) ||
+    String(b.BannerID).includes(sSearchQuery)
   );
 
-  // Pagination
-  const paginatedBanners = filteredBanners.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
+  const paginatedBanners = filteredBanners.slice(nPage * rowsPerPage, (nPage + 1) * rowsPerPage);
 
   // Carousel controls
   const handleCarouselLeft = (id, images) => {
@@ -94,9 +92,7 @@ const Banners = () => {
   };
 
   // Dropdown menu
-  const toggleMenu = (id) => setActiveMenu(activeMenu === id ? null : id);
-
-  // Edit/Delete handlers (simulate)
+  const toggleMenu = (id) => setActiveMenu(nActiveMenu === id ? null : id);
   const handleEditBanner = (id) => alert('Edit banner: ' + id);
   const handleDeleteBanner = (id) => {
     setBanners(prev => prev.filter(b => b.BannerID !== id));
@@ -124,30 +120,25 @@ const Banners = () => {
             </div>
             <h1 className="text-2xl font-bold text-gray-900">Banners</h1>
             <div className="flex-1" />
-              <button
-                type="button"
+            <button
+              type="button"
               className="btn-primary flex items-center gap-2"
               onClick={() => navigate('/banners-create')}
-              >
+            >
               <Plus className="h-5 w-5" />
-              Create Banner
-              </button>
-      </div>
-      {/* Search Bar */}
+             {t('bannerform.create_banner')}
+            </button>
+          </div>
+          {/* Search Bar */}
           <div className="mt-4 max-w-lg">
-          <div className="relative flex items-center">
-            <input
-              id="searchName"
-              type="text"
-                placeholder="Search by Banner Number / Banner Name"
-              value={searchQuery}
-              onChange={handleSearchChange}
-                className="p-2 pr-10 border border-gray-300 rounded-lg w-full text-sm leading-6 h-[40px] focus:ring-2 focus:ring-custom-bg focus:border-custom-bg"
+            <Toolbar
+              searchTerm={sSearchQuery}
+              setSearchTerm={setSearchQuery}
+              searchPlaceholder={t('bannerform.searchPlaceholder')}
+              showSearch={true}
+              showViewToggle={false}
+              showFilterButton={false}
             />
-              <div className="absolute right-3 text-gray-400">
-              <IoIosSearch />
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -167,7 +158,7 @@ const Banners = () => {
                 {project.BannerImages && project.BannerImages.length > 0 ? (
                   <div className="relative">
                     <img
-                      src={project.BannerImages[carouselIndex[project.BannerID] || 0].BannerImage}
+                      src={project.BannerImages[oCarouselIndex[project.BannerID] || 0].BannerImage}
                       alt={`Banner ${project.BannerName}`}
                       className="w-full aspect-[16/9] object-cover"
                     />
@@ -194,7 +185,7 @@ const Banners = () => {
                           {project.BannerImages.map((img, idx) => (
                             <span
                               key={img.BannerImageID}
-                              className={`w-2 h-2 rounded-full ${idx === (carouselIndex[project.BannerID] || 0) ? 'bg-custom-bg' : 'bg-gray-300'}`}
+                              className={`w-2 h-2 rounded-full ${idx === (oCarouselIndex[project.BannerID] || 0) ? 'bg-custom-bg' : 'bg-gray-300'}`}
                             />
                           ))}
                         </div>
@@ -214,32 +205,32 @@ const Banners = () => {
                 </span>
                 {/* Action Menu */}
                 <div className="absolute top-3 right-3 z-20">
-                    <button
+                  <button
                     className="text-gray-400 hover:text-custom-bg p-1 rounded-full focus:outline-none"
-                      onClick={() => toggleMenu(project.BannerID)}
-                    >
-                      <MoreVertical className="h-5 w-5" />
-                    </button>
-                    {activeMenu === project.BannerID && (
+                    onClick={() => toggleMenu(project.BannerID)}
+                  >
+                    <MoreVertical className="h-5 w-5" />
+                  </button>
+                  {nActiveMenu === project.BannerID && (
                     <div className="absolute right-0 mt-2 bg-white shadow-lg rounded-xl z-30 min-w-[120px] border border-gray-100">
-                        <ul className="text-sm text-gray-700">
-                          <li
+                      <ul className="text-sm text-gray-700">
+                        <li
                           className="px-4 py-2 hover:bg-gray-50 cursor-pointer rounded-t-xl"
-                            onClick={() => handleEditBanner(project.BannerID)}
-                          >
-                            Edit
-                          </li>
-                          <li
+                          onClick={() => handleEditBanner(project.BannerID)}
+                        >
+                         {t('common.edit')}
+                        </li>
+                        <li
                           className="px-4 py-2 hover:bg-gray-50 cursor-pointer rounded-b-xl text-red-600"
-                            onClick={() => handleDeleteBanner(project.BannerID)}
-                          >
-                            Delete
-                          </li>
-                        </ul>
-                      </div>
-                    )}
-                  </div>
+                          onClick={() => handleDeleteBanner(project.BannerID)}
+                        >
+                         {t('common.delete')}
+                        </li>
+                      </ul>
+                    </div>
+                  )}
                 </div>
+              </div>
               {/* Content Section */}
               <div className="p-5 flex flex-col flex-grow">
                 <h3 className="text-base font-semibold text-gray-900 truncate mb-2">
@@ -266,18 +257,18 @@ const Banners = () => {
         {/* Pagination Controls */}
         <div className="flex justify-between mt-8">
           <button
-            disabled={page === 0}
-            onClick={() => setPage(page - 1)}
+            disabled={nPage === 0}
+            onClick={() => setPage(nPage - 1)}
             className="px-4 py-2 rounded-lg border border-gray-200 bg-white text-custom-bg font-semibold shadow hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Previous
+            {t('common.previous')}
           </button>
           <button
-            disabled={(page + 1) * rowsPerPage >= filteredBanners.length}
-            onClick={() => setPage(page + 1)}
+            disabled={(nPage + 1) * rowsPerPage >= filteredBanners.length}
+            onClick={() => setPage(nPage + 1)}
             className="px-4 py-2 rounded-lg border border-gray-200 bg-white text-custom-bg font-semibold shadow hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Next
+           {t('common.next')}
           </button>
         </div>
       </div>

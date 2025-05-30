@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import {Plus, MoreVertical, Edit, Trash} from 'lucide-react';
+import { Plus, MoreVertical, Edit, Trash } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import Toolbar from '../../components/Toolbar'
+import Toolbar from '../../components/Toolbar';
+import Pagination from '../../components/Pagination';
+import ActionButtons from '../../components/ActionButtons';
+import { useTranslation } from 'react-i18next';
 const aMockProducts = [
   {
     id: '1',
@@ -68,12 +71,13 @@ const getStatusBadgeClass = (status) => {
 
 const ProductList = () => {
   const [sSearchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState('table'); // 'table' or 'grid'
-  const [currentPage, setCurrentPage] = useState(1);
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [sViewMode, setViewMode] = useState('table'); // 'table' or 'grid'
+  const [nCurrentPage, setCurrentPage] = useState(1);
+  const [sFilterStatus, setFilterStatus] = useState('all');
+  const { t } = useTranslation();
   const itemsPerPage = 3;
   const navigate = useNavigate();
- const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [bShowFilterDropdown, setShowFilterDropdown] = useState(false);
   const handleEdit = (productId) => {
     // TODO: Implement edit functionality
     alert('Edit product: ' + productId);
@@ -83,76 +87,76 @@ const ProductList = () => {
     // TODO: Implement delete functionality
     alert('Delete product: ' + productId);
   };
-   const [filters, setFilters] = useState({
+  const [oFilters, setFilters] = useState({
     category: 'all',
     status: 'all',
     storeName: 'all',
   });
-const additionalFilters = [
-  {
-    label: 'Category',
-    name: 'category',
-    value: filters.category,
-    options: [
-      { value: 'all', label: 'All' },
-      { value: 'Electronics', label: 'Electronics' },
-      { value: 'Computers', label: 'Computers' },
-    ],
-  },
-  {
-    label: 'Status',
-    name: 'status',
-    value: filters.status,
-    options: [
-      { value: 'all', label: 'All' },
-      { value: 'active', label: 'Active' },
-      { value: 'out-of-stock', label: 'Out of Stock' },
-    ],
-  },
-  {
-    label: 'Store Name',
-    name: 'storeName',
-    value: filters.storeName,
-    options: [
-      { value: 'all', label: 'All' },
-      ...Array.from(new Set(aMockProducts.map(product => product.storeName))).map(storeName => ({
-        value: storeName,
-        label: storeName
-      })),
-    ],
-  },
-];
-   // Handle change for additional filters
+  const additionalFilters = [
+    {
+      label: 'Category',
+      name: 'category',
+      value: oFilters.category,
+      aOptions: [
+        { value: 'all', label: 'All' },
+        { value: 'Electronics', label: 'Electronics' },
+        { value: 'Computers', label: 'Computers' },
+      ],
+    },
+    {
+      label: 'Status',
+      name: 'status',
+      value: oFilters.status,
+      aOptions: [
+        { value: 'all', label: 'All' },
+        { value: 'active', label: 'Active' },
+        { value: 'out-of-stock', label: 'Out of Stock' },
+      ],
+    },
+    {
+      label: 'Store Name',
+      name: 'storeName',
+      value: oFilters.storeName,
+      aOptions: [
+        { value: 'all', label: 'All' },
+        ...Array.from(new Set(aMockProducts.map(product => product.storeName))).map(storeName => ({
+          value: storeName,
+          label: storeName
+        })),
+      ],
+    },
+  ];
+  // Handle change for additional filters
   const handleFilterChange = (e, filterName) => {
     setFilters({
-      ...filters,
+      ...oFilters,
       [filterName]: e.target.value,
     });
   };
   const filteredProducts = aMockProducts.filter(product => {
-  // Search term matching
-  const matchesSearch = product.name.toLowerCase().includes(sSearchTerm.toLowerCase()) ||
-    product.description.toLowerCase().includes(sSearchTerm.toLowerCase());
-  
-  // Category matching
-  const matchesCategory = filters.category === 'all' || product.category === filters.category;
-  
-  // Status matching
-  const matchesStatus = filters.status === 'all'|| product.status === filters.status;
-  
-  // Store Name matching
-  const matchesStoreName = filters.storeName === 'all' || product.storeName === filters.storeName;
-  
-  // Return filtered result based on all criteria
-  return matchesSearch && matchesCategory && matchesStatus && matchesStoreName;
-});
+    // Search term matching
+    const matchesSearch = product.name.toLowerCase().includes(sSearchTerm.toLowerCase()) ||
+      product.description.toLowerCase().includes(sSearchTerm.toLowerCase());
+
+    // Category matching
+    const matchesCategory = oFilters.category === 'all' || product.category === oFilters.category;
+
+    // Status matching
+    const matchesStatus = oFilters.status === 'all' || product.status === oFilters.status;
+
+    // Store Name matching
+    const matchesStoreName = oFilters.storeName === 'all' || product.storeName === oFilters.storeName;
+
+    // Return filtered result based on all criteria
+    return matchesSearch && matchesCategory && matchesStatus && matchesStoreName;
+  });
 
 
   // Pagination logic
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const paginatedProducts = filteredProducts.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    (nCurrentPage - 1) * itemsPerPage,
+    nCurrentPage * itemsPerPage
   );
 
   const handlePrevPage = () => {
@@ -164,60 +168,57 @@ const additionalFilters = [
   const handlePageClick = (page) => {
     setCurrentPage(page);
   };
-
-  // Reset to page 1 when filters/search change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [sSearchTerm, filters]);
+  }, [sSearchTerm, oFilters]);
 
   const categories = Array.from(new Set(aMockProducts.map(product => product.category)));
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen bg-gray-50">
-      {/* Header: Products heading and Add Product in one row */}
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold text-gray-900">Products</h1>
-            <p className="mt-1 text-sm text-gray-500">Manage your products and inventory</p>
+            <h1 className="text-2xl font-bold text-gray-900">{t('products.title')}</h1>
+            <p className="mt-1 text-sm text-gray-500">{t('products.subtitle')}</p>
           </div>
           <button
             onClick={() => navigate('/Addproduct')}
             className='btn-primary'
           >
             <Plus className="h-5 w-5 mr-2" />
-            Add Product
+            {t('products.add-btn')}
           </button>
         </div>
       </div>
 
-     <Toolbar
-        sSearchTerm={sSearchTerm}
+      <Toolbar
+        searchTerm={sSearchTerm}
         setSearchTerm={setSearchTerm}
-        viewMode={viewMode}
+        viewMode={sViewMode}
         setViewMode={setViewMode}
-        showFilterDropdown={showFilterDropdown}
+        showFilterDropdown={bShowFilterDropdown}
         setShowFilterDropdown={setShowFilterDropdown}
-        filterStatus={filterStatus}
+        filterStatus={sFilterStatus}
         setFilterStatus={setFilterStatus}
         additionalFilters={additionalFilters}
         handleFilterChange={handleFilterChange}
+        searchPlaceholder={t('products.searchPlaceholder')}
       />
-
       {/* Products List: Table or Grid View */}
-      {viewMode === 'table' ? (
+      {sViewMode === 'table' ? (
         <div className="table-container">
           <div className="table-wrapper">
             <table className="table-base">
               <thead className="table-head">
                 <tr>
                   <th className="table-head-cell">Product</th>
-                  <th className="table-head-cell">Category</th>
-                  <th className="table-head-cell">Price</th>
-                  <th className="table-head-cell">Stock</th>
-                  <th className="table-head-cell">Status</th>
-                  <th className="table-head-cell">Store Name</th>
-                  <th className="table-head-cell">Actions</th>
+                  <th className="table-head-cell">{t('products.category')}</th>
+                  <th className="table-head-cell">{t('products.price')}</th>
+                  <th className="table-head-cell">{t('products.stock')}</th>
+                  <th className="table-head-cell">{t('products.status')}</th>
+                  <th className="table-head-cell">{t('products.storeName')}</th>
+                  <th className="table-head-cell">{t('products.actions')}</th>
                 </tr>
               </thead>
               <tbody className="table-body">
@@ -230,7 +231,6 @@ const additionalFilters = [
                         </div>
                         <div className="ml-4">
                           <div className="table-cell-text">{product.name}</div>
-                          {/* <div className="table-cell-subtext truncate max-w-xs">{product.description}</div> */}
                         </div>
                       </div>
                     </td>
@@ -244,63 +244,24 @@ const additionalFilters = [
                     </td>
                     <td className="table-cell table-cell-text">{product.storeName}</td>
                     <td className="table-cell text-right font-medium">
-                      <div className="flex items-center justify-end space-x-2">
-                        <button onClick={() => handleEdit(product.id)} className="action-button" title="Edit">
-                          <Edit className="h-5 w-5" />
-                        </button>
-                        <button onClick={() => handleDelete(product.id)} className="action-button" title="Delete">
-                          <Trash className="h-5 w-5" />
-                        </button>
-                        <button className="action-button" title="More">
-                          <MoreVertical className="h-5 w-5" />
-                        </button>
-                      </div>
+                      <ActionButtons
+                        id={''}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                        onMore={() => console.log('')}
+                      />
                     </td>
                   </tr>
                 ))}
                 {paginatedProducts.length === 0 && (
                   <tr>
                     <td colSpan={6} className="py-8 text-center text-gray-500">
-                      No products found.
+                     {t('products.noProducts')}
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
-          </div>
-          {/* Pagination Section */}
-          <div className="pagination-section">
-            <div className="pagination-wrapper">
-              <div className="pagination-text">
-                Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredProducts.length)}</span> of{' '}
-                <span className="font-medium">{filteredProducts.length}</span> results
-              </div>
-              <div className="pagination-buttons">
-                <button
-                  className="pagination-btn"
-                  onClick={handlePrevPage}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </button>
-                {[...Array(totalPages)].map((_, idx) => (
-                  <button
-                    key={idx + 1}
-                    className={`pagination-btn${currentPage === idx + 1 ? ' pagination-btn-active' : ''}`}
-                    onClick={() => handlePageClick(idx + 1)}
-                  >
-                    {idx + 1}
-                  </button>
-                ))}
-                <button
-                  className="pagination-btn"
-                  onClick={handleNextPage}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       ) : (
@@ -325,62 +286,33 @@ const additionalFilters = [
                   </div>
                 </div>
                 <div className="text-sm text-gray-900 mt-2">
-                  <span className="font-medium">Category:</span> {product.category}
+                  <span className="font-medium">{t('products.category')}</span> {product.category}
                 </div>
                 <div className="flex items-center justify-between mt-2">
-                  <div className="text-sm text-gray-500">Stock: <span className="font-semibold text-gray-900">{product.stock}</span></div>
+                  <div className="text-sm text-gray-500">{t('products.stock')}<span className="font-semibold text-gray-900">{product.stock}</span></div>
                   <div className="text-lg font-bold text-indigo-600">${product.price.toFixed(2)}</div>
                 </div>
-                <div className="flex items-center justify-end gap-2 mt-2">
-                  <button onClick={() => handleEdit(product.id)} className="action-button" title="Edit">
-                    <Edit className="h-5 w-5" />
-                  </button>
-                  <button onClick={() => handleDelete(product.id)} className="action-button" title="Delete">
-                    <Trash className="h-5 w-5" />
-                  </button>
-                  <button className="action-button" title="More">
-                    <MoreVertical className="h-5 w-5" />
-                  </button>
-                </div>
+                <ActionButtons
+                  id={product.id}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onMore={() => console.log('')}
+                />
               </div>
             ))}
           </div>
-          {/* Pagination Section for Grid View */}
-          <div className="px-6 py-4 border-t border-gray-100 mt-6">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-500">
-                Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredProducts.length)}</span> of{' '}
-                <span className="font-medium">{filteredProducts.length}</span> results
-              </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  className="pagination-btn"
-                  onClick={handlePrevPage}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </button>
-                {[...Array(totalPages)].map((_, idx) => (
-                  <button
-                    key={idx + 1}
-                    className={`pagination-btn${currentPage === idx + 1 ? ' pagination-btn-active' : ''}`}
-                    onClick={() => handlePageClick(idx + 1)}
-                  >
-                    {idx + 1}
-                  </button>
-                ))}
-                <button
-                  className="pagination-btn"
-                  onClick={handleNextPage}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          </div>
         </>
       )}
+      {/* Pagination component */}
+      <Pagination
+        currentPage={nCurrentPage}
+        totalPages={totalPages}
+        totalItems={filteredProducts.length}
+        itemsPerPage={itemsPerPage}
+        handlePrevPage={handlePrevPage}
+        handleNextPage={handleNextPage}
+        handlePageClick={handlePageClick}
+      />
     </div>
   );
 };

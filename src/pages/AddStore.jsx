@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { Building, MapPin, Phone, Mail, Users, Package, ArrowLeft } from 'lucide-react';
 import TextInputWithIcon from '../components/TextInputWithIcon';
 import SelectWithIcon from '../components/SelectWithIcon';
-
+import { useTranslation } from 'react-i18next';
 const AddStore = () => {
-  const [formData, setFormData] = useState({
+  const [oFormData, setFormData] = useState({
     name: '',
     address: '',
     city: '',
@@ -16,7 +16,7 @@ const AddStore = () => {
     products: '',
     employees: ''
   });
-
+  const { t } = useTranslation();
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -28,7 +28,7 @@ const AddStore = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     // TODO: Add API call to create store
-    console.log('Form submitted:', formData);
+    console.log('Form submitted:', oFormData);
   };
 
   return (
@@ -42,9 +42,9 @@ const AddStore = () => {
           >
             <ArrowLeft className="h-5 w-5 text-gray-500" />
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">Add New Store</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('createStore.addNewStore')}</h1>
         </div>
-        <p className="text-gray-500">Create a new store location with its details and inventory information.</p>
+        <p className="text-gray-500">{t('createStore.storeDescription')}</p>
       </div>
 
       {/* Form */}
@@ -52,70 +52,70 @@ const AddStore = () => {
         {/* Store Information */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900">Store Information</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{t('createStore.storeInformation')}</h2>
           </div>
           <div className="p-6 space-y-6">
             <div className="flex flex-col md:flex-row md:space-x-4">
               {/* Store Name */}
               <div className="w-full md:w-1/2">
                 <TextInputWithIcon
-                  label="Store Name"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                  placeholder="Enter store name"
+                  label={t('createStore.storeName')}
+                  id="name"
+                  name="name"
+                  value={oFormData.name}
+                  onChange={handleChange}
+                  placeholder={t('createStore.enterStoreName')}
                   Icon={Building}
-                    required
-                  />
+                  required
+                />
               </div>
               {/* Street Address */}
               <div className="w-full md:w-1/2 mt-4 md:mt-0">
                 <TextInputWithIcon
-                  label="Street Address"
-                    id="address"
-                    name="address"
-                    value={formData.address}
-                    onChange={handleChange}
-                  placeholder="Enter street address"
+                  label={t('createStore.streetAddress')}
+                  id="address"
+                  name="address"
+                  value={oFormData.address}
+                  onChange={handleChange}
+                  placeholder={t('createStore.enterStreetAddress')}
                   Icon={MapPin}
-                    required
-                  />
+                  required
+                />
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <TextInputWithIcon
-                  label="City"
+                  label={t('createStore.city')}
                   id="city"
                   name="city"
-                  value={formData.city}
+                  value={oFormData.city}
                   onChange={handleChange}
-                  placeholder="Enter city"
+                  placeholder={t('createStore.enterCity')}
                   Icon={Building}
                   required
                 />
               </div>
               <div>
                 <TextInputWithIcon
-                  label="State"
+                  label={t('createStore.state')}
                   id="state"
                   name="state"
-                  value={formData.state}
+                  value={oFormData.state}
                   onChange={handleChange}
-                  placeholder="Enter state"
+                  placeholder={t('createStore.enterState')}
                   Icon={Building}
                   required
                 />
               </div>
               <div>
                 <TextInputWithIcon
-                  label="ZIP Code"
+                  label={t('createStore.zipCode')}
                   id="zipCode"
                   name="zipCode"
-                  value={formData.zipCode}
+                  value={oFormData.zipCode}
                   onChange={handleChange}
-                  placeholder="Enter ZIP code"
+                  placeholder={t('createStore.enterZipCode')}
                   Icon={MapPin}
                   required
                 />
@@ -127,35 +127,37 @@ const AddStore = () => {
         {/* Contact Information */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900">Contact Information</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              {t('createStore.contactInformation')}
+            </h2>
           </div>
           <div className="p-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <TextInputWithIcon
-                  label="Phone Number"
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                  placeholder="Enter phone number"
+                  label={t('createStore.phoneNumber')}
+                  id="phone"
+                  name="phone"
+                  value={oFormData.phone}
+                  onChange={handleChange}
+                  placeholder={t('createStore.enterPhoneNumber')}
                   Icon={Phone}
                   type="tel"
-                    required
-                  />
+                  required
+                />
               </div>
               <div>
                 <TextInputWithIcon
-                  label="Email Address"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                  placeholder="Enter email address"
+                  label={t('createStore.emailAddress')}
+                  id="email"
+                  name="email"
+                  value={oFormData.email}
+                  onChange={handleChange}
+                  placeholder={t('createStore.enterEmailAddress')}
                   Icon={Mail}
                   type="email"
-                    required
-                  />
+                  required
+                />
               </div>
             </div>
           </div>
@@ -164,16 +166,18 @@ const AddStore = () => {
         {/* Store Details */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900">Store Details</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              {t('createStore.storeDetails')}
+            </h2>
           </div>
           <div className="p-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <SelectWithIcon
-                  label="Status"
+                  label={t('createStore.status')}
                   id="status"
                   name="status"
-                  value={formData.status}
+                  value={oFormData.status}
                   onChange={handleChange}
                   options={[
                     { value: 'Active', label: 'Active' },
@@ -185,29 +189,29 @@ const AddStore = () => {
               </div>
               <div>
                 <TextInputWithIcon
-                  label="Number of Products"
-                    id="products"
-                    name="products"
-                    value={formData.products}
-                    onChange={handleChange}
-                  placeholder="Enter number of products"
+                  label={t('createStore.numberOfProducts')}
+                  id="products"
+                  name="products"
+                  value={oFormData.products}
+                  onChange={handleChange}
+                  placeholder={t('createStore.enterNumberOfProducts')}
                   Icon={Package}
                   type="number"
-                    min="0"
-                  />
+                  min="0"
+                />
               </div>
               <div>
                 <TextInputWithIcon
-                  label="Number of Employees"
-                    id="employees"
-                    name="employees"
-                    value={formData.employees}
-                    onChange={handleChange}
-                  placeholder="Enter number of employees"
+                  label={t('createStore.numberOfEmployees')}
+                  id="employees"
+                  name="employees"
+                  value={oFormData.employees}
+                  onChange={handleChange}
+                  placeholder={t('createStore.enterNumberOfEmployees')}
                   Icon={Users}
                   type="number"
-                    min="0"
-                  />
+                  min="0"
+                />
               </div>
             </div>
           </div>
@@ -220,13 +224,13 @@ const AddStore = () => {
             onClick={() => window.history.back()}
             className="btn-cancel"
           >
-            Cancel
+            {t('createStore.cancel')}
           </button>
           <button
             type="submit"
             className="btn-primary"
           >
-            Create Store
+            {t('createStore.createStore')}
           </button>
         </div>
       </form>

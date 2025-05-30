@@ -74,14 +74,6 @@ const Header = ({ onMenuClick }) => {
 
         <div className="flex items-center flex-1">
           <div className="flex-1 max-w-lg">
-            {/* <div className="relative">
-              <Search className="absolute top-1/2 left-3 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                className="block w-full pl-10 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm"
-                placeholder="Search..."
-                type="search"
-              />
-            </div> */}
           </div>
         </div>
 

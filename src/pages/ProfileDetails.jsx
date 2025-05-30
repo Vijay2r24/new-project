@@ -1,11 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { User, Mail, Phone, MapPin, Calendar, Edit, Camera, Shield, Bell, Globe, Lock, Key } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import EditProfileModal from './EditProfileModal';
 import TextInputWithIcon from '../components/TextInputWithIcon';
 import cheGuevaraImg from '../../assets/images/che-guevara.jpg';
-
-const defaultUser = {
+import { useTranslation } from 'react-i18next';
+  const oDefaultUser = {
   name: "Guest User",
   email: "guest@example.com",
   phone: "Not provided",
@@ -17,71 +15,71 @@ const defaultUser = {
   avatar: cheGuevaraImg,
   role: "Guest"
 };
+const ProfileDetails = ({ user = oDefaultUser }) => {
+const { t } = useTranslation();
 
 const securityPrefModals = {
+  
   'changePassword': {
     title: 'Change Password',
     content: (
       <form className="space-y-4">
         <div>
           <TextInputWithIcon
-            label="Current Password"
+            label={t('profile.current_password')}
             id="currentPassword"
             name="currentPassword"
             type="password"
-            placeholder="Enter current password"
+            placeholder={t('profile.enter_current_password')}
             Icon={Key}
           />
         </div>
         <div>
           <TextInputWithIcon
-            label="New Password"
+            label={t('new_password')}
             id="newPassword"
             name="newPassword"
             type="password"
-            placeholder="Enter new password"
+            placeholder={t('peofile.enter_new_password')}
             Icon={Lock}
           />
         </div>
         <div>
-          <TextInputWithIcon
-            label="Confirm New Password"
+           <TextInputWithIcon
+            label={t('profile.confirm_new_password')}
             id="confirmNewPassword"
             name="confirmNewPassword"
             type="password"
-            placeholder="Confirm new password"
+            placeholder={t('profile.confirm_new_password_placeholder')}
             Icon={Lock}
           />
         </div>
         <div className="flex justify-end gap-2 mt-4">
-          <button type="button" className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 font-medium" onClick={null}>Cancel</button>
-          <button type="submit" className="px-4 py-2 rounded-lg bg-gradient-to-r from-sky-500 to-indigo-500 text-white font-medium hover:from-sky-400 hover:to-indigo-400 border border-sky-400/20">Save</button>
+          <button type="button" className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 font-medium" onClick={null}> {t('profile.cancel')}</button>
+          <button type="submit" className="px-4 py-2 rounded-lg bg-gradient-to-r from-sky-500 to-indigo-500 text-white font-medium hover:from-sky-400 hover:to-indigo-400 border border-sky-400/20"> {t('profile.save')}</button>
         </div>
       </form>
     )
   },
-  'twoFactor': {
-    title: 'Two-Factor Authentication',
-    content: <div className="py-4">Two-factor authentication settings coming soon.</div>
+  twoFactor: {
+    title: t('profile.two_factor_authentication'),
+    content: <div className="py-4">{t('profile.coming_soon')}</div>,
   },
-  'privacy': {
-    title: 'Privacy Settings',
-    content: <div className="py-4">Privacy settings coming soon.</div>
+  privacy: {
+    title: t('profile.privacy_settings'),
+    content: <div className="py-4">{t('profile.coming_soon')}</div>,
   },
-  'notifications': {
-    title: 'Notification Settings',
-    content: <div className="py-4">Notification settings coming soon.</div>
+  notifications: {
+    title: t('profile.notification_settings'),
+    content: <div className="py-4">{t('profile.coming_soon')}</div>,
   },
-  'language': {
-    title: 'Language & Region',
-    content: <div className="py-4">Language & region settings coming soon.</div>
+  language: {
+    title: t('profile.language_region'),
+    content: <div className="py-4">{t('profile.coming_soon')}</div>,
   },
 };
-
-const ProfileDetails = ({ user = defaultUser }) => {
-  const navigate = useNavigate();
-  const [editOpen, setEditOpen] = useState(false);
-  const [modalType, setModalType] = useState(null);
+  const [bEditOpen, setEditOpen] = useState(false);
+  const [nModalType, setModalType] = useState(null);
 
   const handleOpenModal = (type) => setModalType(type);
   const handleCloseModal = () => setModalType(null);
@@ -119,7 +117,7 @@ const ProfileDetails = ({ user = defaultUser }) => {
               <p className="mt-1 text-custom-bg font-medium">{user.role}</p>
               <p className="mt-2 text-sm text-custom-bg/80 flex items-center">
                 <span className="inline-block w-1.5 h-1.5 rounded-full bg-custom-bg/60 mr-2"></span>
-                Member since {new Date(user.joinDate).toLocaleDateString()}
+                 {t('profile.member_since')}{new Date(user.joinDate).toLocaleDateString()}
               </p>
             </div>
             <div className="md:ml-auto">
@@ -128,15 +126,14 @@ const ProfileDetails = ({ user = defaultUser }) => {
                 onClick={() => setEditOpen(true)}
               >
                 <Edit className="h-4 w-4 mr-2" />
-                Edit Profile
+               {t('profile.edit_profile')}
               </button>
             </div>
           </div>
         </div>
       </div>
-      <EditProfileModal open={editOpen} onClose={() => setEditOpen(false)} user={user} />
       {/* Security/Preferences Modal */}
-      {modalType && (
+      {nModalType && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 w-full max-w-md relative animate-fadeIn">
             <button
@@ -146,8 +143,8 @@ const ProfileDetails = ({ user = defaultUser }) => {
             >
               &times;
             </button>
-            <h2 className="text-xl font-bold text-gray-900 mb-4">{securityPrefModals[modalType].title}</h2>
-            {securityPrefModals[modalType].content}
+            <h2 className="text-xl font-bold text-gray-900 mb-4">{securityPrefModals[nModalType].title}</h2>
+            {securityPrefModals[nModalType].content}
           </div>
         </div>
       )}
@@ -159,7 +156,7 @@ const ProfileDetails = ({ user = defaultUser }) => {
           {/* Personal Information Card */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900">Personal Information</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t('profile.personal_information')}</h2>
             </div>
             <div className="p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -168,7 +165,7 @@ const ProfileDetails = ({ user = defaultUser }) => {
                     <User className="h-5 w-5 text-custom-bg" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Full Name</p>
+                    <p className="text-sm font-medium text-gray-500">{t('profile.full_name')}</p>
                     <p className="mt-1 text-base text-gray-900">{user.name}</p>
                   </div>
                 </div>
@@ -177,7 +174,7 @@ const ProfileDetails = ({ user = defaultUser }) => {
                     <Mail className="h-5 w-5 text-custom-bg" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Email Address</p>
+                    <p className="text-sm font-medium text-gray-500">{t('profile.email_address')}</p>
                     <p className="mt-1 text-base text-gray-900">{user.email}</p>
                   </div>
                 </div>
@@ -186,7 +183,7 @@ const ProfileDetails = ({ user = defaultUser }) => {
                     <Phone className="h-5 w-5 text-custom-bg" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Phone Number</p>
+                    <p className="text-sm font-medium text-gray-500">{t('profile.phone_number')}</p>
                     <p className="mt-1 text-base text-gray-900">{user.phone}</p>
                   </div>
                 </div>
@@ -195,7 +192,7 @@ const ProfileDetails = ({ user = defaultUser }) => {
                     <Calendar className="h-5 w-5 text-custom-bg" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Member Since</p>
+                    <p className="text-sm font-medium text-gray-500">{t('profile.member_since')}</p>
                     <p className="mt-1 text-base text-gray-900">
                       {new Date(user.joinDate).toLocaleDateString()}
                     </p>
@@ -208,7 +205,7 @@ const ProfileDetails = ({ user = defaultUser }) => {
           {/* Address Information Card */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900">Address Information</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t('profile.address_info')}</h2>
             </div>
             <div className="p-6">
               <div className="flex items-start space-x-4 mb-6">
@@ -216,21 +213,21 @@ const ProfileDetails = ({ user = defaultUser }) => {
                   <MapPin className="h-5 w-5 text-custom-bg" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Street Address</p>
+                  <p className="text-sm font-medium text-gray-500">{t('profile.streetAddress')}</p>
                   <p className="mt-1 text-base text-gray-900">{user.address}</p>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">City</p>
+                  <p className="text-sm font-medium text-gray-500">{t('profile.city')}</p>
                   <p className="mt-1 text-base text-gray-900">{user.city}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">State</p>
+                  <p className="text-sm font-medium text-gray-500">{t('profile.state')}</p>
                   <p className="mt-1 text-base text-gray-900">{user.state}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">ZIP Code</p>
+                  <p className="text-sm font-medium text-gray-500">{t('profile.zipCode')}</p>
                   <p className="mt-1 text-base text-gray-900">{user.zipCode}</p>
                 </div>
               </div>
@@ -243,7 +240,7 @@ const ProfileDetails = ({ user = defaultUser }) => {
           {/* Security Settings Card */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900">Security Settings</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t('profile.securitySettings')}</h2>
             </div>
             <div className="p-6 space-y-4">
               <button className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200 group" onClick={() => handleOpenModal('changePassword')}>
@@ -251,7 +248,7 @@ const ProfileDetails = ({ user = defaultUser }) => {
                   <div className="p-2 bg-custom-bg/10 rounded-lg group-hover:bg-custom-bg/20 transition-colors duration-200">
                     <Key className="h-5 w-5 text-custom-bg" />
                   </div>
-                  <span className="text-sm font-medium text-gray-900">Change Password</span>
+                  <span className="text-sm font-medium text-gray-900">{t('profile.changePassword')}</span>
                 </div>
                 <Edit className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
               </button>
@@ -260,7 +257,7 @@ const ProfileDetails = ({ user = defaultUser }) => {
                   <div className="p-2 bg-custom-bg/10 rounded-lg group-hover:bg-custom-bg/20 transition-colors duration-200">
                     <Shield className="h-5 w-5 text-custom-bg" />
                   </div>
-                  <span className="text-sm font-medium text-gray-900">Two-Factor Authentication</span>
+                  <span className="text-sm font-medium text-gray-900">{t('profile.twoFactorAuth')}</span>
                 </div>
                 <Edit className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
               </button>
@@ -269,7 +266,7 @@ const ProfileDetails = ({ user = defaultUser }) => {
                   <div className="p-2 bg-custom-bg/10 rounded-lg group-hover:bg-custom-bg/20 transition-colors duration-200">
                     <Lock className="h-5 w-5 text-custom-bg" />
                   </div>
-                  <span className="text-sm font-medium text-gray-900">Privacy Settings</span>
+                  <span className="text-sm font-medium text-gray-900">{t('profile.privacySettings')}</span>
                 </div>
                 <Edit className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
               </button>
@@ -279,7 +276,7 @@ const ProfileDetails = ({ user = defaultUser }) => {
           {/* Preferences Card */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900">Preferences</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t('profile.preferences')}</h2>
             </div>
             <div className="p-6 space-y-4">
               <button className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200 group" onClick={() => handleOpenModal('notifications')}>
@@ -287,7 +284,7 @@ const ProfileDetails = ({ user = defaultUser }) => {
                   <div className="p-2 bg-custom-bg/10 rounded-lg group-hover:bg-custom-bg/20 transition-colors duration-200">
                     <Bell className="h-5 w-5 text-custom-bg" />
                   </div>
-                  <span className="text-sm font-medium text-gray-900">Notification Settings</span>
+                  <span className="text-sm font-medium text-gray-900">{t('profile.notificationSettings')}</span>
                 </div>
                 <Edit className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
               </button>
@@ -296,7 +293,7 @@ const ProfileDetails = ({ user = defaultUser }) => {
                   <div className="p-2 bg-custom-bg/10 rounded-lg group-hover:bg-custom-bg/20 transition-colors duration-200">
                     <Globe className="h-5 w-5 text-custom-bg" />
                   </div>
-                  <span className="text-sm font-medium text-gray-900">Language & Region</span>
+                  <span className="text-sm font-medium text-gray-900">{t('profile.languageRegion')}</span>
                 </div>
                 <Edit className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
               </button>

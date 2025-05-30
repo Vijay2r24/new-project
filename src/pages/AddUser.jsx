@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { User, Mail, Phone, MapPin, Lock, Building, ArrowLeft } from 'lucide-react';
 import TextInputWithIcon from '../components/TextInputWithIcon';
 import SelectWithIcon from '../components/SelectWithIcon';
-
+import { useTranslation } from 'react-i18next';
+import { FaCamera } from 'react-icons/fa';
 const AddUser = () => {
-  const [formData, setFormData] = useState({
+  const [oFormData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
@@ -17,9 +18,9 @@ const AddUser = () => {
     state: '',
     pincode: ''
   });
-  const [profileImage, setProfileImage] = useState(null);
-  const [profileImagePreview, setProfileImagePreview] = useState(null);
-
+  const [nProfileImage, setProfileImage] = useState(null);
+  const [nProfileImagePreview, setProfileImagePreview] = useState(null);
+  const { t } = useTranslation();
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -45,8 +46,7 @@ const AddUser = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // TODO: Add API call to create user, including profileImage
-    console.log('Form submitted:', formData, profileImage);
+    // TODO: Add API call to create user, including nProfileImage
   };
 
   return (
@@ -60,29 +60,46 @@ const AddUser = () => {
           >
             <ArrowLeft className="h-5 w-5 text-gray-500" />
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">Add New User</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('addUser.add_new_user')}</h1>
         </div>
-        <p className="text-gray-500">Create a new user account with their details and permissions.</p>
+        <p className="text-gray-500">{t('addUser.create_new_user_description')}</p>
       </div>
 
       {/* Profile Image Upload */}
       <div className="flex items-center gap-6 mb-8">
         <div>
           <img
-            src={profileImagePreview || 'https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff'}
-            alt="Profile Preview"
+            src={nProfileImagePreview || 'https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff'}
+            alt={t('addUser.profile_preview')}
             className="h-20 w-20 rounded-full object-cover border"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Profile Image</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('addUser.profile_image')}
+          </label>
+
+          {/* Hidden File Input */}
           <input
+            id="profile-image-upload"
             type="file"
             accept="image/*"
             onChange={handleImageChange}
-            className="block text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+            className="hidden"
           />
-          <p className="text-xs text-gray-400 mt-1">JPG, PNG, or GIF. Max 2MB.</p>
+
+          {/* Camera Icon Button */}
+          <label
+            htmlFor="profile-image-upload"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-full cursor-pointer"
+          >
+            <FaCamera className="text-lg" />
+            Upload
+          </label>
+
+          <p className="text-xs text-gray-400 mt-1">
+            {t('addUser.image_upload_note')}
+          </p>
         </div>
       </div>
 
@@ -91,59 +108,51 @@ const AddUser = () => {
         {/* Personal Information */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900">Personal Information</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{t('addUser.personal_info')}</h2>
           </div>
           <div className="p-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <TextInputWithIcon
-                  label="First Name"
-                  id="firstName"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  placeholder="Enter first name"
-                  Icon={User}
-                  required
-                />
-              </div>
-              <div>
-                <TextInputWithIcon
-                  label="Last Name"
-                  id="lastName"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  placeholder="Enter last name"
-                  Icon={User}
-                  required
-                />
-              </div>
-              <div>
-                <TextInputWithIcon
-                  label="Email Address"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="Enter email"
-                  Icon={Mail}
-                  type="email"
-                  required
-                />
-              </div>
-              <div>
-                <TextInputWithIcon
-                  label="Phone Number"
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  placeholder="Enter phone number"
-                  Icon={Phone}
-                  type="tel"
-                />
-              </div>
+              <TextInputWithIcon
+                label={t('addUser.first_name')}
+                id="firstName"
+                name="firstName"
+                value={oFormData.firstName}
+                onChange={handleChange}
+                placeholder={t('addUser.enter_first_name')}
+                Icon={User}
+                required
+              />
+              <TextInputWithIcon
+                label={t('addUser.last_name')}
+                id="lastName"
+                name="lastName"
+                value={oFormData.lastName}
+                onChange={handleChange}
+                placeholder={t('addUser.enter_last_name')}
+                Icon={User}
+                required
+              />
+              <TextInputWithIcon
+                label={t('addUser.email_address')}
+                id="email"
+                name="email"
+                value={oFormData.email}
+                onChange={handleChange}
+                placeholder={t('addUser.enter_email')}
+                Icon={Mail}
+                type="email"
+                required
+              />
+              <TextInputWithIcon
+                label={t('addUser.phone_number')}
+                id="phone"
+                name="phone"
+                value={oFormData.phone}
+                onChange={handleChange}
+                placeholder={t('addUser.enter_phone')}
+                Icon={Phone}
+                type="tel"
+              />
             </div>
           </div>
         </div>
@@ -151,53 +160,46 @@ const AddUser = () => {
         {/* Account Security */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900">Account Security</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{t('addUser.account_security')}</h2>
           </div>
           <div className="p-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
-              <div>
-                <TextInputWithIcon
-                  label="Password"
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Enter password"
-                  Icon={Lock}
-                  type="password"
-                  required
-                />
-              </div>
-              <div>
-                <TextInputWithIcon
-                  label="Confirm Password"
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  placeholder="Confirm password"
-                  Icon={Lock}
-                  type="password"
-                  required
-                />
-              </div>
-              <div>
-                <SelectWithIcon
-                  label="User Role"
-                  id="role"
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  options={[
-                    { value: 'user', label: 'User' },
-                    { value: 'admin', label: 'Admin' },
-                    { value: 'manager', label: 'Manager' }
-                  ]}
-                  Icon={Building}
-                  required
-                />
-              </div>
+              <TextInputWithIcon
+                label={t('addUser.password')}
+                id="password"
+                name="password"
+                value={oFormData.password}
+                onChange={handleChange}
+                placeholder={t('addUser.enter_password')}
+                Icon={Lock}
+                type="password"
+                required
+              />
+              <TextInputWithIcon
+                label={t('addUser.confirm_password')}
+                id="confirmPassword"
+                name="confirmPassword"
+                value={oFormData.confirmPassword}
+                onChange={handleChange}
+                placeholder={t('addUser.confirm_password')}
+                Icon={Lock}
+                type="password"
+                required
+              />
+              <SelectWithIcon
+                label={t('addUser.user_role')}
+                id="role"
+                name="role"
+                value={oFormData.role}
+                onChange={handleChange}
+                options={[
+                  { value: 'user', label: t('addUser.user') },
+                  { value: 'admin', label: t('addUser.admin') },
+                  { value: 'manager', label: t('addUser.manager') }
+                ]}
+                Icon={Building}
+                required
+              />
             </div>
           </div>
         </div>
@@ -205,56 +207,46 @@ const AddUser = () => {
         {/* Address Information */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900">Address Information</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{t('addUser.address_info')}</h2>
           </div>
           <div className="p-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <TextInputWithIcon
-                  label="Street Address"
-                  id="streetAddress"
-                  name="streetAddress"
-                  value={formData.streetAddress}
-                  onChange={handleChange}
-                  placeholder="Enter street address"
-                  Icon={MapPin}
-                />
-              </div>
-              <div>
-                <TextInputWithIcon
-                  label="Pincode"
-                  id="pincode"
-                  name="pincode"
-                  value={formData.pincode}
-                  onChange={handleChange}
-                  placeholder="Enter pincode"
-                  Icon={Building}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <TextInputWithIcon
-                  label="City"
-                  id="city"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleChange}
-                  placeholder="Enter city"
-                  Icon={Building}
-                />
-              </div>
-              <div>
-                <TextInputWithIcon
-                  label="State"
-                  id="state"
-                  name="state"
-                  value={formData.state}
-                  onChange={handleChange}
-                  placeholder="Enter state"
-                  Icon={Building}
-                />
-              </div>
+              <TextInputWithIcon
+                label={t('addUser.street_address')}
+                id="streetAddress"
+                name="streetAddress"
+                value={oFormData.streetAddress}
+                onChange={handleChange}
+                placeholder={t('addUser.enter_street_address')}
+                Icon={MapPin}
+              />
+              <TextInputWithIcon
+                label={t('addUser.pincode')}
+                id="pincode"
+                name="pincode"
+                value={oFormData.pincode}
+                onChange={handleChange}
+                placeholder={t('addUser.enter_pincode')}
+                Icon={Building}
+              />
+              <TextInputWithIcon
+                label={t('addUser.city')}
+                id="city"
+                name="city"
+                value={oFormData.city}
+                onChange={handleChange}
+                placeholder={t('addUser.enter_city')}
+                Icon={Building}
+              />
+              <TextInputWithIcon
+                label={t('addUser.state')}
+                id="state"
+                name="state"
+                value={oFormData.state}
+                onChange={handleChange}
+                placeholder={t('addUser.enter_state')}
+                Icon={Building}
+              />
             </div>
           </div>
         </div>
@@ -266,13 +258,13 @@ const AddUser = () => {
             onClick={() => window.history.back()}
             className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5B45E0]"
           >
-            Cancel
+            {t('addUser.cancel')}
           </button>
           <button
             type="submit"
             className="btn-primary"
           >
-            Create User
+            {t('addUser.create_user')}
           </button>
         </div>
       </form>

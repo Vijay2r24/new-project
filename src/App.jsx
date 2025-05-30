@@ -1,5 +1,5 @@
 
-import { Routes, Route, Navigate } from 'react-router-dom';  
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './layout/Layout';
 import Browse from './pages/browse/Browse';
 import Dashboard from './pages/dashboard/Dashboard';
@@ -7,7 +7,7 @@ import Users from './pages/Users';
 import Orders from './pages/orders/OrderList';
 import AddUser from './pages/AddUser';
 import ProductList from './pages/products/ProductList';
- import Addproduct from './pages/products/AddProductForm'
+import Addproduct from './pages/products/AddProductForm'
 import ProfileDetails from './pages/ProfileDetails';
 import Stores from './pages/Stores';
 import AddStore from './pages/AddStore';
@@ -16,12 +16,10 @@ import Login from './pages/Login';
 import AddUserRole from './pages/AddUserRole';
 import Banners from './pages/Banners';
 import Bannerscreate from './pages/BannersCreate'
-import UserRoles from '../src/pages/UserRolesList' 
+import UserRoles from '../src/pages/UserRolesList'
 import OrderDetailPage from './pages/orders/OrderView';
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
-  // Add your authentication check logic here
-  const isAuthenticated = localStorage.getItem('token'); // Example check
 
   return <Layout>{children}</Layout>;
 };
@@ -31,69 +29,69 @@ const App = () => {
     <Routes>
       {/* Public Routes */}
       <Route path="/" element={<Login />} />
-      
+
       {/* Protected Routes */}
       <Route path="/dashboard" element={
         <ProtectedRoute>
           <Dashboard />
         </ProtectedRoute>
       } />
-       <Route path="/browse" element={
+      <Route path="/browse" element={
         <ProtectedRoute>
           <Browse />
         </ProtectedRoute>
       } />
-       <Route path="/orders" element={
+      <Route path="/orders" element={
         <ProtectedRoute>
           <Orders />
         </ProtectedRoute>
       } />
-        <Route path="/orders/:orderId" element={
+      <Route path="/orders/:orderId" element={
         <ProtectedRoute>
           <OrderDetailPage />
         </ProtectedRoute>
       } />
-       <Route path="/userRoles" element={
+      <Route path="/userRoles" element={
         <ProtectedRoute>
           <UserRoles />
         </ProtectedRoute>
       } />
-       <Route path="/productList" element={
+      <Route path="/productList" element={
         <ProtectedRoute>
           <ProductList />
         </ProtectedRoute>
       } />
-        <Route path="/banners-create" element={
+      <Route path="/banners-create" element={
         <ProtectedRoute>
-         <Bannerscreate/>
+          <Bannerscreate />
         </ProtectedRoute>
       } />
-       <Route path="/Addproduct" element={
+      <Route path="/Addproduct" element={
         <ProtectedRoute>
           <Addproduct />
         </ProtectedRoute>
       } />
-        <Route path="/profile" element={
+      <Route path="/profile" element={
         <ProtectedRoute>
           <ProfileDetails />
         </ProtectedRoute>
       } />
-       <Route path="/addUserRole" element={
+      <Route path="/addUserRole" element={
         <ProtectedRoute>
-        <AddUserRole />
+          <AddUserRole />
         </ProtectedRoute>
       } />
-        <Route path="/stores" element={
+      <Route path="/stores" element={
         <ProtectedRoute>
           <Stores />
         </ProtectedRoute>
       } />
-       <Route path="/add-store" element={
+      <Route path="/add-store" element={
         <ProtectedRoute>
           <AddStore />
         </ProtectedRoute>
       } />
-        <Route path="/add-user" element={
+      <Route path="/add-user" element={
         <ProtectedRoute>
           <AddUser />
         </ProtectedRoute>
@@ -103,8 +101,8 @@ const App = () => {
           <Users />
         </ProtectedRoute>
       } />
-     
-       <Route path="/banners" element={
+
+      <Route path="/banners" element={
         <ProtectedRoute>
           <Banners />
         </ProtectedRoute>

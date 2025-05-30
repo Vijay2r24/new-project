@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import {Search, Filter, Edit, Trash, } from 'lucide-react';
+import {Edit, Trash, } from 'lucide-react';
 import CreateAttribute from './CreateAttribute';
-
+import Toolbar from '../../../components/Toolbar';
+import { useTranslation } from 'react-i18next';
 const AttributeList = () => {
   const [sSearchQuery, setSearchQuery] = useState('');
   const [sTypeFilter, setTypeFilter] = useState('');
   const [sStatusFilter, setStatusFilter] = useState('');
   const [bShowFilter, setShowFilter] = useState(false);
   const [bShowCreate, setShowCreate] = useState(false);
-
+  const { t } = useTranslation();
   const [aAttributes] = useState([
     {
       id: 1,
@@ -54,75 +55,34 @@ const AttributeList = () => {
   return (
     <div className="relative">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-medium text-gray-900">Attributes</h2>
+        <h2 className="text-lg font-medium text-gray-900">{t('productSetup.attributes.title')}</h2>
       </div>
 
       {/* Filters */}
       <div className="mb-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          {/* Search */}
-          <div className="flex-1">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-[#5B45E0] focus:border-[#5B45E0] sm:text-sm"
-                placeholder="Search attributes..."
-                value={sSearchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Filter Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setShowFilter(!bShowFilter)}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5B45E0]"
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              Filter
-            </button>
-            {bShowFilter && (
-              <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                <button
-                  onClick={() => { setStatusFilter(''); setShowFilter(false); }}
-                  className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => { setStatusFilter('Active'); setShowFilter(false); }}
-                  className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-                >
-                  Active
-                </button>
-                <button
-                  onClick={() => { setStatusFilter('Inactive'); setShowFilter(false); }}
-                  className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-                >
-                  Inactive
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+         <Toolbar
+          searchTerm={sSearchQuery}
+          setSearchTerm={setSearchQuery}
+          filterStatus={bShowFilter}
+          setFilterStatus={setShowFilter}
+          searchPlaceholder={t('productSetup.attributes.searchPlaceholder')}
+          showSearch={true}
+          showViewToggle={false}
+          showFilterButton={true}
+        />
       </div>
-
       {/* Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Products</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('productSetup.attributes.table.name')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('productSetup.attributes.table.type')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('productSetup.attributes.table.description')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('productSetup.attributes.table.products')}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('productSetup.attributes.table.status')}</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('productSetup.attributes.table.actions')}</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -130,36 +90,34 @@ const AttributeList = () => {
                 <tr key={attribute.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{attribute.name}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      attribute.type === 'Numeric'
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${attribute.type === 'Numeric'
                         ? 'bg-blue-100 text-blue-800'
                         : attribute.type === 'Text'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-purple-100 text-purple-800'
-                    }`}>
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-purple-100 text-purple-800'
+                      }`}>
                       {attribute.type}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">{attribute.description}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{attribute.products}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      attribute.status === 'Active'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${attribute.status === 'Active'
+                        ? 'status-active'
+                        : 'status-inactive'
+                      }`}>
                       {attribute.status}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                 <div className="flex items-center justify-end space-x-2">
-                        <button onClick={() => handleEdit(store.id)} className="action-button" title="Edit">
-                          <Edit className="h-5 w-5" />
-                        </button>
-                        <button onClick={() => handleDelete(store.id)} className="action-button" title="Delete">
-                          <Trash className="h-5 w-5" />
-                        </button>
-                      </div>
+                    <div className="flex items-center justify-end space-x-2">
+                      <button onClick={() => handleEdit(store.id)} className="action-button" title="Edit">
+                        <Edit className="h-5 w-5" />
+                      </button>
+                      <button onClick={() => handleDelete(store.id)} className="action-button" title="Delete">
+                        <Trash className="h-5 w-5" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -181,7 +139,7 @@ const AttributeList = () => {
               }}
               className="mt-2 text-[#5B45E0] hover:text-[#4c39c7]"
             >
-              Clear filters
+              {t('productSetup.attributes.clearFilters-btn')}
             </button>
           )}
         </div>

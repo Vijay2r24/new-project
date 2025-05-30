@@ -1,36 +1,37 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Plus, MoreVertical, UserPlus, LayoutGrid, List, Edit, Trash,} from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { UserPlus } from 'lucide-react';
 import Toolbar from "../components/Toolbar";
 import { useNavigate } from "react-router-dom";
-
+import Pagination from '../components/Pagination';
+import ActionButtons from '../components/ActionButtons';
+import NotFoundMessage from '../components/NotFoundMessage';
 const UserRolesList = () => {
   const navigate = useNavigate();
-  // Placeholder data
-  const userRoles = [
+  const aUserRoles = [
     { roleid: '1', rolename: 'Admin', storename: 'Global Store', status: 'Active' },
     { roleid: '2', rolename: 'Manager', storename: 'Main Branch', status: 'Active' },
     { roleid: '3', rolename: 'Staff', storename: 'Downtown Store', status: 'Inactive' },
   ];
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState('table');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [sSearchTerm, setSearchTerm] = useState('');
+  const [sViewMode, setViewMode] = useState('table');
+  const [nCurrentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  const filteredRoles = userRoles.filter(role =>
-    role.rolename.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    role.storename.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredRoles = aUserRoles.filter(role =>
+    role.rolename.toLowerCase().includes(sSearchTerm.toLowerCase()) ||
+    role.storename.toLowerCase().includes(sSearchTerm.toLowerCase())
   );
 
   const totalPages = Math.ceil(filteredRoles.length / itemsPerPage);
   const paginatedRoles = filteredRoles.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    (nCurrentPage - 1) * itemsPerPage,
+    nCurrentPage * itemsPerPage
   );
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [sSearchTerm]);
 
   const handlePrevPage = () => {
     setCurrentPage((prev) => Math.max(prev - 1, 1));
@@ -43,7 +44,12 @@ const UserRolesList = () => {
   const handlePageClick = (page) => {
     setCurrentPage(page);
   };
+  const handleEdit = () => {
 
+  }
+  const handleDelete = () => {
+
+  }
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen bg-gray-50">
       {/* Header */}
@@ -65,17 +71,16 @@ const UserRolesList = () => {
 
       {/* Toolbar */}
       <Toolbar
-        searchTerm={searchTerm}
+        searchTerm={sSearchTerm}
         setSearchTerm={setSearchTerm}
         searchPlaceholder="Search by Role Name or Store..."
-        viewMode={viewMode}
+        viewMode={sViewMode}
         setViewMode={setViewMode}
         additionalFilters={[]}
-        handleFilterChange={() => {}}
+        handleFilterChange={() => { }}
       />
-
       {/* User Roles List */}
-      {viewMode === 'table' ? (
+      {sViewMode === 'table' ? (
         <div className="table-container">
           <div className="table-wrapper">
             <table className="table-base">
@@ -112,93 +117,38 @@ const UserRolesList = () => {
                     </td>
                     <td className="table-cell">
                       <span className={`status-badge ${role.status === 'Active'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
                         }`}>
                         {role.status}
                       </span>
                     </td>
                     <td className="table-cell text-left font-medium">
-                      <div className="flex items-center justify-start space-x-2">
-                        <button onClick={() => handleEdit(store.id)} className="action-button" title="Edit">
-                          <Edit className="h-5 w-5" />
-                        </button>
-                        <button onClick={() => handleDelete(store.id)} className="action-button" title="Delete">
-                          <Trash className="h-5 w-5" />
-                        </button>
-                        <button onClick={() => handleMore(store.id)} className="action-button" title="More">
-                          <MoreVertical className="h-5 w-5" />
-                        </button>
-                      </div>
+                      <ActionButtons
+                        id={''}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                        onMore={() => console.log('More options for')}
+                      />
                     </td>
                   </tr>
                 ))}
                 {filteredRoles.length === 0 && (
                   <tr>
                     <td colSpan={5} className="py-8 text-center text-gray-500">
-                      No user roles found.
+                     <NotFoundMessage  message ='No user roles found.'/>
                     </td>
                   </tr>
                 )}
                 {filteredRoles.length > 0 && paginatedRoles.length === 0 && (
                   <tr>
                     <td colSpan={5} className="py-8 text-center text-gray-500">
-                      No user roles found on this page.
+                      <NotFoundMessage message='No user roles found on this page.' />
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
-          </div>
-          {/* Pagination Section */}
-          <div className="pagination-section flex items-center justify-between">
-            <div className="flex flex-1 justify-between sm:hidden">
-              <button
-                className="pagination-btn"
-                onClick={handlePrevPage}
-                disabled={currentPage === 1}
-              >
-                Previous
-              </button>
-              <button
-                className="pagination-btn"
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages}
-              >
-                Next
-              </button>
-            </div>
-            <div className="pagination-wrapper hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-              <div className="pagination-text">
-                Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredRoles.length)}</span> of{' '}
-                <span className="font-medium">{filteredRoles.length}</span> results
-              </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  className="pagination-btn"
-                  onClick={handlePrevPage}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </button>
-                {[...Array(totalPages)].map((_, idx) => (
-                  <button
-                    key={idx + 1}
-                    className={`pagination-btn${currentPage === idx + 1 ? ' pagination-btn-active' : ''}`}
-                    onClick={() => handlePageClick(idx + 1)}
-                  >
-                    {idx + 1}
-                  </button>
-                ))}
-                <button
-                  className="pagination-btn"
-                  onClick={handleNextPage}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       ) : (
@@ -217,23 +167,32 @@ const UserRolesList = () => {
               <div className="flex-grow text-base text-gray-700 mb-4">
                 <p><strong>Store:</strong> {role.storename}</p>
               </div>
-              <div className="text-right">
-                 <button className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 mr-2" title="Edit Role">
-                   <Edit className="h-5 w-5" />
-                 </button>
-                 <button className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-100" title="Delete Role">
-                   <Trash2 className="h-5 w-5" />
-                 </button>
-              </div>
+              {/* Actions */}
+              <ActionButtons
+                id={''}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onMore={() => console.log('More options for')}
+              />
             </div>
           ))}
           {filteredRoles.length === 0 && (
-             <div className="col-span-full py-8 text-center text-gray-500">
-               No user roles found.
-             </div>
+            
+             <NotFoundMessage message='No user roles found.' />
+           
           )}
         </div>
       )}
+      {/* Pagination component */}
+      <Pagination
+        currentPage={nCurrentPage}
+        totalPages={totalPages}
+        totalItems={filteredRoles.length}
+        itemsPerPage={itemsPerPage}
+        handlePrevPage={handlePrevPage}
+        handleNextPage={handleNextPage}
+        handlePageClick={handlePageClick}
+      />
     </div>
   );
 };

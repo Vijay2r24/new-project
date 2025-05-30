@@ -11,7 +11,7 @@ import ColorCreate from './colors/CreateColor';
 import AttributeList from './attributes/AttributeList';
 import AttributeCreate from './attributes/CreateAttribute';
 import { Plus, Package, Tag, Palette, Layers, Settings, ArrowLeft } from 'lucide-react';
-
+import { useTranslation } from 'react-i18next';
 function classNames(...classes) {
   return classes.filter(Boolean).join(' ');
 }
@@ -19,23 +19,23 @@ function classNames(...classes) {
 const Browse = () => {
   const [nSelectedTab, setSelectedTab] = useState(0);
   const [sViewMode, setViewMode] = useState('list');
+  const { t } = useTranslation();
 
-  const aTabs = [
-    { name: 'Brands', list: BrandList, create: BrandCreate, icon: Package },
-    { name: 'Categories', list: CategoryList, create: CategoryCreate, icon: Tag },
-    { name: 'Attribute Types', list: AttributeTypeList, create: AttributeTypeCreate, icon: Settings },
-    { name: 'Colors', list: ColorList, create: ColorCreate, icon: Palette },
-    { name: 'Attributes', list: AttributeList, create: AttributeCreate, icon: Layers },
-  ];
-
+ const aTabs = [
+  { name: t('productSetup.tabs.brands'), list: BrandList, create: BrandCreate, icon: Package },
+  { name: t('productSetup.tabs.categories'), list: CategoryList, create: CategoryCreate, icon: Tag },
+  { name: t('productSetup.tabs.attributeTypes'), list: AttributeTypeList, create: AttributeTypeCreate, icon: Settings },
+  { name: t('productSetup.tabs.colors'), list: ColorList, create: ColorCreate, icon: Palette },
+  { name: t('productSetup.tabs.attributes'), list: AttributeList, create: AttributeCreate, icon: Layers }
+];
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2">
       {/* Header and Toggle Button */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Product Setup</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('productSetup.productSetup')}</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Manage your brands, categories, attributes, and more
+           {t('productSetup.productSetupSubheading')}
           </p>
         </div>
         <button
@@ -45,12 +45,12 @@ const Browse = () => {
           {sViewMode === 'list' ? (
             <>
               <Plus className="h-4 w-4 mr-2" />
-              Create New
+             {t('productSetup.createNew')}
             </>
           ) : (
             <>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              View List
+              {t('productSetup.viewList')}
             </>
           )}
         </button>

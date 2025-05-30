@@ -1,0 +1,573 @@
+{
+  "login": {
+    "title": "Welcome back!",
+    "subtitle": "Login to your account",
+    "email": "email",
+    "passWord": "password",
+    "rememberme": "Remember me",
+    "forgotPassword": "Forgot Password?",
+    "email-placeholder": "you@example.com",
+    "passWord-placeholder": "Password",
+    "login": "Login"
+  },
+  "admin": {
+    "title": "Admin Portal <br/> Management System",
+    "description": "Efficiently manage your e-commerce operations with our comprehensive admin tools.",
+    "features": {
+      "product": "Product Management",
+      "order": "Order Fulfillment",
+      "userRole": "User & Role Management",
+      "analytics": "Sales Analytics",
+      "security": "Security & Settings"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "description": "Overview of your store's performance and recent activity",
+    "productModal": {
+      "categoryDefault": "General",
+      "revenue": "Revenue",
+      "sales": "Sales",
+      "stock": "Stock",
+      "status": "Status",
+      "lowStock": "Low Stock",
+      "inStock": "In Stock"
+    },
+    "recentOrders": {
+      "recentOrders": "Recent Orders",
+      "customer": "Customer",
+      "orderId": "Order ID",
+      "amount": "Amount",
+      "status": "Status"
+    },
+    "statuses": {
+      "delivered": "Delivered",
+      "processing": "Processing",
+      "shipped": "Shipped",
+      "pending": "Pending"
+    },
+    "topProducts": {
+      "topProducts": "Top Products",
+      "view": "View",
+      "previous": "Previous",
+      "next": "Next",
+      "pageInfo": "Page {{current}} of {{total}}",
+      "lowStock": "Low",
+      "sales": "{{count}} sales",
+      "inStock": "{{count}} in stock"
+    },
+    "LowStockAlert": {
+      "LowStockAlert": "Low Stock Alert",
+      "Restock-btn": "Restock"
+    }
+  },
+  "productSetup": {
+    "productSetup": "Product Setup",
+    "productSetupSubheading": "Manage your brands, categories, attributes, and more",
+    "createNew": "Create New",
+    "viewList": "View List",
+    "tabs": {
+      "brands": "Brands",
+      "categories": "Categories",
+      "attributeTypes": "Attribute Types",
+      "colors": "Colors",
+      "attributes": "Attributes"
+    },
+    "attributes": {
+      "title": "Attributes",
+      "searchPlaceholder": "Search attributes...",
+      "table": {
+        "name": "Name",
+        "type": "Type",
+        "description": "Description",
+        "products": "Products",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "noAttributes": "No attributes found",
+      "clearFilters-btn": "Clear filters"
+    },
+    "createAttributes": {
+      "createTitle": "Create Attribute",
+      "nameLabel": "Attribute Name",
+      "namePlaceholder": "Enter attribute name",
+      "typeLabel": "Attribute Type",
+      "selectType": "Select Type",
+      "createButton": "Create Attribute"
+    },
+    "attributeType": {
+      "listTitle": "Attribute Types",
+      "searchPlaceholder": "Search attributetypes...",
+      "name": "Name",
+      "description": "Description",
+      "attributes": "Attributes",
+      "emptyMessage": "No attribute types found"
+    },
+    "createAttributeType": {
+      "createTitle": "Create Attribute Type",
+      "nameLabel": "Name",
+      "namePlaceholder": "Enter attribute type name",
+      "dataTypeLabel": "Data Type",
+      "selectDataType": "Select a data type",
+      "createButton": "Create Attribute Type"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "brands": {
+      "heading": "Brands",
+      "searchPlaceholder": "Search brands...",
+      "table": {
+        "name": "Brand Name",
+        "logo": "Logo",
+        "products": "Products",
+        "status": "Status",
+        "actions": "Actions"
+      }
+    },
+    "createBrand": {
+      "createTitle": "Create Brand",
+      "nameLabel": "Brand Name",
+      "namePlaceholder": "Enter brand name",
+      "statusLabel": "Status",
+      "selectStatus": "Select Status",
+      "logoLabel": "Brand Logo",
+      "uploadText": "Upload a file",
+      "dragDropText": "or drag and drop",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Enter brand description",
+      "cancelButton": "Cancel",
+      "createButton": "Create Brand"
+    },
+    "categories": {
+      "title": "Categories",
+      "searchPlaceholder": "Search category...",
+      "table": {
+        "name": "Name",
+        "description": "Description",
+        "products": "Products",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "empty": {
+        "message": "No categories found",
+        "clear": "Clear search"
+      }
+    },
+    "createCategory": {
+      "createTitle": "Create Category",
+      "nameLabel": "Category Name",
+      "namePlaceholder": "Enter category name",
+      "parentLabel": "Parent Category",
+      "selectParent": "Select parent category",
+      "statusLabel": "Status",
+      "selectStatus": "Select Status",
+      "imageLabel": "Category Image",
+      "uploadText": "Upload a file",
+      "dragDropText": "or drag and drop",
+      "fileNote": "PNG, JPG, GIF up to 10MB",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Enter category description",
+      "cancelButton": "Cancel",
+      "createButton": "Create Category",
+      "imageError": "File size should be less than 10MB",
+      "nameError": "Category name is required",
+      "imageRequired": "Category image is required"
+    },
+    "colors": {
+      "title": "Colors",
+      "searchPlaceholder": "Search color...",
+      "table": {
+        "color": "Color",
+        "hexCode": "Hex Code",
+        "products": "Products",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "empty": {
+        "message": "No colors found",
+        "clear": "Clear filters"
+      }
+    },
+    "createColor": {
+      "createTitle": "Create Color",
+      "nameLabel": "Color Name",
+      "namePlaceholder": "Enter color name",
+      "hexCodeLabel": "Color Code",
+      "hexCodePlaceholder": "#000000",
+      "statusLabel": "Status",
+      "selectStatus": "Select Status",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Enter color description",
+      "cancelButton": "Cancel",
+      "createButton": "Create Color",
+      "errors": {
+        "nameRequired": "Color name is required",
+        "hexCodeRequired": "Color code is required"
+      },
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+      }
+    }
+  },
+  "orders": {
+    "title": "Orders",
+    "subtitle": "View and manage all orders",
+    "exportButton": "Export All Orders",
+    "viewDetails": "View Details",
+    "delivery": "Delivery",
+    "searchPlaceholder": "Search by Order No, Customer Name, Email...",
+    "table": {
+      "orderNumber": "Order Number",
+      "orderDate": "Order Date",
+      "customerInfo": "Customer Info",
+      "deliveryInfo": "Delivery Info",
+      "status": "Status",
+      "actions": "Actions"
+    }
+  },
+  "vieworder": {
+    "loadingOrderDetails": "Loading order details...",
+    "errorLoadingOrderDetails": "Error loading order details",
+    "OrderNumber": "Order #",
+    "orderNotFound": "Order not found.",
+    "orderDetails": "Order details",
+    "customerDetails": "Customer Details",
+    "customer": "Customer",
+    "deliveryInformation": "Delivery Information",
+    "standarddelivery": "standarddelivery",
+    "paymentInformation": "Payment Information",
+    "orderSummary": "Order Summary",
+    "orderItems": "Order Items",
+    "orderDate": "Order Date",
+    "orderTime": "Order Time",
+    "totalAmount": "Total Amount",
+    "creditCard": "Credit Card",
+    "noImage": "No Image",
+    "paymentMethod": "Payment Method",
+    "transactionId": "Transaction ID",
+    "standardDelivery": "Standard Delivery",
+    "deliveryTimeEstimate": "2-4 Business Days",
+    "subtotal": "Subtotal",
+    "shipping": "Shipping",
+    "tax": "Tax",
+    "ordertotal": "Order Total",
+    "table": {
+      "product": "Product",
+      "price": "Price",
+      "quantity": "Quantity",
+      "total": "Total",
+      "actions": "Actions"
+    }
+  },
+  "products": {
+    "title": "Products",
+    "subtitle": "Manage your products and inventory",
+    "add-btn": "Add Product",
+    "category": "Category",
+    "price": "Price",
+    "stock": "Stock",
+    "status": "Status",
+    "storeName": "Store Name",
+    "actions": "Actions",
+    "noProducts": "No products found.",
+    "searchPlaceholder": "Search by product No, Category Name"
+  },
+  "productCreation": {
+    "addNewProduct": "Add New Product",
+    "createNewStoreDescription": "Create a new store location with its details and inventory information.",
+    "basicInformation": "Basic Information",
+    "productDescription": "Product Description",
+    "supportedFormats": "Supports: JPG, PNG, WEBP (max 5MB)",
+    "dropImagesHere": "Drop the images here...",
+    "dragDropOrClick": "Drag & drop images here, or click to select files",
+    "productVariants": "Product Variants",
+    "variant": "Variant",
+    "colourID": "Colour ID",
+    "colouridPlaceholder": "Enter colour ID",
+    "attributeValues": "Attribute Values (comma-separated)",
+    "attributeValuesPlaceholder": "e.g., S, M, L or Red, Blue",
+    "quantity": "Quantity",
+    "quantityPlaceholder": "Enter quantity",
+    "sellingPrice": "Selling Price",
+    "sellingPricePlaceholder": "Enter selling price",
+    "addAnotherVariant": "Add Another Variant",
+    "addProduct": "Add Product",
+    "gender": "Gender",
+    "male": "Male",
+    "female": "Female",
+    "other": "Other",
+    "productName": "Product Name",
+    "productNamePlaceholder": "Enter product name",
+    "attributeId": "Attribute ID",
+    "attributeIdPlaceholder": "Enter attribute type ID",
+    "brandId": "Brand ID",
+    "brandIdPlaceholder": "Enter brand ID",
+    "mrp": "MRP",
+    "mrpPlaceholder": "Enter MRP",
+    "productDiscount": "Product Discount",
+    "productDiscountPlaceholder": "Enter discount (e.g., 20%)",
+    "productDescriptionPlaceholder": "Write a detailed description of the product..."
+  },
+  "stores": {
+    "heading": "Stores",
+    "description": "Manage your store locations and their details",
+    "add_store": "Add Store",
+    "store_details": "Store Details",
+    "contact": "Contact",
+    "status": "Status",
+    "inventory": "Inventory",
+    "actions": "Actions",
+    "products": "Products",
+    "employees": "Employees",
+    "active": "Active",
+    "search_placeholder": "Search by address, city, or store name",
+    "inactive": "Inactive"
+  },
+  "createStore": {
+    "addNewStore": "Add New Store",
+    "storeDescription": "Create a new store location with its details and inventory information.",
+    "storeName": "Store Name",
+    "enterStoreName": "Enter store name",
+    "streetAddress": "Street Address",
+    "enterStreetAddress": "Enter street address",
+    "city": "City",
+    "enterCity": "Enter city",
+    "state": "State",
+    "enterState": "Enter state",
+    "zipCode": "ZIP Code",
+    "enterZipCode": "Enter ZIP code",
+    "phoneNumber": "Phone Number",
+    "enterPhoneNumber": "Enter phone number",
+    "emailAddress": "Email Address",
+    "enterEmailAddress": "Enter email address",
+    "status": "Status",
+    "numberOfProducts": "Number of Products",
+    "enterNumberOfProducts": "Enter number of products",
+    "numberOfEmployees": "Number of Employees",
+    "enterNumberOfEmployees": "Enter number of employees",
+    "storeInformation": "Store Information",
+    "contactInformation": "Contact Information",
+    "storeDetails": "Store Details",
+    "cancel": "Cancel",
+    "createStore": "Create Store"
+  },
+  "users": {
+    "title": "Users",
+    "description": "Manage your team members and their account permissions",
+    "addUser": "Add User",
+    "table": {
+      "user": "User",
+      "contact": "Contact",
+      "role": "Role",
+      "status": "Status",
+      "lastActive": "Last Active",
+      "actions": "Actions"
+    },
+    "roles": {
+      "Admin": "Admin",
+      "User": "User",
+      "Manager": "Manager"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "noUsersFound": "No users found."
+  },
+  "addUser": {
+    "add_new_user": "Add New User",
+    "create_new_user_description": "Create a new user account with their details and permissions.",
+    "profile_preview": "Profile Preview",
+    "profile_image": "Profile Image",
+    "image_upload_note": "Upload",
+    "personal_info": "Personal Information",
+    "first_name": "First Name",
+    "enter_first_name": "Enter first name",
+    "last_name": "Last Name",
+    "enter_last_name": "Enter last name",
+    "email_address": "Email Address",
+    "enter_email": "Enter email",
+    "phone_number": "Phone Number",
+    "enter_phone": "Enter phone number",
+    "account_security": "Account Security",
+    "password": "Password",
+    "enter_password": "Enter password",
+    "confirm_password": "Confirm Password",
+    "user_role": "User Role",
+    "user": "User",
+    "admin": "Admin",
+    "manager": "Manager",
+    "address_info": "Address Information",
+    "street_address": "Street Address",
+    "enter_street_address": "Enter street address",
+    "pincode": "Pincode",
+    "enter_pincode": "Enter pincode",
+    "city": "City",
+    "enter_city": "Enter city",
+    "state": "State",
+    "enter_state": "Enter state",
+    "cancel": "Cancel",
+    "create_user": "Create User"
+  },
+  "createuserrole": {
+    "add_user_role": "Add User Role",
+    "add_user_role_description": "Create a new user role account with their details and permissions.",
+    "store": "Store",
+    "select_store": "Select Store",
+    "role": "Role",
+    "roleIsrequid": "Role Name is required",
+    "storeIsrequid": "Role Name is required.",
+    "enter_role_name": "Store Name is required.",
+    "select_all": "Select All",
+    "close": "Close",
+    "save_role": "Save Role"
+  },
+  "bannerform": {
+    "create_banner": "Create banner",
+    "upload_banner": "Upload Banner",
+    "banner_name": "Banner Name",
+    "enter_banner_name": "Enter banner name",
+    "upload_banners_label": "Upload Banners:",
+    "add_banner_image": "Add Banner Image",
+    "sequence_number": "Sequence Number",
+    "enter_sequence_number": "Enter sequence number",
+    "searchPlaceholder": "Search category...",
+    "category": "Category",
+    "brand": "Brand",
+    "gender": "Gender",
+    "select_gender": "Select Gender",
+    "male": "Male",
+    "female": "Female",
+    "unisex": "Unisex",
+    "discount_percentage": "Discount (%)",
+    "enter_discount_percentage": "Enter discount percentage",
+    "price": "Price",
+    "enter_price": "Enter price",
+    "delete": "Delete",
+    "choose_image": "Choose Image",
+    "submit": "Submit",
+    "no_image": "No Image"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "description": "Check your latest notifications below."
+  },
+  "tabs": {
+    "pushNotifications": "Push Notifications",
+    "silentNotifications": "Silent Notifications"
+  },
+  "pushNotification": {
+    "detailsTitle": "Push Notification Details",
+    "titleLabel": "Title",
+    "titlePlaceholder": "Enter title here",
+    "messageLabel": "Message",
+    "messagePlaceholder": "Write your message here",
+    "imageLabel": "Upload Image",
+    "uploadImage": "Upload a file",
+    "orDragAndDrop": "or drag and drop",
+    "imageFormats": "PNG, JPG up to 2MB",
+    "imagePreviewAlt": "Uploaded notification image"
+  },
+  "silentNotification": {
+    "addTitle": "Add Silent Notification",
+    "componentNameLabel": "Component Name",
+    "componentNamePlaceholder": "Enter component name",
+    "jsonLabel": "JSON",
+    "jsonPlaceholder": "Enter JSON payload"
+  },
+  "componentNotifications": {
+    "title": "Component Notifications",
+    "tableHeaders": {
+      "id": "ID",
+      "componentName": "Component Name",
+      "json": "JSON",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "noData": "No component notifications available."
+  },
+  "buttons": {
+    "cancel": "Cancel",
+    "sendNotification": "Send Notification",
+    "addNotification": "Add Notification",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "sidebar": {
+    "ProductManagement": "Product Management",
+    "Dashboard": "Dashboard",
+    "ProductSetup": "Product Setup",
+    "Products": "Products",
+    "Orders": "Orders",
+    "StoreManagement": "Store Management",
+    "Stores": "Stores",
+    "StoreSettings": "Store Settings",
+    "UserManagement": "User Management",
+    "Users": "Users",
+    "Roles": "Roles",
+    "ContentManagement": "Content Management",
+    "Banners": "Banners",
+    "Blogs": "Blogs",
+    "Pages": "Pages",
+    "Settings": "Settings",
+    "Notifications": "Notifications",
+    "GeneralSettings": "General Settings",
+    "Analytics": "Analytics"
+  },
+  "profile": {
+    "personal_information":"Persona information",
+    "edit_profile": "Edit Profile",
+    "change_password": "Change Password",
+    "two_factor_authentication": "Two-Factor Authentication",
+    "privacy_settings": "Privacy Settings",
+    "notification_settings": "Notification Settings",
+    "language_region": "Language & Region",
+    "current_password": "Current Password",
+    "new_password": "New Password",
+    "confirm_new_password": "Confirm New Password",
+    "enter_current_password": "Enter current password",
+    "enter_new_password": "Enter new password",
+    "confirm_new_password_placeholder": "Confirm new password",
+    "cancel": "Cancel",
+    "save": "Save",
+    "coming_soon": "Coming Soon",
+    "personal_info": "Personal Information",
+    "full_name": "Full Name",
+    "email_address": "Email Address",
+    "phone_number": "Phone Number",
+    "member_since": "Member Since",
+    "address_info": "Address Information",
+    "streetAddress": "Street Address",
+    "city": "City",
+    "state": "State",
+    "zipCode": "ZIP Code",
+     "securitySettings": "Security Settings",
+    "changePassword": "Change Password",
+    "twoFactorAuth": "Two-Factor Authentication",
+    "privacySettings": "Privacy Settings",
+    "preferences": "Preferences",
+    "notificationSettings": "Notification Settings",
+    "languageRegion": "Language & Region"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "status": "Status",
+    "actions": "Actions",
+    "active": "Active",
+    "inactive": "Inactive",
+    "previous": "Previous",
+    "next": "Next",
+    "all": "All",
+    "edit": "Edit",
+    "delete": "Delete",
+    "clearSearch": "Clear search",
+    "showing": "Showing",
+    "to": "to",
+    "results": "results",
+    "of": "of",
+    "more": "more"
+  }
+}
