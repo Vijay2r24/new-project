@@ -61,7 +61,7 @@ WORKDIR /app
  
 # Copy only the built application
 
-COPY --from=builder /app/build ./build
+COPY --from=builder /app/dist ./build
  
  
 # Expose port
@@ -71,5 +71,5 @@ EXPOSE 3020
  
 # Start the application with optimized serve options
 
-CMD ["serve", "-s", "build", "-l", "4060", "--no-clipboard", "--no-compression"]
+CMD ["serve", "-s", "build", "-l", "3020", "--no-clipboard", "--no-compression"]
  
