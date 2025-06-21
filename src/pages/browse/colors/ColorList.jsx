@@ -1,23 +1,62 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Edit, Trash} from 'lucide-react';
 import Toolbar from '../../../components/Toolbar';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
+import { useColors } from '../../../context/ColorContext';
+import Pagination from '../../../components/Pagination';
+import { showEmsg } from '../../../utils/ShowEmsg';
+
 const ColorList = () => {
   const [sSearchQuery, setSearchQuery] = useState('');
   const [sStatusFilter, setStatusFilter] = useState('');
   const [bShowFilters, setShowFilters] = useState(false);
   const { t } = useTranslation();
-  const [oColors] = useState([
-    { id: 1, name: 'Red', hex: '#FF0000', status: 'Active', products: 120 },
-    { id: 2, name: 'Blue', hex: '#0000FF', status: 'Active', products: 150 },
-    { id: 3, name: 'Green', hex: '#00FF00', status: 'Inactive', products: 80 },
-  ]);
 
-  const filteredColors = oColors.filter((color) => {
-    const matchesSearch = color.name.toLowerCase().includes(sSearchQuery.toLowerCase());
-    const matchesStatus = sStatusFilter ? color.status === sStatusFilter : true;
-    return matchesSearch && matchesStatus;
+  const { aColors, bLoading, sError, fetchColors, iTotalItems, toggleColorStatus } = useColors();
+
+  // Pagination state
+  const [nCurrentPage, setCurrentPage] = useState(1);
+  const [iItemsPerPage] = useState(10); // Or a configurable value
+
+  useEffect(() => {
+    fetchColors(nCurrentPage, iItemsPerPage, sSearchQuery);
+  }, [nCurrentPage, iItemsPerPage, sSearchQuery, fetchColors]);
+
+  const handleStatusChange = async (colorId, currentIsActive) => {
+    try {
+      const response = await toggleColorStatus(colorId, !currentIsActive);
+      if (response.status === 'ERROR') {
+        showEmsg(response.message, 'error');
+      } else {
+        showEmsg(response.message || 'Status updated successfully.', 'success');
+      }
+    } catch (error) {
+      console.error('Error updating color status:', error);
+      showEmsg('An unexpected error occurred during status update.', 'error');
+    }
+  };
+
+  const filteredColorsByStatus = aColors.filter((color) => {
+    const matchesStatus = sStatusFilter ? color.IsActive === (sStatusFilter === 'Active') : true;
+    return matchesStatus;
   });
+
+  const handlePageClick = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  const handleNextPage = () => {
+    if (nCurrentPage < Math.ceil(iTotalItems / iItemsPerPage)) {
+      setCurrentPage(prev => prev + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (nCurrentPage > 1) {
+      setCurrentPage(prev => prev - 1);
+    }
+  };
 
   return (
     <div>
@@ -36,63 +75,106 @@ const ColorList = () => {
           showViewToggle={false}
           showFilterButton={true}
         />
+        {bShowFilters && (
+          <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+            <button
+              onClick={() => {
+                setStatusFilter('');
+                setShowFilters(false);
+              }}
+              className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+            >
+              {t('common.all')}
+            </button>
+            <button
+              onClick={() => {
+                setStatusFilter('Active');
+                setShowFilters(false);
+              }}
+              className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+            >
+              {t('common.active')}
+            </button>
+            <button
+              onClick={() => {
+                setStatusFilter('Inactive');
+                setShowFilters(false);
+              }}
+              className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+            >
+              {t('common.inactive')}
+            </button>
+          </div>
+        )}
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("productSetup.colors.table.color")}</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("productSetup.colors.table.hexCode")}</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("productSetup.colors.table.products")}</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("productSetup.colors.table.status")}</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("productSetup.colors.table.actions")}</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredColors.map((color) => (
-                <tr key={color.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div
-                        className="h-6 w-6 rounded-full mr-3 border border-gray-200"
-                        style={{ backgroundColor: color.hex }}
-                      />
-                      <div className="text-sm font-medium text-gray-900">{color.name}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{color.hex}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{color.products}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      color.status === 'Active'
-                        ? 'status-active'
-                        : 'status-inactive'
-                    }`}>
-                      {color.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center justify-end space-x-2">
-                        <button onClick={() => handleEdit(store.id)} className="action-button" title={t("common.edit")}>
-                          <Edit className="h-5 w-5" />
-                        </button>
-                        <button onClick={() => handleDelete(store.id)} className="action-button" title={t("common.delete")}>
-                          <Trash className="h-5 w-5" />
-                        </button>
-                      </div>
-                  </td>
+      {bLoading ? (
+        <div className="text-center py-8 text-gray-500">{t('common.loading')}</div>
+      ) : sError ? (
+        <div className="text-center py-8 text-red-500">{t('common.error')}: {sError}</div>
+      ) : (
+        <div className="table-container">
+          <div className="table-wrapper">
+            <table className="table-base">
+              <thead className="table-head">
+                <tr>
+                  <th className="table-head-cell">{t("productSetup.colors.table.color")}</th>
+                  <th className="table-head-cell">{t("productSetup.colors.table.hexCode")}</th>
+                  <th className="table-head-cell">{t("productSetup.colors.table.status")}</th>
+                  <th className="table-head-cell">
+                  {t("common.updateStatus")}
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="table-body">
+                {filteredColorsByStatus.map((color) => (
+                  <tr key={color.ColorID} className="table-row">
+                    <td className="table-cell table-cell-text">
+                      <div className="flex items-center">
+                        <div
+                          className="h-6 w-6 rounded-full mr-3 border border-gray-200"
+                          style={{ backgroundColor: color.HexCode }}
+                        />
+                        <div className="text-sm font-medium text-gray-900">
+                          <Link to={`/browse/editcolor/${color.ColourID}`} className="text-blue-600 hover:underline">
+                            {color.Name}
+                          </Link>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="table-cell table-cell-text text-sm text-gray-500">{color.HexCode}</td>
+                    <td className="table-cell">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        color.IsActive
+                          ? 'status-active'
+                          : 'status-inactive'
+                      }`}>
+                        {color.IsActive ? t('common.active') : t('common.inactive')}
+                      </span>
+                    </td>
+                    <td className="table-cell table-cell-text">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          value=""
+                          className="sr-only peer"
+                          checked={color.IsActive}
+                          onChange={() => handleStatusChange(color.ColorID, color.IsActive)}
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                      </label>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
-      {filteredColors.length === 0 && (
+      {iTotalItems === 0 && !bLoading && !sError && (
         <div className="text-center py-12">
-          <div className="text-gray-500">{t("productSetup.color.empty.message")}</div>
+          <div className="text-gray-500">{t("productSetup.colors.empty.message")}</div>
           {(sSearchQuery || sStatusFilter) && (
             <button
               onClick={() => {
@@ -101,10 +183,22 @@ const ColorList = () => {
               }}
               className="mt-2 text-[#5B45E0] hover:text-[#4c39c7]"
             >
-              {t("productSetup.color.empty.clear")}
+              {t("productSetup.colors.empty.clear")}
             </button>
           )}
         </div>
+      )}
+
+      {iTotalItems > 0 && (
+        <Pagination
+          currentPage={nCurrentPage}
+          totalPages={Math.ceil(iTotalItems / iItemsPerPage)}
+          totalItems={iTotalItems}
+          itemsPerPage={iItemsPerPage}
+          handlePrevPage={handlePrevPage}
+          handleNextPage={handleNextPage}
+          handlePageClick={handlePageClick}
+        />
       )}
     </div>
   );

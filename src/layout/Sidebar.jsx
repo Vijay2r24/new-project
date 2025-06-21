@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -21,31 +21,34 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
   const [nExpandedSection, setExpandedSection] = useState(null);
   const [nHoveredSection, setHoveredSection] = useState(null);
   const { t } = useTranslation();
-  const toggleSection = (section) => {
-    setExpandedSection(nExpandedSection === section ? null : section);
-  };
-  const aNavigation = [
+
+  const aNavigation = useMemo(() => [
+    { 
+      name: t('sidebar.Dashboard'), 
+      href: '/dashboard', 
+      icon: LayoutDashboard,
+      section: 'Dashbord',
+    },
+    { 
+      name: t('sidebar.Orders'), 
+      href: '/orders', 
+      icon: ShoppingCart 
+    },
     {
       name: t('sidebar.ProductManagement'),
       href: '#',
       icon: Package,
       section: 'Product Management',
       subItems: [
-        { name: t('sidebar.Dashboard'), href: '/dashboard', icon: LayoutDashboard },
         { name: t('sidebar.ProductSetup'), href: '/browse', icon: Settings },
-        { name: t('sidebar.Products'), href: '/productList', icon: Package },
-        { name: t('sidebar.Orders'), href: '/orders', icon: ShoppingCart },
+        { name: t('sidebar.Products'), href: '/productList', icon: Package, relatedPaths: ['/Addproduct'] },
       ]
     },
-    {
-      name: t('sidebar.StoreManagement'),
-      href: '#',
+    { 
+      name: t('sidebar.Stores'), 
+      href: '/stores', 
       icon: Store,
-      section: 'Store Management',
-      subItems: [
-        { name: t('sidebar.Stores'), href: '/stores', icon: Store },
-        { name: t('sidebar.StoreSettings'), href: '/store-settings', icon: Settings },
-      ]
+      relatedPaths: ['/add-store', '/editStore']
     },
     {
       name: t('sidebar.UserManagement'),
@@ -53,8 +56,8 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
       icon: Users,
       section: 'User Management',
       subItems: [
-        { name: t('sidebar.Users'), href: '/users', icon: Users },
-        { name: t('sidebar.Roles'), href: '/userRoles', icon: Shield },
+        { name: t('sidebar.Users'), href: '/users', icon: Users,  relatedPaths: ['/editUser', '/add-user'] },
+        { name: t('sidebar.Roles'), href: '/userRoles', icon: Shield, relatedPaths: ['/addUserRole'] },
       ]
     },
     {
@@ -63,7 +66,7 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
       icon: FileText,
       section: 'Content Management',
       subItems: [
-        { name: t('sidebar.Banners'), href: '/banners', icon: Image },
+        { name: t('sidebar.Banners'), href: '/banners', icon: Image, relatedPaths: ['/banners-create'] },
         { name: t('sidebar.Pages'), href: '/pages', icon: FileText },
       ]
     },
@@ -76,12 +79,35 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
         { name: t('sidebar.Notifications'), href: '/notifications', icon: Bell },
       ]
     },
-  ];
+  ], [t]);
+
+  useEffect(() => {
+    const activeSection = aNavigation.find(item =>
+      item.subItems?.some(subItem => 
+        location.pathname.startsWith(subItem.href) || subItem.relatedPaths?.some(p => location.pathname.startsWith(p))
+      )
+    );
+    if (activeSection) {
+      setExpandedSection(activeSection.name);
+    }
+  }, [location.pathname, aNavigation]);
+
+  const toggleSection = (section) => {
+    setExpandedSection(nExpandedSection === section ? null : section);
+  };
+
   const renderNavigationItem = (item) => {
-    const isActive = location.pathname === item.href;
+    const checkIsActive = (navItem) => {
+      if (!navItem.href || navItem.href === '#') return false;
+      const isActivePath = location.pathname.startsWith(navItem.href);
+      const isRelatedActive = navItem.relatedPaths?.some(p => location.pathname.startsWith(p));
+      return isActivePath || isRelatedActive;
+    }
+
+    const isActive = checkIsActive(item);
     const Icon = item.icon;
     const isHovered = nHoveredSection === item.name;
-    const isSectionActive = item.subItems?.some(subItem => location.pathname === subItem.href);
+    const isSectionActive = item.subItems?.some(subItem => checkIsActive(subItem));
     const isExpanded = nExpandedSection === item.name && !isCollapsed;
 
     if (item.subItems) {
@@ -100,13 +126,13 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
             onChange={() => toggleSection(item.name)}
           />
           {isExpanded && (
-            <div className={`absolute top-[34px] bottom-2 left-6 w-px ${isSectionActive ? 'bg-custom-bg' : 'bg-gray-400'} vertical-connector-line`}></div>
+            <div className={`absolute top-[48px] bottom-2 left-6 w-px  ${isSectionActive ? 'bg-custom-bg' : 'bg-gray-400'} vertical-connector-line`}></div>
           )}
           <button
-            className={`flex peer relative w-full items-center py-3 px-4 text-sm font-medium outline-none transition-all duration-100 ease-in-out focus:outline-none ${isSectionActive ? 'text-gray-900 font-bold' : 'text-gray-600 hover:text-custom-bg'} ${isSectionActive ? 'border-l-4 border-custom-bg' : ''}`}
+            className={`flex peer relative w-full items-center py-4 px-4 text-sm font-medium leading-none outline-none transition-all duration-100 ease-in-out focus:outline-none border-0 m-0 appearance-none ${isSectionActive ? 'text-gray-900 font-bold' : 'text-gray-600 hover:text-custom-bg'} ${isSectionActive ? 'border-l-4 border-custom-bg' : ''}`}
           >
-            <span className={`flex mr-5 w-5 ${isSectionActive ? 'text-custom-bg' : ''}`}>
-              <Icon className="h-5 w-5" />
+            <span className={`h-full flex items-center justify-center ${isSectionActive ? 'text-custom-bg' : ''} mr-4 w-5`}>
+              <Icon className="h-5 w-5 align-middle" />
             </span>
             {!isCollapsed && item.name}
             <label htmlFor={`menu-${item.name}`} className="absolute inset-0 h-full w-full cursor-pointer"></label>
@@ -117,7 +143,7 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
               <div className="py-2">
                 {item.subItems.map((subItem) => {
                   const SubIcon = subItem.icon;
-                  const isSubActive = location.pathname === subItem.href;
+                  const isSubActive = checkIsActive(subItem);
                   return (
                     <Link
                       key={subItem.name}
@@ -135,13 +161,13 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
           )}
 
           {!isCollapsed && (
-            <ul className="duration-400 flex m-2 max-h-0 flex-col overflow-hidden rounded-xl bg-gray-100 font-medium transition-all duration-300 peer-checked:max-h-96">
+            <ul className="duration-400 flex max-h-0 flex-col overflow-hidden rounded-xl bg-gray-100 font-medium transition-all duration-300 peer-checked:max-h-96">
               {item.subItems.map((subItem) => {
                 const SubIcon = subItem.icon;
-                const isSubActive = location.pathname === subItem.href;
+                const isSubActive = checkIsActive(subItem);
                 const showArrow = isSectionActive; // still can keep for arrow visibility logic if needed
 
-                const arrowBaseClass = 'absolute top-1/2 left-4 w-3.5 h-px transform -translate-y-1/2';
+                const arrowBaseClass = 'absolute top-1/2 left-6 w-3.5 h-px transform -translate-y-1/2';
                 const arrowActiveClass = 'bg-custom-bg after:content-[\'\'] after:absolute after:left-full after:top-1/2 after:transform after:-translate-y-1/2 after:-ml-px after:border-t-[3px] after:border-t-transparent after:border-b-[3px] after:border-b-transparent after:border-l-[3px] after:border-l-custom-bg';
                 const arrowInactiveClass = 'bg-gray-400 after:content-[\'\'] after:absolute after:left-full after:top-1/2 after:transform after:-translate-y-1/2 after:-ml-px after:border-t-[3px] after:border-t-transparent after:border-b-[3px] after:border-b-transparent after:border-l-[3px] after:border-l-gray-400';
 
@@ -156,7 +182,7 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
                       to={subItem.href}
                       className={`flex m-2 cursor-pointer py-2 pl-10 text-sm transition-all duration-100 ease-in-out ${isSubActive
                           ? 'text-custom-bg font-bold'
-                          : 'text-gray-600 hover:bg-gray-200 hover:text-custom-bg'
+                          : 'text-gray-600  hover:text-custom-bg'
                         }`}
                       onClick={isMobileOpen ? onClose : undefined}
                     >
@@ -183,10 +209,12 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
       <Link
         key={item.name}
         to={item.href}
-        className={`flex cursor-pointer items-center py-2 px-4 text-sm font-medium outline-none transition-all duration-100 ease-in-out focus:outline-none ${isActive ? 'text-gray-900 border-l-4 border-custom-bg font-bold' : 'text-gray-600 hover:bg-gray-100 hover:text-custom-bg'}`}
+        className={`flex cursor-pointer items-center w-full py-4 px-4 text-sm font-medium leading-none outline-none transition-all duration-100 ease-in-out focus:outline-none border-0 m-0 ${isActive ? 'text-gray-900 font-bold' : 'text-gray-600 hover:text-custom-bg'} ${isActive ? 'border-l-4 border-custom-bg' : ''}`}
         onClick={isMobileOpen ? onClose : undefined}
       >
-        <Icon className={`mr-4 h-5 w-5 align-middle ${isActive ? 'text-custom-bg' : ''}`} />
+        <span className={`h-full flex items-center justify-center mr-4 w-5 ${isActive ? 'text-custom-bg' : ''}`}>
+          <Icon className="h-5 w-5 align-middle" />
+        </span>
         {!isCollapsed && item.name}
         {!isCollapsed && item.badge && (
           <span className="ml-auto rounded-full bg-custom-bg px-2 text-xs text-white">

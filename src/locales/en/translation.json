@@ -2,13 +2,61 @@
   "login": {
     "title": "Welcome back!",
     "subtitle": "Login to your account",
-    "email": "email",
-    "passWord": "password",
+    "email": "Email",
+    "passWord": "Password",
     "rememberme": "Remember me",
     "forgotPassword": "Forgot Password?",
     "email-placeholder": "you@example.com",
     "passWord-placeholder": "Password",
-    "login": "Login"
+    "loginButton": "Login",
+    "forgotPasswordTitle": "Forgot Your Password?",
+    "forgotPasswordSubtitle": "Enter your email address and we'll send you an OTP to reset your password.",
+    "sendOtpButton": "Send OTP",
+    "errors": {
+      "emailRequired": "Email is required",
+      "emailInvalid": "Please enter a valid email address",
+      "passwordRequired": "Password is required",
+      "passwordShort": "Password must be at least 6 characters",
+      "invalidCredentials": "Invalid email or password",
+      "otpInvalidLength": "OTP must be 6 digits.",
+      "otpRequired": "OTP is required.",
+      "otpInvalid": "Invalid OTP. Please try again.",
+      "otpValidationError": "An error occurred during OTP validation.",
+      "passwordResetFailed": "Failed to reset password."
+    }
+  },
+    "otp": {
+    "success": "OTP sent successfully.",
+    "failure": "Failed to send OTP. Please try again.",
+    "error": "Something went wrong while sending OTP."
+  },
+  "resetPassword": {
+    "title": "Reset Your Password",
+    "subtitle": "Please enter your new password below.",
+    "newPassword": "New Password",
+    "newPassword-placeholder": "Enter your new password",
+    "confirmPassword": "Confirm Password",
+    "confirmPassword-placeholder": "Re-enter your new password",
+    "resetButton": "Reset Password",
+    "errors": {
+      "passwordRequired": "Password is required",
+      "passwordShort": "Password must be at least 6 characters",
+      "passwordWeak": "Password is not strong enough",
+      "confirmPasswordRequired": "Please confirm your password",
+      "passwordsMismatch": "Passwords do not match"
+    },
+    "passwordSuggestion": "Password should be at least 8 characters, include uppercase, lowercase, number, and special character."
+  },
+  "otpDialog": {
+    "title": "OTP",
+    "subtitle": "Verification Code",
+    "instruction": "We have sent a verification code to your mobile number",
+    "verifyButton": "Verify Me",
+    "cancelButton": "Cancel",
+    "error": "Please enter the correct OTP",
+    "timer": "Resend OTP in",
+    "resend": "Resend",
+    "otpExpire": "OTP expired. Please resend to try again."
   },
   "admin": {
     "title": "Admin Portal <br/> Management System",
@@ -64,12 +112,12 @@
   "productSetup": {
     "productSetup": "Product Setup",
     "productSetupSubheading": "Manage your brands, categories, attributes, and more",
-    "createNew": "Create New",
+    "create": "Create",
     "viewList": "View List",
     "tabs": {
       "brands": "Brands",
       "categories": "Categories",
-      "attributeTypes": "Attribute Types",
+      "attributeTypes": "Trait Types",
       "colors": "Colors",
       "attributes": "Attributes"
     },
@@ -85,7 +133,8 @@
         "actions": "Actions"
       },
       "noAttributes": "No attributes found",
-      "clearFilters-btn": "Clear filters"
+      "clearFilters-btn": "Clear filters",
+      "editTitle": "Edit Attribute"
     },
     "createAttributes": {
       "createTitle": "Create Attribute",
@@ -93,23 +142,40 @@
       "namePlaceholder": "Enter attribute name",
       "typeLabel": "Attribute Type",
       "selectType": "Select Type",
-      "createButton": "Create Attribute"
+      "descriptionLabel": "Description",
+      "createButton": "Create Attribute",
+      "descriptionPlaceholder": "Enter attribute description",
+      "saveButton": "Save Changes",
+      "nameRequired": "Attribute name is required",
+      "nameMinLength": "Attribute name must be at least 2 characters",
+      "nameMaxLength": "Attribute name cannot exceed 50 characters",
+      "typeRequired": "Attribute type is required",
+      "typeInvalid": "Invalid attribute type selected",
+      "descriptionRequired": "Description is required",
+      "descriptionMaxLength": "Description cannot exceed 250 characters"
     },
     "attributeType": {
-      "listTitle": "Attribute Types",
-      "searchPlaceholder": "Search attributetypes...",
+      "listTitle": "Trait Types",
+      "searchPlaceholder": "Search traittypes...",
       "name": "Name",
+      "code": "Code",
       "description": "Description",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Enter trait type description",
       "attributes": "Attributes",
-      "emptyMessage": "No attribute types found"
+      "emptyMessage": "No Trait types found",
+      "editTitle": "Edit trait Type"
     },
     "createAttributeType": {
-      "createTitle": "Create Attribute Type",
+      "createTitle": "Create trait Type",
       "nameLabel": "Name",
-      "namePlaceholder": "Enter attribute type name",
+      "namePlaceholder": "Enter trait type name",
       "dataTypeLabel": "Data Type",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Enter trait type description",
       "selectDataType": "Select a data type",
-      "createButton": "Create Attribute Type"
+      "createButton": "Create trait Type",
+      "saveButton": "Save Changes"
     },
     "status": {
       "active": "Active",
@@ -123,13 +189,25 @@
         "logo": "Logo",
         "products": "Products",
         "status": "Status",
-        "actions": "Actions"
+        "updateStatus": "Status Update",
+        "loadingBrands": "Loading brands...",
+        "createdAt": "Created At"
+      },
+      "confirmStatusChange": {
+        "title": "Confirm Status Change",
+        "message": "Changing the status of this brand will affect {{count}} associated product(s). Do you wish to proceed?",
+        "cancelButton": "Cancel",
+        "confirmButton": "Confirm"
       }
     },
     "createBrand": {
       "createTitle": "Create Brand",
       "nameLabel": "Brand Name",
       "namePlaceholder": "Enter brand name",
+      "headingLabel": "Heading",
+      "headingPlaceholder": "Enter heading (e.g., Top Indian Brand)",
+      "brandCodeLabel": "Brand Code",
+      "brandCodePlaceholder": "Enter brand code (e.g., LI0034)",
       "statusLabel": "Status",
       "selectStatus": "Select Status",
       "logoLabel": "Brand Logo",
@@ -138,7 +216,11 @@
       "descriptionLabel": "Description",
       "descriptionPlaceholder": "Enter brand description",
       "cancelButton": "Cancel",
-      "createButton": "Create Brand"
+      "createButton": "Create Brand",
+      "editTitle": "Edit Brand",
+      "saveButton": "Save Changes",
+      "activeStatus": "Active",
+      "inactiveStatus": "Inactive"
     },
     "categories": {
       "title": "Categories",
@@ -146,18 +228,26 @@
       "table": {
         "name": "Name",
         "description": "Description",
+        "image": "Image",
         "products": "Products",
         "status": "Status",
-        "actions": "Actions"
+        "updateStatus": "Status Update"
       },
       "empty": {
         "message": "No categories found",
         "clear": "Clear search"
+      },
+      "confirmStatusChange": {
+        "title": "Confirm Status Change",
+        "message": "Activating this category will make it visible on the storefront. Do you wish to proceed?",
+        "cancelButton": "Cancel",
+        "confirmButton": "Confirm"
       }
     },
     "createCategory": {
       "createTitle": "Create Category",
       "nameLabel": "Category Name",
+      "editTitle": "Edit Category",
       "namePlaceholder": "Enter category name",
       "parentLabel": "Parent Category",
       "selectParent": "Select parent category",
@@ -173,7 +263,11 @@
       "createButton": "Create Category",
       "imageError": "File size should be less than 10MB",
       "nameError": "Category name is required",
-      "imageRequired": "Category image is required"
+      "imageRequired": "Category image is required",
+      "parentCategoryRequired": "Parent category is required",
+      "descriptionMinLength": "Description must be at least 10 characters",
+      "descriptionMaxLength": "Description cannot exceed 500 characters",
+      "statusInvalid": "Invalid status selected"
     },
     "colors": {
       "title": "Colors",
@@ -192,6 +286,7 @@
     },
     "createColor": {
       "createTitle": "Create Color",
+      "editTitle": "Edit Color",
       "nameLabel": "Color Name",
       "namePlaceholder": "Enter color name",
       "hexCodeLabel": "Color Code",
@@ -218,10 +313,12 @@
     "exportButton": "Export All Orders",
     "viewDetails": "View Details",
     "delivery": "Delivery",
-    "searchPlaceholder": "Search by Order No, Customer Name, Email...",
+    "searchPlaceholder": "Search by Customer Name, Email...",
     "table": {
       "orderNumber": "Order Number",
       "orderDate": "Order Date",
+      "productName": "Product Name",
+      "quantity": "Quantity",
       "customerInfo": "Customer Info",
       "deliveryInfo": "Delivery Info",
       "status": "Status",
@@ -239,6 +336,8 @@
     "deliveryInformation": "Delivery Information",
     "standarddelivery": "standarddelivery",
     "paymentInformation": "Payment Information",
+    "paymentStatus": "Status",
+    "paymentDate": "Date",
     "orderSummary": "Order Summary",
     "orderItems": "Order Items",
     "orderDate": "Order Date",
@@ -252,12 +351,16 @@
     "deliveryTimeEstimate": "2-4 Business Days",
     "subtotal": "Subtotal",
     "shipping": "Shipping",
+    "editOrderItem": "Edit Item",
+    "status": "Status",
+    "remarks": "remarks",
     "tax": "Tax",
     "ordertotal": "Order Total",
     "table": {
       "product": "Product",
       "price": "Price",
       "quantity": "Quantity",
+      "status": "status",
       "total": "Total",
       "actions": "Actions"
     }
@@ -277,39 +380,62 @@
   },
   "productCreation": {
     "addNewProduct": "Add New Product",
-    "createNewStoreDescription": "Create a new store location with its details and inventory information.",
-    "basicInformation": "Basic Information",
-    "productDescription": "Product Description",
-    "supportedFormats": "Supports: JPG, PNG, WEBP (max 5MB)",
-    "dropImagesHere": "Drop the images here...",
-    "dragDropOrClick": "Drag & drop images here, or click to select files",
-    "productVariants": "Product Variants",
-    "variant": "Variant",
-    "colourID": "Colour ID",
-    "colouridPlaceholder": "Enter colour ID",
-    "attributeValues": "Attribute Values (comma-separated)",
-    "attributeValuesPlaceholder": "e.g., S, M, L or Red, Blue",
-    "quantity": "Quantity",
-    "quantityPlaceholder": "Enter quantity",
-    "sellingPrice": "Selling Price",
-    "sellingPricePlaceholder": "Enter selling price",
-    "addAnotherVariant": "Add Another Variant",
-    "addProduct": "Add Product",
-    "gender": "Gender",
-    "male": "Male",
-    "female": "Female",
-    "other": "Other",
+    "createNewStoreDescription": "Create a new product for your store.",
+    "basicInformation": "Basic Product Information",
     "productName": "Product Name",
     "productNamePlaceholder": "Enter product name",
-    "attributeId": "Attribute ID",
-    "attributeIdPlaceholder": "Enter attribute type ID",
-    "brandId": "Brand ID",
-    "brandIdPlaceholder": "Enter brand ID",
+    "attributeId": "Trait Type",
+    "attributeIdPlaceholder": "Select trait type",
+    "brandId": "Brand",
+    "brandIdPlaceholder": "Select brand",
+    "variant": "Variant",
     "mrp": "MRP",
     "mrpPlaceholder": "Enter MRP",
     "productDiscount": "Product Discount",
     "productDiscountPlaceholder": "Enter discount (e.g., 20%)",
-    "productDescriptionPlaceholder": "Write a detailed description of the product..."
+    "gender": "Gender",
+    "male": "Male",
+    "female": "Female",
+    "other": "Other",
+    "categoryId": "Category",
+    "categoryIdPlaceholder": "Select category",
+    "productDescription": "Product Description",
+    "productDescriptionPlaceholder": "Enter product description",
+    "variantInformation": "Product Variant Information",
+    "addNewVariant": "Add New Variant",
+    "dropImagesHere": "Drop the images here ...",
+    "dragDropOrClick": "Drag and drop images here, or click to select files",
+    "colourId": "Color",
+    "colourIdPlaceholder": "Select colour",
+    "attributeValues": "Attribute Values",
+    "attributeValuesPlaceholder": "Select attribute values",
+    "quantity": "Quantity",
+    "quantityPlaceholder": "Enter quantity",
+    "sellingPrice": "Selling Price",
+    "sellingPricePlaceholder": "Enter selling price",
+    "cancel": "Cancel",
+    "saveProduct": "Save Product",
+    "editProduct": "Edit Product",
+    "editProductDescription": "Edit existing product details.",
+    "saveChanges": "Save Changes",
+    "productNameRequired": "Product name is required",
+    "attributeIdRequired": "Trait type is required",
+    "brandIdRequired": "Brand is required",
+    "mrpRequired": "MRP is required",
+    "mrpInvalid": "MRP must be a positive number",
+    "productDiscountRequired": "Product discount is required",
+    "productDiscountInvalid": "Product discount must be between 0 and 100",
+    "genderRequired": "Gender is required",
+    "categoryIdRequired": "Category is required",
+    "productDescriptionRequired": "Product description is required",
+    "colourIdRequired": "Colour is required",
+    "attributeValuesRequired": "Attribute values are required",
+    "quantityRequired": "Quantity is required",
+    "quantityInvalid": "Quantity must be a non-negative integer",
+    "sellingPriceRequired": "Selling price is required",
+    "sellingPriceInvalid": "Selling price must be a positive number",
+    "imageRequired": "At least one image is required",
+    "validationError": "Please fill in all required fields and correct invalid entries."
   },
   "stores": {
     "heading": "Stores",
@@ -333,7 +459,10 @@
     "enterStoreName": "Enter store name",
     "streetAddress": "Street Address",
     "enterStreetAddress": "Enter street address",
+    "addressLine2Label": "Address Line 2",
+    "enterAddressLine2": "Enter address line 2",
     "city": "City",
+    "country": "Country",
     "enterCity": "Enter city",
     "state": "State",
     "enterState": "Enter state",
@@ -352,12 +481,16 @@
     "contactInformation": "Contact Information",
     "storeDetails": "Store Details",
     "cancel": "Cancel",
-    "createStore": "Create Store"
+    "editStore":"Edit Store",
+    "addStore": "Create Store"
   },
   "users": {
     "title": "Users",
     "description": "Manage your team members and their account permissions",
     "addUser": "Add User",
+    "edit_user": "Edit User",
+    "add_new_user": "Add New User",
+    "edit_user_description": "Edit existing user account details and permissions.",
     "table": {
       "user": "User",
       "contact": "Contact",
@@ -375,7 +508,8 @@
       "active": "Active",
       "inactive": "Inactive"
     },
-    "noUsersFound": "No users found."
+    "noUsersFound": "No users found.",
+    "UsersFound": "Loading users..."
   },
   "addUser": {
     "add_new_user": "Add New User",
@@ -419,11 +553,14 @@
     "select_store": "Select Store",
     "role": "Role",
     "roleIsrequid": "Role Name is required",
-    "storeIsrequid": "Role Name is required.",
+    "storeIsrequid": "Store Name is required.",
     "enter_role_name": "Store Name is required.",
     "select_all": "Select All",
     "close": "Close",
-    "save_role": "Save Role"
+    "edit_user_role": "Edit User Role",
+    "edit_user_role_description": "Edit user role description",
+    "save_role": "Save Role",
+    "update_role": "Update Role"
   },
   "bannerform": {
     "create_banner": "Create banner",
@@ -518,7 +655,7 @@
     "Analytics": "Analytics"
   },
   "profile": {
-    "personal_information":"Persona information",
+    "personal_information": "Persona information",
     "edit_profile": "Edit Profile",
     "change_password": "Change Password",
     "two_factor_authentication": "Two-Factor Authentication",
@@ -544,7 +681,7 @@
     "city": "City",
     "state": "State",
     "zipCode": "ZIP Code",
-     "securitySettings": "Security Settings",
+    "securitySettings": "Security Settings",
     "changePassword": "Change Password",
     "twoFactorAuth": "Two-Factor Authentication",
     "privacySettings": "Privacy Settings",
@@ -553,8 +690,13 @@
     "languageRegion": "Language & Region"
   },
   "common": {
+    "updateStatus": "Status Update",
+    "saveButton": "Save Changes",
     "cancel": "Cancel",
     "status": "Status",
+    "save": "Save",
+    "upload": "Upload",
+    "loading": "Loading",
     "actions": "Actions",
     "active": "Active",
     "inactive": "Inactive",
@@ -562,12 +704,34 @@
     "next": "Next",
     "all": "All",
     "edit": "Edit",
+    "error": "Error",
     "delete": "Delete",
     "clearSearch": "Clear search",
     "showing": "Showing",
     "to": "to",
     "results": "results",
     "of": "of",
-    "more": "more"
+    "more": "more",
+    "errorMessage": "An error occurred. Please try again.",
+    "failedOperation": "Failed to perform operation."
+  },
+  "userRolesList": {
+    "title": "User Roles",
+    "description": "Manage user roles and their permissions",
+    "addRole": "Add Role",
+    "searchPlaceholder": "Search by Role Name or Store...",
+    "table": {
+      "roleId": "Role ID",
+      "roleName": "Role Name",
+      "storeName": "Store Name",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "noRolesFound": "No user roles found.",
+    "noRolesOnPage": "No user roles found on this page."
   }
 }

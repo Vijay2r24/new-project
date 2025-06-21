@@ -1,22 +1,76 @@
-import React, { useState } from 'react';
-import { Building, MapPin, Phone, Mail, Users, Package, ArrowLeft } from 'lucide-react';
+import { useState, useContext, useEffect } from 'react';
+import { Building, MapPin, Phone, Mail, ArrowLeft } from 'lucide-react';
 import TextInputWithIcon from '../components/TextInputWithIcon';
 import SelectWithIcon from '../components/SelectWithIcon';
 import { useTranslation } from 'react-i18next';
+import { LocationDataContext } from '../context/LocationDataProvider';
+import { useParams } from 'react-router-dom';
+import { apiGet, apiPost } from '../utils/ApiUtils';
+import { getStoreById, createOrUpdateStore } from '../contants/apiRoutes';
+import { showEmsg } from '../utils/ShowEmsg';
+import { useTitle } from '../context/TitleContext';
+
+const getArray = (data) =>
+  Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : []);
+
 const AddStore = () => {
+  const { t } = useTranslation();
+  const { countriesData, statesData, citiesData } = useContext(LocationDataContext);
+  const { id } = useParams();
+  const { setTitle } = useTitle();
   const [oFormData, setFormData] = useState({
     name: '',
     address: '',
-    city: '',
+    country: '',
     state: '',
+    city: '',
     zipCode: '',
     phone: '',
     email: '',
     status: 'Active',
-    products: '',
-    employees: ''
+    countryName: '',
+    stateName: '',
+    cityName: ''
   });
-  const { t } = useTranslation();
+
+  useEffect(() => {
+    if (id) {
+      const fetchStore = async () => {
+        const token = localStorage.getItem('token');
+        const response = await apiGet(`${getStoreById}/${id}`, {}, token);
+        if (response.data && response.data.status === 'SUCCESS' && response.data.store) {
+          const store = response.data.store;
+          const foundCountry = getArray(countriesData).find(c => c.CountryName === store.CountryName);
+          const foundState = getArray(statesData).find(s => s.StateName === store.StateName && String(s.CountryID) === String(foundCountry?.CountryID));
+          const foundCity = getArray(citiesData).find(c => c.CityName === store.CityName && String(c.StateID) === String(foundState?.StateID));
+          setFormData(prevFormData => ({
+            ...prevFormData,
+            name: store.StoreName || '',
+            address: store.AddressLine1 || '',
+            country: foundCountry?.CountryID || '',
+            state: foundState?.StateID || '',
+            city: foundCity?.CityID || '',
+            zipCode: store.ZipCode || '',
+            phone: store.Phone || '',
+            email: store.Email || '',
+            status: store.Status || 'Active',
+            countryName: store.CountryName || '',
+            stateName: store.StateName || '',
+            cityName: store.CityName || ''
+          }));
+        }
+      };
+      fetchStore();
+    }
+  }, [id, countriesData, statesData, citiesData]);
+
+  useEffect(() => {
+    setTitle(id ? t('createStore.editStore') : t('createStore.addStore'));
+  }, [setTitle, t, id]);
+
+  const filteredStates = getArray(statesData).filter(s => String(s.CountryID) === String(oFormData.country));
+  const filteredCities = getArray(citiesData).filter(c => String(c.StateID) === String(oFormData.state));
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -24,16 +78,42 @@ const AddStore = () => {
       [name]: value
     }));
   };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Add API call to create store
-    console.log('Form submitted:', oFormData);
-  };
+    const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId'); // assuming you store the user ID here
 
+    const payload = {
+      StoreID: id ? parseInt(id, 10) : 0,
+      TenantID: 0,
+      StoreName: oFormData.name,
+      Email: oFormData.email,
+      Phone: oFormData.phone,
+      AddressLine1: oFormData.address,
+      AddressLine2: "",
+      CityID: parseInt(oFormData.city, 10),
+      StateID: parseInt(oFormData.state, 10),
+      CountryID: parseInt(oFormData.country, 10),
+      ZipCode: oFormData.zipCode,
+      Status: oFormData.status,
+      CountryName: oFormData.countryName,
+      StateName: oFormData.stateName,
+      CityName: oFormData.cityName,
+      ...(id ? { UpdatedBy: parseInt(userId, 10) } : { CreatedBy: parseInt(userId, 10) })
+    };
+    try {
+      const response = await apiPost(createOrUpdateStore, payload, token);
+      if (response.data && response.data.status === 'SUCCESS') {
+        showEmsg(response.data?.message, 'success');
+      } else {
+        showEmsg(response.data?.message || t('common.failedOperation'), 'error');
+      }
+    } catch (error) {
+      showEmsg(t('common.errorMessage'), 'error');
+    }
+  };
   return (
     <div className="max-w-7xl mx-auto">
-      {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-4">
           <button
@@ -42,21 +122,17 @@ const AddStore = () => {
           >
             <ArrowLeft className="h-5 w-5 text-gray-500" />
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">{t('createStore.addNewStore')}</h1>
+          <p className="text-gray-500">{t('createStore.storeDescription')}</p>
         </div>
-        <p className="text-gray-500">{t('createStore.storeDescription')}</p>
       </div>
 
-      {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Store Information */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
             <h2 className="text-lg font-semibold text-gray-900">{t('createStore.storeInformation')}</h2>
           </div>
           <div className="p-6 space-y-6">
             <div className="flex flex-col md:flex-row md:space-x-4">
-              {/* Store Name */}
               <div className="w-full md:w-1/2">
                 <TextInputWithIcon
                   label={t('createStore.storeName')}
@@ -69,7 +145,6 @@ const AddStore = () => {
                   required
                 />
               </div>
-              {/* Street Address */}
               <div className="w-full md:w-1/2 mt-4 md:mt-0">
                 <TextInputWithIcon
                   label={t('createStore.streetAddress')}
@@ -85,25 +160,37 @@ const AddStore = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <TextInputWithIcon
-                  label={t('createStore.city')}
-                  id="city"
-                  name="city"
-                  value={oFormData.city}
+                <SelectWithIcon
+                  label={t('createStore.country')}
+                  id="country"
+                  name="country"
+                  value={oFormData.country}
                   onChange={handleChange}
-                  placeholder={t('createStore.enterCity')}
+                  options={getArray(countriesData).map(c => ({ value: c.CountryID, label: c.CountryName }))}
                   Icon={Building}
                   required
                 />
               </div>
               <div>
-                <TextInputWithIcon
+                <SelectWithIcon
                   label={t('createStore.state')}
                   id="state"
                   name="state"
                   value={oFormData.state}
                   onChange={handleChange}
-                  placeholder={t('createStore.enterState')}
+                  options={getArray(statesData).filter(s => String(s.CountryID) === String(oFormData.country)).map(s => ({ value: s.StateID, label: s.StateName }))}
+                  Icon={Building}
+                  required
+                />
+              </div>
+              <div>
+                <SelectWithIcon
+                  label={t('createStore.city')}
+                  id="city"
+                  name="city"
+                  value={oFormData.city}
+                  onChange={handleChange}
+                  options={getArray(citiesData).filter(c => String(c.StateID) === String(oFormData.state)).map(c => ({ value: c.CityID, label: c.CityName }))}
                   Icon={Building}
                   required
                 />
@@ -123,8 +210,6 @@ const AddStore = () => {
             </div>
           </div>
         </div>
-
-        {/* Contact Information */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
             <h2 className="text-lg font-semibold text-gray-900">
@@ -162,8 +247,6 @@ const AddStore = () => {
             </div>
           </div>
         </div>
-
-        {/* Store Details */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
             <h2 className="text-lg font-semibold text-gray-900">
@@ -187,37 +270,9 @@ const AddStore = () => {
                   required
                 />
               </div>
-              <div>
-                <TextInputWithIcon
-                  label={t('createStore.numberOfProducts')}
-                  id="products"
-                  name="products"
-                  value={oFormData.products}
-                  onChange={handleChange}
-                  placeholder={t('createStore.enterNumberOfProducts')}
-                  Icon={Package}
-                  type="number"
-                  min="0"
-                />
-              </div>
-              <div>
-                <TextInputWithIcon
-                  label={t('createStore.numberOfEmployees')}
-                  id="employees"
-                  name="employees"
-                  value={oFormData.employees}
-                  onChange={handleChange}
-                  placeholder={t('createStore.enterNumberOfEmployees')}
-                  Icon={Users}
-                  type="number"
-                  min="0"
-                />
-              </div>
             </div>
           </div>
         </div>
-
-        {/* Form Actions */}
         <div className="flex justify-end space-x-4">
           <button
             type="button"
@@ -230,7 +285,7 @@ const AddStore = () => {
             type="submit"
             className="btn-primary"
           >
-            {t('createStore.createStore')}
+            {id ? 'Update Store' : 'Create Store'}
           </button>
         </div>
       </form>

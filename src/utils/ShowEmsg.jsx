@@ -1,14 +1,16 @@
-// src/utils/showEmsg.js
-import { toast } from 'react-toastify';
+// src/utils/ShowEmsg.jsx
+import toast from 'react-hot-toast';
 
 export const showEmsg = (message, type) => {
-  toast(message, {
-    type, // 'info', 'success', 'warning', 'error'
-    position: 'top-right',
-    autoClose: 3000,
-    hideProgressBar: false,
-    closeOnClick: true,
-    pauseOnHover: true,
-    draggable: true,
-  });
+  if (type === 'success') {
+    toast.success(message);
+  } else if (type === 'error') {
+    toast.error(message);
+  } else if (type === 'info') {
+    toast(message);
+  } else if (type === 'warning') {
+    toast(message);
+  } else {
+    toast(message);
+  }
 };

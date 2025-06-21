@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiUpload } from "react-icons/fi";
 import { MdOutlineCancel } from "react-icons/md";
 import { FaPlus } from "react-icons/fa";
@@ -6,8 +6,11 @@ import TextInputWithIcon from '../components/TextInputWithIcon';
 import SelectWithIcon from '../components/SelectWithIcon';
 import { Tag, Layers, Users, DollarSign, Percent } from 'lucide-react';
 import { useTranslation } from "react-i18next";
+import { useTitle } from '../context/TitleContext';
+
 const BannerForm = () => {
   const { t } = useTranslation();
+  const { setTitle } = useTitle();
 
   const [oFormData, setFormData] = useState({
     BannerName: "",
@@ -26,6 +29,11 @@ const BannerForm = () => {
     { BrandID: 2, BrandName: 'Brand 2' },
   ]);
   const [bLoading] = useState(false);
+
+  useEffect(() => {
+    setTitle(t('bannerform.upload_banner'));
+    return () => setTitle('');
+  }, [setTitle, t]);
 
   const handleBannerUpload = (e) => {
     const file = e.target.files[0];
@@ -66,7 +74,6 @@ const BannerForm = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">{t('bannerform.upload_banner')}</h2>
       <form onSubmit={handleSubmit}>
         {/* Banner Name */}
         <TextInputWithIcon

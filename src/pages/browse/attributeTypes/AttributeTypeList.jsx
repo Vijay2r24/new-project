@@ -2,26 +2,48 @@ import { useState } from 'react';
 import { Edit, Trash, } from 'lucide-react';
 import Toolbar from '../../../components/Toolbar';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
+import { useAttributeTypes } from '../../../context/AttributeTypeContext';
+import { showEmsg } from '../../../utils/ShowEmsg';
+import Pagination from '../../../components/Pagination';
+
 const AttributeTypeList = () => {
   const [sSearchQuery, setSearchQuery] = useState('');
   const [bShowFilter, setShowFilter] = useState(false);
   const [sSelectedStatus, setSelectedStatus] = useState('');
   const { t } = useTranslation();
-  const [aAttributeTypes] = useState([
-    { id: 1, name: 'Size', description: 'Product size variations', status: 'Active', attributes: 5 },
-    { id: 2, name: 'Material', description: 'Product material types', status: 'Active', attributes: 3 },
-    { id: 3, name: 'Style', description: 'Product style variations', status: 'Inactive', attributes: 2 },
-  ]);
+
+  const { aAttributeTypes, bLoading, sError, toggleAttributeTypeStatus } = useAttributeTypes();
+
+  const [iCurrentPage, setCurrentPage] = useState(1);
+  const [iItemsPerPage] = useState(10); // You can make this dynamic if needed
+
+  const handleStatusChange = async (attributeTypeId, currentIsActive) => {
+    try {
+      const response = await toggleAttributeTypeStatus(attributeTypeId, !currentIsActive);
+      if (response.status === 'ERROR') {
+        showEmsg(response.message, 'error');
+      }
+    } catch (error) {
+      console.error('Error toggling attribute type status:', error);
+      showEmsg('An unexpected error occurred.', 'error');
+    }
+  };
 
   const filteredTypes = aAttributeTypes.filter((type) => {
     const matchesSearch =
-      type.name.toLowerCase().includes(sSearchQuery.toLowerCase()) ||
-      type.description.toLowerCase().includes(sSearchQuery.toLowerCase());
+      type.Name.toLowerCase().includes(sSearchQuery.toLowerCase());
 
-    const matchesStatus = sSelectedStatus ? type.status === sSelectedStatus : true;
-
-    return matchesSearch && matchesStatus;
+    return matchesSearch;
   });
+
+  // Pagination logic
+  const iTotalPages = Math.ceil(filteredTypes.length / iItemsPerPage);
+  const iIndexOfLastItem = iCurrentPage * iItemsPerPage;
+  const iIndexOfFirstItem = iIndexOfLastItem - iItemsPerPage;
+  const currentItems = filteredTypes.slice(iIndexOfFirstItem, iIndexOfLastItem);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
     <div>
@@ -76,79 +98,97 @@ const AttributeTypeList = () => {
           </div>
         )}
       </div>
+      {bLoading && (
+        <div className="text-center py-12 text-gray-500">
+          {t('common.loading')}
+        </div>
+      )}
+
+      {sError && !bLoading && (
+        <div className="text-center py-12 text-red-500">
+          {t('common.error')}: {sError}
+        </div>
+      )}
 
       {/* Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('productSetup.attributeType.name')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('productSetup.attributeType.description')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('productSetup.attributeType.attributes')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('common.status')}
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('common.actions')}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredTypes.map((type) => (
-                <tr key={type.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{type.name}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-500">{type.description}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{type.attributes}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${type.status === 'Active'
-                          ? 'status-active'
-                          : 'status-inactive'
-                        }`}
-                    >
-                      {t(`common.${type.status.toLowerCase()}`)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center justify-end space-x-2">
-                      <button
-                        onClick={() => handleEdit(type.id)}
-                        className="action-button"
-                        title={t('common.edit')}
-                      >
-                        <Edit className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(type.id)}
-                        className="action-button"
-                        title={t('common.delete')}
-                      >
-                        <Trash className="h-5 w-5" />
-                      </button>
-                    </div>
-                  </td>
+      {!bLoading && !sError && (
+        <div className="table-container">
+          <div className="table-wrapper">
+            <table className="table-base">
+              <thead className="table-head">
+                <tr>
+                  <th className="table-head-cell">
+                    {t('productSetup.attributeType.name')}
+                  </th>
+                  <th className="table-head-cell">
+                    {t('productSetup.attributeType.code')}
+                  </th>
+                   <th className="table-head-cell">
+                    {t('productSetup.attributeType.description')}
+                  </th>
+                  <th className="table-head-cell">
+                    {t('productSetup.attributeType.attributes')}
+                  </th>
+                  <th className="table-head-cell">
+                    {t('common.status')}
+                  </th>
+                  <th className="table-head-cell">
+                    {t("common.updateStatus")}
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="table-body">
+                {currentItems.map((type) => (
+                  <tr key={type.AttributeTypeID} className="table-row">
+                    <td className="table-cell table-cell-text">
+                      <Link to={`/browse/editattributetype/${type.AttributeTypeID}`} className="text-sm font-medium text-blue-600 hover:underline">
+                        {type.Name}
+                      </Link>
+                    </td>
+                    <td className="table-cell">
+                      <div className="text-sm text-gray-500">{type.Code}</div>
+                    </td>
+
+                    <td className="table-cell">
+                      <div className="text-sm text-gray-500">{type.AttributeTypeDescription}</div>
+                    </td>
+
+                    <td className="table-cell text-right table-cell-text">
+                      <div className="text-sm text-gray-900 text-right">{type.AttributeCount}</div>
+                    </td>
+
+                    <td className="table-cell">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${type.IsActive ? 'status-active' : 'status-inactive'
+                          }`}
+                      >
+                        {t(`common.${type.IsActive ? 'active' : 'inactive'}`)}
+                      </span>
+                    </td>
+
+                    <td className="table-cell table-cell-text">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={type.IsActive}
+                          onChange={() => handleStatusChange(type.AttributeTypeID, type.IsActive)}
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                        <span className="ml-3 text-sm font-medium text-gray-900"></span>
+                      </label>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Empty State */}
-      {filteredTypes.length === 0 && (
+      {!bLoading && !sError && filteredTypes.length === 0 && (
         <div className="text-center py-12">
           <div className="text-gray-500">
             {t('productSetup.attributeType.emptyMessage')}
@@ -163,8 +203,14 @@ const AttributeTypeList = () => {
           )}
         </div>
       )}
+        <Pagination
+            itemsPerPage={iItemsPerPage}
+            totalItems={filteredTypes.length}
+            paginate={paginate}
+            currentPage={iCurrentPage}
+          />
     </div>
-
+   
   );
 };
 

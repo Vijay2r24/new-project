@@ -1,13 +1,11 @@
-// constants.js
-export const API_URL = "https://api.example.com";
-export const APP_NAME = "MyCoolApp";
-export const MAX_UPLOAD_SIZE_MB = 5;
 
 export const STATUS = {
   PENDING: "pending",
   SUCCESS: "success",
+  SUCCESS_1: 'SUCCESS',
   ERROR: "error",
 };
+
 
 export const COLORS = {
   PRIMARY: "#3498db",

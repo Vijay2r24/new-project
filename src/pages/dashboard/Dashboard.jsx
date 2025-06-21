@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   TrendingUp,
   ShoppingCart,
@@ -11,8 +11,12 @@ import {
   Clock,
   AlertCircle
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useTitle } from '../../context/TitleContext';
+
 const Dashboard = () => {
+  const navigate = useNavigate();
   const aMetrics = [
     {
       title: 'Total Revenue',
@@ -131,6 +135,7 @@ const Dashboard = () => {
   const [nTopProductsPage, setTopProductsPage] = useState(1);
   const PRODUCTS_PER_PAGE = 3;
   const { t } = useTranslation();
+  const { setTitle } = useTitle();
   const totalTopProductsPages = Math.ceil(aTopProducts.length / PRODUCTS_PER_PAGE);
   const paginatedTopProducts = aTopProducts.slice(
     (nTopProductsPage - 1) * PRODUCTS_PER_PAGE,
@@ -139,6 +144,11 @@ const Dashboard = () => {
 
   const [nSelectedProduct, setSelectedProduct] = useState(null);
   const [bShowProductModal, setShowProductModal] = useState(false);
+
+  useEffect(() => {
+    setTitle(t('dashboard.title'));
+    return () => setTitle('');
+  }, [setTitle, t]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2">
@@ -220,7 +230,7 @@ const Dashboard = () => {
       )}
       {/* Header */}
       <div className="mb-4">
-        <h1 className="text-2xl font-bold text-gray-900">{t('dashboard.title')}</h1>
+        {/* <h1 className="text-2xl font-bold text-gray-900">{t('dashboard.title')}</h1> */}
         <p className="mt-1 text-sm text-gray-500">
           {t('dashboard.description')}
         </p>
@@ -230,15 +240,24 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {aMetrics.map((metric, index) => (
           <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">{metric.title}</p>
-                <p className="mt-2 text-3xl font-semibold text-gray-900">{metric.value}</p>
+            <button
+              onClick={() => {
+                if (metric.title === 'Total Orders') {
+                  navigate('/orders');
+                }
+              }}
+              className="w-full text-left"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">{metric.title}</p>
+                  <p className="mt-2 text-3xl font-semibold text-gray-900">{metric.value}</p>
+                </div>
+                <div className={`p-3 rounded-lg ${metric.color}`}>
+                  <metric.icon className="h-6 w-6" />
+                </div>
               </div>
-              <div className={`p-3 rounded-lg ${metric.color}`}>
-                <metric.icon className="h-6 w-6" />
-              </div>
-            </div>
+            </button>
             <div className="mt-4 flex items-center">
               {metric.trend === 'up' ? (
                 <ArrowUp className="h-4 w-4 text-green-500" />

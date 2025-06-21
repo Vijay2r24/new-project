@@ -1,8 +1,11 @@
-import { useState } from 'react';
-import { Edit, Trash, Search, Filter } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import CreateBrand from './CreateBrand';
 import Toolbar from '../../../components/Toolbar';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
+import { useBrands } from '../../../context/BrandContext';
+import Pagination from '../../../components/Pagination';
+import { showEmsg } from '../../../utils/ShowEmsg';
 
 const BrandList = () => {
   const [bShowCreate, setShowCreate] = useState(false);
@@ -10,16 +13,43 @@ const BrandList = () => {
   const [bShowFilters, setShowFilters] = useState(false);
   const [sStatusFilter, setStatusFilter] = useState('');
   const { t } = useTranslation();
-  const [aBrands] = useState([
-    { id: 1, name: 'Nike', logo: 'https://upload.wikimedia.org/wikipedia/commons/a/a6/Logo_NIKE.svg', status: 'Active', products: 150 },
-    { id: 2, name: 'Adidas', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/20/Adidas_Logo.svg', status: 'Active', products: 120 },
-    { id: 3, name: 'Puma', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/fd/Puma_logo.svg', status: 'Inactive', products: 80 },
-  ]);
+  const { aBrands, bLoading, sError, fetchBrands, iTotalItems, toggleBrandStatus } = useBrands();
+  const [nCurrentPage, setCurrentPage] = useState(1);
+  const [iItemsPerPage] = useState(10); // Or a configurable value
 
-  const filteredBrands = aBrands.filter(brand =>
-    brand.name.toLowerCase().includes(sSearchQuery.toLowerCase()) &&
-    (sStatusFilter ? brand.status === sStatusFilter : true)
-  );
+  useEffect(() => {
+    fetchBrands(nCurrentPage, iItemsPerPage, sSearchQuery);
+  }, [nCurrentPage, iItemsPerPage, sSearchQuery, fetchBrands]);
+
+  const handlePageClick = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  const handleNextPage = () => {
+    if (nCurrentPage < Math.ceil(iTotalItems / iItemsPerPage)) {
+      setCurrentPage(prev => prev + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (nCurrentPage > 1) {
+      setCurrentPage(prev => prev - 1);
+    }
+  };
+
+  const handleStatusChange = async (brandId, currentIsActive) => {
+    try {
+      const response = await toggleBrandStatus(brandId, !currentIsActive);
+      if (response.status === 'ERROR') {
+        showEmsg(response.message, 'error');
+      } else {
+        showEmsg(response.message || 'Status updated successfully.', 'success');
+      }
+    } catch (error) {
+      console.error('Error toggling brand status:', error);
+      showEmsg('An unexpected error occurred during status update.', 'error');
+    }
+  };
 
   if (bShowCreate) {
     return <CreateBrand onBack={() => setShowCreate(false)} />;
@@ -44,52 +74,86 @@ const BrandList = () => {
         />
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('productSetup.brands.table.name')}</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('productSetup.brands.table.logo')}</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('productSetup.brands.table.products')}</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{t('productSetup.brands.table.status')}</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">{t('productSetup.brands.table.actions')}</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredBrands.map((brand) => (
-                <tr key={brand.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{brand.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="h-10 w-10 flex items-center justify-center rounded-full border overflow-hidden">
-                      <img src={brand.logo} alt={brand.name} className="max-w-[70%] max-h-[70%] object-contain" />
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">{brand.products}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${brand.status === 'Active' ? 'status-active' : 'status-inactive'
-                      }`}>
-                      {brand.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <div className="flex items-center justify-end space-x-2">
-                      <button onClick={() => handleEdit(store.id)} className="action-button" title={t('common.edit')}>
-                        <Edit className="h-5 w-5" />
-                      </button>
-                      <button onClick={() => handleDelete(store.id)} className="action-button" title={t('common.delete')}>
-                        <Trash className="h-5 w-5" />
-                      </button>
-                    </div>
-                  </td>
+      {bLoading ? (
+        <div className="text-center py-8 text-gray-500">{t('productSetup.brands.loadingBrands')}</div>
+      ) : sError ? (
+        <div className="text-center py-8 text-red-500">{t('common.error')} {sError}</div>
+      ) : (
+        <div className="table-container">
+          <div className="table-wrapper">
+            <table className="table-base">
+              <thead className="table-head">
+                <tr>
+                  <th className="table-head-cell">
+                    {t('productSetup.brands.table.name')}
+                  </th>
+                  <th className="table-head-cell">
+                    {t('productSetup.brands.table.logo')}
+                  </th>
+                  <th className="table-head-cell">
+                    {t('productSetup.brands.table.status')}
+                  </th>
+                  <th className="table-head-cell">
+                    {t('productSetup.brands.table.createdAt')}
+                  </th>
+                  <th className="table-head-cell">
+                   {t('common.updateStatus')}
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="table-body">
+                {aBrands.map((brand) => (
+                  <tr key={brand.BrandID} className="table-row">
+                    <td className="table-cell table-cell-text">
+                      <Link to={`/browse/editbrand/${brand.BrandID}`} className="text-blue-600 hover:underline">
+                        {brand.BrandName}
+                      </Link>
+                    </td>
+                    <td className="table-cell">
+                      <div className="h-10 w-10 flex items-center justify-center rounded-full border overflow-hidden">
+                        <img
+                          src={brand.BrandLogo}
+                          alt={brand.BrandName}
+                          className="max-w-[70%] max-h-[70%] object-contain"
+                        />
+                      </div>
+                    </td>
+                    <td className="table-cell">
+                      <span
+                        className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          brand.IsActive
+                            ? 'status-active'
+                            : 'status-inactive'
+                        }`}
+                      >
+                        {brand.IsActive ? t('common.active') : t('common.inactive')}
+                      </span>
+                    </td>
+                    <td className="table-cell table-cell-text">
+                      {new Date(brand.CreatedAt).toLocaleDateString()}
+                    </td>
+                    <td className="table-cell table-cell-text text-blue-600 hover:underline cursor-pointer">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          value=""
+                          className="sr-only peer"
+                          checked={brand.IsActive}
+                          onChange={() => handleStatusChange(brand.BrandID, brand.IsActive)}
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                        <span className="ml-3 text-sm font-medium text-gray-900"></span>
+                      </label>
+                    </td> 
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
-      {filteredBrands.length === 0 && (
+      {bLoading === false && aBrands.length === 0 && (
         <div className="text-center py-12 text-gray-500">
           {t('productSetup.brands.noBrandsFound')}
           {sSearchQuery && (
@@ -104,8 +168,20 @@ const BrandList = () => {
           )}
         </div>
       )}
+      {iTotalItems > 0 && (
+        <Pagination
+          currentPage={nCurrentPage}
+          totalPages={Math.ceil(iTotalItems / iItemsPerPage)}
+          totalItems={iTotalItems}
+          itemsPerPage={iItemsPerPage}
+          handlePrevPage={handlePrevPage}
+          handleNextPage={handleNextPage}
+          handlePageClick={handlePageClick}
+        />
+      )}
     </div>
   );
 };
 
 export default BrandList;
+

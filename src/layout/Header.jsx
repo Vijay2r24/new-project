@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Bell, Search, Menu, Dot } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTitle } from '../context/TitleContext';
 const aMockNotifications = [
   { id: 1, title: 'Order #1234 delivered', time: '2 min ago' },
   { id: 2, title: 'New user registered', time: '10 min ago' },
@@ -8,6 +9,7 @@ const aMockNotifications = [
 ];
 
 const Header = ({ onMenuClick }) => {
+  const { title } = useTitle();
   const [bShowNotifications, setShowNotifications] = useState(false);
   const bellRef = useRef();
   const dropdownRef = useRef();
@@ -15,7 +17,6 @@ const Header = ({ onMenuClick }) => {
   const profileRef = useRef();
   const profileDropdownRef = useRef();
   const navigate = useNavigate();
-  // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
       if (
@@ -36,8 +37,6 @@ const Header = ({ onMenuClick }) => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [bShowNotifications]);
-
-  // Close profile dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
       if (
@@ -62,7 +61,6 @@ const Header = ({ onMenuClick }) => {
   return (
     <header className="sticky top-0 z-10 bg-white">
       <div className="flex items-center justify-between h-12 px-4 lg:px-6">
-        {/* Mobile menu button */}
         <div className="lg:hidden flex items-center">
           <button
             className="p-2 text-gray-600 hover:text-gray-900 focus:outline-none"
@@ -71,12 +69,11 @@ const Header = ({ onMenuClick }) => {
             <Menu className="h-5 w-5" />
           </button>
         </div>
-
-        <div className="flex items-center flex-1">
-          <div className="flex-1 max-w-lg">
-          </div>
+        <div className="flex-1 flex items-center">
+          {title && (
+          <h1 className="text-lg font-bold text-gray-900">{title}</h1>
+          )}
         </div>
-
         <div className="relative flex items-center gap-3">
           <button
             ref={bellRef}
@@ -92,7 +89,6 @@ const Header = ({ onMenuClick }) => {
               className="fixed right-4 sm:right-6 top-12 w-full max-w-xs sm:w-80 sm:max-w-md rounded-2xl shadow-2xl border border-gray-100 z-50 bg-gradient-to-br from-white via-gray-50 to-indigo-50 animate-fade-in"
               style={{ minWidth: '0' }}
             >
-              {/* Accent bar */}
               <div className="h-1 w-full bg-gradient-to-r from-indigo-400 via-indigo-300 to-indigo-200 rounded-t-2xl" />
               <div className="p-3 sm:p-4 border-b font-semibold text-gray-800 flex items-center gap-2 text-base sm:text-lg">
                 <Bell className="h-5 w-5 text-indigo-500" /> Notifications
@@ -122,7 +118,6 @@ const Header = ({ onMenuClick }) => {
               </div>
             </div>
           )}
-          {/* User Profile in Header */}
           <div className="relative flex items-center gap-2 pl-2 sm:pl-3 border-l border-gray-200 ml-2 sm:ml-3">
             <button
               ref={profileRef}

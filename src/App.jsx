@@ -1,4 +1,3 @@
-
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './layout/Layout';
 import Browse from './pages/browse/Browse';
@@ -18,7 +17,21 @@ import Banners from './pages/Banners';
 import Bannerscreate from './pages/BannersCreate'
 import UserRoles from '../src/pages/UserRolesList'
 import OrderDetailPage from './pages/orders/OrderView';
-// Protected Route Component
+import LocationDataProvider from "./context/LocationDataProvider";
+import CreateBrand from "./pages/browse/brands/CreateBrand";
+import CreateCategory from "./pages/browse/categories/CreateCategory";
+import CreateAttributeType from "./pages/browse/attributeTypes/CreateAttributeType";
+import CreateColor from "./pages/browse/colors/CreateColor";
+import CreateAttribute from "./pages/browse/attributes/CreateAttribute";
+import { AttributeTypeProvider } from './context/AttributeTypeContext';
+import { BrandProvider } from './context/BrandContext';
+import { CategoryProvider } from './context/CategoryContext';
+import { AttributeProvider } from './context/AttributeContext';
+import { ColorProvider } from './context/ColorContext';
+import { Toaster } from 'react-hot-toast';
+import { StoreProvider } from './context/StoreContext';
+import { TitleProvider } from './context/TitleContext';
+import { RolesProvider } from './context/RolesContext'; 
 const ProtectedRoute = ({ children }) => {
 
   return <Layout>{children}</Layout>;
@@ -26,93 +39,149 @@ const ProtectedRoute = ({ children }) => {
 
 const App = () => {
   return (
-    <Routes>
-      {/* Public Routes */}
-      <Route path="/" element={<Login />} />
+    <TitleProvider>
+      <LocationDataProvider>
+        <AttributeTypeProvider>
+          <BrandProvider>
+            <CategoryProvider>
+              <AttributeProvider>
+                <ColorProvider>
+                <RolesProvider>
+                <StoreProvider >
+                  <Toaster position="top-right" reverseOrder={false} />
+                  <Routes>
+                    <Route path="/" element={<Login />} />
+                    <Route path="/dashboard" element={
+                      <ProtectedRoute>
+                        <Dashboard />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/browse" element={
+                      <ProtectedRoute>
+                        <Browse />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/browse/editbrand/:id" element={
+                      <ProtectedRoute>
+                        <CreateBrand />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/browse/editcatagiry/:id" element={
+                      <ProtectedRoute>
+                        <CreateCategory />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/browse/editattributetype/:id" element={
+                      <ProtectedRoute>
+                        <CreateAttributeType />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/browse/editcolor/:id" element={
+                      <ProtectedRoute>
+                        <CreateColor />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/browse/editattribute/:id" element={
+                      <ProtectedRoute>
+                        <CreateAttribute />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/orders" element={
+                      <ProtectedRoute>
+                        <Orders />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/orders/:orderId" element={
+                      <ProtectedRoute>
+                        <OrderDetailPage />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/userRoles" element={
+                      <ProtectedRoute>
+                        <UserRoles />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/productList" element={
+                      <ProtectedRoute>
+                        <ProductList />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/banners-create" element={
+                      <ProtectedRoute>
+                        <Bannerscreate />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/Addproduct/:productId?" element={
+                      <ProtectedRoute>
+                        <Addproduct />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/profile" element={
+                      <ProtectedRoute>
+                        <ProfileDetails />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/addUserRole" element={
+                      <ProtectedRoute>
+                        <AddUserRole />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/addUserRole/:roleId" element={
+                      <ProtectedRoute>
+                        <AddUserRole />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/stores" element={
+                      <ProtectedRoute>
+                        <Stores />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/add-store" element={
+                      <ProtectedRoute>
+                        <AddStore />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/editStore/:id" element={
+                      <ProtectedRoute>
+                        <AddStore />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/add-user" element={
+                      <ProtectedRoute>
+                        <AddUser />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/editUser/:id" element={
+                      <ProtectedRoute>
+                        <AddUser />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/users" element={
+                      <ProtectedRoute>
+                        <Users />
+                      </ProtectedRoute>
+                    } />
 
-      {/* Protected Routes */}
-      <Route path="/dashboard" element={
-        <ProtectedRoute>
-          <Dashboard />
-        </ProtectedRoute>
-      } />
-      <Route path="/browse" element={
-        <ProtectedRoute>
-          <Browse />
-        </ProtectedRoute>
-      } />
-      <Route path="/orders" element={
-        <ProtectedRoute>
-          <Orders />
-        </ProtectedRoute>
-      } />
-      <Route path="/orders/:orderId" element={
-        <ProtectedRoute>
-          <OrderDetailPage />
-        </ProtectedRoute>
-      } />
-      <Route path="/userRoles" element={
-        <ProtectedRoute>
-          <UserRoles />
-        </ProtectedRoute>
-      } />
-      <Route path="/productList" element={
-        <ProtectedRoute>
-          <ProductList />
-        </ProtectedRoute>
-      } />
-      <Route path="/banners-create" element={
-        <ProtectedRoute>
-          <Bannerscreate />
-        </ProtectedRoute>
-      } />
-      <Route path="/Addproduct" element={
-        <ProtectedRoute>
-          <Addproduct />
-        </ProtectedRoute>
-      } />
-      <Route path="/profile" element={
-        <ProtectedRoute>
-          <ProfileDetails />
-        </ProtectedRoute>
-      } />
-      <Route path="/addUserRole" element={
-        <ProtectedRoute>
-          <AddUserRole />
-        </ProtectedRoute>
-      } />
-      <Route path="/stores" element={
-        <ProtectedRoute>
-          <Stores />
-        </ProtectedRoute>
-      } />
-      <Route path="/add-store" element={
-        <ProtectedRoute>
-          <AddStore />
-        </ProtectedRoute>
-      } />
-      <Route path="/add-user" element={
-        <ProtectedRoute>
-          <AddUser />
-        </ProtectedRoute>
-      } />
-      <Route path="/users" element={
-        <ProtectedRoute>
-          <Users />
-        </ProtectedRoute>
-      } />
-
-      <Route path="/banners" element={
-        <ProtectedRoute>
-          <Banners />
-        </ProtectedRoute>
-      } />
-      <Route path="/notifications" element={
-        <ProtectedRoute>
-          <Notifications />
-        </ProtectedRoute>
-      } />
-    </Routes>
+                    <Route path="/banners" element={
+                      <ProtectedRoute>
+                        <Banners />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/notifications" element={
+                      <ProtectedRoute>
+                        <Notifications />
+                      </ProtectedRoute>
+                    } />
+                  </Routes>
+                  </StoreProvider>
+                  </RolesProvider>
+                </ColorProvider>
+              </AttributeProvider>
+            </CategoryProvider>
+          </BrandProvider>
+        </AttributeTypeProvider>
+      </LocationDataProvider>
+    </TitleProvider>
   );
 };
 

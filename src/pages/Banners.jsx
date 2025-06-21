@@ -1,8 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, ArrowLeft, ArrowRight, MoreVertical, Image as ImageIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Toolbar from '../components/Toolbar';
 import { useTranslation } from "react-i18next";
+import { apiGet, apiPatch } from '../utils/ApiUtils';
+import { GetAllBanners, UpdateBannerStatus } from '../contants/apiRoutes';
+import { showEmsg } from '../utils/ShowEmsg';
+import Carousel from 'react-multi-carousel';
+import 'react-multi-carousel/lib/styles.css';
+import { useTitle } from '../context/TitleContext';
+
 const aInitialBanners = [
   {
     BannerID: 1,
@@ -60,36 +67,65 @@ const aInitialBanners = [
 ];
 
 const Banners = () => {
-  const [aBanners, setBanners] = useState(aInitialBanners);
-  const [sSearchQuery, setSearchQuery] = useState('');
-  const [nPage, setPage] = useState(0);
+  const [aBanners, setBanners] = useState([]);
+  const [nPage, setPage] = useState(1);
   const rowsPerPage = 6;
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
   const [nActiveMenu, setActiveMenu] = useState(null);
   const [oCarouselIndex, setCarouselIndex] = useState({});
   const navigate = useNavigate();
   const { t } = useTranslation();
-  // Search
-  const handleSearchChange = (e) => setSearchQuery(e.target.value);
-  const filteredBanners = aBanners.filter(b =>
-    b.BannerName.toLowerCase().includes(sSearchQuery.toLowerCase()) ||
-    String(b.BannerID).includes(sSearchQuery)
-  );
+  const { setTitle } = useTitle();
 
-  const paginatedBanners = filteredBanners.slice(nPage * rowsPerPage, (nPage + 1) * rowsPerPage);
+  const responsive = {
+    superLargeDesktop: {
+      breakpoint: { max: 4000, min: 1024 },
+      items: 1
+    },
+    desktop: {
+      breakpoint: { max: 1024, min: 768 },
+      items: 1
+    },
+    tablet: {
+      breakpoint: { max: 768, min: 464 },
+      items: 1
+    },
+    mobile: {
+      breakpoint: { max: 464, min: 0 },
+      items: 1
+    }
+  };
 
-  // Carousel controls
-  const handleCarouselLeft = (id, images) => {
-    setCarouselIndex(idx => ({
-      ...idx,
-      [id]: idx[id] > 0 ? idx[id] - 1 : images.length - 1
-    }));
-  };
-  const handleCarouselRight = (id, images) => {
-    setCarouselIndex(idx => ({
-      ...idx,
-      [id]: idx[id] < images.length - 1 ? idx[id] + 1 : 0
-    }));
-  };
+  useEffect(() => {
+    setTitle('Banners');
+    return () => setTitle('');
+  }, [setTitle]);
+
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await apiGet(GetAllBanners, { pageNumber: nPage, pageSize: rowsPerPage }, token);
+        if (response.data && response.data.status === 'SUCCESS') {
+          setBanners(response.data.data || []);
+          setTotalPages(response.data.totalPages || 1);
+          setTotalRecords(response.data.totalRecords || 0);
+        } else {
+          setBanners([]);
+          setTotalPages(1);
+          setTotalRecords(0);
+        }
+      } catch (err) {
+        setBanners([]);
+        setTotalPages(1);
+        setTotalRecords(0);
+      }
+    };
+    fetchBanners();
+  }, [nPage]);
+
+  const paginatedBanners = aBanners;
 
   // Dropdown menu
   const toggleMenu = (id) => setActiveMenu(nActiveMenu === id ? null : id);
@@ -100,49 +136,35 @@ const Banners = () => {
   };
 
   // Status toggle
-  const handleToggleStatus = (id, status) => {
-    setBanners(prev => prev.map(b => b.BannerID === id ? { ...b, Status: status === 'Active' ? 'Inactive' : 'Active' } : b));
+  const handleToggleStatus = async (id, currentStatus) => {
+    try {
+      const token = localStorage.getItem('token');
+      const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+      const response = await apiPatch(`${UpdateBannerStatus}/${id}`, { status: newStatus }, token);
+      if (response.data && response.data.status === 'SUCCESS') {
+        setBanners(prev => prev.map(b => b.BannerID === id ? { ...b, Status: newStatus } : b));
+        showEmsg(response.data.message || 'Banner status updated successfully.', 'success');
+      } else {
+        showEmsg(response.data?.message || 'Failed to update banner status.', 'error');
+      }
+    } catch (err) {
+      showEmsg('Failed to update banner status.', 'error');
+    }
   };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen">
-      {/* Header with Background */}
-      <div className="relative rounded-2xl overflow-hidden mb-8 border border-sky-100/50">
-        <div className="absolute inset-0 bg-gradient-to-br from-sky-100 via-white to-indigo-100" />
-        <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] opacity-30" />
-        <div className="absolute inset-0 bg-gradient-to-br from-sky-200/40 via-transparent to-indigo-200/40" />
-        <div className="absolute top-0 right-0 w-72 h-72 bg-sky-300/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-indigo-300/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
-        <div className="relative px-8 py-12">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="p-2 bg-white/80 rounded-lg">
-              <ImageIcon className="h-6 w-6 text-custom-bg" />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900">Banners</h1>
-            <div className="flex-1" />
-            <button
-              type="button"
-              className="btn-primary flex items-center gap-2"
-              onClick={() => navigate('/banners-create')}
-            >
-              <Plus className="h-5 w-5" />
-             {t('bannerform.create_banner')}
-            </button>
-          </div>
-          {/* Search Bar */}
-          <div className="mt-4 max-w-lg">
-            <Toolbar
-              searchTerm={sSearchQuery}
-              setSearchTerm={setSearchQuery}
-              searchPlaceholder={t('bannerform.searchPlaceholder')}
-              showSearch={true}
-              showViewToggle={false}
-              showFilterButton={false}
-            />
-          </div>
-        </div>
+      <div className="flex items-center gap-4 mb-8">
+        <div className="flex-1" />
+        <button
+          type="button"
+          className="btn-primary flex items-center gap-2"
+          onClick={() => navigate('/banners-create')}
+        >
+          <Plus className="h-5 w-5" />
+         {t('bannerform.create_banner')}
+        </button>
       </div>
-      {/* Banner Grid */}
       <div>
         <div className="grid grid-cols-1 mt-4 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {paginatedBanners.length === 0 && (
@@ -153,45 +175,23 @@ const Banners = () => {
               key={project.BannerID}
               className="bg-white shadow-xl rounded-2xl overflow-hidden flex flex-col transition-transform transform hover:scale-[1.03] border border-gray-100"
             >
-              {/* Carousel Section */}
               <div className="relative w-full">
                 {project.BannerImages && project.BannerImages.length > 0 ? (
-                  <div className="relative">
-                    <img
-                      src={project.BannerImages[oCarouselIndex[project.BannerID] || 0].BannerImage}
-                      alt={`Banner ${project.BannerName}`}
-                      className="w-full aspect-[16/9] object-cover"
-                    />
-                    {project.BannerImages.length > 1 && (
-                      <>
-                        <button
-                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow"
-                          onClick={() => handleCarouselLeft(project.BannerID, project.BannerImages)}
-                          aria-label="Previous"
-                          type="button"
-                        >
-                          <ArrowLeft className="h-5 w-5 text-custom-bg" />
-                        </button>
-                        <button
-                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white p-2 rounded-full shadow"
-                          onClick={() => handleCarouselRight(project.BannerID, project.BannerImages)}
-                          aria-label="Next"
-                          type="button"
-                        >
-                          <ArrowRight className="h-5 w-5 text-custom-bg" />
-                        </button>
-                        {/* Carousel Dots */}
-                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-                          {project.BannerImages.map((img, idx) => (
-                            <span
-                              key={img.BannerImageID}
-                              className={`w-2 h-2 rounded-full ${idx === (oCarouselIndex[project.BannerID] || 0) ? 'bg-custom-bg' : 'bg-gray-300'}`}
-                            />
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
+                  <Carousel
+                    responsive={responsive}
+                    infinite={true}
+                    autoPlay={false}
+                    arrows={true}
+                  >
+                    {project.BannerImages.map((image) => (
+                      <img
+                        key={image.BannerImageID}
+                        src={image.BannerImage}
+                        alt={`Banner ${project.BannerName}`}
+                        className="w-full aspect-[16/9] object-cover"
+                      />
+                    ))}
+                  </Carousel>
                 ) : (
                   <img
                     src="/placeholder.jpg"
@@ -199,11 +199,9 @@ const Banners = () => {
                     className="w-full aspect-[16/9] object-cover"
                   />
                 )}
-                {/* Status Badge */}
                 <span className={`absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-semibold shadow ${project.Status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                   {project.Status}
                 </span>
-                {/* Action Menu */}
                 <div className="absolute top-3 right-3 z-20">
                   <button
                     className="text-gray-400 hover:text-custom-bg p-1 rounded-full focus:outline-none"
@@ -231,13 +229,11 @@ const Banners = () => {
                   )}
                 </div>
               </div>
-              {/* Content Section */}
               <div className="p-5 flex flex-col flex-grow">
                 <h3 className="text-base font-semibold text-gray-900 truncate mb-2">
                   {project.BannerName || 'Unnamed Banner'}
                 </h3>
                 <div className="flex items-center justify-between mt-auto">
-                  {/* Toggle Switch */}
                   <div
                     onClick={() => handleToggleStatus(project.BannerID, project.Status)}
                     className={`relative w-10 h-5 rounded-full cursor-pointer transition-all duration-200 ${project.Status === 'Active' ? 'bg-green-400' : 'bg-red-400'}`}
@@ -254,17 +250,17 @@ const Banners = () => {
             </div>
           ))}
         </div>
-        {/* Pagination Controls */}
         <div className="flex justify-between mt-8">
           <button
-            disabled={nPage === 0}
+            disabled={nPage === 1}
             onClick={() => setPage(nPage - 1)}
             className="px-4 py-2 rounded-lg border border-gray-200 bg-white text-custom-bg font-semibold shadow hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {t('common.previous')}
           </button>
+          <span className="text-gray-600 flex items-center">Page {nPage} of {totalPages} ({totalRecords} total)</span>
           <button
-            disabled={(nPage + 1) * rowsPerPage >= filteredBanners.length}
+            disabled={nPage === totalPages}
             onClick={() => setPage(nPage + 1)}
             className="px-4 py-2 rounded-lg border border-gray-200 bg-white text-custom-bg font-semibold shadow hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >

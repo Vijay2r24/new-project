@@ -13,7 +13,6 @@ const Layout = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Sidebar */}
       <div
         className={`  
           fixed top-0 left-0 z-50 h-screen transition-all duration-300 ease-in-out
@@ -27,16 +26,12 @@ const Layout = ({ children }) => {
           isMobileOpen={bIsMobileSidebarOpen}
         />
       </div>
-
-      {/* Overlay for mobile */}
       {bIsMobileSidebarOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-40 z-40 lg:hidden"
           onClick={() => setIsMobileSidebarOpen(false)}
         />
       )}
-
-      {/* Main */}
       <div 
         className={`
           flex flex-col min-h-screen transition-all duration-300
