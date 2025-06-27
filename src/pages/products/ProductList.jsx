@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, MoreVertical, Edit, Trash } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Toolbar from '../../components/Toolbar';
 import Pagination from '../../components/Pagination';
@@ -8,11 +8,12 @@ import { useTranslation } from 'react-i18next';
 import { apiGet } from '../../utils/ApiUtils.jsx';
 import { getProductDetails } from '../../contants/apiRoutes';
 import { useTitle } from '../../context/TitleContext';
+import { STATUS } from '../../contants/constants.jsx';
 
 const getStatusBadgeClass = (status) => {
-  if (status === 'active') return 'bg-green-100 text-green-800';
-  if (status === 'out-of-stock') return 'bg-red-100 text-red-800';
-  return 'bg-gray-100 text-gray-800';
+  if (status === 'active') return 'status-active';
+  if (status === 'out-of-stock') return 'status-inactive';
+  return 'status-active';
 };
 
 const ProductList = () => {
@@ -34,35 +35,37 @@ const ProductList = () => {
   const handleEdit = (productId) => {
     navigate(`/Addproduct/${productId}`);
   };
+useEffect(() => {
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const token = localStorage.getItem("token");
+      const params = {
+        pageNumber: nCurrentPage,
+        pageSize: itemsPerPage,
+        searchText: sSearchTerm,
+      };
+      const oResponse = await apiGet(getProductDetails, params, token);
+      const resData = oResponse?.data;
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const token = localStorage.getItem("token");
-        const params = {
-          pageNumber: nCurrentPage,
-          pageSize: itemsPerPage,
-          searchText: sSearchTerm,
-        };
-        const response = await apiGet(getProductDetails, params, token);
-        if (response.data.status === 'SUCCESS') {
-          setProducts(response.data.data);
-          setTotalItems(response.data.totalRecords);
-          setTotalPages(response.data.totalPages);
-        } else {
-          setError(response.data.message || 'Failed to fetch products');
-        }
-      } catch (err) {
-        setError('An error occurred while fetching products.');
-        console.error('Error fetching products:', err);
-      } finally {
-        setLoading(false);
+      if (resData?.status === STATUS.SUCCESS_1) {
+        setProducts(resData.data);
+        setTotalItems(resData.totalRecords);
+        setTotalPages(resData.totalPages);
+      } else {
+        setError(resData?.message || t('products.fetchError'));
       }
-    };
-    fetchProducts();
-  }, [nCurrentPage, itemsPerPage, sSearchTerm]);
+    } catch (err) {
+      const backendMessage = err?.response?.data?.message;
+      setError(backendMessage || t('products.fetchError'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchProducts();
+}, [nCurrentPage, itemsPerPage, sSearchTerm]);
 
   useEffect(() => {
     setTitle(t('products.title'));
@@ -149,9 +152,9 @@ const ProductList = () => {
         searchPlaceholder={t('products.searchPlaceholder')}
       />
       {bLoading ? (
-        <div className="text-center py-8 text-gray-500">Loading products...</div>
+        <div className="text-center py-8 text-gray-500">{t('products.loading')}</div>
       ) : sError ? (
-        <div className="text-center py-8 text-red-500">Error: {sError}</div>
+        <div className="text-center py-8 text-red-500">{t('products.fetchError')}</div>
       ) : sViewMode === 'table' ? (
         <div className="table-container">
           <div className="table-wrapper">

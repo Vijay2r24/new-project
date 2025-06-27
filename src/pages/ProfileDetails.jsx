@@ -86,18 +86,14 @@ const securityPrefModals = {
 
   return (
     <div className="max-w-7xl mx-auto mt-5">
-      {/* Header Section with Background */}
       <div className="relative rounded-2xl overflow-hidden mb-8 border border-sky-100/50">
-        {/* Background with enhanced pattern */}
         <div className="absolute inset-0 bg-gradient-to-br from-sky-100 via-white to-indigo-100" />
         <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] opacity-30" />
         <div className="absolute inset-0 bg-gradient-to-br from-sky-200/40 via-transparent to-indigo-200/40" />
-        
-        {/* Decorative elements */}
+      
         <div className="absolute top-0 right-0 w-72 h-72 bg-sky-300/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
         <div className="absolute bottom-0 left-0 w-72 h-72 bg-indigo-300/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
         
-        {/* Content */}
         <div className="relative px-8 py-12">
           <div className="flex flex-col md:flex-row items-center md:items-end space-y-4 md:space-y-0 md:space-x-6">
             <div className="relative group">
@@ -132,7 +128,6 @@ const securityPrefModals = {
           </div>
         </div>
       </div>
-      {/* Security/Preferences Modal */}
       {nModalType && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 w-full max-w-md relative animate-fadeIn">
@@ -149,11 +144,8 @@ const securityPrefModals = {
         </div>
       )}
 
-      {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column - Personal Information */}
         <div className="lg:col-span-2 space-y-8">
-          {/* Personal Information Card */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
               <h2 className="text-lg font-semibold text-gray-900">{t('profile.personal_information')}</h2>
@@ -201,8 +193,6 @@ const securityPrefModals = {
               </div>
             </div>
           </div>
-
-          {/* Address Information Card */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
               <h2 className="text-lg font-semibold text-gray-900">{t('profile.address_info')}</h2>
@@ -235,9 +225,7 @@ const securityPrefModals = {
           </div>
         </div>
 
-        {/* Right Column - Settings & Preferences */}
         <div className="space-y-8">
-          {/* Security Settings Card */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
               <h2 className="text-lg font-semibold text-gray-900">{t('profile.securitySettings')}</h2>
@@ -272,8 +260,6 @@ const securityPrefModals = {
               </button>
             </div>
           </div>
-
-          {/* Preferences Card */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
               <h2 className="text-lg font-semibold text-gray-900">{t('profile.preferences')}</h2>

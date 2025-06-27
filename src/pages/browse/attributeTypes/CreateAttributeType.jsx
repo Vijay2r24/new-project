@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, Tag, Info, Hash } from 'lucide-react';
 import TextInputWithIcon from '../../../components/TextInputWithIcon';
-import SelectWithIcon from '../../../components/SelectWithIcon';
 import TextAreaWithIcon from '../../../components/TextAreaWithIcon';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiPost, apiGet, apiPut } from '../../../utils/ApiUtils';
 import { getAttributeTypeById, createOrUpdateAttributeType } from '../../../contants/apiRoutes';
 import { showEmsg } from '../../../utils/ShowEmsg';
+import { STATUS } from '../../../contants/constants';
 
 const CreateAttributeType = () => {
   const { id: attributeTypeId } = useParams();
@@ -39,17 +39,15 @@ const CreateAttributeType = () => {
               AttributeTypeDescription: attributeTypeData.AttributeTypeDescription || '',
             }));
           } else {
-            console.error('Failed to fetch attribute type details:', response.data);
-            showEmsg(response.data.message || 'Failed to fetch attribute type details', 'error');
+            showEmsg(response.data.message || t('productSetup.createAttributeType.fetchError'), 'error');
           }
         } catch (err) {
-          console.error('Error fetching attribute type details:', err);
-          showEmsg('An error occurred while fetching attribute type details.', 'error');
+          showEmsg(t('productSetup.createAttributeType.fetchError'), 'error');
         }
       };
       fetchAttributeTypeDetails();
     }
-  }, [attributeTypeId, isEditing]);
+  }, [attributeTypeId, isEditing, t]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -73,10 +71,10 @@ const CreateAttributeType = () => {
       newErrors.AttributeTypeName = t('productSetup.createAttributeType.nameRequired');
     }
     if (!oFormData.Code.trim()) {
-      newErrors.Code = 'Code is required';
+      newErrors.Code = t('productSetup.createAttributeType.codeRequired');
     }
     if (!oFormData.AttributeTypeDescription.trim()) {
-      newErrors.AttributeTypeDescription = 'Description is required';
+      newErrors.AttributeTypeDescription = t('productSetup.createAttributeType.descriptionRequired');
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -107,16 +105,14 @@ const CreateAttributeType = () => {
         response = await apiPost(createOrUpdateAttributeType, payload, token);
       }
 
-      if (response.data.status === 'SUCCESS') {
-        showEmsg(response.data.message || 'Operation successful!', 'success');
+      if (response.data.status === STATUS.SUCCESS_1) {
+        showEmsg(response.data.message || t('productSetup.createAttributeType.success'), 'success');
         navigate('/browse', { state: { fromAttributeTypeEdit: true } });
       } else {
-        console.error('API Error:', response.data);
-        showEmsg(response.data.message || 'Unknown error', 'error');
+        showEmsg(response.data.message || t('productSetup.createAttributeType.unknownError'), 'error');
       }
     } catch (err) {
-      console.error('Form submission error:', err);
-      showEmsg('An unexpected error occurred.', 'error');
+      showEmsg(t('productSetup.createAttributeType.unexpectedError'), 'error');
     }
   };
 

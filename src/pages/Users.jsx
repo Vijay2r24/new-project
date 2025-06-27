@@ -1,13 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { MoreVertical, Mail, Phone, MapPin, Shield, UserPlus } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Mail, Phone, MapPin, Shield, UserPlus } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 import Toolbar from "../components/Toolbar";
 import Pagination from '../components/Pagination';
 import ActionButtons from '../components/ActionButtons';
 import { useTranslation } from 'react-i18next';
-import { apiGet } from '../utils/ApiUtils';
-import { getAllUsers } from '../contants/apiRoutes';
+import { apiGet, apiPatch, apiDelete } from '../utils/ApiUtils';
+import { getAllUsers, userActiveStatus, deleteUser } from '../contants/apiRoutes';
 import { useTitle } from '../context/TitleContext';
+import { STATUS } from '../contants/constants';
+import { useRoles } from '../context/AllDataContext';
+import FullscreenErrorPopup from '../components/FullscreenErrorPopup';
+import { showEmsg } from '../utils/ShowEmsg';
 
 const Users = () => {
   const navigate = useNavigate();
@@ -16,7 +20,7 @@ const Users = () => {
   const { setTitle } = useTitle();
   const [sSelectedRole, setSelectedRole] = useState('');
   const [sSelectedStatus, setSelectedStatus] = useState('');
-  const [sViewMode, setViewMode] = useState('table'); // 'table' or 'grid'
+  const [sViewMode, setViewMode] = useState('table');
   const [nCurrentPage, setCurrentPage] = useState(1);
   const [sFilterStatus, setFilterStatus] = useState('all');
   const [sShowFilterDropdown, setShowFilterDropdown] = useState(false);
@@ -25,13 +29,13 @@ const Users = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const itemsPerPage = 10; // Assuming 10 items per page as per API response example
+  const itemsPerPage = 10; 
 
   const [oFilters, setFilters] = useState({
     role: 'all',
     status: 'all',
   });
-  // Handle change for additional filters
+  const roles = useRoles();
   const handleFilterChange = (e, filterName) => {
     setFilters({
       ...oFilters,
@@ -45,9 +49,7 @@ const Users = () => {
       value: oFilters.role,
       options: [
         { value: 'all', label: 'All' },
-        { value: 'Admin', label: 'Admin' },
-        { value: 'Manager', label: 'Manager' },
-        { value: 'User', label: 'User' }, // Assuming 'User' role name based on API response
+        ...(Array.isArray(roles.data) ? roles.data.map(role => ({ value: role.RoleName, label: role.RoleName })) : [])
       ],
     },
     {
@@ -76,40 +78,92 @@ const Users = () => {
     navigate(`/editUser/${userId}`);
   };
 
+  const [deletePopup, setDeletePopup] = useState({ open: false, userId: null });
   const handleDelete = (userId) => {
-    console.log('Delete user:', userId);
+    setDeletePopup({ open: true, userId });
+  };
+  const handleDeleteConfirm = async () => {
+    const { userId } = deletePopup;
+    try {
+      const token = localStorage.getItem('token');
+      await apiDelete(`${deleteUser}/${userId}`, token);
+      setUsers(prevUsers => prevUsers.filter(user => user.UserID !== userId));
+      showEmsg('User deleted successfully', 'success');
+      setDeletePopup({ open: false, userId: null });
+    } catch (err) {
+      showEmsg('Failed to delete user', 'error');
+      setDeletePopup({ open: false, userId: null });
+    }
+  };
+  const handleDeletePopupClose = () => {
+    setDeletePopup({ open: false, userId: null });
+  };
+
+  const [statusPopup, setStatusPopup] = useState({ open: false, userId: null, newStatus: null });
+
+  const handleStatusChange = (userId, isActive) => {
+    setStatusPopup({ open: true, userId, newStatus: !isActive });
+  };
+
+  const handleStatusConfirm = async () => {
+    const { userId, newStatus } = statusPopup;
+    try {
+      const token = localStorage.getItem('token');
+      const payload = { Status: newStatus ? 'Active' : 'Inactive' };
+      await apiPatch(`${userActiveStatus}/${userId}`, payload, token);
+      setUsers(prevUsers =>
+        prevUsers.map(user =>
+          user.UserID === userId ? { ...user, Status: payload.Status } : user
+        )
+      );
+      showEmsg(`User status updated to ${payload.Status}`, 'success');
+      setStatusPopup({ open: false, userId: null, newStatus: null });
+    } catch (err) {
+      showEmsg('Failed to update user status.', 'error');
+      setStatusPopup({ open: false, userId: null, newStatus: null });
+    }
+  };
+
+  const handleStatusPopupClose = () => {
+    setStatusPopup({ open: false, userId: null, newStatus: null });
+  };
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem('token');
+      const params = {
+        pageNumber: nCurrentPage,
+        pageSize: itemsPerPage,
+        searchText: sSearchTerm || '',
+      };
+      if (oFilters.role !== 'all') {
+        params.roleName = oFilters.role;
+      }
+      if (oFilters.status !== 'all') {
+        params.status = oFilters.status;
+      }
+      console.log('Fetching users with params:', params);
+      const oResponse = await apiGet(getAllUsers, params, token);
+      console.log('API response:', oResponse.data);
+      if (oResponse.data.STATUS === STATUS.SUCCESS_1) {
+        setUsers(oResponse.data.data.data|| []);
+        setTotalItems(oResponse.data.data.totalRecords || 0);
+        setTotalPages(oResponse.data.data.totalPages || 1);
+      } else {
+        setError(oResponse.data.message || t('users.fetchError'));
+      }
+    } catch (err) {
+      setError(t('users.fetchError'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const token = localStorage.getItem('token');
-        const params = {
-          pageNumber: nCurrentPage,
-          pageSize: itemsPerPage,
-          searchText: sSearchTerm || '',
-          role: oFilters.role !== 'all' ? oFilters.role : '',
-          status: oFilters.status !== 'all' ? oFilters.status : '',
-        };
-        const response = await apiGet(getAllUsers, params, token);
-        
-        if (response.data.status === 'SUCCESS') {
-          setUsers(response.data.data || []);
-          setTotalItems(response.data.totalRecords || 0);
-          setTotalPages(response.data.totalPages || 1);
-        } else {
-          setError(response.data.message || 'Failed to fetch users');
-        }
-      } catch (err) {
-        setError('An error occurred while fetching users');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUsers();
+    // eslint-disable-next-line
   }, [nCurrentPage, itemsPerPage, sSearchTerm, oFilters.role, oFilters.status]);
 
   useEffect(() => {
@@ -118,11 +172,9 @@ const Users = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div className="flex-1 min-w-0">
-            {/* <h1 className="text-2xl font-bold text-gray-900">{t('users.title')}</h1> */}
             <p className="mt-1 text-sm text-gray-500">
               {t('users.description')}
             </p>
@@ -133,8 +185,6 @@ const Users = () => {
           </button>
         </div>
       </div>
-
-      {/* Toolbar */}
       <Toolbar
         searchTerm={sSearchTerm}
         setSearchTerm={setSearchTerm}
@@ -148,8 +198,6 @@ const Users = () => {
         handleFilterChange={handleFilterChange}
         searchPlaceholder={t('users.searchPlaceholder')}
       />
-
-      {/* Users List */}
       {sViewMode === 'table' ? (
         <div className="table-container">
           <div className="table-wrapper">
@@ -160,18 +208,17 @@ const Users = () => {
                   <th className="table-head-cell hidden sm:table-cell">{t('users.table.contact')}</th>
                   <th className="table-head-cell">{t('users.table.role')}</th>
                   <th className="table-head-cell">{t('users.table.status')}</th>
-                  <th className="table-head-cell hidden sm:table-cell">{t('users.table.lastActive')}</th>
                   <th className="table-head-cell hidden sm:table-cell">{t('users.table.actions')}</th>
                 </tr>
               </thead>
               <tbody className="table-body">
                 {loading ? (
                   <tr>
-                    <td colSpan="6" className="text-center py-4">{t('users.UsersFound')}</td>
+                    <td colSpan="6" className="text-center py-4">{t('users.loading')}</td>
                   </tr>
                 ) : error ? (
                   <tr>
-                    <td colSpan="6" className="text-center py-4 text-red-500">{error}</td>
+                    <td colSpan="6" className="text-center py-4 text-red-500">{t('users.fetchError')}</td>
                   </tr>
                 ) : aUsers.length === 0 ? (
                   <tr>
@@ -212,12 +259,16 @@ const Users = () => {
                         </div>
                       </td>
                       <td className="table-cell">
-                        <span className={`status-badge ${user.Status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                           N/A
-                        </span>
-                      </td>
-                      <td className="table-cell hidden sm:table-cell">
-                        N/A
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            value=""
+                            className="sr-only peer"
+                            checked={user.Status === 'Active'}
+                            onChange={() => handleStatusChange(user.UserID, user.Status === 'Active')}
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                        </label>
                       </td>
                       <td className="table-cell text-right">
                         <ActionButtons
@@ -240,7 +291,7 @@ const Users = () => {
             {loading ? (
               <div className="col-span-full text-center py-4">Loading users...</div>
             ) : error ? (
-              <div className="col-span-full text-center py-4 text-red-500">{error}</div>
+              <div className="col-span-full text-center py-4 text-red-500">{t('users.fetchError')}</div>
             ) : aUsers.length === 0 ? (
               <div className="col-span-full text-center py-4">{t('users.noUsersFound')}</div>
             ) : (
@@ -303,6 +354,24 @@ const Users = () => {
         handleNextPage={handleNextPage}
         handlePageClick={handlePageClick}
       />
+      {statusPopup.open && (
+        <FullscreenErrorPopup
+          message={`Are you sure you want to set this user as ${statusPopup.newStatus ? 'Active' : 'Inactive'}?`}
+          onClose={handleStatusPopupClose}
+        >
+          <button onClick={handleStatusConfirm} className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm">Confirm</button>
+          <button onClick={handleStatusPopupClose} className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 text-sm">Cancel</button>
+        </FullscreenErrorPopup>
+      )}
+      {deletePopup.open && (
+        <FullscreenErrorPopup
+          message={"Are you sure you want to delete this user?"}
+          onClose={handleDeletePopupClose}
+        >
+          <button onClick={handleDeleteConfirm} className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm">Delete</button>
+          <button onClick={handleDeletePopupClose} className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 text-sm">Cancel</button>
+        </FullscreenErrorPopup>
+      )}
     </div>
   );
 };

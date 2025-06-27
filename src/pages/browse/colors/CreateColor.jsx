@@ -1,26 +1,30 @@
-import { useState, useEffect } from 'react';
-import { ArrowLeft, Tag, Info, Palette } from 'lucide-react';
-import TextInputWithIcon from '../../../components/TextInputWithIcon';
-import SelectWithIcon from '../../../components/SelectWithIcon';
-import TextAreaWithIcon from '../../../components/TextAreaWithIcon';
-import { useTranslation } from 'react-i18next';
-import { useParams, useNavigate } from 'react-router-dom';
-import { apiPost, apiGet, apiPut } from '../../../utils/ApiUtils';
-import { createColour, getColourById, updateColour } from '../../../contants/apiRoutes';
-import { showEmsg } from '../../../utils/ShowEmsg';
+import { useState, useEffect } from "react";
+import { ArrowLeft, Tag, Info, Palette } from "lucide-react";
+import TextInputWithIcon from "../../../components/TextInputWithIcon";
+import SelectWithIcon from "../../../components/SelectWithIcon";
+import { useTranslation } from "react-i18next";
+import { useParams, useNavigate } from "react-router-dom";
+import { apiPost, apiGet, apiPut } from "../../../utils/ApiUtils";
+import {
+  createColour,
+  getColourById,
+  updateColour,
+} from "../../../contants/apiRoutes";
+import { showEmsg } from "../../../utils/ShowEmsg";
+import { STATUS } from "../../../contants/constants";
 
 const CreateColor = () => {
   const { id: colorId } = useParams();
   const navigate = useNavigate();
   const isEditing = !!colorId;
   const [oFormData, setFormData] = useState({
-    TenantID: '1',
-    Name: '',
-    HexCode: '#000000',
+    TenantID: "1",
+    Name: "",
+    HexCode: "#000000",
     IsActive: true,
-    RgbCode: '',
-    CreatedBy: 'Admin',
-    UpdatedBy: 'Admin'
+    RgbCode: "",
+    CreatedBy: "Admin",
+    UpdatedBy: "Admin",
   });
 
   const [oErrors, setErrors] = useState({});
@@ -31,32 +35,34 @@ const CreateColor = () => {
       const fetchColorDetails = async () => {
         try {
           const token = localStorage.getItem("token");
-          const response = await apiGet(`${getColourById}/${colorId}`, {}, token);
-          if (response.data.status === 'SUCCESS' && response.data.data) {
-            const colorData = response.data.data;
-            setFormData(prev => ({
+          const oResponse = await apiGet(
+            `${getColourById}/${colorId}`,
+            {},
+            token
+          );
+          if (
+            oResponse.data.status === STATUS.SUCCESS_1 &&
+            oResponse.data.data
+          ) {
+            const colorData = oResponse.data.data;
+            setFormData((prev) => ({
               ...prev,
-              Name: colorData.Name || '',
-              HexCode: colorData.HexCode || '#000000',
+              Name: colorData.Name || "",
+              HexCode: colorData.HexCode || "#000000",
               IsActive: colorData.IsActive === true,
-              RgbCode: colorData.RgbCode || '',
-              UpdatedBy: 'Admin'
+              RgbCode: colorData.RgbCode || "",
+              UpdatedBy: "Admin",
             }));
           } else {
-            console.error('Failed to fetch color details:', response.data);
-            showEmsg(response.data.message || 'Failed to fetch color details', 'error');
           }
-        } catch (err) {
-          console.error('Error fetching color details:', err);
-          showEmsg('An error occurred while fetching color details.', 'error');
-        }
+        } catch (err) {}
       };
       fetchColorDetails();
     }
   }, [colorId, isEditing]);
 
   const hexToRgb = (hex) => {
-    if (!hex || typeof hex !== 'string') return '';
+    if (!hex || typeof hex !== "string") return "";
     const bigint = parseInt(hex.slice(1), 16);
     const r = (bigint >> 16) & 255;
     const g = (bigint >> 8) & 255;
@@ -66,20 +72,20 @@ const CreateColor = () => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
-    if (name === 'HexCode') {
-      setFormData(prev => ({
+    if (name === "HexCode") {
+      setFormData((prev) => ({
         ...prev,
-        RgbCode: hexToRgb(value)
+        RgbCode: hexToRgb(value),
       }));
     }
     if (oErrors[name]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: "",
       }));
     }
   };
@@ -89,10 +95,10 @@ const CreateColor = () => {
     const newErrors = {};
 
     if (!oFormData.Name.trim()) {
-      newErrors.Name = t('productSetup.createColor.errors.nameRequired');
+      newErrors.Name = t("productSetup.createColor.errors.nameRequired");
     }
     if (!oFormData.HexCode.trim()) {
-      newErrors.HexCode = t('productSetup.createColor.errors.hexCodeRequired');
+      newErrors.HexCode = t("productSetup.createColor.errors.hexCodeRequired");
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -102,41 +108,43 @@ const CreateColor = () => {
 
     try {
       const token = localStorage.getItem("token");
-      let response;
+      let oResponse;
       let payload;
 
       if (isEditing) {
-        // For update: TenantID is not sent, ColorID is part of the URL
         payload = {
           Name: oFormData.Name,
           HexCode: oFormData.HexCode,
           RgbCode: oFormData.RgbCode,
           UpdatedBy: oFormData.UpdatedBy,
         };
-        response = await apiPut(`${updateColour}/${colorId}`, payload, token);
+        oResponse = await apiPut(`${updateColour}/${colorId}`, payload, token);
       } else {
-        // For creation: TenantID, Name, HexCode, Status, RgbCode, CreatedBy
         payload = {
           TenantID: oFormData.TenantID,
           Name: oFormData.Name,
           HexCode: oFormData.HexCode,
-          IsActive: oFormData.IsActive, // Assuming status is boolean IsActive
+          IsActive: oFormData.IsActive,
           RgbCode: oFormData.RgbCode,
           CreatedBy: oFormData.CreatedBy,
         };
-        response = await apiPost(createColour, payload, token);
+        oResponse = await apiPost(createColour, payload, token);
       }
 
-      if (response.data.status === 'SUCCESS') {
-        showEmsg(response.data.message || 'Operation successful!', 'success');
-        navigate('/browse/colors', { state: { fromColorEdit: true } });
+      if (oResponse.data.status === STATUS.SUCCESS_1) {
+        showEmsg(
+          oResponse.data.message || t("productSetup.createColor.success"),
+          "success"
+        );
+        navigate("/browse/colors", { state: { fromColorEdit: true } });
       } else {
-        console.error('API Error:', response.data);
-        showEmsg(response.data.message || 'Unknown error', 'error');
+        showEmsg(
+          oResponse.data.message || t("productSetup.createColor.unknownError"),
+          "error"
+        );
       }
     } catch (err) {
-      console.error('Form submission error:', err);
-      showEmsg('An unexpected error occurred.', 'error');
+      showEmsg(t("productSetup.createColor.unexpectedError"), "error");
     }
   };
 
@@ -144,37 +152,44 @@ const CreateColor = () => {
     <div>
       <div className="flex items-center mb-6">
         <button
-          onClick={() => navigate('/browse', { state: { fromColorEdit: true } })}
+          onClick={() =>
+            navigate("/browse", { state: { fromColorEdit: true } })
+          }
           className="mr-4 p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-all duration-200"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <h2 className="text-xl font-bold text-gray-900">{isEditing ? t("productSetup.createColor.editTitle") : t("productSetup.createColor.createTitle")}</h2>
+        <h2 className="text-xl font-bold text-gray-900">
+          {isEditing
+            ? t("productSetup.createColor.editTitle")
+            : t("productSetup.createColor.createTitle")}
+        </h2>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex flex-col md:flex-row md:space-x-4">
-          {/* Color Name */}
           <div className="w-full md:w-1/2">
             <TextInputWithIcon
-              label={t('productSetup.createColor.nameLabel')}
+              label={t("productSetup.createColor.nameLabel")}
               id="Name"
               name="Name"
               value={oFormData.Name}
               onChange={handleInputChange}
-              placeholder={t('productSetup.createColor.namePlaceholder')}
-              error={oErrors.Name && t('productSetup.createColor.errors.nameRequired')}
+              placeholder={t("productSetup.createColor.namePlaceholder")}
+              error={
+                oErrors.Name &&
+                t("productSetup.createColor.errors.nameRequired")
+              }
               Icon={Tag}
             />
           </div>
-          {/* Color Hex Code */}
           <div className="w-full md:w-1/2 mt-4 md:mt-0">
             <TextInputWithIcon
-              label={t('productSetup.createColor.hexCodeLabel')}
+              label={t("productSetup.createColor.hexCodeLabel")}
               id="HexCode"
               name="HexCode"
               value={oFormData.HexCode}
               onChange={handleInputChange}
-              placeholder={t('productSetup.createColor.hexCodePlaceholder')}
+              placeholder={t("productSetup.createColor.hexCodePlaceholder")}
               error={oErrors.HexCode}
               Icon={Palette}
               inputSlot={
@@ -193,22 +208,20 @@ const CreateColor = () => {
         </div>
         <div className="flex flex-col md:flex-row md:space-x-4">
           <div className="w-full md:w-1/2">
-            {/* Status */}
             <SelectWithIcon
-              label={t('productSetup.createColor.statusLabel')}
+              label={t("productSetup.createColor.statusLabel")}
               id="IsActive"
               name="IsActive"
               value={oFormData.IsActive}
               onChange={handleInputChange}
               options={[
-                { value: true, label: t('common.active') },
-                { value: false, label: t('common.inactive') }
+                { value: true, label: t("common.active") },
+                { value: false, label: t("common.inactive") },
               ]}
               Icon={Tag}
               error={oErrors.IsActive}
             />
           </div>
-          {/* RGB Code */}
           <div className="w-full md:w-1/2 mt-4 md:mt-0">
             <TextInputWithIcon
               label="RGB Code"
@@ -222,20 +235,20 @@ const CreateColor = () => {
             />
           </div>
         </div>
-        {/* Form Actions */}
         <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
           <button
             type="button"
-            onClick={() => navigate('/browse/colors', { state: { fromColorEdit: true } })}
+            onClick={() =>
+              navigate("/browse/colors", { state: { fromColorEdit: true } })
+            }
             className="btn-cancel"
           >
-            {t('productSetup.createColor.cancelButton')}
+            {t("productSetup.createColor.cancelButton")}
           </button>
-          <button
-            type="submit"
-            className="btn-primary"
-          >
-            {isEditing ? t("common.saveButton") : t("productSetup.createColor.createButton")}
+          <button type="submit" className="btn-primary">
+            {isEditing
+              ? t("common.saveButton")
+              : t("productSetup.createColor.createButton")}
           </button>
         </div>
       </form>
@@ -243,4 +256,4 @@ const CreateColor = () => {
   );
 };
 
-export default CreateColor; 
+export default CreateColor;

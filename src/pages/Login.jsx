@@ -9,6 +9,9 @@ import {
   Users,
   BarChart2,
   Shield,
+  CheckCircle,
+  XCircle,
+  Pencil
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import TextInputWithIcon from '../components/TextInputWithIcon';
@@ -47,6 +50,30 @@ const Login = () => {
   const [sConfirmPassword, setConfirmPassword] = useState('');
   const [bShowNewPassword, setShowNewPassword] = useState(false);
   const [bShowConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Password strength rules for live validation
+  const passwordRules = [
+    {
+      label: t('resetPassword.rules.length'),
+      test: (pw) => pw.length >= 8
+    },
+    {
+      label: t('resetPassword.rules.uppercase'),
+      test: (pw) => /[A-Z]/.test(pw)
+    },
+    {
+      label: t('resetPassword.rules.lowercase'),
+      test: (pw) => /[a-z]/.test(pw)
+    },
+    {
+      label: t('resetPassword.rules.number'),
+      test: (pw) => /\d/.test(pw)
+    },
+    {
+      label: t('resetPassword.rules.special'),
+      test: (pw) => /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(pw)
+    }
+  ];
 
   const validateEmail = (email) => {
     if (!email.trim()) return t('login.errors.emailRequired');
@@ -120,7 +147,7 @@ const Login = () => {
     try {
       const hashedPassword = md5(oFormData.password);
 
-      const response = await apiPost(
+      const oResponse = await apiPost(
         LOGIN,
         {
           Email: oFormData.email,
@@ -130,9 +157,9 @@ const Login = () => {
         false
       );
 
-      const data = response?.data?.data;
-      const message = response?.data?.MESSAGE;
-      const status = response?.data?.STATUS;
+      const data = oResponse?.data?.data;
+      const message = oResponse?.data?.MESSAGE;
+      const status = oResponse?.data?.STATUS;
 
       if (data?.token && data?.UserID && status === STATUS.SUCCESS_1) {
         localStorage.setItem("token", data.token);
@@ -167,10 +194,10 @@ const Login = () => {
       return;
     }
     try {
-      const payload = { email: sForgotPasswordEmail };
-      const response = await apiPost(`${FORGOT_USER_PASSWORD}`, payload, null, false);
-      const message = response?.data?.MESSAGE;
-      if (response.data.STATUS === STATUS.SUCCESS_1) {
+      const oPayload = { email: sForgotPasswordEmail };
+      const oResponse = await apiPost(`${FORGOT_USER_PASSWORD}`, oPayload, null, false);
+      const message = oResponse?.data?.MESSAGE;
+      if (oResponse.data.STATUS === STATUS.SUCCESS_1) {
         showEmsg(message, 'success');
         setbShowOtpDialog(true);
         setTimerCount(60);
@@ -182,7 +209,7 @@ const Login = () => {
         showEmsg(message, 'warning');
       }
     } catch (error) {
-      const errMsg = error?.response?.data?.MESSAGE;
+      const errMsg = error?.oResponse?.data?.MESSAGE;
       showEmsg(errMsg ||t('otp.error'), 'error');
     }
   };
@@ -198,14 +225,14 @@ const Login = () => {
 
 
     try {
-      const payload = {
+      const oPayload = {
         email: sForgotPasswordEmail,
         OTP: Number(sOtp)
       };
-      const response = await apiPost(VALIDATE_OTP, payload, null, false);
-      const message = response?.data?.MESSAGE;
+      const oResponse = await apiPost(VALIDATE_OTP, oPayload, null, false);
+      const message = oResponse?.data?.MESSAGE;
 
-      if (response.data && response.data.STATUS === STATUS.SUCCESS_1) {
+      if (oResponse.data && oResponse.data.STATUS === STATUS.SUCCESS_1) {
         showEmsg(message, 'success');
         setbShowOtpDialog(false);
         setTimerActive(false);
@@ -252,14 +279,14 @@ const Login = () => {
     try {
       const hashedNewPassword = md5(sNewPassword);
       const hashedConfirmPassword = md5(sConfirmPassword);
-      const payload = {
+      const oPayload = {
         email: sForgotPasswordEmail,
         NewPassword: hashedNewPassword,
         ConfirmPassword: hashedConfirmPassword
       };
-      const response = await apiPost(VALIDATE_UPDATE_PASSWORD, payload, null, false);
-      const message = response?.data?.MESSAGE;
-      if (response.data && response.data.STATUS === STATUS.SUCCESS_1) {
+      const oResponse = await apiPost(VALIDATE_UPDATE_PASSWORD, oPayload, null, false);
+      const message = oResponse?.data?.MESSAGE;
+      if (oResponse.data && oResponse.data.STATUS === STATUS.SUCCESS_1) {
         showEmsg(message, 'success');
         setCurrentView('login');
         setForgotPasswordEmail('');
@@ -287,203 +314,233 @@ const Login = () => {
     return () => clearTimeout(timer);
   }, [bTimerActive, nTimerCount]);
 
-  const renderLogin = () => (
-    <>
-      <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center w-12 h-12 bg-custom-bg text-white rounded-xl shadow">
-          <ShoppingBag className="h-5 w-5" />
+  const renderLogin = () => {
+    const isLoginDisabled =
+      !oFormData.email ||
+      !oFormData.password ||
+      !!sError.email ||
+      !!sError.password;
+    return (
+      <>
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-custom-bg text-white rounded-xl shadow">
+            <ShoppingBag className="h-5 w-5" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mt-4">{t('login.title')}</h2>
+          <p className="text-sm text-gray-600">{t('login.subtitle')}</p>
         </div>
-        <h2 className="text-2xl font-bold text-gray-800 mt-4">{t('login.title')}</h2>
-        <p className="text-sm text-gray-600">{t('login.subtitle')}</p>
-      </div>
-      <div className="space-y-4">
-        <div className="space-y-1">
-          <TextInputWithIcon
-            label={t('login.email')}
-            id="email"
-            name="email"
-            type="email"
-            placeholder={t('login.email-placeholder')}
-            value={oFormData.email}
-            onChange={e => handleChange('email', e.target.value)}
-            Icon={Mail}
-            required
-          />
-          {sError.email && (<p className="text-sm text-red-500 mt-1">{sError.email}</p>)}
-        </div>
-        <div className="space-y-1">
-          <TextInputWithIcon
-            label={t('login.passWord')}
-            id="password"
-            name="password"
-            type={bShowPassword ? 'text' : 'password'}
-            placeholder={t('login.passWord-placeholder')}
-            value={oFormData.password}
-            onChange={e => handleChange('password', e.target.value)}
-            Icon={Lock}
-            required
-            inputSlot={
-              <button
-                type="button"
-                onClick={() => setShowPassword(v => !v)}
-                className="text-gray-500 hover:text-custom-bg"
-                aria-label={bShowPassword ? 'Hide password' : 'Show password'}
-              >
-              </button>
-            }
-          />
-          {sError.password && (<p className="text-sm text-red-500 mt-1">{sError.password}</p>)}
-        </div>
-        <div className="text-sm text-right">
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <TextInputWithIcon
+              label={t('login.email')}
+              id="email"
+              name="email"
+              type="email"
+              placeholder={t('login.email-placeholder')}
+              value={oFormData.email}
+              onChange={e => handleChange('email', e.target.value)}
+              Icon={Mail}
+              required
+            />
+            {sError.email && (<p className="text-sm text-red-500 mt-1">{sError.email}</p>)}
+          </div>
+          <div className="space-y-1">
+            <TextInputWithIcon
+              label={t('login.passWord')}
+              id="password"
+              name="password"
+              type={bShowPassword ? 'text' : 'password'}
+              placeholder={t('login.passWord-placeholder')}
+              value={oFormData.password}
+              onChange={e => handleChange('password', e.target.value)}
+              Icon={Lock}
+              required
+              inputSlot={
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(v => !v)}
+                  className="text-gray-500 hover:text-custom-bg"
+                  aria-label={bShowPassword ? 'Hide password' : 'Show password'}
+                >
+                </button>
+              }
+            />
+            {sError.password && (<p className="text-sm text-red-500 mt-1">{sError.password}</p>)}
+          </div>
+          <div className="text-sm text-right">
+            <button
+              type="button"
+              onClick={handleForgotPasswordClick}
+              className="text-custom-bg hover:underline hover:text-red-500 transition-all duration-200"
+            >
+              {t('login.forgotPassword')}
+            </button>
+          </div>
           <button
             type="button"
-            onClick={handleForgotPasswordClick}
-            className="text-custom-bg hover:underline hover:text-red-500 transition-all duration-200"
+            onClick={loginUser}
+            className={`w-full py-2 px-4 rounded-md transition-colors duration-200 bg-custom-bg text-white ${isLoginDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-custom-bg-dark'}`}
+            disabled={isLoginDisabled}
           >
-            {t('login.forgotPassword')}
+            {t('login.loginButton')}
           </button>
         </div>
-        <button
-          type="button"
-          onClick={loginUser}
-          className="w-full bg-custom-bg text-white py-2 px-4 rounded-md hover:bg-custom-bg-dark transition-colors duration-200"
-        >
-          {t('login.loginButton')}
-        </button>
-      </div>
-    </>
-  );
+      </>
+    );
+  };
 
-  const renderForgotPassword = () => (
-    <>
-      <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center w-12 h-12 bg-custom-bg text-white rounded-xl shadow">
-          <Lock className="h-5 w-5" />
+  const renderForgotPassword = () => {
+    const isSendOtpDisabled = !sForgotPasswordEmail || !!sError.email;
+    return (
+      <>
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-custom-bg text-white rounded-xl shadow">
+            <Lock className="h-5 w-5" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mt-4">{t('login.forgotPasswordTitle')}</h2>
+          <p className="text-sm text-gray-600">{t('login.forgotPasswordSubtitle')}</p>
         </div>
-        <h2 className="text-2xl font-bold text-gray-800 mt-4">{t('login.forgotPasswordTitle')}</h2>
-        <p className="text-sm text-gray-600">{t('login.forgotPasswordSubtitle')}</p>
-      </div>
-      <div className="space-y-4">
-        <div className="space-y-1">
-          <TextInputWithIcon
-            label={t('login.email')}
-            id="forgotPasswordEmail"
-            name="forgotPasswordEmail"
-            type="email"
-            placeholder={t('login.email-placeholder')}
-            value={sForgotPasswordEmail}
-            onChange={e => handleChange('email', e.target.value)}
-            Icon={Mail}
-            required
-          />
-          {sError.email && (
-            <p className="text-sm text-red-500 mt-1">{sError.email}</p>
-          )}
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <TextInputWithIcon
+              label={t('login.email')}
+              id="forgotPasswordEmail"
+              name="forgotPasswordEmail"
+              type="email"
+              placeholder={t('login.email-placeholder')}
+              value={sForgotPasswordEmail}
+              onChange={e => handleChange('email', e.target.value)}
+              Icon={Mail}
+              required
+            />
+            {sError.email && (
+              <p className="text-sm text-red-500 mt-1">{sError.email}</p>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleSendOtp}
+              className={`w-1/2 bg-custom-bg text-white py-2 px-4 rounded-md transition-colors duration-200 ${isSendOtpDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-custom-bg-dark'}`}
+              disabled={isSendOtpDisabled}
+            >
+              {t('login.sendOtpButton')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentView('login')}
+              className="w-1/2 text-custom-bg border border-custom-bg py-2 px-4 rounded-md hover:bg-custom-bg/10 transition-colors duration-200"
+            >
+              {t('common.cancel')}
+            </button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={handleSendOtp}
-            className="w-1/2 bg-custom-bg text-white py-2 px-4 rounded-md hover:bg-custom-bg-dark transition-colors duration-200"
-          >
-            {t('login.sendOtpButton')}
-          </button>
-          <button
-            type="button"
-            onClick={() => setCurrentView('login')}
-            className="w-1/2 text-custom-bg border border-custom-bg py-2 px-4 rounded-md hover:bg-custom-bg/10 transition-colors duration-200"
-          >
-            {t('common.cancel')}
-          </button>
-        </div>
+      </>
+    );
+  };
 
-      </div>
-    </>
-  );
-
-  const renderResetPassword = () => (
-    <>
-      <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center w-12 h-12 bg-custom-bg text-white rounded-xl shadow">
-          <Lock className="h-5 w-5" />
+  const renderResetPassword = () => {
+    const isResetDisabled =
+      !sNewPassword ||
+      !sConfirmPassword ||
+      !!sError.newPassword ||
+      !!sError.confirmPassword;
+    return (
+      <>
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-custom-bg text-white rounded-xl shadow">
+            <Lock className="h-5 w-5" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mt-4">{t('resetPassword.title')}</h2>
+          <p className="text-sm text-gray-600">{t('resetPassword.subtitle')}</p>
         </div>
-        <h2 className="text-2xl font-bold text-gray-800 mt-4">{t('resetPassword.title')}</h2>
-        <p className="text-sm text-gray-600">{t('resetPassword.subtitle')}</p>
-      </div>
-      <div className="space-y-4">
-        <div className="space-y-1">
-          <TextInputWithIcon
-            label={t('resetPassword.newPassword')}
-            id="newPassword"
-            name="newPassword"
-            type={bShowNewPassword ? 'text' : 'password'}
-            placeholder={t('resetPassword.newPassword-placeholder')}
-            value={sNewPassword}
-            onChange={e => handleChange('newPassword', e.target.value)}
-            Icon={Lock}
-            required
-            inputSlot={
-              <button
-                type="button"
-                onClick={() => setShowNewPassword(v => !v)}
-                className="text-gray-500 hover:text-custom-bg"
-                aria-label={bShowNewPassword ? 'Hide password' : 'Show password'}
-              >
-              </button>
-            }
-          />
-          {sError.newPassword && (
-            <p className="text-sm text-red-500 mt-1">{sError.newPassword}</p>
-          )}
-          <p className="text-xs text-gray-500 mt-1">{t('resetPassword.passwordSuggestion')}</p>
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <TextInputWithIcon
+              label={t('resetPassword.newPassword')}
+              id="newPassword"
+              name="newPassword"
+              type={bShowNewPassword ? 'text' : 'password'}
+              placeholder={t('resetPassword.newPassword-placeholder')}
+              value={sNewPassword}
+              onChange={e => handleChange('newPassword', e.target.value)}
+              Icon={Lock}
+              required
+              inputSlot={
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(v => !v)}
+                  className="text-gray-500 hover:text-custom-bg"
+                  aria-label={bShowNewPassword ? 'Hide password' : 'Show password'}
+                >
+                </button>
+              }
+            />
+            {sError.newPassword && (
+              <p className="text-sm text-red-500 mt-1">{sError.newPassword}</p>
+            )}
+            <ul className="text-xs mt-2 space-y-1">
+              {passwordRules.map((rule, idx) => {
+                const passed = rule.test(sNewPassword);
+                return (
+                  <li key={idx} className="flex items-center gap-2">
+                    {passed ? (
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-gray-300" />
+                    )}
+                    <span className={passed ? 'text-green-600' : 'text-gray-500'}>{rule.label}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+          <div className="space-y-1">
+            <TextInputWithIcon
+              label={t('resetPassword.confirmPassword')}
+              id="confirmPassword"
+              name="confirmPassword"
+              type={bShowConfirmPassword ? 'text' : 'password'}
+              placeholder={t('resetPassword.confirmPassword-placeholder')}
+              value={sConfirmPassword}
+              onChange={e => handleChange('confirmPassword', e.target.value)}
+              Icon={Lock}
+              required
+              inputSlot={
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(v => !v)}
+                  className="text-gray-500 hover:text-custom-bg"
+                  aria-label={bShowConfirmPassword ? 'Hide password' : 'Show password'}
+                >
+                </button>
+              }
+            />
+            {sError.confirmPassword && (
+              <p className="text-sm text-red-500 mt-1">{sError.confirmPassword}</p>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handlePasswordReset}
+              className={`w-1/2 bg-custom-bg text-white py-2 px-4 rounded-md transition-colors duration-200 ${isResetDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-custom-bg-dark'}`}
+              disabled={isResetDisabled}
+            >
+              {t('resetPassword.resetButton')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentView('login')}
+              className="w-1/2 text-custom-bg border border-custom-bg py-2 px-4 rounded-md hover:bg-custom-bg/10 transition-colors duration-200"
+            >
+              {t('common.cancel')}
+            </button>
+          </div>
         </div>
-        <div className="space-y-1">
-          <TextInputWithIcon
-            label={t('resetPassword.confirmPassword')}
-            id="confirmPassword"
-            name="confirmPassword"
-            type={bShowConfirmPassword ? 'text' : 'password'}
-            placeholder={t('resetPassword.confirmPassword-placeholder')}
-            value={sConfirmPassword}
-            onChange={e => handleChange('confirmPassword', e.target.value)}
-            Icon={Lock}
-            required
-            inputSlot={
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(v => !v)}
-                className="text-gray-500 hover:text-custom-bg"
-                aria-label={bShowConfirmPassword ? 'Hide password' : 'Show password'}
-              >
-              </button>
-            }
-          />
-          {sError.confirmPassword && (
-            <p className="text-sm text-red-500 mt-1">{sError.confirmPassword}</p>
-          )}
-        </div>
-
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={handlePasswordReset}
-            className="w-1/2 bg-custom-bg text-white py-2 px-4 rounded-md hover:bg-custom-bg-dark transition-colors duration-200"
-          >
-            {t('resetPassword.resetButton')}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setCurrentView('login')}
-            className="w-1/2 text-custom-bg border border-custom-bg py-2 px-4 rounded-md hover:bg-custom-bg/10 transition-colors duration-200"
-          >
-            {t('common.cancel')}
-          </button>
-        </div>
-
-      </div>
-    </>
-  );
+      </>
+    );
+  };
 
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-gradient-to-br from-custom-bg to-blue-100">
@@ -522,6 +579,21 @@ const Login = () => {
               <h3 className="text-2xl font-bold text-gray-800">{t('otpDialog.title')}</h3>
               <h4 className="text-lg font-medium text-gray-700 mb-1">{t('otpDialog.subtitle')}</h4>
               <p className="text-sm text-gray-500">{t('otpDialog.instruction')}</p>
+              <div className="flex items-center justify-center gap-2 mt-2">
+                <Mail className="w-4 h-4 text-custom-bg" />
+                <span className="text-gray-700 text-sm font-medium">{sForgotPasswordEmail}</span>
+                <button
+                  type="button"
+                  className="ml-2 p-1 rounded hover:bg-gray-100"
+                  title={t('common.edit')}
+                  onClick={() => {
+                    setbShowOtpDialog(false);
+                    setCurrentView('forgotPassword');
+                  }}
+                >
+                  <Pencil className="w-4 h-4 text-gray-500" />
+                </button>
+              </div>
             </div>
 
             <div className="flex justify-center gap-3 mb-6">
@@ -548,7 +620,8 @@ const Login = () => {
               <button
                 type="button"
                 onClick={handleVerifyOtp}
-                className="w-1/2 bg-custom-bg text-white py-2 rounded-md hover:bg-custom-bg-dark transition-colors duration-200"
+                className={`w-1/2 bg-custom-bg text-white py-2 rounded-md transition-colors duration-200 ${!sOtp || sOtp.length !== 6 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-custom-bg-dark'}`}
+                disabled={!sOtp || sOtp.length !== 6}
               >
                 {t('otpDialog.verifyButton')}
               </button>

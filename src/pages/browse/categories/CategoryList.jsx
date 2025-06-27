@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import Toolbar from '../../../components/Toolbar'
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
-import { useCategories } from '../../../context/CategoryContext';
+import { useCategories } from '../../../context/AllDataContext';
 import Pagination from '../../../components/Pagination';
 import { showEmsg } from '../../../utils/ShowEmsg';
+import { STATUS } from '../../../contants/constants';
 
 const CategoryList = () => {
   const { t } = useTranslation();
@@ -13,27 +13,35 @@ const CategoryList = () => {
   const [sStatusFilter, setStatusFilter] = useState('');
   const [bShowFilters, setShowFilters] = useState(false);
 
-  const { aCategories, bLoading, sError, fetchCategories, iTotalItems, toggleCategoryStatus } = useCategories();
+  const categories = useCategories();
+  const aCategories = categories.data || [];
+  const bLoading = categories.loading;
+  const sError = categories.error;
+  const iTotalItems = categories.total;
+  const toggleCategoryStatus = categories.toggleStatus;
 
   const [nCurrentPage, setCurrentPage] = useState(1);
-  const [iItemsPerPage] = useState(10); 
+  const [iItemsPerPage] = useState(10);
   useEffect(() => {
-    fetchCategories(nCurrentPage, iItemsPerPage, sSearchQuery);
-  }, [nCurrentPage, iItemsPerPage, sSearchQuery, fetchCategories]);
+    categories.fetch({ pageNumber: nCurrentPage, pageSize: iItemsPerPage, searchText: sSearchQuery });
+  }, [nCurrentPage, iItemsPerPage, sSearchQuery]);
 
   const handleStatusToggle = async (categoryId, currentIsActive) => {
     try {
-      const response = await toggleCategoryStatus(categoryId, !currentIsActive);
-      if (response.status === 'ERROR') {
-        showEmsg(response.message, 'error');
+      const oResponse = await toggleCategoryStatus(categoryId, !currentIsActive);
+      const resData = oResponse;
+
+      if (resData?.status === STATUS.ERROR) {
+        showEmsg(resData?.message, 'error');
       } else {
-        showEmsg(response.message || 'Status updated successfully.', 'success');
+        showEmsg(resData?.message || t('productSetup.categories.statusUpdateSuccess'), 'success');
       }
     } catch (error) {
-      console.error('Error toggling category status:', error);
-      showEmsg('An unexpected error occurred during status update.', 'error');
+      const backendMessage = error?.response?.data?.message;
+      showEmsg(backendMessage , 'error');
     }
   };
+
 
   const handlePageClick = (pageNumber) => {
     setCurrentPage(pageNumber);
@@ -51,20 +59,17 @@ const CategoryList = () => {
     }
   };
 
- const filteredCategoriesByStatus = aCategories.filter(category => {
-  if (!sStatusFilter) return true;
-  return sStatusFilter === 'Active' ? category.IsActive : !category.IsActive;
-});
+  const filteredCategoriesByStatus = aCategories.filter(category => {
+    if (!sStatusFilter) return true;
+    return sStatusFilter === 'Active' ? category.IsActive : !category.IsActive;
+  });
 
 
   return (
     <div>
-      {/* Header with title and Add button */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-medium text-gray-900">{t("productSetup.categories.title")}</h2>
       </div>
-
-      {/* Search and Filter */}
       <div className="mb-6">
         <Toolbar
           searchTerm={sSearchQuery}
@@ -184,8 +189,6 @@ const CategoryList = () => {
           </div>
         </div>
       )}
-
-      {/* Empty State */}
       {!bLoading && !sError && aCategories.length === 0 && (
         <div className="text-center py-12">
           <div className="text-gray-500">{t("productSetup.categories.empty.message")}</div>

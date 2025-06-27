@@ -6,81 +6,110 @@ import { Store, Shield, ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { apiGet, apiPost } from '../utils/ApiUtils';
 import { GetAllPermmissions, CreateOrUpdateRole, GetAllPermissionsByRoleId } from '../contants/apiRoutes';
-import { useStores } from '../context/StoreContext';
+import { useStores } from '../context/AllDataContext';
 import { showEmsg } from '../utils/ShowEmsg';
 import { useTitle } from '../context/TitleContext';
+import { STATUS } from '../contants/constants';
 
 const AddUserRole = () => {
   const [sRoleName, setRoleName] = useState('');
   const [sStoreId, setStoreId] = useState('0');
+  const [sStoreName, setStoreName] = useState('');
   const [oPermissionsByModule, setPermissionsByModule] = useState({});
   const [nError, setError] = useState(null);
   const [oErrors, setErrors] = useState({});
   const [loadingPermissions, setLoadingPermissions] = useState(true);
   const { t } = useTranslation();
-  const { aStores, bLoading: bStoresLoading, sError: sStoresError } = useStores();
-  const { Id } = useParams();
-  const { setTitle } = useTitle();
+  const { data: aStores = [], loading: bStoresLoading, error: sStoresError } = useStores();
+  const { roleId } = useParams();
+  const { setTitle, setBackButton } = useTitle();
 
   useEffect(() => {
     setTitle(t('createuserrole.add_user_role'));
-    return () => setTitle('');
-  }, [setTitle, t]);
+    setBackButton(
+      <button
+        onClick={() => window.history.back()}
+        className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 mr-2"
+      >
+        <ArrowLeft className="h-5 w-5 text-gray-500" />
+      </button>
+    );
+    return () => {
+      setBackButton(null);
+      setTitle('');
+    };
+  }, [setTitle, setBackButton, t]);
 
   useEffect(() => {
     const fetchPermissions = async () => {
       setLoadingPermissions(true);
       setError(null);
+
       try {
         const token = localStorage.getItem('token');
-        let response;
-        if (Id) {
-          response = await apiGet(`${GetAllPermissionsByRoleId}/${Id}`, {}, token);
+        let oResponse;
+
+        if (roleId) {
+          oResponse = await apiGet(`${GetAllPermissionsByRoleId}/${roleId}`, {}, token);
         } else {
-          response = await apiGet(GetAllPermmissions, {}, token);
+          oResponse = await apiGet(GetAllPermmissions, {}, token);
         }
+
+        const resData = oResponse?.data;
         let permissionsArr = [];
-        if (response.data && response.data.status === 'SUCCESS') {
-          if (response.data.data && Array.isArray(response.data.data.rows)) {
-            permissionsArr = response.data.data.rows;
-          } else if (Array.isArray(response.data.result)) {
-            permissionsArr = response.data.result;
+
+        if (resData?.status === STATUS.SUCCESS_1) {
+          if (resData.data?.rows && Array.isArray(resData.data.rows)) {
+            permissionsArr = resData.data.rows;
+          } else if (Array.isArray(resData.result)) {
+            permissionsArr = resData.result;
           }
         }
+
         if (permissionsArr.length > 0) {
           const categorizedPermissions = {};
+
           permissionsArr.forEach((permission) => {
             const module = permission.Module || permission.PermissionModule;
             const id = permission.ID || permission.PermissionId;
             const name = permission.Name || permission.PermissionName;
             const isChecked = permission.IsChecked;
+
             if (!categorizedPermissions[module]) {
               categorizedPermissions[module] = [];
             }
+
             categorizedPermissions[module].push({
               ID: id,
               Name: name,
               IsChecked: isChecked,
             });
           });
+
           setPermissionsByModule(categorizedPermissions);
-          if (Id && response.data.data && response.data.data.role) {
-            setRoleName(response.data.data.role.RoleName || '');
-            setStoreId(response.data.data.role.StoreID ? String(response.data.data.role.StoreID) : '0');
+
+          if (roleId && permissionsArr.length > 0) {
+            const roleInfo = permissionsArr.find(p => p.RoleName && p.StoreID) || permissionsArr[0];
+            setRoleName(roleInfo.RoleName || '');
+            setStoreId(roleInfo.StoreID ? String(roleInfo.StoreID) : '0');
+            setStoreName(roleInfo.StoreName || '');
           }
         } else {
           setPermissionsByModule({});
-          setError(response.data?.message || 'Failed to fetch permissions');
+          setError(resData?.message || t('createuserrole.failedToFetchPermissions'));
         }
       } catch (err) {
+        const backendMessage = err?.response?.data?.message;
         setPermissionsByModule({});
-        setError('Failed to fetch permissions');
+        setError(backendMessage || t('createuserrole.failedToFetchPermissions'));
       } finally {
         setLoadingPermissions(false);
       }
     };
+
     fetchPermissions();
-  }, [Id]);
+  }, [roleId]);
+
 
   const navigate = useNavigate();
   const handleCheckboxChange = (moduleName, permissionId) => {
@@ -110,16 +139,16 @@ const AddUserRole = () => {
   };
 
   const handleClose = () => {
-    navigate("/addUserRole");
+    navigate("/userRoles");
   };
   const handleSaveRole = (event) => {
     event.preventDefault();
   };
 
-  if (nError) return <div>{nError}</div>;
+  if (nError) return <div>{t('createuserrole.failedToFetchPermissions')}</div>;
 
   const storeOptions = aStores.map((store) => ({
-    value: store.StoreID,
+    value: String(store.StoreID),
     label: store.StoreName,
   }));
 
@@ -142,21 +171,17 @@ const AddUserRole = () => {
   const handleSave = async (event) => {
     event.preventDefault();
     if (!validateRoleDataSubmit()) {
-      // Collect selected permissions robustly
       const selectedPermissions = Object.values(oPermissionsByModule)
         .flat()
         .filter(permission => permission.IsChecked)
         .map(permission => permission.ID || permission.PermissionId || permission.id);
 
-      console.log('Selected permissions:', selectedPermissions);
-
       const roleData = {
-        roleId: 0,
+        roleId: roleId ? Number(roleId) : 0,
         roleName: sRoleName,
         storeId: sStoreId,
         permissions: selectedPermissions,
       };
-      console.log('roleData:', roleData);
 
       try {
         const token = localStorage.getItem('token');
@@ -164,7 +189,7 @@ const AddUserRole = () => {
         handleSaveRole(event);
       } catch (err) {
         const msg = err?.response?.data?.message;
-        showEmsg(msg, 'error');
+        showEmsg(msg || t('createuserrole.failedToSaveRole'), 'error');
       }
     }
   };
@@ -176,12 +201,6 @@ const AddUserRole = () => {
       <div>
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
-            <button
-              onClick={() => window.history.back()}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-            >
-              <ArrowLeft className="h-5 w-5 text-gray-500" />
-            </button>
             <p className="text-gray-500">
               {t('createuserrole.add_user_role_description')}
             </p>
@@ -256,7 +275,7 @@ const AddUserRole = () => {
                           }
                           className="mr-2 form-checkbox h-[12px] w-[12px] text-blue-600"
                         />
-                        {t('createuserrole:select_all')}
+                        {t('createuserrole.select_all')}
                       </label>
                     </div>
                     <hr className="border-gray-300 my-4 mt-2 mb-4" />
@@ -286,7 +305,7 @@ const AddUserRole = () => {
               onClick={handleClose}
               type="button"
             >
-              {t('createuserrole:close')}
+              {t('createuserrole.close')}
             </button>
             <button
               className="btn-primary"

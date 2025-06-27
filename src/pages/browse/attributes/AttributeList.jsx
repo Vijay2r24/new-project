@@ -4,9 +4,10 @@ import CreateAttribute from './CreateAttribute';
 import Toolbar from '../../../components/Toolbar';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { useAttributes } from '../../../context/AttributeContext';
+import { useAttributes } from '../../../context/AllDataContext';
 import Pagination from '../../../components/Pagination';
 import FullscreenErrorPopup from '../../../components/FullscreenErrorPopup';
+import { STATUS } from '../../../contants/constants';
 const AttributeList = () => {
   const [sSearchQuery, setSearchQuery] = useState('');
   const [sStatusFilter, setStatusFilter] = useState('');
@@ -17,35 +18,31 @@ const AttributeList = () => {
   const { aAttributes, bLoading, sError } = useAttributes();
 
   const [iCurrentPage, setCurrentPage] = useState(1);
-  const [iItemsPerPage] = useState(10); // You can make this dynamic if needed
+  const [iItemsPerPage] = useState(10); 
 
   const [bShowErrorPopup, setShowErrorPopup] = useState(false);
   const [sErrorMessage, setErrorMessage] = useState('');
 
 const handleStatusChange = async (attributeId, currentIsActive) => {
   try {
-    // Step 1: Show the ecommerce-related warning before any API call
     if (currentIsActive) {
-      setErrorMessage('This attribute is used in one or more products. Deactivating it may affect product listings.');
+      setErrorMessage(t('productSetup.attributes.statusUpdateWarning'));
       setShowErrorPopup(true);
-      return; // Stop further execution for now
+      return; 
     }
 
-    // Step 2: Proceed with API call or toggle logic
     const response = { status: 'ERROR', message: 'API call for status toggle not implemented yet.' };
 
-      if (response.status === 'SUCCESS') {
-      console.log(`Attribute ${attributeId} status updated successfully.`);
+      if (response.status === STATUS.SUCCESS_1) {
         setShowErrorPopup(false);
         setErrorMessage('');
       } else {
-        setErrorMessage(response.message);
+        setErrorMessage(response.message || t('productSetup.attributes.statusUpdateError'));
         setShowErrorPopup(true);
       }
     } catch (error) {
-      setErrorMessage('An unexpected error occurred during status update.');
+      setErrorMessage(t('productSetup.attributes.statusUpdateError'));
       setShowErrorPopup(true);
-      console.error('Error updating attribute status:', error);
     }
   };
   const filteredAttributes = aAttributes.filter(attribute => {
@@ -181,7 +178,7 @@ const handleStatusChange = async (attributeId, currentIsActive) => {
       {/* Empty State */}
         {!bLoading && !sError && filteredAttributes.length === 0 && (
         <div className="text-center py-12">
-          <div className="text-gray-500">No attributes found</div>
+          <div className="text-gray-500">{t('productSetup.attributes.emptyMessage')}</div>
             {(sSearchQuery || sStatusFilter) && (
             <button
               onClick={() => {

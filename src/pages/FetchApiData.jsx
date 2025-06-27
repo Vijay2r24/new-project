@@ -8,7 +8,6 @@ export const fetchApiData = async () => {
     console.error("No token found. API calls aborted.");
     return;
   }
-  // Check for stored data
   const storedCitiesData = localStorage.getItem("citiesData");
   const storedStatesData = localStorage.getItem("statesData");
   const storedCountriesData = localStorage.getItem("countriesData");

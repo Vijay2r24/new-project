@@ -7,9 +7,10 @@ import { useTranslation } from 'react-i18next'
 import { apiPost, apiGet, apiPut } from '../../../utils/ApiUtils';
 import { createBrand, getBrandById, updateBrandById } from '../../../contants/apiRoutes';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useCategories } from '../../../context/CategoryContext';
+import { useCategories } from '../../../context/AllDataContext';
 import { ToastContainer } from 'react-toastify';
 import { showEmsg } from '../../../utils/ShowEmsg';
+import { STATUS } from '../../../contants/constants';
 const CreateBrand = () => {
   const [oFormData, setFormData] = useState({
     TenantID: '1',
@@ -30,16 +31,19 @@ const CreateBrand = () => {
   const { id: brandId } = useParams();
 
   const isEditing = !!brandId;
-  const { aCategories, bLoading: bLoadingCategories, sError: sErrorCategories } = useCategories();
+  const categories = useCategories();
+  const aCategories = categories.data || [];
+  const bLoadingCategories = categories.loading;
+  const sErrorCategories = categories.error;
 
   useEffect(() => {
     if (isEditing && brandId && !bLoadingCategories) {
       const fetchBrandDetails = async () => {
         try {
           const token = localStorage.getItem("token");
-          const response = await apiGet(getBrandById + `/${brandId}`, {}, token);
-          if (response.data.status === 'SUCCESS' && response.data.data) {
-            const brandData = response.data.data;
+          const oResponse = await apiGet(getBrandById + `/${brandId}`, {}, token);
+          if (oResponse.data.status === STATUS.SUCCESS_1 && oResponse.data.data) {
+            const brandData = oResponse.data.data;
             setFormData(prev => ({
               ...prev,
               TenantID: brandData.TenantID || '1',
@@ -47,14 +51,13 @@ const CreateBrand = () => {
               CategoryID: brandData.CategoryID || '',
               Heading: brandData.Heading || '',
               BrandCode: brandData.BrandCode || '',
-              IsActive: brandData.IsActive === true, // Ensure boolean
+              IsActive: brandData.IsActive === true,
               BrandLogo: brandData.BrandLogo || null,
               description: brandData.Description || '',
               CreatedBy: brandData.CreatedBy || 'Admin',
-              UpdatedBy: 'Admin' // Set UpdatedBy on fetch for consistency
+              UpdatedBy: 'Admin'
             }));
           } else {
-            console.error('Failed to fetch brand details:', response.data);
           }
         } catch (err) {
           console.error('Error fetching brand details:', err);
@@ -100,19 +103,19 @@ const CreateBrand = () => {
     const newErrors = {};
 
     if (!oFormData.BrandName.trim()) {
-      newErrors.BrandName = 'Brand name is required';
+      newErrors.BrandName = t('productSetup.createBrand.brandNameRequired');
     }
     if (!oFormData.CategoryID) {
-      newErrors.CategoryID = 'Category is required';
+      newErrors.CategoryID = t('productSetup.createBrand.categoryRequired');
     }
     if (!oFormData.Heading.trim()) {
-      newErrors.Heading = 'Heading is required';
+      newErrors.Heading = t('productSetup.createBrand.headingRequired');
     }
     if (!oFormData.BrandCode.trim()) {
-      newErrors.BrandCode = 'Brand code is required';
+      newErrors.BrandCode = t('productSetup.createBrand.brandCodeRequired');
     }
     if (!oFormData.BrandLogo && !isEditing) { 
-      newErrors.BrandLogo = 'Brand logo is required';
+      newErrors.BrandLogo = t('productSetup.createBrand.brandLogoRequired');
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -128,7 +131,7 @@ const CreateBrand = () => {
     dataToSend.append('IsActive', oFormData.IsActive ? 'true' : 'false');
     dataToSend.append('Description', oFormData.description);
 
-    if (oFormData.BrandLogo && typeof oFormData.BrandLogo !== 'string') { // Only append file if it's a new file
+    if (oFormData.BrandLogo && typeof oFormData.BrandLogo !== 'string') { 
       dataToSend.append('BrandLogo', oFormData.BrandLogo);
     }
 
@@ -144,15 +147,14 @@ const CreateBrand = () => {
         response = await apiPost(createBrand, dataToSend, token);
       }
 
-      if (response.data.status === 'SUCCESS') {
-        showEmsg(response.data.message || 'Operation successful!', 'success');
+      if (response.data.status === STATUS.SUCCESS_1) {
+        showEmsg(response.data.message || t('productSetup.createBrand.success'), 'success');
       } else {
-        console.error('API Error:', response.data);
-        showEmsg(response.data.message || 'Unknown error', 'error');
-        setErrors(prev => ({ ...prev, api: response.data.message || 'Unknown error' }));
+        showEmsg(response.data.message || t('productSetup.createBrand.unknownError'), 'error');
+        setErrors(prev => ({ ...prev, api: response.data.message || t('productSetup.createBrand.unknownError') }));
       }
     } catch (err) {
-      setErrors(prev => ({ ...prev, api: 'An unexpected error occurred.' }));
+      setErrors(prev => ({ ...prev, api: t('productSetup.createBrand.unexpectedError') }));
     }
   };
 
@@ -204,7 +206,6 @@ const CreateBrand = () => {
           </div>
           <div className="flex flex-col md:flex-row md:space-x-4">
             <div className="w-full md:w-1/2">
-              {/* Heading */}
               <TextInputWithIcon
                 label="Heading"
                 id="Heading"
@@ -217,7 +218,6 @@ const CreateBrand = () => {
               />
             </div>
             <div className="w-full md:w-1/2">
-              {/* Brand Code */}
               <TextInputWithIcon
                 label="Brand Code"
                 id="BrandCode"
@@ -232,7 +232,6 @@ const CreateBrand = () => {
           </div>
           <div className="flex flex-col md:flex-row md:space-x-4">
             <div className="w-full md:w-1/2">
-              {/* Status */}
               <SelectWithIcon
                 label={t("productSetup.createBrand.statusLabel")}
                 id="IsActive"
@@ -247,7 +246,6 @@ const CreateBrand = () => {
                 error={oErrors.IsActive}
               />
             </div>
-            {/* Brand Logo */}
             <div className="w-full md:w-1/2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {t("productSetup.createBrand.logoLabel")}
@@ -298,7 +296,6 @@ const CreateBrand = () => {
               </div>
             </div>
           </div>
-          {/* Description */}
           <div className="w-full">
             <TextAreaWithIcon
               label={t("productSetup.createBrand.descriptionLabel")}
@@ -309,7 +306,6 @@ const CreateBrand = () => {
               icon={Info}
             />
           </div>
-          {/* Form Actions */}
           <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
             <button
               type="button"

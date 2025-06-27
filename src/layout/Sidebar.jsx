@@ -67,7 +67,7 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
       section: 'Content Management',
       subItems: [
         { name: t('sidebar.Banners'), href: '/banners', icon: Image, relatedPaths: ['/banners-create'] },
-        { name: t('sidebar.Pages'), href: '/pages', icon: FileText },
+        { name: t('sidebar.Notifications'), href: '/notifications', icon: Bell },
       ]
     },
     {
@@ -76,7 +76,7 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
       icon: Settings,
       section: 'Settings',
       subItems: [
-        { name: t('sidebar.Notifications'), href: '/notifications', icon: Bell },
+        { name: t('sidebar.Pages'), href: '/pages', icon: FileText },
       ]
     },
   ], [t]);

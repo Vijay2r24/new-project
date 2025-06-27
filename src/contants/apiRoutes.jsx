@@ -1,4 +1,3 @@
-
 export const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 export const LOGIN = `/adminlogin`;
 export const FORGOT_USER_PASSWORD = `/forgotUserPassword`;
@@ -70,3 +69,4 @@ export const getAttributeById=`/getAttributeById`;
 export const sendnotifications=`/sendnotifications`;
 export const UpdateBanner=`/banners`;
 export const updateStatus=`/banner/update-status`;
+export const userActiveStatus = '/userActiveStatus';

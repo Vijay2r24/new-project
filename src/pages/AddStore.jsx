@@ -17,7 +17,7 @@ const AddStore = () => {
   const { t } = useTranslation();
   const { countriesData, statesData, citiesData } = useContext(LocationDataContext);
   const { id } = useParams();
-  const { setTitle } = useTitle();
+  const { setTitle, setBackButton } = useTitle();
   const [oFormData, setFormData] = useState({
     name: '',
     address: '',
@@ -32,41 +32,62 @@ const AddStore = () => {
     stateName: '',
     cityName: ''
   });
+  const [sError, setError] = useState(null);
 
   useEffect(() => {
     if (id) {
       const fetchStore = async () => {
-        const token = localStorage.getItem('token');
-        const response = await apiGet(`${getStoreById}/${id}`, {}, token);
-        if (response.data && response.data.status === 'SUCCESS' && response.data.store) {
-          const store = response.data.store;
-          const foundCountry = getArray(countriesData).find(c => c.CountryName === store.CountryName);
-          const foundState = getArray(statesData).find(s => s.StateName === store.StateName && String(s.CountryID) === String(foundCountry?.CountryID));
-          const foundCity = getArray(citiesData).find(c => c.CityName === store.CityName && String(c.StateID) === String(foundState?.StateID));
-          setFormData(prevFormData => ({
-            ...prevFormData,
-            name: store.StoreName || '',
-            address: store.AddressLine1 || '',
-            country: foundCountry?.CountryID || '',
-            state: foundState?.StateID || '',
-            city: foundCity?.CityID || '',
-            zipCode: store.ZipCode || '',
-            phone: store.Phone || '',
-            email: store.Email || '',
-            status: store.Status || 'Active',
-            countryName: store.CountryName || '',
-            stateName: store.StateName || '',
-            cityName: store.CityName || ''
-          }));
+        try {
+          const token = localStorage.getItem('token');
+          const response = await apiGet(`${getStoreById}/${id}`, {}, token);
+          if (response.data && response.data.status === 'SUCCESS' && response.data.store) {
+            const store = response.data.store;
+            const foundCountry = getArray(countriesData).find(c => c.CountryName === store.CountryName);
+            const foundState = getArray(statesData).find(s => s.StateName === store.StateName && String(s.CountryID) === String(foundCountry?.CountryID));
+            const foundCity = getArray(citiesData).find(c => c.CityName === store.CityName && String(c.StateID) === String(foundState?.StateID));
+            setFormData(prevFormData => ({
+              ...prevFormData,
+              name: store.StoreName || '',
+              address: store.AddressLine1 || '',
+              country: foundCountry?.CountryID || '',
+              state: foundState?.StateID || '',
+              city: foundCity?.CityID || '',
+              zipCode: store.ZipCode || '',
+              phone: store.Phone || '',
+              email: store.Email || '',
+              status: store.Status || 'Active',
+              countryName: store.CountryName || '',
+              stateName: store.StateName || '',
+              cityName: store.CityName || ''
+            }));
+            setError(null);
+          } else {
+            setError(response.data?.message || t('common.errorMessage'));
+          }
+        } catch (error) {
+          const backendMessage = error?.response?.data?.message;
+          setError(backendMessage || t('common.errorMessage'));
         }
       };
       fetchStore();
     }
-  }, [id, countriesData, statesData, citiesData]);
+  }, [id, countriesData, statesData, citiesData, t]);
 
   useEffect(() => {
     setTitle(id ? t('createStore.editStore') : t('createStore.addStore'));
-  }, [setTitle, t, id]);
+    setBackButton(
+      <button
+        onClick={() => window.history.back()}
+        className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 mr-2"
+      >
+        <ArrowLeft className="h-5 w-5 text-gray-500" />
+      </button>
+    );
+    return () => {
+      setBackButton(null);
+      setTitle('');
+    };
+  }, [setTitle, setBackButton, t, id]);
 
   const filteredStates = getArray(statesData).filter(s => String(s.CountryID) === String(oFormData.country));
   const filteredCities = getArray(citiesData).filter(c => String(c.StateID) === String(oFormData.state));
@@ -81,8 +102,7 @@ const AddStore = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
-    const userId = localStorage.getItem('userId'); // assuming you store the user ID here
-
+    const userId = localStorage.getItem('userId'); 
     const payload = {
       StoreID: id ? parseInt(id, 10) : 0,
       TenantID: 0,
@@ -116,16 +136,12 @@ const AddStore = () => {
     <div className="max-w-7xl mx-auto">
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-4">
-          <button
-            onClick={() => window.history.back()}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-          >
-            <ArrowLeft className="h-5 w-5 text-gray-500" />
-          </button>
           <p className="text-gray-500">{t('createStore.storeDescription')}</p>
         </div>
       </div>
-
+      {sError && (
+        <div className="mb-4 text-red-500 text-center">{sError}</div>
+      )}
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">

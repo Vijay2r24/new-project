@@ -7,9 +7,10 @@ import TextAreaWithIcon from '../../../components/TextAreaWithIcon';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiPost, apiGet, apiPut } from '../../../utils/ApiUtils';
 import { createCategory, getCategoryById, updateCategoryById } from '../../../contants/apiRoutes';
-import { useCategories } from '../../../context/CategoryContext';
+import { useCategories } from '../../../context/AllDataContext';
 import { ToastContainer } from 'react-toastify';
 import { showEmsg } from '../../../utils/ShowEmsg';
+import { STATUS } from '../../../contants/constants';
 
 const CreateCategory = () => {
   const { id: categoryId } = useParams();
@@ -17,7 +18,10 @@ const CreateCategory = () => {
   const { t } = useTranslation();
 
   const isEditing = !!categoryId;
-  const { aCategories, bLoading: bLoadingCategories, sError: sErrorCategories } = useCategories();
+  const categories = useCategories();
+  const aCategories = categories.data || [];
+  const bLoadingCategories = categories.loading;
+  const sErrorCategories = categories.error;
 
   const [oFormData, setFormData] = useState({
     TenantID: '1',
@@ -39,9 +43,9 @@ const CreateCategory = () => {
       const fetchCategoryDetails = async () => {
         try {
           const token = localStorage.getItem("token");
-          const response = await apiGet(`${getCategoryById}/${categoryId}`, {}, token);
-          if (response.data.status === 'SUCCESS' && response.data.Data) {
-            const categoryData = response.data.Data;
+          const oResponse = await apiGet(`${getCategoryById}/${categoryId}`, {}, token);
+          if (oResponse.data.status === STATUS.SUCCESS_1 && oResponse.data.Data) {
+            const categoryData = oResponse.data.Data;
             setFormData(prev => ({
               ...prev,
               TenantID: categoryData.TenantID || '1',
@@ -58,15 +62,17 @@ const CreateCategory = () => {
               setImagePreview(categoryData.CategoryImage);
             }
           } else {
-            console.error('Failed to fetch category details:', response.data);
+            showEmsg(t('productSetup.createCategory.unknownError'), 'error');
+            setErrors(prev => ({ ...prev, api: t('productSetup.createCategory.unknownError') }));
           }
         } catch (err) {
-          console.error('Error fetching category details:', err);
+          showEmsg(t('productSetup.createCategory.unexpectedError'), 'error');
+          setErrors(prev => ({ ...prev, api: t('productSetup.createCategory.unexpectedError') }));
         }
       };
       fetchCategoryDetails();
     }
-  }, [categoryId, isEditing, bLoadingCategories]);
+  }, [categoryId, isEditing, bLoadingCategories, t]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -128,7 +134,7 @@ const CreateCategory = () => {
       newErrors.CategoryName = t("productSetup.createCategory.nameError");
     }
     if (!oFormData.Heading.trim()) {
-      newErrors.Heading = 'Heading is required';
+      newErrors.Heading = t('productSetup.createCategory.headingRequired');
     }
     if (!oFormData.CategoryImage && !isEditing) {
       newErrors.CategoryImage = t("productSetup.createCategory.imageRequired");
@@ -171,23 +177,23 @@ const CreateCategory = () => {
 
     try {
       const token = localStorage.getItem("token");
-      let response;
+      let oResponse;
       if (isEditing) {
-        response = await apiPut(`${updateCategoryById}/${categoryId}`, dataToSend, token);
+        oResponse = await apiPut(`${updateCategoryById}/${categoryId}`, dataToSend, token);
       } else {
-        response = await apiPost(createCategory, dataToSend, token);
+        oResponse = await apiPost(createCategory, dataToSend, token);
       }
 
-      if (response.data.status === 'SUCCESS') {
-        showEmsg(response.data.message || 'Operation successful!', 'success');
+      if (oResponse.data.status === STATUS.SUCCESS_1) {
+        showEmsg(oResponse.data.message || t('common.save'), 'success');
         navigate('/browse/categories', { state: { fromCategoryEdit: true } });
       } else {
-        showEmsg(response.data.message || 'Unknown error', 'error');
-        setErrors(prev => ({ ...prev, api: response.data.message || 'Unknown error' }));
+        showEmsg(oResponse.data.message || t('productSetup.createCategory.unknownError'), 'error');
+        setErrors(prev => ({ ...prev, api: oResponse.data.message || t('productSetup.createCategory.unknownError') }));
       }
     } catch (err) {
-      showEmsg('An unexpected error occurred.', 'error');
-      setErrors(prev => ({ ...prev, api: 'An unexpected error occurred.' }));
+      showEmsg(t('productSetup.createCategory.unexpectedError'), 'error');
+      setErrors(prev => ({ ...prev, api: t('productSetup.createCategory.unexpectedError') }));
     }
   };
 

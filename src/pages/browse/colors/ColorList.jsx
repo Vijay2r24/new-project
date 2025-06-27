@@ -3,9 +3,10 @@ import { Edit, Trash} from 'lucide-react';
 import Toolbar from '../../../components/Toolbar';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { useColors } from '../../../context/ColorContext';
+import { useColors } from '../../../context/AllDataContext';
 import Pagination from '../../../components/Pagination';
 import { showEmsg } from '../../../utils/ShowEmsg';
+import { STATUS } from '../../../contants/constants';
 
 const ColorList = () => {
   const [sSearchQuery, setSearchQuery] = useState('');
@@ -13,27 +14,27 @@ const ColorList = () => {
   const [bShowFilters, setShowFilters] = useState(false);
   const { t } = useTranslation();
 
-  const { aColors, bLoading, sError, fetchColors, iTotalItems, toggleColorStatus } = useColors();
+  const { data: aColors, loading: bLoading, error: sError, total: iTotalItems, fetch: fetchColors, toggleStatus: toggleColorStatus } = useColors();
 
   // Pagination state
   const [nCurrentPage, setCurrentPage] = useState(1);
   const [iItemsPerPage] = useState(10); // Or a configurable value
 
   useEffect(() => {
-    fetchColors(nCurrentPage, iItemsPerPage, sSearchQuery);
-  }, [nCurrentPage, iItemsPerPage, sSearchQuery, fetchColors]);
+    fetchColors({ pageNumber: nCurrentPage, pageSize: iItemsPerPage, searchText: sSearchQuery });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nCurrentPage, iItemsPerPage, sSearchQuery]);
 
   const handleStatusChange = async (colorId, currentIsActive) => {
     try {
       const response = await toggleColorStatus(colorId, !currentIsActive);
-      if (response.status === 'ERROR') {
-        showEmsg(response.message, 'error');
+      if (response.status === STATUS.ERROR) {
+        showEmsg(response.message || t('productSetup.colors.statusUpdateError'), 'error');
       } else {
-        showEmsg(response.message || 'Status updated successfully.', 'success');
+        showEmsg(response.message || t('productSetup.colors.statusUpdateSuccess'), 'success');
       }
     } catch (error) {
-      console.error('Error updating color status:', error);
-      showEmsg('An unexpected error occurred during status update.', 'error');
+      showEmsg(t('productSetup.colors.unexpectedError'), 'error');
     }
   };
 

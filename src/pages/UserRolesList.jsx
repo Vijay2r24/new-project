@@ -7,21 +7,22 @@ import ActionButtons from '../components/ActionButtons';
 import NotFoundMessage from '../components/NotFoundMessage';
 import { useTranslation } from 'react-i18next';
 import { useTitle } from '../context/TitleContext';
-import { useRoles } from '../context/RolesContext';
+import { useRoles } from '../context/AllDataContext.jsx';
 
 const UserRolesList = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { setTitle } = useTitle();
-  const { roles, loading, error, totalPages, fetchRoles } = useRoles();
+  const { data: aRoles = [], loading: bLoading, error: nError, total, fetch } = useRoles();
   const [sSearchTerm, setSearchTerm] = useState('');
   const [sViewMode, setViewMode] = useState('table');
   const [nCurrentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const nTotalPages = Math.ceil(total / itemsPerPage);
 
   useEffect(() => {
-    fetchRoles({ pageNumber: nCurrentPage, pageSize: itemsPerPage, searchText: sSearchTerm, t });
-  }, [fetchRoles, nCurrentPage, sSearchTerm, t]);
+    fetch({ pageNumber: nCurrentPage, pageSize: itemsPerPage, searchText: sSearchTerm });
+  }, [nCurrentPage, sSearchTerm]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -32,21 +33,21 @@ const UserRolesList = () => {
     return () => setTitle('');
   }, [setTitle, t]);
 
-  const paginatedRoles = roles;
+  const paginatedRoles = aRoles || [];
 
   const handlePrevPage = () => {
     setCurrentPage((prev) => Math.max(prev - 1, 1));
   };
 
   const handleNextPage = () => {
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+    setCurrentPage((prev) => Math.min(prev + 1, nTotalPages));
   };
 
   const handlePageClick = (page) => {
     setCurrentPage(page);
   };
   const handleEdit = (id) => {
-    navigate(`/addUserRole/${id}`);
+    navigate(`/editUserRole/${id}`);
   }
   const handleDelete = () => {
 
@@ -56,7 +57,6 @@ const UserRolesList = () => {
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div className="flex-1 min-w-0">
-            {/* <h1 className="text-2xl font-bold text-gray-900">{t('userRolesList.title')}</h1> */}
             <p className="mt-1 text-sm text-gray-500">{t('userRolesList.description')}</p>
           </div>
           <button
@@ -76,10 +76,10 @@ const UserRolesList = () => {
         additionalFilters={[]}
         handleFilterChange={() => { }}
       />
-      {loading ? (
+      {bLoading ? (
         <div className="text-center py-8">{t('common.loading')}...</div>
-      ) : error ? (
-        <div className="text-center py-8 text-red-500">{error}</div>
+      ) : nError ? (
+        <div className="text-center py-8 text-red-500">{nError}</div>
       ) : sViewMode === 'table' ? (
         <div className="table-container">
           <div className="table-wrapper">
@@ -104,7 +104,7 @@ const UserRolesList = () => {
                 </tr>
               </thead>
               <tbody className="table-body">
-                {paginatedRoles.map((role) => (
+                {(paginatedRoles).map((role) => (
                   <tr key={role.roleid || role.RoleID} className="table-row">
                     <td className="table-cell">
                       {role.roleid || role.RoleID}
@@ -121,7 +121,7 @@ const UserRolesList = () => {
                       {role.storename || role.StoreName}
                     </td>
                     <td className="table-cell">
-                      <span className={`status-badge ${(role.status || role.Status) === t('userRolesList.status.active')
+                     <span className={`status-badge ${role.status === 'Active'
                         ? 'status-active'
                         : 'status-inactive'
                         }`}>
@@ -140,14 +140,14 @@ const UserRolesList = () => {
                     </td>
                   </tr>
                 ))}
-                {roles.length === 0 && (
+                {aRoles.length === 0 && (
                   <tr>
                     <td colSpan={5} className="py-8 text-center text-gray-500">
                       <NotFoundMessage message={t('userRolesList.noRolesFound')} />
                     </td>
                   </tr>
                 )}
-                {roles.length > 0 && paginatedRoles.length === 0 && (
+                {aRoles.length > 0 && paginatedRoles.length === 0 && (
                   <tr>
                     <td colSpan={5} className="py-8 text-center text-gray-500">
                       <NotFoundMessage message={t('userRolesList.noRolesOnPage')} />
@@ -160,7 +160,7 @@ const UserRolesList = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {roles.map((role) => (
+          {aRoles.map((role) => (
             <div key={role.roleid || role.RoleID} className="bg-white shadow-md rounded-lg p-6 flex flex-col">
               <div className="flex justify-between items-start mb-4">
                 <div>
@@ -187,15 +187,15 @@ const UserRolesList = () => {
               />
             </div>
           ))}
-          {roles.length === 0 && (
+          {aRoles.length === 0 && (
             <NotFoundMessage message={t('userRolesList.noRolesFound')} />
           )}
         </div>
       )}
       <Pagination
         currentPage={nCurrentPage}
-        totalPages={totalPages}
-        totalItems={roles.length}
+        totalPages={nTotalPages}
+        totalItems={total}
         itemsPerPage={itemsPerPage}
         handlePrevPage={handlePrevPage}
         handleNextPage={handleNextPage}
@@ -205,4 +205,4 @@ const UserRolesList = () => {
   );
 };
 
-export default UserRolesList; 
+export default UserRolesList;

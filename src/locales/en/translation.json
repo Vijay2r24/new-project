@@ -45,7 +45,14 @@
       "confirmPasswordRequired": "Please confirm your password",
       "passwordsMismatch": "Passwords do not match"
     },
-    "passwordSuggestion": "Password should be at least 8 characters, include uppercase, lowercase, number, and special character."
+    "passwordSuggestion": "Password should be at least 8 characters, include uppercase, lowercase, number, and special character.",
+    "rules": {
+      "length": "At least 8 characters",
+      "uppercase": "At least one uppercase letter (A-Z)",
+      "lowercase": "At least one lowercase letter (a-z)",
+      "number": "At least one number (0-9)",
+      "special": "At least one special character (!@#$...)"
+    }
   },
   "otpDialog": {
     "title": "OTP",
@@ -134,7 +141,10 @@
       },
       "noAttributes": "No attributes found",
       "clearFilters-btn": "Clear filters",
-      "editTitle": "Edit Attribute"
+      "editTitle": "Edit Attribute",
+      "statusUpdateWarning": "This attribute is used in one or more products. Deactivating it may affect product listings.",
+      "statusUpdateError": "An unexpected error occurred during status update.",
+      "emptyMessage": "No attributes found."
     },
     "createAttributes": {
       "createTitle": "Create Attribute",
@@ -164,7 +174,9 @@
       "descriptionPlaceholder": "Enter trait type description",
       "attributes": "Attributes",
       "emptyMessage": "No Trait types found",
-      "editTitle": "Edit trait Type"
+      "editTitle": "Edit trait Type",
+      "statusUpdateError": "An unexpected error occurred during status update.",
+      "emptyMessage": "No Trait types found."
     },
     "createAttributeType": {
       "createTitle": "Create trait Type",
@@ -175,7 +187,13 @@
       "descriptionPlaceholder": "Enter trait type description",
       "selectDataType": "Select a data type",
       "createButton": "Create trait Type",
-      "saveButton": "Save Changes"
+      "saveButton": "Save Changes",
+      "codeRequired": "Code is required",
+      "descriptionRequired": "Description is required",
+      "fetchError": "Failed to fetch attribute type details.",
+      "unknownError": "Unknown error.",
+      "unexpectedError": "An unexpected error occurred.",
+      "success": "Operation successful!"
     },
     "status": {
       "active": "Active",
@@ -198,7 +216,11 @@
         "message": "Changing the status of this brand will affect {{count}} associated product(s). Do you wish to proceed?",
         "cancelButton": "Cancel",
         "confirmButton": "Confirm"
-      }
+      },
+      "statusUpdateSuccess": "Status updated successfully.",
+      "statusUpdateError": "An unexpected error occurred during status update.",
+      "noBrandsFound": "No brands found.",
+      "unexpectedError": "An unexpected error occurred."
     },
     "createBrand": {
       "createTitle": "Create Brand",
@@ -220,7 +242,15 @@
       "editTitle": "Edit Brand",
       "saveButton": "Save Changes",
       "activeStatus": "Active",
-      "inactiveStatus": "Inactive"
+      "inactiveStatus": "Inactive",
+      "brandNameRequired": "Brand name is required",
+      "categoryRequired": "Category is required",
+      "headingRequired": "Heading is required",
+      "brandCodeRequired": "Brand code is required",
+      "brandLogoRequired": "Brand logo is required",
+      "unknownError": "Unknown error.",
+      "unexpectedError": "An unexpected error occurred.",
+      "success": "Operation successful!"
     },
     "categories": {
       "title": "Categories",
@@ -242,7 +272,9 @@
         "message": "Activating this category will make it visible on the storefront. Do you wish to proceed?",
         "cancelButton": "Cancel",
         "confirmButton": "Confirm"
-      }
+      },
+      "statusUpdateSuccess": "Status updated successfully.",
+      "statusUpdateError": "An unexpected error occurred during status update."
     },
     "createCategory": {
       "createTitle": "Create Category",
@@ -267,7 +299,10 @@
       "parentCategoryRequired": "Parent category is required",
       "descriptionMinLength": "Description must be at least 10 characters",
       "descriptionMaxLength": "Description cannot exceed 500 characters",
-      "statusInvalid": "Invalid status selected"
+      "statusInvalid": "Invalid status selected",
+      "headingRequired": "Heading is required",
+      "unknownError": "Unknown error",
+      "unexpectedError": "An unexpected error occurred."
     },
     "colors": {
       "title": "Colors",
@@ -282,7 +317,10 @@
       "empty": {
         "message": "No colors found",
         "clear": "Clear filters"
-      }
+      },
+      "statusUpdateSuccess": "Status updated successfully.",
+      "statusUpdateError": "An unexpected error occurred during status update.",
+      "unexpectedError": "An unexpected error occurred."
     },
     "createColor": {
       "createTitle": "Create Color",
@@ -304,7 +342,10 @@
       "status": {
         "active": "Active",
         "inactive": "Inactive"
-      }
+      },
+      "success": "Operation successful!",
+      "unknownError": "Unknown error.",
+      "unexpectedError": "An unexpected error occurred."
     }
   },
   "orders": {
@@ -376,7 +417,9 @@
     "storeName": "Store Name",
     "actions": "Actions",
     "noProducts": "No products found.",
-    "searchPlaceholder": "Search by product No, Category Name"
+    "searchPlaceholder": "Search by product No, Category Name",
+    "loading": "Loading products...",
+    "fetchError": "An error occurred while fetching products."
   },
   "productCreation": {
     "addNewProduct": "Add New Product",
@@ -435,7 +478,12 @@
     "sellingPriceRequired": "Selling price is required",
     "sellingPriceInvalid": "Selling price must be a positive number",
     "imageRequired": "At least one image is required",
-    "validationError": "Please fill in all required fields and correct invalid entries."
+    "validationError": "Please fill in all required fields and correct invalid entries.",
+    "productCreatedSuccess": "Product created successfully!",
+    "productUpdatedSuccess": "Product updated successfully!",
+    "productCreateFailed": "Failed to create product.",
+    "productUpdateFailed": "Failed to update product.",
+    "productSubmitError": "An error occurred while submitting the product."
   },
   "stores": {
     "heading": "Stores",
@@ -509,14 +557,16 @@
       "inactive": "Inactive"
     },
     "noUsersFound": "No users found.",
-    "UsersFound": "Loading users..."
+    "UsersFound": "Loading users...",
+    "loading": "Loading users...",
+    "fetchError": "An error occurred while fetching users."
   },
   "addUser": {
     "add_new_user": "Add New User",
     "create_new_user_description": "Create a new user account with their details and permissions.",
     "profile_preview": "Profile Preview",
     "profile_image": "Profile Image",
-    "image_upload_note": "Upload",
+    "image_upload_note": "Upload a clear profile image.",
     "personal_info": "Personal Information",
     "first_name": "First Name",
     "enter_first_name": "Enter first name",
@@ -531,6 +581,7 @@
     "enter_password": "Enter password",
     "confirm_password": "Confirm Password",
     "user_role": "User Role",
+    "select_role": "Select role",
     "user": "User",
     "admin": "Admin",
     "manager": "Manager",
@@ -544,7 +595,33 @@
     "state": "State",
     "enter_state": "Enter state",
     "cancel": "Cancel",
-    "create_user": "Create User"
+    "create_user": "Create User",
+    "passwordRequiredForNewUser": "Password and Confirm Password are required for new user creation.",
+    "passwordsDoNotMatch": "Password and Confirm Password do not match.",
+    "validation": {
+      "firstName": "First name is required",
+      "lastName": "Last name is required",
+      "email": "Email is required",
+      "password": "Password is required",
+      "confirmPassword": "Confirm password is required",
+      "passwordMatch": "Passwords do not match",
+      "role": "Role is required",
+      "streetAddress": "Street address is required",
+      "country": "Country is required",
+      "state": "State is required",
+      "city": "City is required",
+      "phoneLength": "Phone number must be exactly 10 digits",
+      "strongPassword": "Password must be at least 8 characters, include uppercase, lowercase, number, and special character."
+    },
+    "passwordStrong": "Strong password",
+    "passwordMedium": "Medium password",
+    "passwordWeak": "Weak password",
+    "passwordSuggestion": "Use at least 8 characters, including uppercase, lowercase, number, and special character.",
+    "passwordReqLength": "At least 8 characters",
+    "passwordReqUpper": "At least 1 uppercase letter",
+    "passwordReqLower": "At least 1 lowercase letter",
+    "passwordReqNumber": "At least 1 number",
+    "passwordReqSpecial": "At least 1 special character"
   },
   "createuserrole": {
     "add_user_role": "Add User Role",
@@ -560,7 +637,9 @@
     "edit_user_role": "Edit User Role",
     "edit_user_role_description": "Edit user role description",
     "save_role": "Save Role",
-    "update_role": "Update Role"
+    "update_role": "Update Role",
+    "failedToFetchPermissions": "Failed to fetch permissions.",
+    "failedToSaveRole": "Failed to save user role."
   },
   "bannerform": {
     "create_banner": "Create banner",
@@ -586,7 +665,11 @@
     "delete": "Delete",
     "choose_image": "Choose Image",
     "submit": "Submit",
-    "no_image": "No Image"
+    "no_image": "No Image",
+    "create_banner_description": "Create and upload banners for your store. Add images, set categories, brands, and more.",
+    "bannerStatusUpdateSuccess": "Banner status updated successfully.",
+    "bannerStatusUpdateError": "Failed to update banner status.",
+    "noBannersFound": "No banners found."
   },
   "notifications": {
     "title": "Notifications",
@@ -655,6 +738,8 @@
     "Analytics": "Analytics"
   },
   "profile": {
+    "title": "Profile",
+    "description": "Manage your account settings and preferences",
     "personal_information": "Persona information",
     "edit_profile": "Edit Profile",
     "change_password": "Change Password",
@@ -733,5 +818,29 @@
     },
     "noRolesFound": "No user roles found.",
     "noRolesOnPage": "No user roles found on this page."
+  },
+  "toolbar": {
+    "searchPlaceholder": "Search...",
+    "tableView": "Table View",
+    "gridView": "Grid View",
+    "table": "Table",
+    "grid": "Grid",
+    "filter": "Filter",
+    "filters": "Filters",
+    "clear": "Clear"
+  },
+  "select": {
+    "noOptions": "No options found.",
+    "loading": "Loading...",
+    "searchPlaceholder": "Search..."
+  },
+  "context": {
+    "errorFetchingData": "An error occurred while fetching data.",
+    "errorUpdatingStatus": "Failed to update status.",
+    "unexpectedError": "An unexpected error occurred."
+  },
+  "fullscreenErrorPopup": {
+    "title": "Error",
+    "close": "Close"
   }
 }

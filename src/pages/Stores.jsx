@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { Plus,MapPin, Phone, Mail, Building } from 'lucide-react';
+import { Plus,MapPin, Phone, Mail, Building, ArrowLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import Toolbar from '../components/Toolbar';
 import Pagination from '../components/Pagination';
 import ActionButtons from '../components/ActionButtons';
 import { useTranslation } from 'react-i18next';
-import { apiGet } from '../utils/ApiUtils';
-import { getAllStores } from '../contants/apiRoutes';
+import { useStores } from '../context/AllDataContext';
+import { useTitle } from '../context/TitleContext';
 const Stores = () => {
   const { t } = useTranslation();
+  const { setBackButton, setTitle } = useTitle();
   const [sSearchQuery, setSearchQuery] = useState('');
   const [sSearchTerm, setSearchTerm] = useState('');
   const [bShowFilterDropdown, setShowFilterDropdown] = useState(false);
@@ -31,14 +32,11 @@ const Stores = () => {
       ],
     },
   ];
-  const [aStores, setStores] = useState([]);
-  const [totalItems, setTotalItems] = useState(0);
+  const { data: aStores, loading, error, total: totalItems, fetch: fetchStores } = useStores();
+  const itemsPerPage = 3;
   const [totalPages, setTotalPages] = useState(1);
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'grid'
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 3;
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const navigate = useNavigate();
   const handleEdit = (StoreID) => {
     navigate(`/editStore/${StoreID}`);
@@ -64,41 +62,28 @@ const Stores = () => {
     setCurrentPage(page);
   };
 React.useEffect(() => {
-  const fetchStores = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const token = localStorage.getItem('token');
-      const params = {
-        pageNumber: currentPage,
-        pageSize: itemsPerPage,
-        searchText: sSearchTerm || '',
-      };
-      const response = await apiGet(getAllStores, params, token);
-      if (response.data.status === 'SUCCESS') {
-        setStores(response.data.data || []);
-        setTotalItems(response.data.totalRecords || 0);
-        setTotalPages(response.data.totalPages || 1);
-      } else {
-        setError(response.data.message || 'Failed to fetch stores');
-      }
-    } catch (err) {
-      setError('An error occurred while fetching stores');
-    } finally {
-      setLoading(false);
-    }
+  fetchStores({ pageNumber: currentPage, pageSize: itemsPerPage, searchText: sSearchTerm });
+  setTotalPages(Math.ceil(totalItems / itemsPerPage));
+  setTitle(t('stores.heading'));
+  setBackButton(
+    <button
+      onClick={() => window.history.back()}
+      className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 mr-2"
+    >
+      <ArrowLeft className="h-5 w-5 text-gray-500" />
+    </button>
+  );
+  return () => {
+    setBackButton(null);
+    setTitle('');
   };
-
-  fetchStores();
-}, [currentPage, itemsPerPage, sSearchTerm]);
+}, [currentPage, itemsPerPage, sSearchTerm, totalItems, fetchStores, setBackButton, setTitle, t]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen bg-gray-50">
-      {/* Header: Stores heading and Add Store in one row */}
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold text-gray-900">{t('stores.heading')}</h1>
             <p className="mt-1 text-sm text-gray-500">{t('stores.description')}</p>
           </div>
           <Link
@@ -123,8 +108,6 @@ React.useEffect(() => {
         handleFilterChange={handleFilterChange}
         placeholder={t('stores.search_placeholder')}
       />
-
-      {/* Stores List: Table or Grid View */}
       {viewMode === 'table' ? (
         <div className="table-container overflow-hidden">
           <div className="table-wrapper">
@@ -177,8 +160,8 @@ React.useEffect(() => {
                     </td>
                     <td className="table-cell">
                       <span className={`status-badge ${store.status === 'Active'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
+                        ? 'status-active'
+                        : 'status-inactive'
                         }`}>
                         {store.status}
                       </span>
@@ -205,7 +188,6 @@ React.useEffect(() => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {aStores.map(store => (
               <div key={store.id} className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col gap-4 hover:shadow-xl transition-shadow duration-200">
-                {/* Store Icon and Name */}
                 <div className="flex items-center gap-4 pb-2 border-b border-gray-100">
                   <div className="flex-shrink-0 h-12 w-12 bg-custom-bg/10 rounded-lg flex items-center justify-center">
                     <Building className="h-6 w-6 text-custom-bg" />

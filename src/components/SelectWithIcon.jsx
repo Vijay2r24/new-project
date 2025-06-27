@@ -1,5 +1,7 @@
-import React, { useState, useRef, useEffect, forwardRef } from 'react';
+import { useState, useRef, useEffect, forwardRef } from 'react';
 import { ChevronDown, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import ReactDOM from 'react-dom';
 
 const SelectWithIcon = forwardRef(({
   label,
@@ -15,24 +17,26 @@ const SelectWithIcon = forwardRef(({
   multiple = false,
   ...rest
 }, ref) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [sSearchTerm, setSearchTerm] = useState('');
+  const [nHighlightedIndex, setHighlightedIndex] = useState(-1);
   const selectRef = useRef(null);
   const inputRef = useRef(null);
   const optionsRef = useRef(null);
+  const portalDropdownRef = useRef(null);
+  const [dropdownStyle, setDropdownStyle] = useState({});
 
   const selectedOptionLabels = Array.isArray(value)
     ? options.filter(option => value.includes(option.value)).map(option => option.label)
     : [options.find(option => option.value === value)?.label || placeholder];
 
-  // If in multiple mode and no items selected, ensure placeholder is shown
   const displayLabel = (multiple && Array.isArray(value) && value.length === 0)
     ? placeholder
     : selectedOptionLabels[0];
 
   const filteredOptions = options.filter(option =>
-    option.label.toLowerCase().includes(searchTerm.toLowerCase())
+    option.label.toLowerCase().includes(sSearchTerm.toLowerCase())
   );
 
   useEffect(() => {
@@ -42,8 +46,8 @@ const SelectWithIcon = forwardRef(({
   }, [isOpen]);
 
   useEffect(() => {
-    if (isOpen && highlightedIndex !== -1 && optionsRef.current) {
-      const highlightedElement = optionsRef.current.children[highlightedIndex];
+    if (isOpen && nHighlightedIndex !== -1 && optionsRef.current) {
+      const highlightedElement = optionsRef.current.children[nHighlightedIndex];
       if (highlightedElement) {
         highlightedElement.scrollIntoView({
           block: 'nearest',
@@ -51,7 +55,20 @@ const SelectWithIcon = forwardRef(({
         });
       }
     }
-  }, [highlightedIndex, isOpen]);
+  }, [nHighlightedIndex, isOpen]);
+
+  useEffect(() => {
+    if (isOpen && selectRef.current) {
+      const rect = selectRef.current.getBoundingClientRect();
+      setDropdownStyle({
+        position: 'absolute',
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+        zIndex: 9999,
+      });
+    }
+  }, [isOpen]);
 
   const handleSelect = (optionValue) => {
     let newValue;
@@ -86,8 +103,8 @@ const SelectWithIcon = forwardRef(({
       setHighlightedIndex(prev => (prev - 1 + filteredOptions.length) % filteredOptions.length);
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (highlightedIndex !== -1 && filteredOptions[highlightedIndex]) {
-        handleSelect(filteredOptions[highlightedIndex].value);
+      if (nHighlightedIndex !== -1 && filteredOptions[nHighlightedIndex]) {
+        handleSelect(filteredOptions[nHighlightedIndex].value);
       }
     } else if (e.key === 'Escape') {
       setIsOpen(false);
@@ -97,7 +114,12 @@ const SelectWithIcon = forwardRef(({
   };
 
   const handleClickOutside = (event) => {
-    if (selectRef.current && !selectRef.current.contains(event.target)) {
+    const portalDropdown = portalDropdownRef.current;
+    if (
+      selectRef.current &&
+      !selectRef.current.contains(event.target) &&
+      (!portalDropdown || !portalDropdown.contains(event.target))
+    ) {
       setIsOpen(false);
       setSearchTerm('');
     }
@@ -164,23 +186,23 @@ const SelectWithIcon = forwardRef(({
             {error}
           </p>
         )}
-        {isOpen && (
-          <div className="absolute z-50 mt-1 w-full rounded-md bg-white shadow-lg border border-gray-200 max-h-60 overflow-auto focus:outline-none">
+        {isOpen && typeof window !== 'undefined' && document.getElementById('portal-root') && ReactDOM.createPortal(
+          <div ref={portalDropdownRef} style={dropdownStyle} className="rounded-md bg-white shadow-lg border border-gray-200 max-h-60 overflow-auto focus:outline-none">
             <div className="px-4 py-2">
               <div className="relative">
                 <input
                   ref={inputRef}
                   type="text"
-                  placeholder="Search..."
+                  placeholder={t('select.searchPlaceholder')}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-custom-bg focus:border-custom-bg"
-                  value={searchTerm}
+                  value={sSearchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
                     setHighlightedIndex(-1);
                   }}
                   onKeyDown={handleKeyDown}
                 />
-                {searchTerm && (
+                {sSearchTerm && (
                   <button
                     type="button"
                     onClick={() => {
@@ -195,19 +217,19 @@ const SelectWithIcon = forwardRef(({
               </div>
             </div>
             {loading ? (
-              <div className="text-center py-4 text-gray-500">Loading...</div>
+              <div className="text-center py-4 text-gray-500">{t('select.loading')}</div>
             ) : filteredOptions.length === 0 ? (
-              <div className="text-center py-4 text-gray-500">No options found.</div>
+              <div className="text-center py-4 text-gray-500">{t('select.noOptions')}</div>
             ) : (
               <ul tabIndex="-1" role="listbox" className="py-1" ref={optionsRef}>
                 {filteredOptions.map((opt, index) => (
                   <li
                     key={opt.value}
-                    className={`cursor-default select-none relative py-2 pl-12 pr-4 ${index === highlightedIndex ? 'bg-custom-bg text-white' : 'text-gray-900'} ${multiple && Array.isArray(value) && value.includes(opt.value) ? 'bg-blue-100 text-blue-800' : ''}`}
+                    className={`cursor-default select-none relative py-2 pl-12 pr-4 ${index === nHighlightedIndex ? 'bg-custom-bg text-white' : 'text-gray-900'} ${multiple && Array.isArray(value) && value.includes(opt.value) ? 'bg-blue-100 text-blue-800' : ''}`}
                     onClick={() => handleSelect(opt.value)}
                     onMouseEnter={() => setHighlightedIndex(index)}
                     role="option"
-                    aria-selected={index === highlightedIndex || (multiple && Array.isArray(value) && value.includes(opt.value))}
+                    aria-selected={index === nHighlightedIndex || (multiple && Array.isArray(value) && value.includes(opt.value))}
                   >
                     <span className="block truncate">{opt.label}</span>
                     {multiple && Array.isArray(value) && value.includes(opt.value) && (
@@ -221,7 +243,8 @@ const SelectWithIcon = forwardRef(({
                 ))}
               </ul>
             )}
-          </div>
+          </div>,
+          document.getElementById('portal-root')
         )}
       </div>
     </div>

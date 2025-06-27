@@ -34,7 +34,7 @@ const OrderView = () => {
   const [bLoading, setLoading] = useState(true);
   const [nError, setError] = useState(null);
   const { t } = useTranslation();
-  const { setTitle } = useTitle();
+  const { setTitle, setBackButton } = useTitle();
 
   const [bShowEditDialog, setShowEditDialog] = useState(false);
   const [oEditingItem, setEditingItem] = useState(null);
@@ -105,7 +105,19 @@ const OrderView = () => {
   useEffect(() => {
     fetchData();
     setTitle(t('vieworder.orderDetails'));
-  }, [fetchData, setTitle, t]);
+    setBackButton(
+      <button
+        onClick={() => window.history.back()}
+        className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 mr-2"
+      >
+        <ArrowLeft className="h-5 w-5 text-gray-500" />
+      </button>
+    );
+    return () => {
+      setBackButton(null);
+      setTitle('');
+    };
+  }, [fetchData, setTitle, setBackButton, t]);
   const handleSaveChanges = async () => {
     const payload = {
       OrderItemID: oEditingItem?.id,
@@ -157,13 +169,6 @@ const OrderView = () => {
       <div>
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
-            <button
-              onClick={() => window.history.back()}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-            >
-              <ArrowLeft className="h-5 w-5 text-gray-500" />
-            </button>
-
             <p className="text-gray-500">
               {t('vieworder.OrderNumber')}{nOrder.orderId || nOrder.id}
             </p>

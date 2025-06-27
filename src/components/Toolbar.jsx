@@ -1,4 +1,5 @@
 import { Search, List, LayoutGrid, Filter } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const OrderToolbar = ({
     searchTerm,
@@ -12,17 +13,14 @@ const OrderToolbar = ({
     additionalFilters,
     handleFilterChange,
     searchPlaceholder,
-
-    // 👇 New optional props
     showSearch = true,
     showViewToggle = true,
     showFilterButton = true,
 }) => {
+    const { t } = useTranslation();
     return (
         <div className="mb-6">
             <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
-                
-                {/* Search Bar */}
                 {showSearch && (
                     <div className="flex-1">
                         <div className="relative h-full">
@@ -31,51 +29,46 @@ const OrderToolbar = ({
                             </div>
                             <input
                                 type="text"
-                                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-[#5B45E0] focus:border-[#5B45E0] sm:text-sm h-full"
-                                placeholder={searchPlaceholder || 'Search...'}
+                                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-custom-bg focus:border-custom-bg sm:text-sm h-full"
+                                placeholder={searchPlaceholder || t('toolbar.searchPlaceholder')}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
                     </div>
                 )}
-
-                {/* View Toggle Buttons */}
                 {showViewToggle && (
                     <div className="flex gap-2">
                         <button
                             onClick={() => setViewMode('table')}
                             className={`btn-toggle-view ${viewMode === 'table' ? 'btn-highlighted' : 'btn-default'}`}
-                            title="Table View"
+                            title={t('toolbar.tableView')}
                         >
                             <List className="w-4 h-4 mr-1" />
-                            Table
+                            {t('toolbar.table')}
                         </button>
 
                         <button
                             onClick={() => setViewMode('grid')}
                             className={`btn-toggle-view ${viewMode === 'grid' ? 'btn-highlighted' : 'btn-default'}`}
-                            title="Grid View"
+                            title={t('toolbar.gridView')}
                         >
                             <LayoutGrid className="w-4 h-4 mr-1" />
-                            Grid
+                            {t('toolbar.grid')}
                         </button>
                     </div>
                 )}
-
-                {/* Filter Button */}
                 {showFilterButton && (
-                    <button
-                        onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-                        className={`inline-flex items-center px-4 py-2 border rounded-lg text-sm font-medium ${
-                            filterStatus !== 'all'
-                                ? 'border-[#5B45E0] text-[#5B45E0] bg-[#5B45E0]/5'
-                                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                        }`}
-                    >
-                        <Filter className="w-4 h-4 mr-2" />
-                        Filter
-                    </button>
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+                            className={`btn-toggle-view group ${showFilterDropdown ? 'btn-highlighted' : 'btn-default'}`}
+                            title={t('toolbar.filter')}
+                        >
+                            <Filter className="w-4 h-4 mr-2" />
+                            {t('toolbar.filter')}
+                        </button>
+                    </div>
                 )}
             </div>
 
@@ -83,13 +76,13 @@ const OrderToolbar = ({
             {showFilterDropdown && (
                 <div className="mt-4 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-sm font-medium text-gray-900">Filters</h3>
+                        <h3 className="text-sm font-medium text-gray-900">{t('toolbar.filters')}</h3>
                         {filterStatus !== 'all' && (
                             <button
                                 onClick={() => setFilterStatus('all')}
                                 className="text-sm text-gray-500 hover:text-gray-700 flex items-center"
                             >
-                                Clear
+                                {t('toolbar.clear')}
                             </button>
                         )}
                     </div>

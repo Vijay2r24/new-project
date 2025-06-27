@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, ArrowLeft, ArrowRight, MoreVertical, Image as ImageIcon } from 'lucide-react';
+import { Plus, MoreVertical, Image as ImageIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import Toolbar from '../components/Toolbar';
 import { useTranslation } from "react-i18next";
 import { apiGet, apiPatch } from '../utils/ApiUtils';
 import { GetAllBanners, UpdateBannerStatus } from '../contants/apiRoutes';
@@ -9,62 +8,8 @@ import { showEmsg } from '../utils/ShowEmsg';
 import Carousel from 'react-multi-carousel';
 import 'react-multi-carousel/lib/styles.css';
 import { useTitle } from '../context/TitleContext';
+import { STATUS } from '../contants/constants';
 
-const aInitialBanners = [
-  {
-    BannerID: 1,
-    BannerName: 'Summer Sale',
-    Status: 'Active',
-    BannerImages: [
-      { BannerImageID: '1-1', BannerImage: 'https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&w=600' },
-      { BannerImageID: '1-2', BannerImage: 'https://images.pexels.com/photos/3184451/pexels-photo-3184451.jpeg?auto=compress&w=600' },
-    ],
-  },
-  {
-    BannerID: 2,
-    BannerName: 'New Arrivals',
-    Status: 'Inactive',
-    BannerImages: [
-      { BannerImageID: '2-1', BannerImage: 'https://images.pexels.com/photos/2983464/pexels-photo-2983464.jpeg?auto=compress&w=600' },
-      { BannerImageID: '2-2', BannerImage: 'https://images.pexels.com/photos/2983463/pexels-photo-2983463.jpeg?auto=compress&w=600' },
-      { BannerImageID: '2-3', BannerImage: 'https://images.pexels.com/photos/2983462/pexels-photo-2983462.jpeg?auto=compress&w=600' },
-    ],
-  },
-  {
-    BannerID: 3,
-    BannerName: 'Festive Offers',
-    Status: 'Active',
-    BannerImages: [
-      { BannerImageID: '3-1', BannerImage: 'https://images.pexels.com/photos/3769747/pexels-photo-3769747.jpeg?auto=compress&w=600' },
-    ],
-  },
-  {
-    BannerID: 4,
-    BannerName: 'Clearance',
-    Status: 'Inactive',
-    BannerImages: [
-      { BannerImageID: '4-1', BannerImage: 'https://images.pexels.com/photos/2529148/pexels-photo-2529148.jpeg?auto=compress&w=600' },
-      { BannerImageID: '4-2', BannerImage: 'https://images.pexels.com/photos/2529147/pexels-photo-2529147.jpeg?auto=compress&w=600' },
-    ],
-  },
-  {
-    BannerID: 5,
-    BannerName: 'Flash Deals',
-    Status: 'Active',
-    BannerImages: [
-      { BannerImageID: '5-1', BannerImage: 'https://images.pexels.com/photos/325876/pexels-photo-325876.jpeg?auto=compress&w=600' },
-      { BannerImageID: '5-2', BannerImage: 'https://images.pexels.com/photos/325877/pexels-photo-325877.jpeg?auto=compress&w=600' },
-    ],
-  },
-  {
-    BannerID: 6,
-    BannerName: 'Winter Collection',
-    Status: 'Inactive',
-    BannerImages: [
-      { BannerImageID: '6-1', BannerImage: 'https://images.pexels.com/photos/167964/pexels-photo-167964.jpeg?auto=compress&w=600' },
-    ],
-  },
-];
 
 const Banners = () => {
   const [aBanners, setBanners] = useState([]);
@@ -73,7 +18,7 @@ const Banners = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
   const [nActiveMenu, setActiveMenu] = useState(null);
-  const [oCarouselIndex, setCarouselIndex] = useState({});
+  const [sError, setError] = useState(null);
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { setTitle } = useTitle();
@@ -107,27 +52,30 @@ const Banners = () => {
       try {
         const token = localStorage.getItem('token');
         const response = await apiGet(GetAllBanners, { pageNumber: nPage, pageSize: rowsPerPage }, token);
-        if (response.data && response.data.status === 'SUCCESS') {
+        if (response.data && response.data.status === STATUS.SUCCESS_1) {
           setBanners(response.data.data || []);
           setTotalPages(response.data.totalPages || 1);
           setTotalRecords(response.data.totalRecords || 0);
+          setError(null);
         } else {
           setBanners([]);
           setTotalPages(1);
           setTotalRecords(0);
+          setError(response.data?.message || t('common.errorMessage'));
         }
       } catch (err) {
         setBanners([]);
         setTotalPages(1);
         setTotalRecords(0);
+        const backendMessage = err?.response?.data?.message;
+        setError(backendMessage || t('common.errorMessage'));
       }
     };
     fetchBanners();
-  }, [nPage]);
+  }, [nPage, t]);
 
   const paginatedBanners = aBanners;
 
-  // Dropdown menu
   const toggleMenu = (id) => setActiveMenu(nActiveMenu === id ? null : id);
   const handleEditBanner = (id) => alert('Edit banner: ' + id);
   const handleDeleteBanner = (id) => {
@@ -135,7 +83,6 @@ const Banners = () => {
     setActiveMenu(null);
   };
 
-  // Status toggle
   const handleToggleStatus = async (id, currentStatus) => {
     try {
       const token = localStorage.getItem('token');
@@ -143,12 +90,12 @@ const Banners = () => {
       const response = await apiPatch(`${UpdateBannerStatus}/${id}`, { status: newStatus }, token);
       if (response.data && response.data.status === 'SUCCESS') {
         setBanners(prev => prev.map(b => b.BannerID === id ? { ...b, Status: newStatus } : b));
-        showEmsg(response.data.message || 'Banner status updated successfully.', 'success');
+        showEmsg(response.data.message || t('bannerform.bannerStatusUpdateSuccess'), 'success');
       } else {
-        showEmsg(response.data?.message || 'Failed to update banner status.', 'error');
+        showEmsg(response.data?.message || t('bannerform.bannerStatusUpdateError'), 'error');
       }
     } catch (err) {
-      showEmsg('Failed to update banner status.', 'error');
+      showEmsg(t('bannerform.bannerStatusUpdateError'), 'error');
     }
   };
 
@@ -166,9 +113,12 @@ const Banners = () => {
         </button>
       </div>
       <div>
+        {sError && (
+          <div className="mb-4 text-red-500 text-center">{sError}</div>
+        )}
         <div className="grid grid-cols-1 mt-4 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {paginatedBanners.length === 0 && (
-            <div className="col-span-full text-center text-gray-500 py-10">No banners found.</div>
+            <div className="col-span-full text-center text-gray-500 py-10">{t('bannerform.noBannersFound')}</div>
           )}
           {paginatedBanners.map((project) => (
             <div
@@ -210,7 +160,7 @@ const Banners = () => {
                     <MoreVertical className="h-5 w-5" />
                   </button>
                   {nActiveMenu === project.BannerID && (
-                    <div className="absolute right-0 mt-2 bg-white shadow-lg rounded-xl z-30 min-w-[120px] border border-gray-100">
+                    <div className="absolute right-0 mt-2 bg-white shadow-lg rounded-xl z-200 min-w-[120px] border border-gray-100">
                       <ul className="text-sm text-gray-700">
                         <li
                           className="px-4 py-2 hover:bg-gray-50 cursor-pointer rounded-t-xl"

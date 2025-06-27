@@ -4,12 +4,16 @@ import { useDropzone } from 'react-dropzone';
 import TextInputWithIcon from '../../components/TextInputWithIcon';
 import SelectWithIcon from '../../components/SelectWithIcon';
 import { useTranslation } from 'react-i18next';
+import { STATUS } from '../../contants/constants.jsx';
 import { Tab } from '@headlessui/react';
-import { useAttributeTypes } from '../../context/AttributeTypeContext';
-import { useBrands } from '../../context/BrandContext';
-import { useCategories } from '../../context/CategoryContext';
-import { useAttributes } from '../../context/AttributeContext';
-import { useColors } from '../../context/ColorContext';
+import {
+  useAttributeTypes,
+  useBrands,
+  useCategories,
+  useAttributes,
+  useColors,
+  useProducts,
+} from '../../context/AllDataContext';
 import { apiPost, apiGet, apiPut } from '../../utils/ApiUtils.jsx';
 import { createproductWithImages, GET_PRODUCT_BY_ID, updateProductWithImages } from '../../contants/apiRoutes';
 import { showEmsg } from '../../utils/ShowEmsg';
@@ -21,7 +25,7 @@ import { useTitle } from '../../context/TitleContext';
 
 const AddProductForm = () => {
   const { productId } = useParams();
-  const { setTitle } = useTitle();
+  const { setTitle, setBackButton } = useTitle();
   const [aVariants, setVariants] = useState([{
     ColourID: '',
     AttributeValues: [],
@@ -44,7 +48,6 @@ const AddProductForm = () => {
   });
   const [oValidationErrors, setValidationErrors] = useState({});
 
-  // Refs for form fields
   const productNameRef = useRef(null);
   const attributeTypeRef = useRef(null);
   const brandRef = useRef(null);
@@ -64,14 +67,14 @@ const AddProductForm = () => {
   };
 
   const { t } = useTranslation();
-  const { aAttributeTypes, bLoading: bLoadingAttributeTypes, sError: sErrorAttributeTypes } = useAttributeTypes();
-  const { aBrands, bLoading: bLoadingBrands, sError: sErrorBrands } = useBrands();
-  const { aCategories, bLoading: bLoadingCategories, sError: sErrorCategories } = useCategories();
-  const { aAttributes, bLoading: bLoadingAttributes, sError: sErrorAttributes } = useAttributes();
-  const { aColors, bLoading: bLoadingColors, sError: sErrorColors } = useColors();
+  const { data: aAttributeTypes } = useAttributeTypes();
+  const { data: aBrands } = useBrands();
+  const { data: aCategories } = useCategories();
+  const { data: aAttributes } = useAttributes();
+  const { data: aColors } = useColors();
 
   useEffect(() => {
-    if (productId && !bLoadingAttributeTypes && !bLoadingBrands && !bLoadingCategories && !bLoadingAttributes && !bLoadingColors) {
+    if (productId) {
       const fetchProduct = async () => {
         try {
           const token = localStorage.getItem("token");
@@ -101,15 +104,15 @@ const AddProductForm = () => {
             }
 
             const fetchedVariants = product.variants.map(variant => {
-              const attributeValuesFromAPI = Object.values(variant.attributes); // Get all attribute values as an array
+              const attributeValuesFromAPI = Object.values(variant.attributes);
               const attributeIds = attributeValuesFromAPI.map(attrName => {
                 const matchingAttribute = aAttributes.find(attr => attr.AttributeName === attrName);
                 return matchingAttribute ? matchingAttribute.AttributeID : '';
-              }).filter(id => id !== ''); // Filter out any empty IDs
+              }).filter(id => id !== '');
 
               return {
                 ColourID: variant.colourId,
-                AttributeValues: attributeIds, // Assign the array of IDs
+                AttributeValues: attributeIds,
                 Quantity: variant.quantity,
                 SellingPrice: variant.price,
                 images: variant.images.map(image => ({
@@ -119,22 +122,26 @@ const AddProductForm = () => {
               };
             });
             setVariants(fetchedVariants);
-          } else {
-            console.error('Failed to fetch product:', response.data.message);
-            showEmsg(`Failed to fetch product: ${response.data.message || 'Unknown error'}`, 'error');
           }
         } catch (error) {
-          console.error('Error fetching product:', error);
-          showEmsg('An error occurred while fetching the product.', 'error');
         }
       };
       fetchProduct();
     }
-  }, [productId, aAttributeTypes, aBrands, aCategories, aAttributes, aColors, bLoadingAttributeTypes, bLoadingBrands, bLoadingCategories, bLoadingAttributes, bLoadingColors]);
+  }, [productId, aAttributeTypes, aBrands, aCategories, aAttributes, aColors]);
 
   useEffect(() => {
-    setTitle(productId ? t('productCreation.editProduct') : t('productCreation.addProduct'));
-  }, [setTitle, t, productId]);
+    setTitle(productId ? t('productCreation.editProduct') : t('productCreation.addNewProduct'));
+    setBackButton(
+      <button
+        onClick={() => window.history.back()}
+        className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 mr-2"
+      >
+        <ArrowLeft className="h-5 w-5 text-gray-500" />
+      </button>
+    );
+    return () => setBackButton(null);
+  }, [setTitle, setBackButton, t, productId]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -142,7 +149,6 @@ const AddProductForm = () => {
       ...prev,
       [name]: value
     }));
-    // Clear validation error for this field when it changes
     setValidationErrors(prev => ({
       ...prev,
       [name]: undefined
@@ -157,7 +163,6 @@ const AddProductForm = () => {
       newVariants[index][field] = value;
     }
     setVariants(newVariants);
-    // Clear validation error for this variant field when it changes
     setValidationErrors(prev => ({
       ...prev,
       [`variant_${index}_${field}`]: undefined
@@ -224,7 +229,7 @@ const AddProductForm = () => {
     if (newVariants[variantIndex].images.length === 0) {
       setValidationErrors(prev => ({
         ...prev,
-        [`variant_${variantIndex}_images`]: t('productCreation.imageRequired') // Assuming you have this translation
+        [`variant_${variantIndex}_images`]: t('productCreation.imageRequired')
       }));
     }
   };
@@ -334,7 +339,7 @@ const AddProductForm = () => {
     }));
     aVariants.forEach((variant, variantIndex) => {
       variant.images.forEach((img) => {
-        if (img.file) { // Only append new files
+        if (img.file) {
           data.append(`images_${variantIndex + 1}`, img.file);
         }
       });
@@ -345,15 +350,33 @@ const AddProductForm = () => {
         ? await apiPut(`${updateProductWithImages}/${productId}`, data, token, true)
         : await apiPost(createproductWithImages, data, token, true);
 
-      if (response.data.status === 'SUCCESS') {
-        showEmsg(`Product ${productId ? 'updated' : 'created'} successfully!`, 'success');
+      const resData = response?.data;
+
+      if (resData?.status === STATUS.SUCCESS_1) {
+        showEmsg(
+          resData.message ||
+            (productId
+              ? t('productCreation.productUpdatedSuccess')
+              : t('productCreation.productCreatedSuccess')),
+          'success'
+        );
       } else {
-        showEmsg(`Failed to ${productId ? 'update' : 'create'} product: ${response.data.message || 'Unknown error'}`, 'error');
+        showEmsg(
+          resData?.message ||
+            (productId
+              ? t('productCreation.productUpdateFailed')
+              : t('productCreation.productCreateFailed')),
+          'error'
+        );
       }
     } catch (error) {
-      console.error(`Error ${productId ? 'updating' : 'creating'} product:`, error);
-      showEmsg(`An error occurred while ${productId ? 'updating' : 'creating'} the product.`, 'error');
+      const backendMessage = error?.response?.data?.message;
+      showEmsg(
+        backendMessage || t('productCreation.productSubmitError'),
+        'error'
+      );
     }
+
   };
 
   const VariantImageUpload = ({ variantIndex }) => {
@@ -421,12 +444,6 @@ const AddProductForm = () => {
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
-            <button
-              onClick={() => window.history.back()}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-            >
-              <ArrowLeft className="h-5 w-5 text-gray-500" />
-            </button>
             <p className="text-gray-500">
               {productId
                 ? t('productCreation.editProductDescription')
@@ -471,8 +488,7 @@ const AddProductForm = () => {
                         label: type.Name
                       }))}
                       Icon={Hash}
-                      loading={bLoadingAttributeTypes}
-                      error={oValidationErrors.AttributeTypeID || sErrorAttributeTypes}
+                      error={oValidationErrors.AttributeTypeID}
                       placeholder={t('productCreation.attributeIdPlaceholder') || "Select attribute type"}
                       ref={attributeTypeRef}
                     />
@@ -489,8 +505,7 @@ const AddProductForm = () => {
                         label: brand.BrandName
                       }))}
                       Icon={Tag}
-                      loading={bLoadingBrands}
-                      error={oValidationErrors.BrandID || sErrorBrands}
+                      error={oValidationErrors.BrandID}
                       placeholder={t('productCreation.brandIdPlaceholder') || "Select brand"}
                       ref={brandRef}
                     />
@@ -554,8 +569,7 @@ const AddProductForm = () => {
                     label: category.CategoryName
                   }))}
                   Icon={Tag}
-                  loading={bLoadingCategories}
-                  error={oValidationErrors.CategoryID || sErrorCategories}
+                  error={oValidationErrors.CategoryID}
                   placeholder={t('productCreation.categoryIdPlaceholder') || "Select category"}
                   ref={categoryRef}
                 />
@@ -613,7 +627,7 @@ const AddProductForm = () => {
                       <button
                         type="button"
                         onClick={(e) => {
-                          e.stopPropagation(); // Prevent tab change on delete
+                          e.stopPropagation();
                           removeVariant(index);
                         }}
                         className="ml-2 text-red-500 hover:text-red-700 focus:outline-none"
@@ -641,8 +655,7 @@ const AddProductForm = () => {
                               label: `${color.Name}`
                             }))}
                             Icon={Palette}
-                            loading={bLoadingColors}
-                            error={oValidationErrors[`variant_${index}_ColourID`] || sErrorColors}
+                            error={oValidationErrors[`variant_${index}_ColourID`]}
                             placeholder={t('productCreation.colourIdPlaceholder') || "Select colour"}
                             ref={el => addVariantRef(`ColourID-${index}`, el)}
                           />
@@ -659,8 +672,7 @@ const AddProductForm = () => {
                               label: `${attribute.AttributeName}`
                             }))}
                             Icon={Layers}
-                            loading={bLoadingAttributes}
-                            error={oValidationErrors[`variant_${index}_AttributeValues`] || sErrorAttributes}
+                            error={oValidationErrors[`variant_${index}_AttributeValues`]}
                             placeholder={t('productCreation.attributeValuesPlaceholder') || "Select attribute values"}
                             multiple
                             ref={el => addVariantRef(`AttributeValues-${index}`, el)}

@@ -9,7 +9,7 @@ const aMockNotifications = [
 ];
 
 const Header = ({ onMenuClick }) => {
-  const { title } = useTitle();
+  const { title, backButton } = useTitle(); 
   const [bShowNotifications, setShowNotifications] = useState(false);
   const bellRef = useRef();
   const dropdownRef = useRef();
@@ -70,6 +70,7 @@ const Header = ({ onMenuClick }) => {
           </button>
         </div>
         <div className="flex-1 flex items-center">
+          {backButton}
           {title && (
           <h1 className="text-lg font-bold text-gray-900">{title}</h1>
           )}
@@ -89,6 +90,7 @@ const Header = ({ onMenuClick }) => {
               className="fixed right-4 sm:right-6 top-12 w-full max-w-xs sm:w-80 sm:max-w-md rounded-2xl shadow-2xl border border-gray-100 z-50 bg-gradient-to-br from-white via-gray-50 to-indigo-50 animate-fade-in"
               style={{ minWidth: '0' }}
             >
+              {/* Accent bar */}
               <div className="h-1 w-full bg-gradient-to-r from-indigo-400 via-indigo-300 to-indigo-200 rounded-t-2xl" />
               <div className="p-3 sm:p-4 border-b font-semibold text-gray-800 flex items-center gap-2 text-base sm:text-lg">
                 <Bell className="h-5 w-5 text-indigo-500" /> Notifications
@@ -118,6 +120,7 @@ const Header = ({ onMenuClick }) => {
               </div>
             </div>
           )}
+          {/* User Profile in Header */}
           <div className="relative flex items-center gap-2 pl-2 sm:pl-3 border-l border-gray-200 ml-2 sm:ml-3">
             <button
               ref={profileRef}

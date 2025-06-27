@@ -166,29 +166,32 @@ const Notifications = () => {
               </h2>
             </div>
             <div className="p-6 space-y-6">
-              {/* Title */}
-              <TextInputWithIcon
-                label={t('pushNotification.titleLabel')}
-                id="title"
-                name="title"
-                value={oPushFormData.title}
-                onChange={handlePushChange}
-                placeholder={t('pushNotification.titlePlaceholder')}
-                Icon={Send}
-                required
-              />
-
-              {/* Message */}
-              <TextInputWithIcon
-                label={t('pushNotification.messageLabel')}
-                id="message"
-                name="message"
-                value={oPushFormData.message}
-                onChange={handlePushChange}
-                placeholder={t('pushNotification.messagePlaceholder')}
-                Icon={Send}
-                required
-              />
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <TextInputWithIcon
+                    label={t('pushNotification.titleLabel')}
+                    id="title"
+                    name="title"
+                    value={oPushFormData.title}
+                    onChange={handlePushChange}
+                    placeholder={t('pushNotification.titlePlaceholder')}
+                    Icon={Send}
+                    required
+                  />
+                </div>
+                <div className="flex-1">
+                  <TextInputWithIcon
+                    label={t('pushNotification.messageLabel')}
+                    id="message"
+                    name="message"
+                    value={oPushFormData.message}
+                    onChange={handlePushChange}
+                    placeholder={t('pushNotification.messagePlaceholder')}
+                    Icon={Send}
+                    required
+                  />
+                </div>
+              </div>
 
               {/* Image Upload */}
               <div>

@@ -7,10 +7,13 @@ import SelectWithIcon from '../components/SelectWithIcon';
 import { Tag, Layers, Users, DollarSign, Percent } from 'lucide-react';
 import { useTranslation } from "react-i18next";
 import { useTitle } from '../context/TitleContext';
+import { ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const BannerForm = () => {
   const { t } = useTranslation();
-  const { setTitle } = useTitle();
+  const { setTitle, setBackButton } = useTitle();
+  const navigate = useNavigate();
 
   const [oFormData, setFormData] = useState({
     BannerName: "",
@@ -19,7 +22,7 @@ const BannerForm = () => {
   const [bShowInputField, setShowInputField] = useState(false);
   const [aSelectedCategories, setSelectedCategories] = useState([]);
   const [aSelectedBrands, setSelectedBrands] = useState([]);
-  
+
   const [aCategories] = useState([
     { CategoryID: 1, CategoryName: 'Category 1' },
     { CategoryID: 2, CategoryName: 'Category 2' },
@@ -32,8 +35,19 @@ const BannerForm = () => {
 
   useEffect(() => {
     setTitle(t('bannerform.upload_banner'));
-    return () => setTitle('');
-  }, [setTitle, t]);
+    setBackButton(
+      <button
+        onClick={() => window.history.back()}
+        className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 mr-2"
+      >
+        <ArrowLeft className="h-5 w-5 text-gray-500" />
+      </button>
+    );
+    return () => {
+      setBackButton(null);
+      setTitle('');
+    };
+  }, [setTitle, setBackButton, t]);
 
   const handleBannerUpload = (e) => {
     const file = e.target.files[0];
@@ -74,8 +88,11 @@ const BannerForm = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen">
+      <div className="flex items-center gap-3 mb-4">
+        <p className="text-gray-600">{t('bannerform.create_banner_description')}</p>
+      </div>
+
       <form onSubmit={handleSubmit}>
-        {/* Banner Name */}
         <TextInputWithIcon
           label={t('bannerform.banner_name')}
           id="bannerName"
@@ -87,9 +104,8 @@ const BannerForm = () => {
           required
         />
         <div className="flex flex-col space-y-4 mt-4">
-          {/* Label and Add Banner Button */}
           <div className="flex items-center justify-between">
-            <label className="font-semibold">{t('bannerform.upload_banners_label')}</label>
+            <label className="font-semibold text-sm">{t('bannerform.upload_banners_label')}</label>
             <button
               type="button"
               className="btn-primary"
@@ -99,14 +115,11 @@ const BannerForm = () => {
               <span>{t('bannerform.add_banner_image')}</span>
             </button>
           </div>
-
-          {/* Display Banners */}
           {oFormData.banners?.map((banner, index) => (
             <div
               key={index}
               className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4 border p-4 rounded-md"
             >
-              {/* Banner Preview */}
               <div className="relative w-40 h-40 group overflow-hidden border rounded-md flex-shrink-0">
                 {banner.preview ? (
                   <img
@@ -123,7 +136,6 @@ const BannerForm = () => {
 
               {banner.preview && (
                 <div className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Sequence Number */}
                   <TextInputWithIcon
                     label={t('bannerform.sequence_number')}
                     id={`sequence_${index}`}
@@ -137,7 +149,6 @@ const BannerForm = () => {
                     placeholder={t('bannerform.enter_sequence_number')}
                     Icon={Layers}
                   />
-                  {/* Category */}
                   <SelectWithIcon
                     label={t('bannerform.category')}
                     id={`category_${index}`}
@@ -147,7 +158,6 @@ const BannerForm = () => {
                     options={aCategories.map(cat => ({ value: cat.CategoryID, label: cat.CategoryName }))}
                     Icon={Layers}
                   />
-                  {/* Brand */}
                   <SelectWithIcon
                     label={t('bannerform.brand')}
                     id={`brand_${index}`}
@@ -245,7 +255,7 @@ const BannerForm = () => {
             </div>
           )}
         </div>
-        <div className="flex justify-center mt-6">
+        <div className="flex justify-end mt-8 gap-4">
           <button
             type="submit"
             className="btn-secondry"
@@ -253,10 +263,17 @@ const BannerForm = () => {
           >
             {t('bannerform.submit')}
           </button>
+          <button
+            type="button"
+            onClick={() => window.history.back()}
+            className="btn-cancel ml-4"
+          >
+            {t('addUser.cancel')}
+          </button>
         </div>
       </form>
     </div>
   );
-  };
+};
 
 export default BannerForm; 

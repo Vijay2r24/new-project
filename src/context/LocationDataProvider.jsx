@@ -1,17 +1,16 @@
 import { createContext, useEffect, useState } from "react";
 export const LocationDataContext = createContext();
 const LocationDataProvider = ({ children }) => {
-  const [citiesData, setCitiesData] = useState([]);
-  const [statesData, setStatesData] = useState([]);
-  const [countriesData, setCountriesData] = useState([]);
-  const [orderStatusData, setOrderStatusData] = useState([]); // Add order status data
-  const [loading, setLoading] = useState(true); // Loading state
-   
-  const fetchDataFromLocalStorage = (key, setter) => {
+  const [aCitiesData, setCitiesData] = useState([]);
+  const [aStatesData, setStatesData] = useState([]);
+  const [aCountriesData, setCountriesData] = useState([]);
+  const [aOrderStatusData, setOrderStatusData] = useState([]); 
+  const [bLoading, setLoading] = useState(true); 
+  const oFetchDataFromLocalStorage = (key, setter) => {
     try {
       const data = localStorage.getItem(key);
       if (data) {
-        setter(JSON.parse(data)); // Parse only if valid JSON
+        setter(JSON.parse(data));
       } else {
         console.warn(`No ${key} data found in localStorage`);
       }
@@ -21,31 +20,26 @@ const LocationDataProvider = ({ children }) => {
   };
  
   useEffect(() => {
-    const fetchData = async () => {
-      // Start loading
+    const oFetchData = async () => {
       setLoading(true);
- 
-      // Fetch data from local storage
-      fetchDataFromLocalStorage("citiesData", setCitiesData);
-      fetchDataFromLocalStorage("statesData", setStatesData);
-      fetchDataFromLocalStorage("countriesData", setCountriesData);
-      fetchDataFromLocalStorage("orderStatusData", setOrderStatusData); // Fetch order status data
- 
-      // Finish loading
+      oFetchDataFromLocalStorage("citiesData", setCitiesData);
+      oFetchDataFromLocalStorage("statesData", setStatesData);
+      oFetchDataFromLocalStorage("countriesData", setCountriesData);
+      oFetchDataFromLocalStorage("orderStatusData", setOrderStatusData);
       setLoading(false);
     };
  
-    fetchData();
+    oFetchData();
   }, []);
  
   return (
     <LocationDataContext.Provider
       value={{
-        citiesData,
-        statesData,
-        countriesData,
-        orderStatusData, // Provide order status data
-        loading,
+        aCitiesData,
+        aStatesData,
+        aCountriesData,
+        aOrderStatusData,
+        bLoading,
       }}
     >
       {children}

@@ -1,12 +1,8 @@
 
-import React, { useContext } from "react";
+import { useContext } from "react";
 import { LocationDataContext } from "../../context/LocationDataProvider";
 const StatusBadge = ({ status }) => {
   const { orderStatusData } = useContext(LocationDataContext);
-
-  console.log("orderStatusData", orderStatusData);
-
-  // Safely access color from orderStatusData.data
   const statusColor = orderStatusData?.data?.find(
     (statusItem) => statusItem.OrderStatus === status
   )?.HexColorCode;

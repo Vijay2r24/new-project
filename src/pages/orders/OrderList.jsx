@@ -27,7 +27,6 @@ const OrderList = () => {
   const navigate = useNavigate();
   const { setTitle } = useTitle();
 
-  // Handle change for additional filters
   const handleFilterChange = (e, filterName) => {
     setFilters({
       ...oFilters,
@@ -70,9 +69,8 @@ const OrderList = () => {
       };
 
       try {
-        const response = await apiGet(GETALLORDERS_API, params, token);
-        // Flatten all order items into a single array with order details
-        const allProductItems = response.data.data.flatMap(order =>
+        const oResponse = await apiGet(GETALLORDERS_API, params, token);
+        const allProductItems = oResponse.data.data.flatMap(order =>
           order.orderItems.map(item => ({
             ...item,
             orderId: order.orderId,
@@ -80,9 +78,8 @@ const OrderList = () => {
           }))
         );
         setProductRows(allProductItems);
-        setTotalPages(Math.ceil(allProductItems.length / productsPerPage)); // Calculate total pages based on products
+        setTotalPages(Math.ceil(allProductItems.length / productsPerPage));
       } catch (error) {
-        console.error('Failed to fetch data:', error);
       } finally {
         setLoading(false);
       }
