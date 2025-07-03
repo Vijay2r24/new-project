@@ -42,7 +42,7 @@ const CreateBrand = () => {
         try {
           const token = localStorage.getItem("token");
           const oResponse = await apiGet(getBrandById + `/${brandId}`, {}, token);
-          if (oResponse.data.status === STATUS.SUCCESS_1 && oResponse.data.data) {
+          if (oResponse.data.status === STATUS.SUCCESS.toLocaleUpperCase() && oResponse.data.data) {
             const brandData = oResponse.data.data;
             setFormData(prev => ({
               ...prev,
@@ -103,19 +103,19 @@ const CreateBrand = () => {
     const newErrors = {};
 
     if (!oFormData.BrandName.trim()) {
-      newErrors.BrandName = t('productSetup.createBrand.brandNameRequired');
+      newErrors.BrandName = t('PRODUCT_SETUP.CREATE_BRAND.BRAND_NAME_REQUIRED');
     }
     if (!oFormData.CategoryID) {
-      newErrors.CategoryID = t('productSetup.createBrand.categoryRequired');
+      newErrors.CategoryID = t('PRODUCT_SETUP.CREATE_BRAND.CATEGORY_REQUIRED');
     }
     if (!oFormData.Heading.trim()) {
-      newErrors.Heading = t('productSetup.createBrand.headingRequired');
+      newErrors.Heading = t('PRODUCT_SETUP.CREATE_BRAND.HEADING_REQUIRED');
     }
     if (!oFormData.BrandCode.trim()) {
-      newErrors.BrandCode = t('productSetup.createBrand.brandCodeRequired');
+      newErrors.BrandCode = t('PRODUCT_SETUP.CREATE_BRAND.BRAND_CODE_REQUIRED');
     }
     if (!oFormData.BrandLogo && !isEditing) { 
-      newErrors.BrandLogo = t('productSetup.createBrand.brandLogoRequired');
+      newErrors.BrandLogo = t('PRODUCT_SETUP.CREATE_BRAND.BRAND_LOGO_REQUIRED');
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -147,14 +147,14 @@ const CreateBrand = () => {
         response = await apiPost(createBrand, dataToSend, token);
       }
 
-      if (response.data.status === STATUS.SUCCESS_1) {
-        showEmsg(response.data.message || t('productSetup.createBrand.success'), 'success');
+      if (response.data.status === STATUS.SUCCESS.toLocaleUpperCase()) {
+        showEmsg(response.data.message || t('COMMON.SUCCESS'), STATUS.SUCCESS);
       } else {
-        showEmsg(response.data.message || t('productSetup.createBrand.unknownError'), 'error');
-        setErrors(prev => ({ ...prev, api: response.data.message || t('productSetup.createBrand.unknownError') }));
+        showEmsg(response.data.message || t('COMMON.UNKNOWN_ERROR'), STATUS.ERROR);
+        setErrors(prev => ({ ...prev, api: response.data.message || t('COMMON.UNKNOWN_ERROR') }));
       }
     } catch (err) {
-      setErrors(prev => ({ ...prev, api: t('productSetup.createBrand.unexpectedError') }));
+      setErrors(prev => ({ ...prev, api: t('COMMON.UNEXPECTED_ERROR') }));
     }
   };
 
@@ -170,7 +170,7 @@ const CreateBrand = () => {
             <ArrowLeft className="h-5 w-5" />
           </button>
           <h2 className="text-xl font-bold text-gray-900">
-            {isEditing ? t("productSetup.createBrand.editTitle") : t("productSetup.createBrand.createTitle")}
+            {isEditing ? t("PRODUCT_SETUP.CREATE_BRAND.EDIT_TITLE") : t("PRODUCT_SETUP.CREATE_BRAND.CREATE_TITLE")}
           </h2>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -178,12 +178,12 @@ const CreateBrand = () => {
             <div className="w-full md:w-1/2">
               {/* Brand Name */}
               <TextInputWithIcon
-                label={t("productSetup.createBrand.nameLabel")}
+                label={t("PRODUCT_SETUP.CREATE_BRAND.NAME_LABEL")}
                 id="BrandName"
                 name="BrandName"
                 value={oFormData.BrandName}
                 onChange={handleInputChange}
-                placeholder={t("productSetup.createBrand.namePlaceholder")}
+                placeholder={t("PRODUCT_SETUP.CREATE_BRAND.NAME_PLACEHOLDER")}
                 error={oErrors.BrandName}
                 Icon={Building}
               />
@@ -191,7 +191,7 @@ const CreateBrand = () => {
             <div className="w-full md:w-1/2">
               {/* Category ID */}
               <SelectWithIcon
-                label={t("productSetup.createCategory.parentLabel")}
+                label={t("PRODUCT_SETUP.CREATE_CATEGORY.PARENT_LABEL")}
                 id="CategoryID"
                 name="CategoryID"
                 value={oFormData.CategoryID}
@@ -199,7 +199,7 @@ const CreateBrand = () => {
                 options={aCategories.map(cat => ({ value: cat.CategoryID, label: cat.CategoryName }))}
                 loading={bLoadingCategories}
                 error={oErrors.CategoryID || sErrorCategories}
-                placeholder={t("productSetup.createCategory.selectParent")}
+                placeholder={t("PRODUCT_SETUP.CREATE_CATEGORY.SELECT_PARENT")}
                 Icon={Tag}
               />
             </div>
@@ -207,24 +207,24 @@ const CreateBrand = () => {
           <div className="flex flex-col md:flex-row md:space-x-4">
             <div className="w-full md:w-1/2">
               <TextInputWithIcon
-                label="Heading"
+                label={t("COMMON.HEADING_LABEL")}
                 id="Heading"
                 name="Heading"
                 value={oFormData.Heading}
                 onChange={handleInputChange}
-                placeholder="Enter heading (e.g., Top Indian Brand)"
+                placeholder={t("PRODUCT_SETUP.CREATE_BRAND.HEADING_PLACEHOLDER")}
                 error={oErrors.Heading}
                 Icon={LayoutList}
               />
             </div>
             <div className="w-full md:w-1/2">
               <TextInputWithIcon
-                label="Brand Code"
+                label={t("PRODUCT_SETUP.CREATE_BRAND.BRAND_CODE_LABEL")}
                 id="BrandCode"
                 name="BrandCode"
                 value={oFormData.BrandCode}
                 onChange={handleInputChange}
-                placeholder="Enter brand code (e.g., LI0034)"
+                placeholder={t("PRODUCT_SETUP.CREATE_BRAND.BRAND_CODE_PLACEHOLDER")}
                 error={oErrors.BrandCode}
                 Icon={Hash}
               />
@@ -233,14 +233,14 @@ const CreateBrand = () => {
           <div className="flex flex-col md:flex-row md:space-x-4">
             <div className="w-full md:w-1/2">
               <SelectWithIcon
-                label={t("productSetup.createBrand.statusLabel")}
+                label={t("PRODUCT_SETUP.CREATE_BRAND.STATUS_LABEL")}
                 id="IsActive"
                 name="IsActive"
                 value={oFormData.IsActive}
                 onChange={handleInputChange}
                 options={[
-                  { value: true, label: t("productSetup.createBrand.activeStatus") },
-                  { value: false, label: t("productSetup.createBrand.inactiveStatus") },
+                  { value: true, label: t("COMMON.ACTIVE") },
+                  { value: false, label: t("COMMON.INACTIVE") },
                 ]}
                 Icon={Tag}
                 error={oErrors.IsActive}
@@ -248,7 +248,7 @@ const CreateBrand = () => {
             </div>
             <div className="w-full md:w-1/2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t("productSetup.createBrand.logoLabel")}
+                {t("PRODUCT_SETUP.CREATE_BRAND.LOGO_LABEL")}
               </label>
               <div
                 className={`relative group rounded-xl border-2 ${oErrors.BrandLogo ? 'border-red-300' : 'border-gray-200'} border-dashed transition-all duration-200 hover:border-[#5B45E0] bg-gray-50 hover:bg-gray-50/50`}
@@ -260,12 +260,12 @@ const CreateBrand = () => {
                         <Upload className="h-8 w-8 text-gray-400 group-hover:text-[#5B45E0] transition-colors duration-200" />
                       </div>
                     </div>
-                    <div className="flex text-sm text-gray-600 justify-center">
+                    <div className="flex text-sm text-caption justify-center">
                       <label
                         htmlFor="file-upload"
                         className="relative cursor-pointer rounded-md font-medium text-[#5B45E0] hover:text-[#4c39c7] focus-within:outline-none"
                       >
-                        <span>{t("productSetup.createBrand.uploadText")}</span>
+                        <span>{t("COMMON.UPLOAD")}</span>
                         <input
                           id="file-upload"
                           name="BrandLogo"
@@ -275,7 +275,7 @@ const CreateBrand = () => {
                           className="sr-only"
                         />
                       </label>
-                      <p className="pl-1">{t("productSetup.createBrand.dragDropText")}</p>
+                      <p className="pl-1">{t("COMMON.DRAG_DROP_TEXT")}</p>
                     </div>
                     {oFormData.BrandLogo && (
                       <div className="mt-2 p-2 bg-green-50 rounded-lg border border-green-100 flex items-center justify-center">
@@ -286,7 +286,7 @@ const CreateBrand = () => {
                       </div>
                     )}
                     {oErrors.BrandLogo && (
-                      <p className="text-sm text-red-600 flex items-center justify-center">
+                      <p className="text-sm text-red flex items-center justify-center">
                         <span className="mr-1">⚠️</span>
                         {oErrors.BrandLogo}
                       </p>
@@ -298,11 +298,11 @@ const CreateBrand = () => {
           </div>
           <div className="w-full">
             <TextAreaWithIcon
-              label={t("productSetup.createBrand.descriptionLabel")}
+              label={t("COMMON.DESCRIPTION")}
               name="description"
               value={oFormData.description}
               onChange={handleInputChange}
-              placeholder={t("productSetup.createBrand.descriptionPlaceholder")}
+              placeholder={t("PRODUCT_SETUP.CREATE_BRAND.DESCRIPTION_PLACEHOLDER")}
               icon={Info}
             />
           </div>
@@ -312,13 +312,13 @@ const CreateBrand = () => {
               onClick={() => navigate('/browse/brands', { state: { fromBrandEdit: true } })}
               className="btn-cancel"
             >
-                {t("productSetup.createBrand.cancelButton")}
+                {t("COMMON.CANCEL")}
             </button>
             <button
               type="submit"
               className="btn-primary"
             >
-             {isEditing ? t("productSetup.createBrand.saveButton") : t("productSetup.createBrand.createButton")}
+             {isEditing ? t("COMMON.SAVE_BUTTON") : t("PRODUCT_SETUP.CREATE_BRAND.CREATE_BUTTON")}
             </button>
           </div>
         </form>

@@ -181,7 +181,7 @@ const SelectWithIcon = forwardRef(({
           <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 transform transition-transform duration-200 ${isOpen ? 'rotate-180' : 'rotate-0'}`} />
         </div>
         {error && (
-          <p className="mt-1.5 text-sm text-red-600 flex items-center">
+          <p className="mt-1.5 text-sm text-red flex items-center">
             <span className="mr-1">⚠️</span>
             {error}
           </p>
@@ -193,7 +193,7 @@ const SelectWithIcon = forwardRef(({
                 <input
                   ref={inputRef}
                   type="text"
-                  placeholder={t('select.searchPlaceholder')}
+                  placeholder={t('SELECT.SEARCH_PLACEHOLDER')}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-custom-bg focus:border-custom-bg"
                   value={sSearchTerm}
                   onChange={(e) => {
@@ -209,7 +209,7 @@ const SelectWithIcon = forwardRef(({
                       setSearchTerm('');
                       inputRef.current.focus();
                     }}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-caption"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -217,9 +217,9 @@ const SelectWithIcon = forwardRef(({
               </div>
             </div>
             {loading ? (
-              <div className="text-center py-4 text-gray-500">{t('select.loading')}</div>
+              <div className="text-center py-4 text-gray-500">{t('COMMON.LOADING_SIMPLE')}</div>
             ) : filteredOptions.length === 0 ? (
-              <div className="text-center py-4 text-gray-500">{t('select.noOptions')}</div>
+              <div className="text-center py-4 text-gray-500">{t('COMMON.NO_OPTIONS_FOUND')}</div>
             ) : (
               <ul tabIndex="-1" role="listbox" className="py-1" ref={optionsRef}>
                 {filteredOptions.map((opt, index) => (

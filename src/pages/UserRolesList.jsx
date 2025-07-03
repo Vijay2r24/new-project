@@ -29,7 +29,7 @@ const UserRolesList = () => {
   }, [sSearchTerm]);
 
   useEffect(() => {
-    setTitle(t('userRolesList.title'));
+    setTitle(t('USER_ROLES_LIST.TITLE'));
     return () => setTitle('');
   }, [setTitle, t]);
 
@@ -57,27 +57,27 @@ const UserRolesList = () => {
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div className="flex-1 min-w-0">
-            <p className="mt-1 text-sm text-gray-500">{t('userRolesList.description')}</p>
+            <p className="mt-1 text-secondary">{t('USER_ROLES_LIST.DESCRIPTION')}</p>
           </div>
           <button
             onClick={() => navigate("/addUserRole")}
             className='btn-primary'>
             <UserPlus className="h-5 w-5 mr-2" />
-            {t('userRolesList.addRole')}
+            {t('USER_ROLES_LIST.ADD_ROLE')}
           </button>
         </div>
       </div>
       <Toolbar
         searchTerm={sSearchTerm}
         setSearchTerm={setSearchTerm}
-        searchPlaceholder={t('userRolesList.searchPlaceholder')}
+        searchPlaceholder={t('USER_ROLES_LIST.SEARCH_PLACEHOLDER')}
         viewMode={sViewMode}
         setViewMode={setViewMode}
         additionalFilters={[]}
         handleFilterChange={() => { }}
       />
       {bLoading ? (
-        <div className="text-center py-8">{t('common.loading')}...</div>
+        <div className="text-center py-8">{t('COMMON.LOADING')}...</div>
       ) : nError ? (
         <div className="text-center py-8 text-red-500">{nError}</div>
       ) : sViewMode === 'table' ? (
@@ -87,19 +87,19 @@ const UserRolesList = () => {
               <thead className="table-head">
                 <tr>
                   <th scope="col" className="table-head-cell">
-                    {t('userRolesList.table.roleId')}
+                    {t('USER_ROLES_LIST.TABLE.ROLE_ID')}
                   </th>
                   <th scope="col" className="table-head-cell">
-                    {t('userRolesList.table.roleName')}
+                    {t('USER_ROLES_LIST.TABLE.ROLE_NAME')}
                   </th>
                   <th scope="col" className="table-head-cell hidden sm:table-cell">
-                    {t('userRolesList.table.storeName')}
+                    {t('USER_ROLES_LIST.TABLE.STORE_NAME')}
                   </th>
                   <th scope="col" className="table-head-cell">
-                    {t('userRolesList.table.status')}
+                    {t('COMMON.STATUS')}
                   </th>
                   <th scope="col" className="table-head-cell text-center">
-                    {t('userRolesList.table.actions')}
+                    {t('COMMON.ACTIONS')}
                   </th>
                 </tr>
               </thead>
@@ -143,14 +143,14 @@ const UserRolesList = () => {
                 {aRoles.length === 0 && (
                   <tr>
                     <td colSpan={5} className="py-8 text-center text-gray-500">
-                      <NotFoundMessage message={t('userRolesList.noRolesFound')} />
+                      <NotFoundMessage message={t('USER_ROLES_LIST.NO_ROLES_FOUND')} />
                     </td>
                   </tr>
                 )}
                 {aRoles.length > 0 && paginatedRoles.length === 0 && (
                   <tr>
                     <td colSpan={5} className="py-8 text-center text-gray-500">
-                      <NotFoundMessage message={t('userRolesList.noRolesOnPage')} />
+                      <NotFoundMessage message={t('USER_ROLES_LIST.NO_ROLES_ON_PAGE')} />
                     </td>
                   </tr>
                 )}
@@ -170,14 +170,14 @@ const UserRolesList = () => {
                       {role.rolename || role.RoleName}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-500">{t('userRolesList.table.roleId')}: {role.roleid || role.RoleID}</p>
+                  <p className="text-secondary">{t('USER_ROLES_LIST.TABLE.ROLE_ID')}: {role.roleid || role.RoleID}</p>
                 </div>
-                <span className={`px-3 py-1 text-sm font-medium rounded-full ${(role.status || role.Status) === t('userRolesList.status.active') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                <span className={`px-3 py-1 text-sm font-medium rounded-full ${(role.status || role.Status) === t('COMMON.ACTIVE') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                   {role.status || role.Status}
                 </span>
               </div>
               <div className="flex-grow text-base text-gray-700 mb-4">
-                <p><strong>{t('userRolesList.table.storeName')}:</strong> {role.storename || role.StoreName}</p>
+                <p><strong>{t('USER_ROLES_LIST.TABLE.STORE_NAME')}:</strong> {role.storename || role.StoreName}</p>
               </div>
               <ActionButtons
                 id={role.roleid || role.RoleID}
@@ -188,7 +188,7 @@ const UserRolesList = () => {
             </div>
           ))}
           {aRoles.length === 0 && (
-            <NotFoundMessage message={t('userRolesList.noRolesFound')} />
+            <NotFoundMessage message={t('USER_ROLES_LIST.NO_ROLES_FOUND')} />
           )}
         </div>
       )}

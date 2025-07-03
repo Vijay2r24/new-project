@@ -49,16 +49,16 @@ useEffect(() => {
       const oResponse = await apiGet(getProductDetails, params, token);
       const resData = oResponse?.data;
 
-      if (resData?.status === STATUS.SUCCESS_1) {
+      if (resData?.status === STATUS.SUCCESS.toUpperCase()) {
         setProducts(resData.data);
         setTotalItems(resData.totalRecords);
         setTotalPages(resData.totalPages);
       } else {
-        setError(resData?.message || t('products.fetchError'));
+        setError(resData?.message || t('PRODUCTS.FETCH_ERROR'));
       }
     } catch (err) {
       const backendMessage = err?.response?.data?.message;
-      setError(backendMessage || t('products.fetchError'));
+      setError(backendMessage || t('PRODUCTS.FETCH_ERROR'));
     } finally {
       setLoading(false);
     }
@@ -68,7 +68,7 @@ useEffect(() => {
 }, [nCurrentPage, itemsPerPage, sSearchTerm]);
 
   useEffect(() => {
-    setTitle(t('products.title'));
+    setTitle(t('PRODUCTS.TITLE'));
   }, [setTitle, t]);
 
   const handleDelete = (productId) => {
@@ -126,14 +126,14 @@ useEffect(() => {
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div className="flex-1 min-w-0">
-            <p className="mt-1 text-sm text-gray-500">{t('products.subtitle')}</p>
+            <p className="mt-1 text-secondary">{t('PRODUCTS.SUBTITLE')}</p>
           </div>
           <button
             onClick={() => navigate('/Addproduct')}
             className='btn-primary'
           >
             <Plus className="h-5 w-5 mr-2" />
-            {t('products.add-btn')}
+            {t('PRODUCTS.ADD_BTN')}
           </button>
         </div>
       </div>
@@ -149,25 +149,25 @@ useEffect(() => {
         setFilterStatus={setFilterStatus}
         additionalFilters={additionalFilters}
         handleFilterChange={handleFilterChange}
-        searchPlaceholder={t('products.searchPlaceholder')}
+        searchPlaceholder={t('PRODUCTS.SEARCH_PLACEHOLDER')}
       />
       {bLoading ? (
-        <div className="text-center py-8 text-gray-500">{t('products.loading')}</div>
+        <div className="text-center py-8 text-gray-500">{t('COMMON.LOADING')}</div>
       ) : sError ? (
-        <div className="text-center py-8 text-red-500">{t('products.fetchError')}</div>
+        <div className="text-center py-8 text-red-500">{t('PRODUCTS.FETCH_ERROR')}</div>
       ) : sViewMode === 'table' ? (
         <div className="table-container">
           <div className="table-wrapper">
             <table className="table-base">
               <thead className="table-head">
                 <tr>
-                  <th className="table-head-cell">{t('products.title')}</th>
-                  <th className="table-head-cell">{t('products.category')}</th>
-                  <th className="table-head-cell">{t('products.price')}</th>
-                  <th className="table-head-cell">{t('products.stock')}</th>
-                  <th className="table-head-cell">{t('products.status')}</th>
-                  <th className="table-head-cell">{t('products.storeName')}</th>
-                  <th className="table-head-cell">{t('products.actions')}</th>
+                  <th className="table-head-cell">{t('PRODUCTS.TITLE')}</th>
+                  <th className="table-head-cell">{t('PRODUCTS.CATEGORY')}</th>
+                  <th className="table-head-cell">{t('PRODUCTS.PRICE')}</th>
+                  <th className="table-head-cell">{t('PRODUCTS.STOCK')}</th>
+                  <th className="table-head-cell">{t('COMMON.STATUS')}</th>
+                  <th className="table-head-cell">{t('PRODUCTS.STORE_NAME')}</th>
+                  <th className="table-head-cell">{t('COMMON.ACTIONS')}</th>
                 </tr>
               </thead>
               <tbody className="table-body">
@@ -205,7 +205,7 @@ useEffect(() => {
                 {aProducts.length === 0 && (
                   <tr>
                     <td colSpan={6} className="py-8 text-center text-gray-500">
-                      {t('products.noProducts')}
+                      {t('PRODUCTS.NO_PRODUCTS')}
                     </td>
                   </tr>
                 )}
@@ -232,10 +232,10 @@ useEffect(() => {
                   </div>
                 </div>
                 <div className="text-sm text-gray-900 mt-2">
-                  <span className="font-medium">{t('products.category')}</span> {product.subCategory}
+                  <span className="font-medium">{t('PRODUCTS.CATEGORY')}</span> {product.subCategory}
                 </div>
                 <div className="flex items-center justify-between mt-2">
-                  <div className="text-sm text-gray-500">{t('products.stock')}<span className="font-semibold text-gray-900">{product.variants[0]?.quantity}</span></div>
+                  <div className="text-secondary">{t('PRODUCTS.STOCK')}<span className="font-semibold text-gray-900">{product.variants[0]?.quantity}</span></div>
                   <div className="text-lg font-bold text-indigo-600">${parseFloat(product.MRP).toFixed(2)}</div>
                 </div>
                 <ActionButtons

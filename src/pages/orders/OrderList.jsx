@@ -13,11 +13,10 @@ const OrderList = () => {
   const { t } = useTranslation();
   const [sFilterStatus, setFilterStatus] = useState('all');
   const [bShowFilterDropdown, setShowFilterDropdown] = useState(false);
-  const [sViewMode, setViewMode] = useState('table'); // 'table' or 'grid'
+  const [sViewMode, setViewMode] = useState('table'); 
   const [nCurrentPage, setCurrentPage] = useState(1);
   const [aOrders, setOrders] = useState([]);
   const [aProductRows, setProductRows] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState('');
   const productsPerPage = 10;
   const [oFilters, setFilters] = useState({
@@ -88,7 +87,7 @@ const OrderList = () => {
     fetchData();
   }, [sSearchTerm, oFilters]);
   useEffect(() => {
-    setTitle(t('orders.title'));
+    setTitle(t('ORDERS.TITLE'));
   }, [setTitle, t]);
   const getStatusColor = (status) => {
     const statusClasses = {
@@ -128,14 +127,14 @@ const OrderList = () => {
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div className="flex-1 min-w-0">
-            <p className="mt-1 text-sm text-gray-500">{t('orders.subtitle')}</p>
+            <p className="mt-1 text-secondary">{t('ORDERS.SUBTITLE')}</p>
           </div>
           <button
             onClick={() => handleExportOrders()}
             className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 gap-2"
           >
             <Download className="w-4 h-4" />
-            {t('orders.exportButton')}
+            {t('ORDERS.EXPORT_BUTTON')}
           </button>
         </div>
       </div>
@@ -150,7 +149,7 @@ const OrderList = () => {
         setFilterStatus={setFilterStatus}
         additionalFilters={additionalFilters}
         handleFilterChange={handleFilterChange}
-        searchPlaceholder={t('orders.searchPlaceholder')}
+        searchPlaceholder={t('ORDERS.SEARCH_PLACEHOLDER')}
       />
       {sViewMode === 'table' ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100">
@@ -159,20 +158,20 @@ const OrderList = () => {
               <thead className="table-head">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('orders.table.orderNumber')}
+                    {t('ORDERS.TABLE.ORDER_NUMBER')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('orders.table.productName')}
+                    {t('ORDERS.TABLE.PRODUCT_NAME')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
 
-                    {t('orders.table.quantity')}
+                    {t('COMMON.QUANTITY')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('orders.table.status')}
+                    {t('COMMON.STATUS')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('orders.table.actions')}
+                    {t('COMMON.ACTIONS')}
                   </th>
                 </tr>
               </thead>
@@ -183,7 +182,7 @@ const OrderList = () => {
                 ).map((productRow) => (
                   <tr key={`${productRow.orderId}-${productRow.id}`} className="hover:bg-gray-50 transition-colors duration-150">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-xs text-gray-600 font-semibold">{productRow.orderId}</div>
+                      <div className="text-caption font-semibold">{productRow.orderId}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-700">{productRow.product?.productName || 'Unnamed Product'}</div>
@@ -196,12 +195,12 @@ const OrderList = () => {
                         {productRow.orderStatus || 'Unknown'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-secondary">
                       <button
                         onClick={() => handleViewOrder(productRow)}
                         className="text-[#5B45E0] hover:text-[#4c39c7] font-medium transition-colors duration-150"
                       >
-                        {t('orders.viewDetails')}
+                        {t('ORDERS.VIEW_DETAILS')}
                       </button>
                     </td>
                   </tr>
@@ -212,7 +211,6 @@ const OrderList = () => {
         </div>
 
       ) : (
-        // Grid View
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {aProductRows.slice(
@@ -230,8 +228,8 @@ const OrderList = () => {
                 </div>
                 <div className="mt-4">
                   <div className="text-base font-bold text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis">{productRow.product?.productName || 'Unnamed Product'}</div>
-                  <div className="text-sm text-gray-600 mt-1">
-                    {t('orders.table.quantity')} : {productRow.quantity}
+                  <div className="text-sm text-caption mt-1">
+                    {t('ORDERS.TABLE.QUANTITY')} : {productRow.quantity}
                   </div>
                 </div>
 
@@ -239,7 +237,7 @@ const OrderList = () => {
                   onClick={() => handleViewOrder(productRow)}
                   className="mt-3 w-full inline-flex justify-center items-center px-4 py-2 border border-[#5B45E0] text-[#5B45E0] rounded-lg font-medium hover:bg-[#5B45E0]/10 transition-colors duration-150"
                 >
-                  {t('orders.viewDetails')}
+                  {t('ORDERS.VIEW_DETAILS')}
                 </button>
               </div>
             ))}
@@ -247,7 +245,6 @@ const OrderList = () => {
         </>
       )}
 
-      {/* Pagination component */}
       <Pagination
         currentPage={nCurrentPage}
         totalPages={totalPages}

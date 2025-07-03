@@ -2,10 +2,9 @@
 export const STATUS = {
   PENDING: "pending",
   SUCCESS: "success",
-  SUCCESS_1: 'SUCCESS',
   ERROR: "error",
+  WARNING:"warning"
 };
-
 
 export const COLORS = {
   PRIMARY: "#3498db",

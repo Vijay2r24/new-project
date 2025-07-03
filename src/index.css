@@ -72,8 +72,6 @@ code {
     @apply px-4 py-2.5 border border-gray-200 rounded-xl shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-custom-bg transition-all duration-200
   }
 
-  /* index.css */
-
   .btn-toggle-view {
     @apply inline-flex items-center px-3 py-2 border rounded-lg text-sm font-medium;
   }
@@ -92,6 +90,24 @@ code {
 
   .pagination-btn-active {
     @apply bg-custom-bg text-white border-custom-bg;
+  }
+   .text-secondary {
+    @apply text-sm text-gray-500;
+  }
+
+  .text-title {
+    @apply text-lg text-gray-900;
+  }
+
+  .text-caption {
+    @apply text-xs text-gray-600;
+  }
+
+  .text-muted {
+    @apply text-gray-600;
+  }
+  .text-red {
+    @apply text-red-600;
   }
 }
 

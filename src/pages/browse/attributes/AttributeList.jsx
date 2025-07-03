@@ -15,7 +15,7 @@ const AttributeList = () => {
   const [bShowCreate, setShowCreate] = useState(false);
   const { t } = useTranslation();
 
-  const { aAttributes, bLoading, sError } = useAttributes();
+  const { data: aAttributes = [], loading: bLoading, error: sError } = useAttributes();
 
   const [iCurrentPage, setCurrentPage] = useState(1);
   const [iItemsPerPage] = useState(10); 
@@ -26,22 +26,22 @@ const AttributeList = () => {
 const handleStatusChange = async (attributeId, currentIsActive) => {
   try {
     if (currentIsActive) {
-      setErrorMessage(t('productSetup.attributes.statusUpdateWarning'));
+      setErrorMessage(t('PRODUCT_SETUP.ATTRIBUTES.STATUS_UPDATE_WARNING'));
       setShowErrorPopup(true);
       return; 
     }
 
     const response = { status: 'ERROR', message: 'API call for status toggle not implemented yet.' };
 
-      if (response.status === STATUS.SUCCESS_1) {
+      if (response.status === STATUS.SUCCESS.toUpperCase()) {
         setShowErrorPopup(false);
         setErrorMessage('');
       } else {
-        setErrorMessage(response.message || t('productSetup.attributes.statusUpdateError'));
+        setErrorMessage(response.message || t('PRODUCT_SETUP.ATTRIBUTES.STATUS_UPDATE_ERROR'));
         setShowErrorPopup(true);
       }
     } catch (error) {
-      setErrorMessage(t('productSetup.attributes.statusUpdateError'));
+      setErrorMessage(t('PRODUCT_SETUP.ATTRIBUTES.STATUS_UPDATE_ERROR'));
       setShowErrorPopup(true);
     }
   };
@@ -64,7 +64,7 @@ const handleStatusChange = async (attributeId, currentIsActive) => {
     <>
     <div className="relative">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-medium text-gray-900">{t('productSetup.attributes.title')}</h2>
+        <h2 className="text-lg font-medium text-gray-900">{t('PRODUCT_SETUP.ATTRIBUTES.TITLE')}</h2>
       </div>
 
       {/* Filters */}
@@ -74,7 +74,7 @@ const handleStatusChange = async (attributeId, currentIsActive) => {
           setSearchTerm={setSearchQuery}
           filterStatus={bShowFilter}
           setFilterStatus={setShowFilter}
-          searchPlaceholder={t('productSetup.attributes.searchPlaceholder')}
+          searchPlaceholder={t('PRODUCT_SETUP.ATTRIBUTES.SEARCH_PLACEHOLDER')}
           showSearch={true}
           showViewToggle={false}
           showFilterButton={true}
@@ -88,7 +88,7 @@ const handleStatusChange = async (attributeId, currentIsActive) => {
                 }}
                 className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
               >
-                {t('common.all')}
+                {t('COMMON.ALL')}
               </button>
               <button
                 onClick={() => {
@@ -97,7 +97,7 @@ const handleStatusChange = async (attributeId, currentIsActive) => {
                 }}
                 className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
               >
-                {t('common.active')}
+                {t('COMMON.ACTIVE')}
               </button>
               <button
                 onClick={() => {
@@ -106,7 +106,7 @@ const handleStatusChange = async (attributeId, currentIsActive) => {
                 }}
                 className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
               >
-                {t('common.inactive')}
+                {t('COMMON.INACTIVE')}
               </button>
             </div>
           )}
@@ -114,13 +114,13 @@ const handleStatusChange = async (attributeId, currentIsActive) => {
       {/* Table */}
         {bLoading && (
           <div className="text-center py-12 text-gray-500">
-            {t('common.loading')}
+            {t('COMMON.LOADING')}
           </div>
         )}
 
         {sError && !bLoading && (
           <div className="text-center py-12 text-red-500">
-            {t('common.error')}: {sError}
+            {t('COMMON.ERROR')}: {sError}
           </div>
         )}
 
@@ -130,11 +130,11 @@ const handleStatusChange = async (attributeId, currentIsActive) => {
               <table className="table-base">
                 <thead className="table-head">
                   <tr>
-                    <th className="table-head-cell">{t('productSetup.attributes.table.name')}</th>
-                    <th className="table-head-cell">{t('productSetup.attributes.table.description')}</th>
-                    <th className="table-head-cell">{t('productSetup.attributes.table.status')}</th>
+                    <th className="table-head-cell">{t('PRODUCT_SETUP.ATTRIBUTES.TABLE.NAME')}</th>
+                    <th className="table-head-cell">{t('COMMON.DESCRIPTION')}</th>
+                    <th className="table-head-cell">{t('COMMON.STATUS')}</th>
                     <th className="table-head-cell">
-                 {t("common.updateStatus")}
+                 {t("COMMON.UPDATE_STATUS")}
                 </th>
               </tr>
             </thead>
@@ -152,7 +152,7 @@ const handleStatusChange = async (attributeId, currentIsActive) => {
                         ? 'status-active'
                         : 'status-inactive'
                       }`}>
-                          {t(`common.${attribute.IsActive ? 'active' : 'inactive'}`)}
+                          {t(`COMMON.${attribute.IsActive ? 'ACTIVE' : 'INACTIVE'}`)}
                     </span>
                   </td>
                       <td className="table-cell table-cell-text">
@@ -178,7 +178,7 @@ const handleStatusChange = async (attributeId, currentIsActive) => {
       {/* Empty State */}
         {!bLoading && !sError && filteredAttributes.length === 0 && (
         <div className="text-center py-12">
-          <div className="text-gray-500">{t('productSetup.attributes.emptyMessage')}</div>
+          <div className="text-gray-500">{t('PRODUCT_SETUP.ATTRIBUTES.EMPTY_MESSAGE')}</div>
             {(sSearchQuery || sStatusFilter) && (
             <button
               onClick={() => {
@@ -187,7 +187,7 @@ const handleStatusChange = async (attributeId, currentIsActive) => {
               }}
               className="mt-2 text-[#5B45E0] hover:text-[#4c39c7]"
             >
-              {t('productSetup.attributes.clearFilters-btn')}
+              {t('PRODUCT_SETUP.ATTRIBUTES.CLEAR_FILTERS_BTN')}
             </button>
           )}
         </div>

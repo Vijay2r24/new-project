@@ -29,12 +29,12 @@ const ColorList = () => {
     try {
       const response = await toggleColorStatus(colorId, !currentIsActive);
       if (response.status === STATUS.ERROR) {
-        showEmsg(response.message || t('productSetup.colors.statusUpdateError'), 'error');
+        showEmsg(response.message || t('COMMON.STATUS_UPDATE_ERROR'), STATUS.ERROR);
       } else {
-        showEmsg(response.message || t('productSetup.colors.statusUpdateSuccess'), 'success');
+        showEmsg(response.message || t('COMMON.STATUS_UPDATE_SUCCESS'), STATUS.SUCCESS);
       }
     } catch (error) {
-      showEmsg(t('productSetup.colors.unexpectedError'), 'error');
+      showEmsg(t('COMMON.UNEXPECTED_ERROR'), STATUS.ERROR);
     }
   };
 
@@ -62,7 +62,7 @@ const ColorList = () => {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-medium text-gray-900">{t("productSetup.colors.title")}</h2>
+        <h2 className="text-lg font-medium text-gray-900">{t("PRODUCT_SETUP.COLORS.TITLE")}</h2>
       </div>
 
       <div className="mb-6">
@@ -71,7 +71,7 @@ const ColorList = () => {
           setSearchTerm={setSearchQuery}
           filterStatus={bShowFilters}
           setFilterStatus={setShowFilters}
-          searchPlaceholder={t("productSetup.colors.searchPlaceholder")}
+          searchPlaceholder={t("PRODUCT_SETUP.COLORS.SEARCH_PLACEHOLDER")}
           showSearch={true}
           showViewToggle={false}
           showFilterButton={true}
@@ -85,7 +85,7 @@ const ColorList = () => {
               }}
               className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
             >
-              {t('common.all')}
+              {t('COMMON.ALL')}
             </button>
             <button
               onClick={() => {
@@ -94,7 +94,7 @@ const ColorList = () => {
               }}
               className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
             >
-              {t('common.active')}
+              {t('COMMON.ACTIVE')}
             </button>
             <button
               onClick={() => {
@@ -103,28 +103,26 @@ const ColorList = () => {
               }}
               className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
             >
-              {t('common.inactive')}
+              {t('COMMON.INACTIVE')}
             </button>
           </div>
         )}
       </div>
 
       {bLoading ? (
-        <div className="text-center py-8 text-gray-500">{t('common.loading')}</div>
+        <div className="text-center py-8 text-gray-500">{t('COMMON.LOADING')}</div>
       ) : sError ? (
-        <div className="text-center py-8 text-red-500">{t('common.error')}: {sError}</div>
+        <div className="text-center py-8 text-red-500">{t('COMMON.ERROR')}: {sError}</div>
       ) : (
         <div className="table-container">
           <div className="table-wrapper">
             <table className="table-base">
               <thead className="table-head">
                 <tr>
-                  <th className="table-head-cell">{t("productSetup.colors.table.color")}</th>
-                  <th className="table-head-cell">{t("productSetup.colors.table.hexCode")}</th>
-                  <th className="table-head-cell">{t("productSetup.colors.table.status")}</th>
-                  <th className="table-head-cell">
-                  {t("common.updateStatus")}
-                  </th>
+                  <th className="table-head-cell">{t("PRODUCT_SETUP.COLORS.TABLE.COLOR")}</th>
+                  <th className="table-head-cell">{t("PRODUCT_SETUP.COLORS.TABLE.HEX_CODE")}</th>
+                  <th className="table-head-cell">{t("COMMON.STATUS")}</th>
+                  <th className="table-head-cell">{t("COMMON.UPDATE_STATUS")}</th>
                 </tr>
               </thead>
               <tbody className="table-body">
@@ -143,14 +141,14 @@ const ColorList = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="table-cell table-cell-text text-sm text-gray-500">{color.HexCode}</td>
+                    <td className="table-cell table-cell-text text-secondary">{color.HexCode}</td>
                     <td className="table-cell">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         color.IsActive
                           ? 'status-active'
                           : 'status-inactive'
                       }`}>
-                        {color.IsActive ? t('common.active') : t('common.inactive')}
+                        {color.IsActive ? t('COMMON.ACTIVE') : t('COMMON.INACTIVE')}
                       </span>
                     </td>
                     <td className="table-cell table-cell-text">
@@ -175,7 +173,7 @@ const ColorList = () => {
 
       {iTotalItems === 0 && !bLoading && !sError && (
         <div className="text-center py-12">
-          <div className="text-gray-500">{t("productSetup.colors.empty.message")}</div>
+          <div className="text-gray-500">{t("PRODUCT_SETUP.COLORS.EMPTY.MESSAGE")}</div>
           {(sSearchQuery || sStatusFilter) && (
             <button
               onClick={() => {
@@ -184,7 +182,7 @@ const ColorList = () => {
               }}
               className="mt-2 text-[#5B45E0] hover:text-[#4c39c7]"
             >
-              {t("productSetup.colors.empty.clear")}
+              {t("COMMON.CLEAR_SEARCH")}
             </button>
           )}
         </div>

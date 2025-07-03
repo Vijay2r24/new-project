@@ -77,7 +77,7 @@ export const AllDataProvider = ({ children }) => {
       if (rolesPagination) {
         if (
           oResponse.data &&
-          (oResponse.data.status === STATUS.SUCCESS_1 || oResponse.data.STATUS === 'SUCCESS') &&
+          (oResponse.data.status === STATUS.SUCCESS.toUpperCase() || oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase()) &&
           oResponse.data.data &&
           oResponse.data.data.RolesPAginationData &&
           Array.isArray(oResponse.data.data.RolesPAginationData.data)
@@ -85,7 +85,7 @@ export const AllDataProvider = ({ children }) => {
           data = oResponse.data.data.RolesPAginationData.data;
           total = oResponse.data.data.RolesPAginationData.totalRecords || 0;
         }
-      } else if (oResponse.data.status === STATUS.SUCCESS_1) {
+      } else if (oResponse.data.status === STATUS.SUCCESS.toUpperCase()) {
         data = oResponse.data.data;
         if (totalKey && oResponse.data[totalKey] !== undefined) {
           total = oResponse.data[totalKey];
@@ -109,7 +109,7 @@ export const AllDataProvider = ({ children }) => {
         [key]: {
           ...(prev[key] || {}),
           loading: false,
-          error: t('context.errorFetchingData'),
+          error: t('CONTEXT.ERROR_FETCHING_DATA'),
         },
       }));
     }
@@ -120,17 +120,17 @@ export const AllDataProvider = ({ children }) => {
       const token = localStorage.getItem('token');
       const payload = { IsActive: newIsActive };
       const oResponse = await apiPut(`${updateApi}/${id}/status`, payload, token);
-      if (oResponse.data.status === 'SUCCESS') {
+      if (oResponse.data.status === STATUS.SUCCESS.toUpperCase()) {
         const config = aResourceConfigs.find(c => c.key === key);
         if (config) {
           fetchAll(key, config.api, fetchParams, config.totalKey, config.rolesPagination);
         }
-        return { status: 'SUCCESS' };
+        return { status: STATUS.SUCCESS.toUpperCase() };
       } else {
-        return { status: 'ERROR', message: oResponse.data.message || t('context.errorUpdatingStatus') };
+        return { status: 'ERROR', message: oResponse.data.message || t('CONTEXT.ERROR_UPDATING_STATUS') };
       }
     } catch (err) {
-      return { status: 'ERROR', message: t('context.unexpectedError') };
+      return { status: 'ERROR', message: t('COMMON.UNEXPECTED_ERROR') };
     }
   }, [fetchAll, t]);
 

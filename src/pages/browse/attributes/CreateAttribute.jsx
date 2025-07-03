@@ -11,6 +11,7 @@ import {
   useAttributeTypes,
 } from "../../../context/AllDataContext";
 import { STATUS } from "../../../contants/constants";
+import BackButton from '../../../components/BackButton';
 
 const CreateAttribute = ({ setViewMode }) => {
   const { id: attributeId } = useParams();
@@ -25,9 +26,9 @@ const CreateAttribute = ({ setViewMode }) => {
   const { t } = useTranslation();
   const [oErrors, setErrors] = useState({});
   const {
-    aAttributeTypes,
-    bLoading: attributeTypesLoading,
-    sError: attributeTypesError,
+    data: aAttributeTypes = [],
+    loading: attributeTypesLoading,
+    error: attributeTypesError,
   } = useAttributeTypes();
   const {
     create: createAttribute,
@@ -62,28 +63,28 @@ const CreateAttribute = ({ setViewMode }) => {
     const newErrors = {};
 
     if (!oFormData.name.trim()) {
-      newErrors.name = t("productSetup.createAttributes.nameRequired");
+      newErrors.name = t("PRODUCT_SETUP.CREATE_ATTRIBUTES.NAME_REQUIRED");
     } else if (oFormData.name.trim().length < 2) {
-      newErrors.name = t("productSetup.createAttributes.nameMinLength");
+      newErrors.name = t("PRODUCT_SETUP.CREATE_ATTRIBUTES.NAME_MIN_LENGTH");
     } else if (oFormData.name.trim().length > 50) {
-      newErrors.name = t("productSetup.createAttributes.nameMaxLength");
+      newErrors.name = t("PRODUCT_SETUP.CREATE_ATTRIBUTES.NAME_MAX_LENGTH");
     }
 
     if (!oFormData.type) {
-      newErrors.type = t("productSetup.createAttributes.typeRequired");
+      newErrors.type = t("PRODUCT_SETUP.CREATE_ATTRIBUTES.TYPE_REQUIRED");
     } else if (
       !aAttributeTypes.some((type) => type.AttributeTypeID === oFormData.type)
     ) {
-      newErrors.type = t("productSetup.createAttributes.typeInvalid");
+      newErrors.type = t("PRODUCT_SETUP.CREATE_ATTRIBUTES.TYPE_INVALID");
     }
 
     if (!oFormData.description.trim()) {
       newErrors.description = t(
-        "productSetup.createAttributes.descriptionRequired"
+        "PRODUCT_SETUP.CREATE_ATTRIBUTES.DESCRIPTION_REQUIRED"
       );
     } else if (oFormData.description.trim().length > 250) {
       newErrors.description = t(
-        "productSetup.createAttributes.descriptionMaxLength"
+        "PRODUCT_SETUP.CREATE_ATTRIBUTES.DESCRIPTION_MAX_LENGTH"
       );
     }
 
@@ -99,11 +100,11 @@ const CreateAttribute = ({ setViewMode }) => {
     };
 
     const handleResponse = (response) => {
-      if (response.status === STATUS.SUCCESS_1) {
-        showEmsg(response.message || "Operation successful!", "success");
+      if (response.status === STATUS.SUCCESS.toUpperCase()) {
+        showEmsg(response.message, STATUS.SUCCESS);
         navigate("/browse", { state: { fromAttributeEdit: true } });
       } else {
-        showEmsg(response.message || "An unknown error occurred.", "error");
+        showEmsg(response.message ,STATUS.ERROR);
       }
     };
 
@@ -117,37 +118,30 @@ const CreateAttribute = ({ setViewMode }) => {
   return (
     <div>
       <div className="flex items-center mb-6">
-        <button
-          onClick={() =>
-            navigate("/browse", { state: { fromAttributeEdit: true } })
-          }
-          className="mr-4 p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-all duration-200"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
+        <BackButton onClick={() => navigate('/browse', { state: { fromAttributeEdit: true } })} />
         <h2 className="text-xl font-bold text-gray-900">
           {isEditing
-            ? t("productSetup.attributes.editTitle")
-            : t("productSetup.createAttributes.createTitle")}
+            ? t("PRODUCT_SETUP.ATTRIBUTES.EDIT_TITLE")
+            : t("PRODUCT_SETUP.CREATE_ATTRIBUTES.CREATE_TITLE")}
         </h2>
       </div>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="flex flex-col md:flex-row md:space-x-4">
           <div className="w-full md:w-1/2">
             <TextInputWithIcon
-              label={t("productSetup.createAttributes.nameLabel")}
+              label={t("PRODUCT_SETUP.CREATE_ATTRIBUTES.NAME_LABEL")}
               id="name"
               name="name"
               value={oFormData.name}
               onChange={handleInputChange}
-              placeholder={t("productSetup.createAttributes.namePlaceholder")}
+              placeholder={t("PRODUCT_SETUP.CREATE_ATTRIBUTES.NAME_PLACEHOLDER")}
               error={oErrors.name}
               Icon={Tag}
             />
           </div>
           <div className="w-full md:w-1/2 form-field-group">
             <SelectWithIcon
-              label={t("productSetup.createAttributes.typeLabel")}
+              label={t("PRODUCT_SETUP.CREATE_ATTRIBUTES.TYPE_LABEL")}
               id="type"
               name="type"
               value={oFormData.type}
@@ -155,7 +149,7 @@ const CreateAttribute = ({ setViewMode }) => {
               options={[
                 {
                   value: "",
-                  label: t("productSetup.createAttributes.selectType"),
+                  label: t("PRODUCT_SETUP.CREATE_ATTRIBUTES.SELECT_TYPE"),
                 },
                 ...aAttributeTypes.map((type) => ({
                   value: type.AttributeTypeID,
@@ -169,28 +163,22 @@ const CreateAttribute = ({ setViewMode }) => {
         </div>
         <div className="w-full form-section">
           <TextAreaWithIcon
-            label={t("productSetup.createAttributes.descriptionLabel")}
+            label={t("COMMON.DESCRIPTION")}
             id="description"
             name="description"
             value={oFormData.description}
             onChange={handleInputChange}
             placeholder={t(
-              "productSetup.createAttributes.descriptionPlaceholder"
+              "PRODUCT_SETUP.CREATE_ATTRIBUTES.DESCRIPTION_PLACEHOLDER"
             )}
             error={oErrors.description}
             icon={Info}
           />
         </div>
         <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100 form-actions">
-          <button
-            type="button"
-            onClick={() =>
-              navigate("/browse", { state: { fromAttributeEdit: true } })
-            }
-            className="btn-cancel"
-          >
-            {t("common.cancel")}
-          </button>
+          <BackButton onClick={() => navigate('/browse', { state: { fromAttributeEdit: true } })} className="btn-cancel" >
+            {t("COMMON.CANCEL")}
+          </BackButton>
           <button
             type="submit"
             className="btn-secondry"
@@ -198,11 +186,11 @@ const CreateAttribute = ({ setViewMode }) => {
           >
             {isSubmitting
               ? isEditing
-                ? t("common.saving")
-                : t("common.creating")
+                ? t("COMMON.SAVING")
+                : t("COMMON.CREATING")
               : isEditing
-              ? t("productSetup.createAttributes.saveButton")
-              : t("productSetup.createAttributes.createButton")}
+              ? t("PRODUCT_SETUP.CREATE_ATTRIBUTES.SAVE_BUTTON")
+              : t("PRODUCT_SETUP.CREATE_ATTRIBUTES.CREATE_BUTTON")}
           </button>
         </div>
       </form>

@@ -27,7 +27,8 @@ import { LocationDataContext } from '../../context/LocationDataProvider';
 import { showEmsg } from '../../utils/ShowEmsg';
 import { ToastContainer } from 'react-toastify';
 import { useTitle } from '../../context/TitleContext';
-
+import { STATUS } from '../../contants/constants';
+import BackButton from '../../components/BackButton'
 const OrderView = () => {
   const { orderId } = useParams();
   const [nOrder, setOrder] = useState(null);
@@ -104,15 +105,8 @@ const OrderView = () => {
   };
   useEffect(() => {
     fetchData();
-    setTitle(t('vieworder.orderDetails'));
-    setBackButton(
-      <button
-        onClick={() => window.history.back()}
-        className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 mr-2"
-      >
-        <ArrowLeft className="h-5 w-5 text-gray-500" />
-      </button>
-    );
+    setTitle(t('VIEW_ORDER.ORDER_DETAILS'));
+   setBackButton(<BackButton onClick={() =>window.history.back()}/>)
     return () => {
       setBackButton(null);
       setTitle('');
@@ -131,22 +125,22 @@ const OrderView = () => {
       const response = await apiPut(`${UPDATE_ORDER_ITEM_STATUS}/${orderId}`, payload, token, false);
       console.log('API Response:', response.data);
 
-      if (response?.data?.status === 'SUCCESS') {
-        showEmsg(response.data.message, 'success');
+      if (response?.data?.status === STATUS.SUCCESS.toUpperCase()) {
+        showEmsg(response.data.message,STATUS.SUCCESS);
         fetchData();
         closeEditDialog();
       } else {
-        showEmsg(response.data.message || 'Something went wrong', 'error');
+        showEmsg(response.data.message, STATUS.ERROR);
       }
 
     } catch (error) {
-      showEmsg(error?.response?.data?.message || 'API Error occurred', 'error');
+      showEmsg(error?.response?.data?.message ||t('API_ERROR'), STATUS.ERROR);
     }
   };
   if (bLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-600 text-lg">{t('vieworder.loadingOrderDetails')}</div>
+        <div className="text-caption text-lg">{t('VIEW_ORDER.LOADING_ORDER_DETAILS')}</div>
       </div>
     );
   }
@@ -154,13 +148,13 @@ const OrderView = () => {
   if (nError) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-red-600 text-lg">{t('vieworder.errorLoadingOrderDetails')}{nError.message}</div>
+        <div className="text-red text-lg">{t('VIEW_ORDER.ERROR_LOADING_ORDER_DETAILS')}{nError.message}</div>
       </div>
     );
   }
 
   if (!nOrder) {
-    return <NotFoundMessage message={t('vieworder.orderNotFound')} />;
+    return <NotFoundMessage message={t('VIEW_ORDER.ORDER_NOT_FOUND')} />;
   }
 
   return (
@@ -170,7 +164,7 @@ const OrderView = () => {
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
             <p className="text-gray-500">
-              {t('vieworder.OrderNumber')}{nOrder.orderId || nOrder.id}
+              {t('VIEW_ORDER.ORDER_NUMBER')}{nOrder.orderId || nOrder.id}
             </p>
           </div>
         </div>
@@ -182,18 +176,18 @@ const OrderView = () => {
                   <div className="p-2 bg-blue-100 rounded-lg print:hidden">
                     <User className="h-5 w-5 text-blue-700" />
                   </div>
-                  <h4 className="text-lg font-semibold text-gray-900 print:text-base">{t('vieworder.customerDetails')}</h4>
+                  <h4 className="text-lg font-semibold text-gray-900 print:text-base">{t('VIEW_ORDER.CUSTOMER_DETAILS')}</h4>
                 </div>
                 <div className="space-y-3 text-gray-700 print:space-y-2 print:text-gray-800">
                   <div className="flex items-center space-x-3">
                     <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center print:h-8 print:w-8 print:bg-gray-100">
-                      <span className="text-sm font-medium text-blue-600 print:text-gray-600 print:text-xs">
+                      <span className="text-sm font-medium text-blue-600 print:text-caption print:text-xs">
                         {nOrder.customer?.name ? nOrder.customer.name.split(' ').map(n => n[0]).join('') : '?'}
                       </span>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-900 print:text-xs">{nOrder.customer?.name || 'N/A'}</p>
-                      <p className="text-xs text-gray-600 print:text-[10px]">{t('vieworder.customer')}</p>
+                      <p className="text-caption print:text-[10px]">{t('VIEW_ORDER.CUSTOMER')}</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
@@ -208,21 +202,20 @@ const OrderView = () => {
               </div>
             </div>
 
-            {/* Delivery Information */}
             <div className="rounded-lg bg-white p-6 shadow-sm border border-gray-100 print:rounded-none print:shadow-none print:border print:p-4">
               <div>
                 <div className="flex items-center space-x-3 mb-4 print:mb-3">
                   <div className="p-2 bg-green-100 rounded-lg print:hidden">
                     <MapPin className="h-5 w-5 text-green-700" />
                   </div>
-                  <h4 className="text-lg font-semibold text-gray-900 print:text-base">{t('vieworder.deliveryInformation')}</h4>
+                  <h4 className="text-lg font-semibold text-gray-900 print:text-base">{t('VIEW_ORDER.DELIVERY_INFORMATION')}</h4>
                 </div>
                 <div className="space-y-3 text-gray-700 print:space-y-2 print:text-gray-800">
                   <div className="flex items-start space-x-3">
                     <Building className="h-4 w-4 text-gray-500 mt-1 print:hidden" />
                     <div>
                       <p className="text-sm print:text-xs">{nOrder.delivery?.address || 'N/A'}</p>
-                      <p className="text-xs text-gray-600 print:text-[10px]">
+                      <p className="text-caption print:text-[10px]">
                         {nOrder.delivery ? `${nOrder.delivery.city}, ${nOrder.delivery.state} ${nOrder.delivery.zipCode}` : 'N/A'}
                       </p>
                     </div>
@@ -230,33 +223,32 @@ const OrderView = () => {
                   <div className="flex items-start space-x-3">
                     <Truck className="h-4 w-4 text-gray-500 mt-1 print:hidden" />
                     <div>
-                      <p className="text-sm print:text-xs">{t('vieworder.standarddelivery')}</p>
-                      <p className="text-xs text-gray-600 print:text-[10px]">2-4 Business Days</p>
+                      <p className="text-sm print:text-xs">{t('VIEW_ORDER.STANDARD_DELIVERY')}</p>
+                      <p className="text-caption print:text-[10px]">2-4 Business Days</p>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Payment Information */}
             <div className="rounded-lg p-6 bg-white shadow-sm border border-gray-100 print:rounded-none print:shadow-none print:border print:p-4">
               <div className="flex items-center space-x-3 mb-4 print:mb-3">
                 <div className="p-2 bg-yellow-100 rounded-lg print:hidden">
                   <CreditCard className="h-5 w-5 text-yellow-700" />
                 </div>
-                <h4 className="text-lg font-semibold text-gray-900 print:text-base">{t('vieworder.paymentInformation')}</h4>
+                <h4 className="text-lg font-semibold text-gray-900 print:text-base">{t('VIEW_ORDER.PAYMENT_INFORMATION')}</h4>
               </div>
               <div className="space-y-3 text-gray-700 print:space-y-2 print:text-gray-800">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm print:text-xs">{t('vieworder.paymentMethod')}</span>
+                  <span className="text-sm print:text-xs">{t('VIEW_ORDER.PAYMENT_METHOD')}</span>
                   <span className="text-sm font-medium print:text-xs">{nOrder?.orderItems?.[0]?.paymentMethod}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm print:text-xs">{t('vieworder.paymentStatus')}</span>
+                  <span className="text-sm print:text-xs">{t('VIEW_ORDER.PAYMENT_STATUS')}</span>
                   <span className="text-sm font-medium print:text-xs">{nOrder?.orderItems?.[0]?.paymentStatus}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm print:text-xs">{t('vieworder.paymentDate')}</span>
+                  <span className="text-sm print:text-xs">{t('VIEW_ORDER.PAYMENT_DATE')}</span>
                   <span className="text-sm font-medium print:text-xs">
                     {new Date(nOrder?.orderItems?.[0]?.paymentDate).toLocaleDateString()}
                   </span>
@@ -266,8 +258,6 @@ const OrderView = () => {
 
 
           </div >
-
-          {/* Right Column - Order Items, Order Summary */}
           <div className="lg:col-span-2 flex flex-col gap-6 print:gap-4">
             <div className="hidden bg-white lg:block rounded-lg p-6 shadow-sm border border-gray-100 print:rounded-none print:shadow-none print:border print:p-4">
               <div>
@@ -275,49 +265,47 @@ const OrderView = () => {
                   <div className="p-2 bg-[#5B45E0]/10 rounded-lg print:hidden">
                     <Package className="h-5 w-5 text-[#5B45E0]" />
                   </div>
-                  <h4 className="text-lg font-semibold text-gray-900 print:text-base">{t('vieworder.orderSummary')}</h4>
+                  <h4 className="text-lg font-semibold text-gray-900 print:text-base">{t('VIEW_ORDER.ORDER_SUMMARY')}</h4>
                 </div>
                 <div className="space-y-3 bg-white print:space-y-2 text-gray-700 print:text-gray-800">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm print:text-xs">{t('vieworder.orderDate')}</span>
+                    <span className="text-sm print:text-xs">{t('VIEW_ORDER.ORDER_DATE')}</span>
                     <div className="flex items-center text-sm text-gray-900 font-medium print:text-xs">
                       <Calendar className="h-4 w-4 mr-1.5 text-gray-500 print:hidden" />
                       {nOrder.orderDate ? new Date(nOrder.orderDate).toLocaleDateString() : 'N/A'}
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm print:text-xs">{t('vieworder.orderTime')}</span>
+                    <span className="text-sm print:text-xs">{t('VIEW_ORDER.ORDER_TIME')}</span>
                     <div className="flex items-center text-sm text-gray-900 font-medium print:text-xs">
                       <Clock className="h-4 w-4 mr-1.5 text-gray-500 print:hidden" />
                       {nOrder.orderDate ? new Date(nOrder.orderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                     </div>
                   </div>
                   <div className="flex items-center justify-between font-medium border-t border-gray-100 pt-3 mt-3 print:border-gray-200 print:pt-2 print:mt-2">
-                    <span className="text-base text-gray-900 print:text-sm">{t('vieworder.totalAmount')}</span>
+                    <span className="text-base text-gray-900 print:text-sm">{t('VIEW_ORDER.TOTAL_AMOUNT')}</span>
                     <span className="text-lg font-bold text-[#5B45E0] print:text-base">₹{nOrder.totalAmount || '0.00'}</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Order Items Table */}
             <div className="rounded-lg shadow-sm border border-gray-100 print:rounded-none print:shadow-none print:border print:p-4">
               <div className="px-6 py-4 border-b border-gray-200 print:px-3 print:py-2 print:border-b print:border-gray-300">
-                <h4 className="text-lg font-semibold text-gray-900 print:text-base">{t('vieworder.orderItems')}</h4>
+                <h4 className="text-lg font-semibold text-gray-900 print:text-base">{t('VIEW_ORDER.ORDER_ITEMS')}</h4>
               </div>
               <div className="overflow-x-auto print:overflow-visible">
                 <table className="min-w-full divide-y divide-gray-200 print:text-sm print:divide-gray-300">
                   <thead className="bg-gray-100 print:bg-white">
                     <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider print:px-3 print:py-2 print:text-xs">{t('vieworder.table.product')}</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider print:px-3 print:py-2 print:text-xs">{t('vieworder.table.price')}</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider print:px-3 print:py-2 print:text-xs">{t('vieworder.table.quantity')}</th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider print:px-3 print:py-2 print:text-xs">{t('vieworder.table.status')}</th>
-                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider print:px-3 print:py-2 print:text-xs">{t('vieworder.table.actions')}</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-caption uppercase tracking-wider print:px-3 print:py-2 print:text-xs">{t('COMMON.PRODUCT')}</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-caption uppercase tracking-wider print:px-3 print:py-2 print:text-xs">{t('COMMON.PRICE')}</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-caption uppercase tracking-wider print:px-3 print:py-2 print:text-xs">{t('COMMON.QUANTITY')}</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-caption uppercase tracking-wider print:px-3 print:py-2 print:text-xs">{t('COMMON.STATUS')}</th>
+                      <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-caption uppercase tracking-wider print:px-3 print:py-2 print:text-xs">{t('COMMON.ACTIONS')}</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200 print:divide-gray-300">
-                    {/* Display all order items */}
                     {nOrder.orderItems.map((item) => (
                       <tr key={item?.id || item?.sku || item?.name}>
                         <td className="px-6 py-4 whitespace-nowrap print:px-3 print:py-2">
@@ -331,7 +319,7 @@ const OrderView = () => {
                                 />
                               ) : (
                                 <div className="h-full w-full flex items-center justify-center text-gray-500 text-sm">
-                                  {t('vieworder.noImage')}
+                                  {t('VIEW_ORDER.NO_IMAGE')}
                                 </div>
                               )}
                             </div>
@@ -360,55 +348,52 @@ const OrderView = () => {
                       </tr>
                     ))}
                   </tbody>
-                  {/* Totals Footer */}
                   <tfoot className="bg-gray-100 print:bg-white">
                     <tr>
-                      <td colSpan="3" className="px-6 py-3 text-left text-base font-semibold text-gray-900 print:px-3 print:py-2 print:text-sm">{t('vieworder.subtotal')}</td>
+                      <td colSpan="3" className="px-6 py-3 text-left text-base font-semibold text-gray-900 print:px-3 print:py-2 print:text-sm">{t('VIEW_ORDER.SUBTOTAL')}</td>
                       <td colSpan="2" className="px-6 py-3 text-right text-base font-semibold text-gray-900 print:px-3 print:py-2 print:text-sm">${nOrder.total?.toFixed(2) || '0.00'}</td>
                     </tr>
                     <tr>
-                      <td colSpan="3" className="px-6 py-3 text-left text-base font-semibold text-gray-900 print:px-3 print:py-2 print:text-sm">{t('vieworder.shipping')}</td>
+                      <td colSpan="3" className="px-6 py-3 text-left text-base font-semibold text-gray-900 print:px-3 print:py-2 print:text-sm">{t('VIEW_ORDER.SHIPPING')}</td>
                       <td colSpan="2" className="px-6 py-3 text-right text-base font-semibold text-gray-900 print:px-3 print:py-2 print:text-sm">$0.00</td>
                     </tr>
                     <tr>
-                      <td colSpan="3" className="px-6 py-3 text-left text-base font-semibold text-gray-900 print:px-3 print:py-2 print:text-sm">{t('vieworder.tax')}</td>
+                      <td colSpan="3" className="px-6 py-3 text-left text-base font-semibold text-gray-900 print:px-3 print:py-2 print:text-sm">{t('VIEW_ORDER.TAX')}</td>
                       <td colSpan="2" className="px-6 py-3 text-right text-base font-semibold text-gray-900 print:px-3 print:py-2 print:text-sm">$0.00</td>
                     </tr>
                     <tr>
-                      <td colSpan="3" className="px-6 py-3 text-left text-lg font-bold text-gray-900 print:px-3 print:py-2 print:text-base">{t('vieworder.ordertotal')}</td>
+                      <td colSpan="3" className="px-6 py-3 text-left text-lg font-bold text-gray-900 print:px-3 print:py-2 print:text-base">{t('VIEW_ORDER.TOTAL_AMOUNT')}</td>
                       <td colSpan="2" className="px-6 py-3 text-right text-lg font-bold text-[#5B45E0] print:px-3 print:py-2 print:text-base">₹{nOrder.totalAmount || '0.00'}</td>
                     </tr>
                   </tfoot>
                 </table>
               </div>
             </div>
-
-            {/* Order Summary Card - Shown only on small/medium screens */}
             <div className="lg:hidden rounded-lg p-6 shadow-sm border border-gray-100 print:rounded-none print:shadow-none print:border print:p-4">
               <div>
                 <div className="flex items-center space-x-3 mb-4 print:mb-3">
                   <div className="p-2 bg-[#5B45E0]/10 rounded-lg print:hidden">
                     <Package className="h-5 w-5 text-[#5B45E0]" />
                   </div>
-                  <h4 className="text-lg font-semibold text-gray-900 print:text-base">{t('vieworder.orderSummary')}</h4>
+                  <h4 className="text-lg font-semibold text-gray-900 print:text-base">{t('VIEW_ORDER.ORDER_SUMMARY')}</h4>
                 </div>
                 <div className="space-y-3 print:space-y-2 text-gray-700 print:text-gray-800">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm print:text-xs">{t('vieworder.orderDate')}</span>
+                    <span className="text-sm print:text-xs">{t('VIEW_ORDER.ORDER_DATE')}</span>
                     <div className="flex items-center text-sm text-gray-900 font-medium print:text-xs">
                       <Calendar className="h-4 w-4 mr-1.5 text-gray-500 print:hidden" />
                       {nOrder.orderDate ? new Date(nOrder.orderDate).toLocaleDateString() : 'N/A'}
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm print:text-xs">{t('vieworder.orderItems')}</span>
+                    <span className="text-sm print:text-xs">{t('VIEW_ORDER.ORDER_ITEMS')}</span>
                     <div className="flex items-center text-sm text-gray-900 font-medium print:text-xs">
                       <Clock className="h-4 w-4 mr-1.5 text-gray-500 print:hidden" />
                       {nOrder.orderDate ? new Date(nOrder.orderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                     </div>
                   </div>
                   <div className="flex items-center justify-between font-medium border-t border-gray-100 pt-3 mt-3 print:border-gray-200 print:pt-2 print:mt-2">
-                    <span className="text-base text-gray-900 print:text-sm">{t('vieworder.totalAmount')}</span>
+                    <span className="text-base text-gray-900 print:text-sm">{t('VIEW_ORDER.TOTAL_AMOUNT')}</span>
                     <span className="text-lg font-bold text-[#5B45E0] print:text-base">${nOrder.total?.toFixed(2) || '0.00'}</span>
                   </div>
                 </div>
@@ -419,16 +404,14 @@ const OrderView = () => {
         </div>
 
       </div>
-
-      {/* Edit Order Item Dialog */}
       {bShowEditDialog && oEditingItem && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">{t('vieworder.editOrderItem')}</h3>
+            <h3 className="text-lg font-semibold mb-4">{t('VIEW_ORDER.EDIT_ORDER_ITEM')}</h3>
             <div className="space-y-4">
               <div>
                 <SelectWithIcon
-                  label={t('vieworder.status')}
+                  label={t('COMMON.STATUS')}
                   id="orderStatus"
                   name="orderStatus"
                   value={sEditedStatusId !== null ? sEditedStatusId.toString() : ''}
@@ -444,7 +427,7 @@ const OrderView = () => {
               </div>
               <div>
                 <TextAreaWithIcon
-                  label={t('vieworder.remarks')}
+                  label={t('VIEW_ORDER.REMARKS')}
                   name="remarks"
                   value={sEditedRemarks}
                   onChange={(e) => setEditedRemarks(e.target.value)}
@@ -459,14 +442,14 @@ const OrderView = () => {
                 className="btn-cancel"
                 onClick={closeEditDialog}
               >
-                {t('common.cancel')}
+                {t('COMMON.CANCEL')}
               </button>
               <button
                 type="button"
                 className="btn-primary"
                 onClick={handleSaveChanges}
               >
-                {t('common.save')}
+                {t('COMMON.SAVE')}
               </button>
             </div>
           </div>

@@ -30,7 +30,7 @@ const OrderToolbar = ({
                             <input
                                 type="text"
                                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-custom-bg focus:border-custom-bg sm:text-sm h-full"
-                                placeholder={searchPlaceholder || t('toolbar.searchPlaceholder')}
+                                placeholder={searchPlaceholder || t('TOOLBAR.SEARCH_PLACEHOLDER')}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
@@ -42,19 +42,19 @@ const OrderToolbar = ({
                         <button
                             onClick={() => setViewMode('table')}
                             className={`btn-toggle-view ${viewMode === 'table' ? 'btn-highlighted' : 'btn-default'}`}
-                            title={t('toolbar.tableView')}
+                            title={t('TOOLBAR.TABLE_VIEW')}
                         >
                             <List className="w-4 h-4 mr-1" />
-                            {t('toolbar.table')}
+                            {t('TOOLBAR.TABLE')}
                         </button>
 
                         <button
                             onClick={() => setViewMode('grid')}
                             className={`btn-toggle-view ${viewMode === 'grid' ? 'btn-highlighted' : 'btn-default'}`}
-                            title={t('toolbar.gridView')}
+                            title={t('TOOLBAR.GRID_VIEW')}
                         >
                             <LayoutGrid className="w-4 h-4 mr-1" />
-                            {t('toolbar.grid')}
+                            {t('TOOLBAR.GRID')}
                         </button>
                     </div>
                 )}
@@ -63,10 +63,10 @@ const OrderToolbar = ({
                         <button
                             onClick={() => setShowFilterDropdown(!showFilterDropdown)}
                             className={`btn-toggle-view group ${showFilterDropdown ? 'btn-highlighted' : 'btn-default'}`}
-                            title={t('toolbar.filter')}
+                            title={t('TOOLBAR.FILTER')}
                         >
                             <Filter className="w-4 h-4 mr-2" />
-                            {t('toolbar.filter')}
+                            {t('TOOLBAR.FILTER')}
                         </button>
                     </div>
                 )}
@@ -76,13 +76,13 @@ const OrderToolbar = ({
             {showFilterDropdown && (
                 <div className="mt-4 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-sm font-medium text-gray-900">{t('toolbar.filters')}</h3>
+                        <h3 className="text-sm font-medium text-gray-900">{t('TOOLBAR.FILTERS')}</h3>
                         {filterStatus !== 'all' && (
                             <button
                                 onClick={() => setFilterStatus('all')}
-                                className="text-sm text-gray-500 hover:text-gray-700 flex items-center"
+                                className="text-secondary hover:text-gray-700 flex items-center"
                             >
-                                {t('toolbar.clear')}
+                                {t('TOOLBAR.CLEAR')}
                             </button>
                         )}
                     </div>

@@ -55,9 +55,9 @@ const BrandList = () => {
         searchText: sSearchQuery,
       });
       if (response.status === STATUS.ERROR) {
-        showEmsg(response.message || t('productSetup.brands.statusUpdateError'), "error");
+        showEmsg(response.message || t('PRODUCT_SETUP.BRANDS.STATUS_UPDATE_ERROR'), STATUS.ERROR);
       } else {
-        showEmsg(response.message || t('productSetup.brands.statusUpdateSuccess'), "success");
+        showEmsg(response.message || t('PRODUCT_SETUP.BRANDS.STATUS_UPDATE_SUCCESS'), STATUS.SUCCESS);
         fetchBrands({
           pageNumber: nCurrentPage,
           pageSize: iItemsPerPage,
@@ -65,7 +65,7 @@ const BrandList = () => {
         });
       }
     } catch (error) {
-      showEmsg(t('productSetup.brands.unexpectedError'), "error");
+      showEmsg(t('PRODUCT_SETUP.BRANDS.UNEXPECTED_ERROR'),STATUS.ERROR);
     }
   };
 
@@ -77,7 +77,7 @@ const BrandList = () => {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-medium text-gray-900">
-          {t("productSetup.brands.heading")}
+          {t("PRODUCT_SETUP.BRANDS.HEADING")}
         </h2>
       </div>
 
@@ -87,7 +87,7 @@ const BrandList = () => {
           setSearchTerm={setSearchQuery}
           filterStatus={bShowFilters}
           setFilterStatus={setShowFilters}
-          searchPlaceholder={t("productSetup.brands.searchPlaceholder")}
+          searchPlaceholder={t("PRODUCT_SETUP.BRANDS.SEARCH_PLACEHOLDER")}
           showSearch={true}
           showViewToggle={false}
           showFilterButton={true}
@@ -96,11 +96,11 @@ const BrandList = () => {
 
       {bLoading ? (
         <div className="text-center py-8 text-gray-500">
-          {t("productSetup.brands.loadingBrands")}
+          {t("COMMON.LOADING")}
         </div>
       ) : sError ? (
         <div className="text-center py-8 text-red-500">
-          {t("common.error")} {sError}
+          {t("COMMON.ERROR")} {sError}
         </div>
       ) : (
         <div className="table-container">
@@ -109,19 +109,19 @@ const BrandList = () => {
               <thead className="table-head">
                 <tr>
                   <th className="table-head-cell">
-                    {t("productSetup.brands.table.name")}
+                    {t("PRODUCT_SETUP.BRANDS.TABLE.NAME")}
                   </th>
                   <th className="table-head-cell">
-                    {t("productSetup.brands.table.logo")}
+                    {t("PRODUCT_SETUP.BRANDS.TABLE.LOGO")}
                   </th>
                   <th className="table-head-cell">
-                    {t("productSetup.brands.table.status")}
+                    {t("COMMON.STATUS")}
                   </th>
                   <th className="table-head-cell">
-                    {t("productSetup.brands.table.createdAt")}
+                    {t("PRODUCT_SETUP.BRANDS.TABLE.CREATED_AT")}
                   </th>
                   <th className="table-head-cell">
-                    {t("common.updateStatus")}
+                    {t("COMMON.UPDATE_STATUS")}
                   </th>
                 </tr>
               </thead>
@@ -152,8 +152,8 @@ const BrandList = () => {
                         }`}
                       >
                         {brand.IsActive
-                          ? t("common.active")
-                          : t("common.inactive")}
+                          ? t("COMMON.ACTIVE")
+                          : t("COMMON.INACTIVE")}
                       </span>
                     </td>
                     <td className="table-cell table-cell-text">
@@ -184,14 +184,13 @@ const BrandList = () => {
 
       {bLoading === false && aBrands.length === 0 && (
         <div className="text-center py-12 text-gray-500">
-          {t("productSetup.brands.noBrandsFound")}
           {sSearchQuery && (
             <div>
               <button
                 onClick={() => setSearchQuery("")}
                 className="mt-2 text-[#5B45E0] hover:text-[#4c39c7]"
               >
-                {t("common.clearSearch")}
+                {t("COMMON.CLEAR_SEARCH")}
               </button>
             </div>
           )}

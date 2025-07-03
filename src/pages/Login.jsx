@@ -27,7 +27,6 @@ import { STATUS } from '../contants/constants'
 const Login = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-
   const [bShowPassword, setShowPassword] = useState(false);
   const [oFormData, setFormData] = useState({
     email: '',
@@ -51,51 +50,50 @@ const Login = () => {
   const [bShowNewPassword, setShowNewPassword] = useState(false);
   const [bShowConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Password strength rules for live validation
   const passwordRules = [
     {
-      label: t('resetPassword.rules.length'),
+      label: t('RESET_PASSWORD.RULES.LENGTH'),
       test: (pw) => pw.length >= 8
     },
     {
-      label: t('resetPassword.rules.uppercase'),
+      label: t('RESET_PASSWORD.RULES.UPPERCASE'),
       test: (pw) => /[A-Z]/.test(pw)
     },
     {
-      label: t('resetPassword.rules.lowercase'),
+      label: t('RESET_PASSWORD.RULES.LOWERCASE'),
       test: (pw) => /[a-z]/.test(pw)
     },
     {
-      label: t('resetPassword.rules.number'),
+      label: t('RESET_PASSWORD.RULES.NUMBER'),
       test: (pw) => /\d/.test(pw)
     },
     {
-      label: t('resetPassword.rules.special'),
+      label: t('RESET_PASSWORD.RULES.SPECIAL'),
       test: (pw) => /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(pw)
     }
   ];
 
   const validateEmail = (email) => {
-    if (!email.trim()) return t('login.errors.emailRequired');
+    if (!email.trim()) return t('LOGIN.ERRORS.EMAIL_REQUIRED');
     return '';
   };
 
   const validatePassword = (password) => {
-    if (!password.trim()) return t('login.errors.passwordRequired');
+    if (!password.trim()) return t('LOGIN.ERRORS.PASSWORD_REQUIRED');
     return '';
   };
 
   const validateNewPassword = (password) => {
-    if (!password.trim()) return t('resetPassword.errors.passwordRequired');
-    if (password.length < 6) return t('resetPassword.errors.passwordShort');
+    if (!password.trim()) return t('RESET_PASSWORD.ERRORS.PASSWORD_REQUIRED');
+    if (password.length < 6) return t('RESET_PASSWORD.ERRORS.PASSWORD_SHORT');
     const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
-    if (!strongRegex.test(password)) return t('resetPassword.errors.passwordWeak');
+    if (!strongRegex.test(password)) return t('RESET_PASSWORD.ERRORS.PASSWORD_WEAK');
     return '';
   };
 
   const validateConfirmPassword = (confirmPassword, newPassword) => {
-    if (!confirmPassword.trim()) return t('resetPassword.errors.confirmPasswordRequired');
-    if (confirmPassword !== newPassword) return t('resetPassword.errors.passwordsMismatch');
+    if (!confirmPassword.trim()) return t('RESET_PASSWORD.ERRORS.CONFIRM_PASSWORD_REQUIRED');
+    if (confirmPassword !== newPassword) return t('RESET_PASSWORD.ERRORS.PASSWORDS_MISMATCH');
     return '';
   };
 
@@ -161,24 +159,24 @@ const Login = () => {
       const message = oResponse?.data?.MESSAGE;
       const status = oResponse?.data?.STATUS;
 
-      if (data?.token && data?.UserID && status === STATUS.SUCCESS_1) {
+      if (data?.token && data?.UserID && status === STATUS.SUCCESS.toUpperCase()) {
         localStorage.setItem("token", data.token);
         localStorage.setItem("userId", data.UserID);
 
         await fetchApiData();
         if (message) {
-          showEmsg(message, 'success');
+          showEmsg(message, STATUS.SUCCESS);
         }
         navigate("/dashboard");
       } else {
-        const fallbackMessage = t('login.errors.invalidCredentials');
+        const fallbackMessage = t('LOGIN.ERRORS.INVALID_CREDENTIALS');
         setError(prev => ({ ...prev, submit: fallbackMessage }));
-        showEmsg(message || fallbackMessage, 'warning');
+        showEmsg(message || fallbackMessage, STATUS.WARNING);
       }
     } catch (error) {
-      const errorMessage = error?.response?.data?.MESSAGE || t('login.errors.invalidCredentials');
+      const errorMessage = error?.response?.data?.MESSAGE || t('LOGIN.ERRORS.INVALID_CREDENTIALS');
       setError(prev => ({ ...prev, submit: errorMessage }));
-      showEmsg(errorMessage, 'error');
+      showEmsg(errorMessage, STATUS.ERROR);
     }
   };
 
@@ -197,8 +195,8 @@ const Login = () => {
       const oPayload = { email: sForgotPasswordEmail };
       const oResponse = await apiPost(`${FORGOT_USER_PASSWORD}`, oPayload, null, false);
       const message = oResponse?.data?.MESSAGE;
-      if (oResponse.data.STATUS === STATUS.SUCCESS_1) {
-        showEmsg(message, 'success');
+      if (oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
+        showEmsg(message, STATUS.SUCCESS);
         setbShowOtpDialog(true);
         setTimerCount(60);
         setTimerActive(true);
@@ -206,20 +204,20 @@ const Login = () => {
         setOtp('');
         setError({ email: '', password: '', submit: '' });
       } else {
-        showEmsg(message, 'warning');
+        showEmsg(message, STATUS.WARNING);
       }
     } catch (error) {
       const errMsg = error?.oResponse?.data?.MESSAGE;
-      showEmsg(errMsg ||t('otp.error'), 'error');
+      showEmsg(errMsg ||t('OTP.ERROR'), STATUS.ERROR);
     }
   };
   const handleVerifyOtp = async () => {
        if (!sOtp.trim()) {
-      setError(prev => ({ ...prev, otp: t('login.errors.otpRequired') }));
+      setError(prev => ({ ...prev, otp: t('LOGIN.ERRORS.OTP_REQUIRED') }));
       return;
     }
     if (sOtp.length !== 6) {
-      setError(prev => ({ ...prev, otp: t('login.errors.otpInvalidLength') }));
+      setError(prev => ({ ...prev, otp: t('LOGIN.ERRORS.OTP_INVALID_LENGTH') }));
       return;
     }
 
@@ -232,21 +230,21 @@ const Login = () => {
       const oResponse = await apiPost(VALIDATE_OTP, oPayload, null, false);
       const message = oResponse?.data?.MESSAGE;
 
-      if (oResponse.data && oResponse.data.STATUS === STATUS.SUCCESS_1) {
-        showEmsg(message, 'success');
+      if (oResponse.data && oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
+        showEmsg(message, STATUS.SUCCESS);
         setbShowOtpDialog(false);
         setTimerActive(false);
         setOtp('');
         setCurrentView('resetPassword');
         setError({ email: '', password: '', submit: '', otp: '', newPassword: '', confirmPassword: '' });
       } else {
-        const errMsg = message || t('login.errors.otpInvalid');
-        showEmsg(message || errMsg, 'warning');
+        const errMsg = message || t('LOGIN.ERRORS.OTP_INVALID');
+        showEmsg(message || errMsg, STATUS.WARNING);
         setError(prev => ({ ...prev, otp: message }));
       }
     } catch (error) {
       const errMsg = error?.response?.data?.MESSAGE;
-      showEmsg(errMsg, 'error');
+      showEmsg(errMsg, STATUS.ERROR);
       setError(prev => ({ ...prev, otp: errMsg }));
     }
   };
@@ -286,19 +284,19 @@ const Login = () => {
       };
       const oResponse = await apiPost(VALIDATE_UPDATE_PASSWORD, oPayload, null, false);
       const message = oResponse?.data?.MESSAGE;
-      if (oResponse.data && oResponse.data.STATUS === STATUS.SUCCESS_1) {
-        showEmsg(message, 'success');
+      if (oResponse.data && oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
+        showEmsg(message, STATUS.SUCCESS);
         setCurrentView('login');
         setForgotPasswordEmail('');
         setNewPassword('');
         setConfirmPassword('');
         setError({ email: '', password: '', submit: '', otp: '', newPassword: '', confirmPassword: '' });
       } else {
-        showEmsg(message || t('login.errors.passwordResetFailed'), 'warning');
+        showEmsg(message || t('LOGIN.ERRORS.PASSWORD_RESET_FAILED'), STATUS.WARNING);
       }
     } catch (error) {
       const errMsg = error?.response?.data?.MESSAGE;
-      showEmsg(errMsg || t('login.errors.passwordResetFailed'), 'error');
+      showEmsg(errMsg || t('LOGIN.ERRORS.PASSWORD_RESET_FAILED'), STATUS.ERROR);
     }
   };
   useEffect(() => {
@@ -326,17 +324,17 @@ const Login = () => {
           <div className="inline-flex items-center justify-center w-12 h-12 bg-custom-bg text-white rounded-xl shadow">
             <ShoppingBag className="h-5 w-5" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 mt-4">{t('login.title')}</h2>
-          <p className="text-sm text-gray-600">{t('login.subtitle')}</p>
+          <h2 className="text-2xl font-bold text-gray-800 mt-4">{t('LOGIN.TITLE')}</h2>
+          <p className="text-sm text-muted">{t('LOGIN.SUBTITLE')}</p>
         </div>
         <div className="space-y-4">
           <div className="space-y-1">
             <TextInputWithIcon
-              label={t('login.email')}
+              label={t('LOGIN.EMAIL')}
               id="email"
               name="email"
               type="email"
-              placeholder={t('login.email-placeholder')}
+              placeholder={t('LOGIN.EMAIL_PLACEHOLDER')}
               value={oFormData.email}
               onChange={e => handleChange('email', e.target.value)}
               Icon={Mail}
@@ -346,11 +344,11 @@ const Login = () => {
           </div>
           <div className="space-y-1">
             <TextInputWithIcon
-              label={t('login.passWord')}
+              label={t('LOGIN.PASSWORD')}
               id="password"
               name="password"
               type={bShowPassword ? 'text' : 'password'}
-              placeholder={t('login.passWord-placeholder')}
+              placeholder={t('LOGIN.PASSWORD_PLACEHOLDER')}
               value={oFormData.password}
               onChange={e => handleChange('password', e.target.value)}
               Icon={Lock}
@@ -373,7 +371,7 @@ const Login = () => {
               onClick={handleForgotPasswordClick}
               className="text-custom-bg hover:underline hover:text-red-500 transition-all duration-200"
             >
-              {t('login.forgotPassword')}
+              {t('LOGIN.FORGOT_PASSWORD')}
             </button>
           </div>
           <button
@@ -382,7 +380,7 @@ const Login = () => {
             className={`w-full py-2 px-4 rounded-md transition-colors duration-200 bg-custom-bg text-white ${isLoginDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-custom-bg-dark'}`}
             disabled={isLoginDisabled}
           >
-            {t('login.loginButton')}
+            {t('LOGIN.LOGIN_BUTTON')}
           </button>
         </div>
       </>
@@ -397,17 +395,17 @@ const Login = () => {
           <div className="inline-flex items-center justify-center w-12 h-12 bg-custom-bg text-white rounded-xl shadow">
             <Lock className="h-5 w-5" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 mt-4">{t('login.forgotPasswordTitle')}</h2>
-          <p className="text-sm text-gray-600">{t('login.forgotPasswordSubtitle')}</p>
+          <h2 className="text-2xl font-bold text-gray-800 mt-4">{t('LOGIN.FORGOT_PASSWORD_TITLE')}</h2>
+          <p className="text-sm text-muted">{t('LOGIN.FORGOT_PASSWORD_SUBTITLE')}</p>
         </div>
         <div className="space-y-4">
           <div className="space-y-1">
             <TextInputWithIcon
-              label={t('login.email')}
+              label={t('LOGIN.EMAIL')}
               id="forgotPasswordEmail"
               name="forgotPasswordEmail"
               type="email"
-              placeholder={t('login.email-placeholder')}
+              placeholder={t('LOGIN.EMAIL_PLACEHOLDER')}
               value={sForgotPasswordEmail}
               onChange={e => handleChange('email', e.target.value)}
               Icon={Mail}
@@ -424,14 +422,14 @@ const Login = () => {
               className={`w-1/2 bg-custom-bg text-white py-2 px-4 rounded-md transition-colors duration-200 ${isSendOtpDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-custom-bg-dark'}`}
               disabled={isSendOtpDisabled}
             >
-              {t('login.sendOtpButton')}
+              {t('LOGIN.SEND_OTP_BUTTON')}
             </button>
             <button
               type="button"
               onClick={() => setCurrentView('login')}
               className="w-1/2 text-custom-bg border border-custom-bg py-2 px-4 rounded-md hover:bg-custom-bg/10 transition-colors duration-200"
             >
-              {t('common.cancel')}
+              {t('COMMON.CANCEL')}
             </button>
           </div>
         </div>
@@ -451,17 +449,17 @@ const Login = () => {
           <div className="inline-flex items-center justify-center w-12 h-12 bg-custom-bg text-white rounded-xl shadow">
             <Lock className="h-5 w-5" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 mt-4">{t('resetPassword.title')}</h2>
-          <p className="text-sm text-gray-600">{t('resetPassword.subtitle')}</p>
+          <h2 className="text-2xl font-bold text-gray-800 mt-4">{t('RESET_PASSWORD.TITLE')}</h2>
+          <p className="text-sm text-muted">{t('RESET_PASSWORD.SUBTITLE')}</p>
         </div>
         <div className="space-y-4">
           <div className="space-y-1">
             <TextInputWithIcon
-              label={t('resetPassword.newPassword')}
+              label={t('RESET_PASSWORD.NEW_PASSWORD')}
               id="newPassword"
               name="newPassword"
               type={bShowNewPassword ? 'text' : 'password'}
-              placeholder={t('resetPassword.newPassword-placeholder')}
+              placeholder={t('RESET_PASSWORD.NEW_PASSWORD_PLACEHOLDER')}
               value={sNewPassword}
               onChange={e => handleChange('newPassword', e.target.value)}
               Icon={Lock}
@@ -497,11 +495,11 @@ const Login = () => {
           </div>
           <div className="space-y-1">
             <TextInputWithIcon
-              label={t('resetPassword.confirmPassword')}
+              label={t('RESET_PASSWORD.CONFIRM_PASSWORD')}
               id="confirmPassword"
               name="confirmPassword"
               type={bShowConfirmPassword ? 'text' : 'password'}
-              placeholder={t('resetPassword.confirmPassword-placeholder')}
+              placeholder={t('RESET_PASSWORD.CONFIRM_PASSWORD_PLACEHOLDER')}
               value={sConfirmPassword}
               onChange={e => handleChange('confirmPassword', e.target.value)}
               Icon={Lock}
@@ -527,14 +525,14 @@ const Login = () => {
               className={`w-1/2 bg-custom-bg text-white py-2 px-4 rounded-md transition-colors duration-200 ${isResetDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-custom-bg-dark'}`}
               disabled={isResetDisabled}
             >
-              {t('resetPassword.resetButton')}
+              {t('RESET_PASSWORD.RESET_BUTTON')}
             </button>
             <button
               type="button"
               onClick={() => setCurrentView('login')}
               className="w-1/2 text-custom-bg border border-custom-bg py-2 px-4 rounded-md hover:bg-custom-bg/10 transition-colors duration-200"
             >
-              {t('common.cancel')}
+              {t('COMMON.CANCEL')}
             </button>
           </div>
         </div>
@@ -551,17 +549,17 @@ const Login = () => {
           <Settings className="w-14 h-14 text-white mb-6 mx-auto drop-shadow-md" />
           <h1
             className="text-4xl font-bold mb-5 leading-tight drop-shadow-md"
-            dangerouslySetInnerHTML={{ __html: t('admin.title') }}
+            dangerouslySetInnerHTML={{ __html: t('ADMIN.TITLE') }}
           />
           <p className="text-white/90 text-lg mb-10 drop-shadow-sm">
-            {t('admin.description')}
+            {t('ADMIN.DESCRIPTION')}
           </p>
           <div className="grid grid-cols-1 gap-4 text-left text-sm mt-8">
-            <div className="flex items-center space-x-3 drop-shadow-sm"><Package className="h-5 w-5 text-white" /><span>{t('admin.features.product')}</span></div>
-            <div className="flex items-center space-x-3 drop-shadow-sm"><ShoppingCart className="h-5 w-5 text-white" /><span>{t('admin.features.order')}</span></div>
-            <div className="flex items-center space-x-3 drop-shadow-sm"><Users className="h-5 w-5 text-white" /><span>{t('admin.features.userRole')}</span></div>
-            <div className="flex items-center space-x-3 drop-shadow-sm"><BarChart2 className="h-5 w-5 text-white" /><span>{t('admin.features.analytics')}</span></div>
-            <div className="flex items-center space-x-3 drop-shadow-sm"><Shield className="h-5 w-5 text-white" /><span>{t('admin.features.security')}</span></div>
+            <div className="flex items-center space-x-3 drop-shadow-sm"><Package className="h-5 w-5 text-white" /><span>{t('ADMIN.FEATURES.PRODUCT')}</span></div>
+            <div className="flex items-center space-x-3 drop-shadow-sm"><ShoppingCart className="h-5 w-5 text-white" /><span>{t('ADMIN.FEATURES.ORDER')}</span></div>
+            <div className="flex items-center space-x-3 drop-shadow-sm"><Users className="h-5 w-5 text-white" /><span>{t('ADMIN.FEATURES.USER_ROLE')}</span></div>
+            <div className="flex items-center space-x-3 drop-shadow-sm"><BarChart2 className="h-5 w-5 text-white" /><span>{t('ADMIN.FEATURES.ANALYTICS')}</span></div>
+            <div className="flex items-center space-x-3 drop-shadow-sm"><Shield className="h-5 w-5 text-white" /><span>{t('ADMIN.FEATURES.SECURITY')}</span></div>
           </div>
         </div>
       </div>
@@ -576,16 +574,16 @@ const Login = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md">
             <div className="text-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-800">{t('otpDialog.title')}</h3>
-              <h4 className="text-lg font-medium text-gray-700 mb-1">{t('otpDialog.subtitle')}</h4>
-              <p className="text-sm text-gray-500">{t('otpDialog.instruction')}</p>
+              <h3 className="text-2xl font-bold text-gray-800">{t('OTP_DIALOG.TITLE')}</h3>
+              <h4 className="text-lg font-medium text-gray-700 mb-1">{t('OTP_DIALOG.SUBTITLE')}</h4>
+              <p className="text-secondary">{t('OTP_DIALOG.INSTRUCTION')}</p>
               <div className="flex items-center justify-center gap-2 mt-2">
                 <Mail className="w-4 h-4 text-custom-bg" />
                 <span className="text-gray-700 text-sm font-medium">{sForgotPasswordEmail}</span>
                 <button
                   type="button"
                   className="ml-2 p-1 rounded hover:bg-gray-100"
-                  title={t('common.edit')}
+                  title={t('COMMON.EDIT')}
                   onClick={() => {
                     setbShowOtpDialog(false);
                     setCurrentView('forgotPassword');
@@ -623,7 +621,7 @@ const Login = () => {
                 className={`w-1/2 bg-custom-bg text-white py-2 rounded-md transition-colors duration-200 ${!sOtp || sOtp.length !== 6 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-custom-bg-dark'}`}
                 disabled={!sOtp || sOtp.length !== 6}
               >
-                {t('otpDialog.verifyButton')}
+                {t('OTP_DIALOG.VERIFY_BUTTON')}
               </button>
               <button
                 type="button"
@@ -636,12 +634,12 @@ const Login = () => {
                 }}
                 className="w-1/2 border border-gray-400 text-gray-700 py-2 rounded-md hover:bg-gray-100 transition-colors duration-200"
               >
-                {t('otpDialog.cancelButton')}
+                {t('OTP_DIALOG.CANCEL_BUTTON')}
               </button>
             </div>
-            <div className="text-center mt-4 text-sm text-gray-600">
+            <div className="text-center mt-4 text-sm text-muted">
               {bTimerActive ? (
-                <p>{t('otpDialog.timer')}{' '}{nTimerCount}</p>
+                <p>{t('OTP_DIALOG.TIMER')}{' '}{nTimerCount}</p>
               ) : (
                 <button
                   type="button"
@@ -649,7 +647,7 @@ const Login = () => {
                   disabled={!bResendEnabled}
                   className={`text-custom-bg hover:underline ${!bResendEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  {t('otpDialog.resend')}
+                  {t('OTP_DIALOG.RESEND')}
                 </button>
               )}
             </div>

@@ -14,7 +14,7 @@ import TextInputWithIcon from "../components/TextInputWithIcon";
 import SelectWithIcon from "../components/SelectWithIcon";
 import { useTranslation } from "react-i18next";
 import { FaCamera } from "react-icons/fa";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { apiGet, apiPost } from "../utils/ApiUtils";
 import { getUserById, userCreateOrUpdate } from "../contants/apiRoutes";
 import { showEmsg } from "../utils/ShowEmsg";
@@ -23,7 +23,9 @@ import { useTitle } from "../context/TitleContext";
 import { useRoles } from "../context/AllDataContext";
 import { STATUS } from "../contants/constants";
 import md5 from "md5";
-
+import BackButton from "../components/BackButton";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 const getArray = (data) =>
   Array.isArray(data)
     ? data
@@ -31,7 +33,7 @@ const getArray = (data) =>
     ? data.data
     : [];
 
- const AddUser = () => {
+const AddUser = () => {
   const [oFormData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -67,21 +69,15 @@ const getArray = (data) =>
   const [oErrors, setErrors] = useState({});
   const { setTitle, setBackButton } = useTitle();
   const [fetchUserError, setFetchUserError] = useState("");
+  const navigate = useNavigate();
   useEffect(() => {
-    setTitle(id ? t("users.edit_user", "Update User") : t("users.add_new_user", "Add New User"));
-    setBackButton(
-      <button
-        onClick={() => window.history.back()}
-        className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 mr-2"
-      >
-        <ArrowLeft className="h-5 w-5 text-gray-500" />
-      </button>
-    );
+    setTitle(id ? t("USERS.EDIT_USER") : t("USERS.ADD_NEW_USER"));
+    setBackButton(<BackButton onClick={() => navigate("/users")} />);
     return () => {
       setBackButton(null);
       setTitle("");
     };
-  }, [setTitle, setBackButton, t, id]);
+  }, [setTitle, setBackButton, t, id, navigate]);
   useEffect(() => {
     if (
       id &&
@@ -97,7 +93,7 @@ const getArray = (data) =>
 
           if (
             resData &&
-            resData.STATUS === STATUS.SUCCESS_1 &&
+            resData.STATUS === STATUS.SUCCESS.toUpperCase() &&
             resData.data?.user
           ) {
             const user = resData.data.user;
@@ -140,11 +136,11 @@ const getArray = (data) =>
             }
             setFetchUserError("");
           } else {
-            setFetchUserError(resData?.MESSAGE || t("common.failedOperation"));
+            setFetchUserError(resData?.MESSAGE || t("COMMON.FAILED_OPERATION"));
           }
         } catch (error) {
           const backendMessage = error?.response?.data?.MESSAGE;
-          setFetchUserError(backendMessage || t("common.errorMessage"));
+          setFetchUserError(backendMessage || t("COMMON.ERROR_MESSAGE"));
         }
       };
       fetchUser();
@@ -190,48 +186,48 @@ const getArray = (data) =>
   const validate = () => {
     const newErrors = {};
     if (!oFormData.firstName)
-      newErrors.firstName = t("addUser.validation.firstName");
+      newErrors.firstName = t("ADD_USER.VALIDATION.FIRST_NAME");
     if (!oFormData.lastName)
-      newErrors.lastName = t("addUser.validation.lastName");
-    if (!oFormData.email)
-      newErrors.email = t("addUser.validation.email");
-    if (!oFormData.phone)
-      newErrors.phone = t("addUser.validation.phone");
-    if (oFormData.phone && oFormData.phone.replace(/\D/g, '').length !== 10)
-      newErrors.phone = t("addUser.validation.phoneLength");
+      newErrors.lastName = t("ADD_USER.VALIDATION.LAST_NAME");
+    if (!oFormData.email) newErrors.email = t("ADD_USER.VALIDATION.EMAIL");
+    if (!oFormData.phone) newErrors.phone = t("ADD_USER.VALIDATION.PHONE");
+    if (oFormData.phone && oFormData.phone.replace(/\D/g, "").length !== 10)
+      newErrors.phone = t("ADD_USER.VALIDATION.PHONE_LENGTH");
     if (!oFormData.password)
-      newErrors.password = t("addUser.validation.password");
+      newErrors.password = t("ADD_USER.VALIDATION.PASSWORD");
     if (!oFormData.confirmPassword)
-      newErrors.confirmPassword = t("addUser.validation.confirmPassword");
+      newErrors.confirmPassword = t("ADD_USER.VALIDATION.CONFIRM_PASSWORD");
     if (id && (oFormData.password || oFormData.confirmPassword)) {
       if (!oFormData.password)
-        newErrors.password = t("addUser.validation.password");
+        newErrors.password = t("ADD_USER.VALIDATION.PASSWORD");
       if (!oFormData.confirmPassword)
-        newErrors.confirmPassword = t("addUser.validation.confirmPassword");
+        newErrors.confirmPassword = t("ADD_USER.VALIDATION.CONFIRM_PASSWORD");
       if (oFormData.password !== oFormData.confirmPassword)
-        newErrors.confirmPassword = t("addUser.validation.passwordMatch");
+        newErrors.confirmPassword = t("ADD_USER.VALIDATION.PASSWORD_MATCH");
     }
-    if (oFormData.password && oFormData.confirmPassword && oFormData.password !== oFormData.confirmPassword)
-      newErrors.confirmPassword = t("addUser.validation.passwordMatch");
-    if (!oFormData.role)
-      newErrors.role = t("addUser.validation.role");
+    if (
+      oFormData.password &&
+      oFormData.confirmPassword &&
+      oFormData.password !== oFormData.confirmPassword
+    )
+      newErrors.confirmPassword = t("ADD_USER.VALIDATION.PASSWORD_MATCH");
+    if (!oFormData.role) newErrors.role = t("ADD_USER.VALIDATION.ROLE");
     if (!oFormData.streetAddress)
-      newErrors.streetAddress = t("addUser.validation.streetAddress");
+      newErrors.streetAddress = t("ADD_USER.VALIDATION.STREET_ADDRESS");
     if (!oFormData.country)
-      newErrors.country = t("addUser.validation.country");
-    if (!oFormData.state)
-      newErrors.state = t("addUser.validation.state");
-    if (!oFormData.city)
-      newErrors.city = t("addUser.validation.city");
+      newErrors.country = t("ADD_USER.VALIDATION.COUNTRY");
+    if (!oFormData.state) newErrors.state = t("ADD_USER.VALIDATION.STATE");
+    if (!oFormData.city) newErrors.city = t("ADD_USER.VALIDATION.CITY");
     const passwordStrength = getPasswordStrength(oFormData.password);
     if (oFormData.password && passwordStrength !== "strong") {
-      newErrors.password = t("addUser.validation.strongPassword");
+      newErrors.password = t("ADD_USER.VALIDATION.STRONG_PASSWORD");
     }
     return newErrors;
   };
 
   const getPasswordStrength = (password) => {
-    const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
+    const strongRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
     if (!password) return null;
     if (strongRegex.test(password)) return "strong";
     if (password.length >= 6) return "medium";
@@ -242,23 +238,23 @@ const getArray = (data) =>
 
   const passwordRequirements = [
     {
-      label: t("addUser.passwordReqLength"),
+      label: t("COMMON.PASSWORD_REQ_LENGTH"),
       test: (pw) => pw.length >= 8,
     },
     {
-      label: t("addUser.passwordReqUpper"),
+      label: t("COMMON.PASSWORD_REQ_UPPER"),
       test: (pw) => /[A-Z]/.test(pw),
     },
     {
-      label: t("addUser.passwordReqLower"),
+      label: t("COMMON.PASSWORD_REQ_LOWER"),
       test: (pw) => /[a-z]/.test(pw),
     },
     {
-      label: t("addUser.passwordReqNumber"),
+      label: t("COMMON.PASSWORD_REQ_NUMBER"),
       test: (pw) => /\d/.test(pw),
     },
     {
-      label: t("addUser.passwordReqSpecial"),
+      label: t("COMMON.PASSWORD_REQ_SPECIAL"),
       test: (pw) => /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(pw),
     },
   ];
@@ -277,12 +273,24 @@ const getArray = (data) =>
     formData.append("FirstName", oFormData.firstName || "");
     formData.append("LastName", oFormData.lastName || "");
     formData.append("Email", oFormData.email || "");
-    formData.append("Password", oFormData.password ? md5(oFormData.password) : "");
+    formData.append(
+      "Password",
+      oFormData.password ? md5(oFormData.password) : ""
+    );
     formData.append("PhoneNumber", oFormData.phone || "");
     formData.append("AddressLine", oFormData.streetAddress || "");
-    formData.append("CityID", oFormData.city ? parseInt(oFormData.city, 10) : 0);
-    formData.append("StateID", oFormData.state ? parseInt(oFormData.state, 10) : 0);
-    formData.append("CountryID", oFormData.country ? parseInt(oFormData.country, 10) : 0);
+    formData.append(
+      "CityID",
+      oFormData.city ? parseInt(oFormData.city, 10) : 0
+    );
+    formData.append(
+      "StateID",
+      oFormData.state ? parseInt(oFormData.state, 10) : 0
+    );
+    formData.append(
+      "CountryID",
+      oFormData.country ? parseInt(oFormData.country, 10) : 0
+    );
     formData.append("Pincode", oFormData.pincode || "");
     formData.append("RoleID", oFormData.role || "");
     if (nProfileImage) {
@@ -303,31 +311,34 @@ const getArray = (data) =>
       );
       const resData = oResponse?.data;
 
-      if (resData?.STATUS === STATUS.SUCCESS_1) {
-        showEmsg(resData.MESSAGE, "success");
+      if (resData?.STATUS === STATUS.SUCCESS.toUpperCase()) {
+        showEmsg(resData.MESSAGE, STATUS.SUCCESS);
       } else {
-        showEmsg(resData?.MESSAGE || t("common.failedOperation"), "error");
+        showEmsg(
+          resData?.MESSAGE || t("COMMON.FAILED_OPERATION"),
+          STATUS.WARNING
+        );
       }
     } catch (error) {
       const backendMessage = error?.response?.data?.MESSAGE;
-      showEmsg(backendMessage || t("common.errorMessage"), "error");
+      showEmsg(backendMessage || t("COMMON.ERROR_MESSAGE"), STATUS.ERROR);
     }
   };
 
   if (fetchUserError) {
     return (
-      <div className="max-w-2xl mx-auto mt-12 p-8 bg-white rounded-xl shadow text-center text-red-600 text-lg font-semibold">
+      <div className="max-w-2xl mx-auto mt-12 p-8 bg-white rounded-xl shadow text-center text-red text-lg font-semibold">
         {fetchUserError}
       </div>
     );
   }
-
   return (
     <div className="max-w-7xl mx-auto">
+      <ToastContainer />
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-4">
           <p className="text-gray-500">
-            {id ? t("users.edit_user_description") : t("users.description")}
+            {id ? t("USERS.EDIT_USER_DESCRIPTION") : t("USERS.DESCRIPTION")}
           </p>
         </div>
       </div>
@@ -345,7 +356,7 @@ const getArray = (data) =>
                 ? nProfileImagePreview
                 : "../../assets/images/download.jpg"
             }
-            alt={t("addUser.profile_preview")}
+            alt={t("ADD_USER.PROFILE_PREVIEW")}
             className={`h-20 w-20 rounded-full object-cover border ${
               bImgLoading ? "hidden" : ""
             }`}
@@ -359,7 +370,7 @@ const getArray = (data) =>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t("addUser.profile_image")}
+            {t("ADD_USER.PROFILE_IMAGE")}
           </label>
           <input
             id="profile-image-upload"
@@ -373,11 +384,11 @@ const getArray = (data) =>
             className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-full cursor-pointer"
           >
             <FaCamera className="text-lg" />
-            {t("common.upload")}
+            {t("COMMON.UPLOAD")}
           </label>
 
           <p className="text-xs text-gray-400 mt-1">
-            {t("addUser.image_upload_note")}
+            {t("ADD_USER.IMAGE_UPLOAD_NOTE")}
           </p>
         </div>
       </div>
@@ -385,49 +396,49 @@ const getArray = (data) =>
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
             <h2 className="text-lg font-semibold text-gray-900">
-              {t("addUser.personal_info")}
+              {t("ADD_USER.PERSONAL_INFO")}
             </h2>
           </div>
           <div className="p-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <TextInputWithIcon
-                label={t("addUser.first_name")}
+                label={t("ADD_USER.FIRST_NAME")}
                 id="firstName"
                 name="firstName"
                 value={oFormData.firstName}
                 onChange={handleChange}
-                placeholder={t("addUser.enter_first_name")}
+                placeholder={t("ADD_USER.ENTER_FIRST_NAME")}
                 Icon={User}
                 error={oErrors.firstName}
               />
               <TextInputWithIcon
-                label={t("addUser.last_name")}
+                label={t("ADD_USER.LAST_NAME")}
                 id="lastName"
                 name="lastName"
                 value={oFormData.lastName}
                 onChange={handleChange}
-                placeholder={t("addUser.enter_last_name")}
+                placeholder={t("ADD_USER.ENTER_LAST_NAME")}
                 Icon={User}
                 error={oErrors.lastName}
               />
               <TextInputWithIcon
-                label={t("addUser.email_address")}
+                label={t("COMMON.EMAIL_ADDRESS")}
                 id="email"
                 name="email"
                 value={oFormData.email}
                 onChange={handleChange}
-                placeholder={t("addUser.enter_email")}
+                placeholder={t("COMMON.ENTER_EMAIL_ADDRESS")}
                 Icon={Mail}
                 type="email"
                 error={oErrors.email}
               />
               <TextInputWithIcon
-                label={t("addUser.phone_number")}
+                label={t("COMMON.PHONE_NUMBER")}
                 id="phone"
                 name="phone"
                 value={oFormData.phone}
                 onChange={handleChange}
-                placeholder={t("addUser.enter_phone")}
+                placeholder={t("COMMON.ENTER_PHONE_NUMBER")}
                 Icon={Phone}
                 type="tel"
                 error={oErrors.phone}
@@ -438,77 +449,103 @@ const getArray = (data) =>
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
             <h2 className="text-lg font-semibold text-gray-900">
-              {t("addUser.account_security")}
+              {t("ADD_USER.ACCOUNT_SECURITY")}
             </h2>
           </div>
           <div className="p-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <TextInputWithIcon
-                label={t("addUser.password")}
+                label={t("COMMON.PASSWORD")}
                 id="password"
                 name="password"
                 value={oFormData.password}
                 onChange={handleChange}
-                placeholder={t("addUser.enter_password")}
+                placeholder={t("COMMON.ENTER_PASSWORD")}
                 Icon={Lock}
                 type="password"
                 error={oErrors.password}
               />
-              {typeof oFormData.password === "string" && oFormData.password.length > 0 && (
-                <div style={{ marginTop: 4 }}>
-                  <span
-                    style={{
-                      color:
-                        passwordStrength === "strong"
-                          ? "#16a34a"
-                          : passwordStrength === "medium"
-                          ? "#f59e42"
-                          : "#dc2626",
-                      fontWeight: 600,
-                      fontSize: 13,
-                    }}
-                  >
-                    {passwordStrength === "strong"
-                      ? t("addUser.passwordStrong")
-                      : passwordStrength === "medium"
-                      ? t("addUser.passwordMedium")
-                      : t("addUser.passwordWeak")}
-                  </span>
-                  <ul style={{ margin: '8px 0 0 0', padding: 0, listStyle: 'none' }}>
-                    {passwordRequirements.map((req, idx) => {
-                      const passed = req.test(oFormData.password);
-                      return (
-                        <li key={idx} style={{ display: 'flex', alignItems: 'center', color: passed ? '#16a34a' : '#dc2626', fontSize: 13, marginBottom: 2 }}>
-                          {passed ? (
-                            <CheckCircle size={16} color="#16a34a" style={{ marginRight: 6 }} />
-                          ) : (
-                            <XCircle size={16} color="#dc2626" style={{ marginRight: 6 }} />
-                          )}
-                          {req.label}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                  {passwordStrength !== "strong" && (
-                    <div style={{ color: "#dc2626", fontSize: 12, marginTop: 2 }}>
-                      {t("addUser.passwordSuggestion")}
-                    </div>
-                  )}
-                </div>
-              )}
+              {typeof oFormData.password === "string" &&
+                oFormData.password.length > 0 && (
+                  <div style={{ marginTop: 4 }}>
+                    <span
+                      style={{
+                        color:
+                          passwordStrength === "strong"
+                            ? "#16a34a"
+                            : passwordStrength === "medium"
+                            ? "#f59e42"
+                            : "#dc2626",
+                        fontWeight: 600,
+                        fontSize: 13,
+                      }}
+                    >
+                      {passwordStrength === "strong"
+                        ? t("COMMON.PASSWORD_STRONG")
+                        : passwordStrength === "medium"
+                        ? t("COMMON.PASSWORD_MEDIUM")
+                        : t("COMMON.PASSWORD_WEAK")}
+                    </span>
+                    <ul
+                      style={{
+                        margin: "8px 0 0 0",
+                        padding: 0,
+                        listStyle: "none",
+                      }}
+                    >
+                      {passwordRequirements.map((req, idx) => {
+                        const passed = req.test(oFormData.password);
+                        return (
+                          <li
+                            key={idx}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              color: passed ? "#16a34a" : "#dc2626",
+                              fontSize: 13,
+                              marginBottom: 2,
+                            }}
+                          >
+                            {passed ? (
+                              <CheckCircle
+                                size={16}
+                                color="#16a34a"
+                                style={{ marginRight: 6 }}
+                              />
+                            ) : (
+                              <XCircle
+                                size={16}
+                                color="#dc2626"
+                                style={{ marginRight: 6 }}
+                              />
+                            )}
+                            {req.label}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    {passwordStrength !== "strong" && (
+                      <div
+                        style={{ color: "#dc2626", fontSize: 12, marginTop: 2 }}
+                      >
+                        {t("COMMON.PASSWORD_SUGGESTION")}
+                      </div>
+                    )}
+                  </div>
+                )}
               <TextInputWithIcon
-                label={t("addUser.confirm_password")}
+                label={t("COMMON.CONFIRM_PASSWORD")}
                 id="confirmPassword"
                 name="confirmPassword"
                 value={oFormData.confirmPassword}
                 onChange={handleChange}
-                placeholder={t("addUser.confirm_password")}
+                placeholder={t("COMMON.CONFIRM_PASSWORD")}
                 Icon={Lock}
                 type="password"
                 error={oErrors.confirmPassword}
               />
               <SelectWithIcon
-                label={t("addUser.user_role")}
+                label={t("ADD_USER.USER_ROLE")}
                 id="role"
                 name="role"
                 value={oFormData.role}
@@ -521,7 +558,7 @@ const getArray = (data) =>
                 disabled={rolesLoading}
                 error={oErrors.role || rolesError}
                 placeholder={
-                  rolesLoading ? t("common.loading") : t("addUser.select_role")
+                  rolesLoading ? t("COMMON.LOADING") : t("ADD_USER.SELECT_ROLE")
                 }
               />
             </div>
@@ -530,24 +567,24 @@ const getArray = (data) =>
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
             <h2 className="text-lg font-semibold text-gray-900">
-              {t("addUser.address_info")}
+              {t("ADD_USER.ADDRESS_INFO")}
             </h2>
           </div>
           <div className="p-6 space-y-6">
             <TextInputWithIcon
-              label={t("addUser.street_address")}
+              label={t("COMMON.STREET_ADDRESS")}
               id="streetAddress"
               name="streetAddress"
               value={oFormData.streetAddress}
               onChange={handleChange}
-              placeholder={t("addUser.enter_street_address")}
+              placeholder={t("COMMON.ENTER_STREET_ADDRESS")}
               Icon={MapPin}
               error={oErrors.streetAddress}
             />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <SelectWithIcon
-                  label={t("createStore.country")}
+                  label={t("COMMON.COUNTRY")}
                   id="country"
                   name="country"
                   value={oFormData.country}
@@ -562,7 +599,7 @@ const getArray = (data) =>
               </div>
               <div>
                 <SelectWithIcon
-                  label={t("createStore.state")}
+                  label={t("COMMON.STATE")}
                   id="state"
                   name="state"
                   value={oFormData.state}
@@ -578,7 +615,7 @@ const getArray = (data) =>
               </div>
               <div>
                 <SelectWithIcon
-                  label={t("createStore.city")}
+                  label={t("COMMON.CITY")}
                   id="city"
                   name="city"
                   value={oFormData.city}
@@ -593,12 +630,12 @@ const getArray = (data) =>
                 />
               </div>
               <TextInputWithIcon
-                label={t("addUser.pincode")}
+                label={t("COMMON.PINCODE")}
                 id="pincode"
                 name="pincode"
                 value={oFormData.pincode}
                 onChange={handleChange}
-                placeholder={t("addUser.enter_pincode")}
+                placeholder={t("ADD_USER.ENTER_PINCODE")}
                 Icon={MapPin}
               />
             </div>
@@ -610,10 +647,10 @@ const getArray = (data) =>
             onClick={() => window.history.back()}
             className="btn-cancel"
           >
-            {t("addUser.cancel")}
+            {t("COMMON.CANCEL")}
           </button>
           <button type="submit" className="btn-primary">
-            {id ? t("common.saveButton") : t("addUser.create_user")}
+            {id ? t("COMMON.SAVE_BUTTON") : t("ADD_USER.CREATE_USER")}
           </button>
         </div>
       </form>

@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import { useTitle } from '../context/TitleContext';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import BackButton from '../components/BackButton';
 
 const BannerForm = () => {
   const { t } = useTranslation();
@@ -34,20 +35,15 @@ const BannerForm = () => {
   const [bLoading] = useState(false);
 
   useEffect(() => {
-    setTitle(t('bannerform.upload_banner'));
+    setTitle(t('BANNER_FORM.UPLOAD_BANNER'));
     setBackButton(
-      <button
-        onClick={() => window.history.back()}
-        className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 mr-2"
-      >
-        <ArrowLeft className="h-5 w-5 text-gray-500" />
-      </button>
+      <BackButton onClick={() => navigate('/banners')} />
     );
     return () => {
       setBackButton(null);
       setTitle('');
     };
-  }, [setTitle, setBackButton, t]);
+  }, [setTitle, setBackButton, t, navigate]);
 
   const handleBannerUpload = (e) => {
     const file = e.target.files[0];
@@ -89,30 +85,30 @@ const BannerForm = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen">
       <div className="flex items-center gap-3 mb-4">
-        <p className="text-gray-600">{t('bannerform.create_banner_description')}</p>
+        <p className="text-caption">{t('BANNER_FORM.CREATE_BANNER_DESCRIPTION')}</p>
       </div>
 
       <form onSubmit={handleSubmit}>
         <TextInputWithIcon
-          label={t('bannerform.banner_name')}
+          label={t('BANNER_FORM.BANNER_NAME')}
           id="bannerName"
           name="BannerName"
           value={oFormData.BannerName}
           onChange={e => setFormData(prev => ({ ...prev, BannerName: e.target.value }))}
-          placeholder={t('bannerform.enter_banner_name')}
+          placeholder={t('BANNER_FORM.ENTER_BANNER_NAME')}
           Icon={Tag}
           required
         />
         <div className="flex flex-col space-y-4 mt-4">
           <div className="flex items-center justify-between">
-            <label className="font-semibold text-sm">{t('bannerform.upload_banners_label')}</label>
+            <label className="font-semibold text-sm">{t('BANNER_FORM.UPLOAD_BANNERS_LABEL')}</label>
             <button
               type="button"
               className="btn-primary"
               onClick={() => setShowInputField(true)}
             >
               <FaPlus aria-hidden="true" className="icon" />
-              <span>{t('bannerform.add_banner_image')}</span>
+              <span>{t('BANNER_FORM.ADD_BANNER_IMAGE')}</span>
             </button>
           </div>
           {oFormData.banners?.map((banner, index) => (
@@ -124,12 +120,12 @@ const BannerForm = () => {
                 {banner.preview ? (
                   <img
                     src={banner.preview}
-                    alt={`${t('bannerform.upload_banner')} ${index + 1}`}
+                    alt={`${t('BANNER_FORM.UPLOAD_BANNER')} ${index + 1}`}
                     className="object-contain w-full h-full"
                   />
                 ) : (
                   <div className="flex items-center justify-center w-full h-full bg-gray-200">
-                    <p className="text-gray-500">{t('bannerform.no_image')}</p>
+                    <p className="text-gray-500">{t('BANNER_FORM.NO_IMAGE')}</p>
                   </div>
                 )}
               </div>
@@ -137,7 +133,7 @@ const BannerForm = () => {
               {banner.preview && (
                 <div className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-4">
                   <TextInputWithIcon
-                    label={t('bannerform.sequence_number')}
+                    label={t('BANNER_FORM.SEQUENCE_NUMBER')}
                     id={`sequence_${index}`}
                     name="sequence"
                     value={banner.sequence}
@@ -146,11 +142,11 @@ const BannerForm = () => {
                       updatedBanners[index].sequence = e.target.value;
                       return { ...prev, banners: updatedBanners };
                     })}
-                    placeholder={t('bannerform.enter_sequence_number')}
+                    placeholder={t('BANNER_FORM.ENTER_SEQUENCE_NUMBER')}
                     Icon={Layers}
                   />
                   <SelectWithIcon
-                    label={t('bannerform.category')}
+                    label={t('COMMON.CATEGORY')}
                     id={`category_${index}`}
                     name="category"
                     value={aSelectedCategories[0]?.CategoryID || ''}
@@ -159,7 +155,7 @@ const BannerForm = () => {
                     Icon={Layers}
                   />
                   <SelectWithIcon
-                    label={t('bannerform.brand')}
+                    label={t('COMMON.BRAND')}
                     id={`brand_${index}`}
                     name="brand"
                     value={aSelectedBrands[0] || ''}
@@ -167,9 +163,8 @@ const BannerForm = () => {
                     options={aBrands.map(b => ({ value: b.BrandID, label: b.BrandName }))}
                     Icon={Users}
                   />
-                  {/* Gender */}
                   <SelectWithIcon
-                    label={t('bannerform.gender')}
+                    label={t('COMMON.GENDER')}
                     id={`gender_${index}`}
                     name="gender"
                     value={banner.gender || ''}
@@ -179,16 +174,15 @@ const BannerForm = () => {
                       return { ...prev, banners: updatedBanners };
                     })}
                     options={[
-                      { value: '', label: t('bannerform.select_gender') },
-                      { value: 'Male', label: t('bannerform.male') },
-                      { value: 'Female', label: t('bannerform.female') },
-                      { value: 'Unisex', label: t('bannerform.unisex') }
+                      { value: '', label: t('BANNER_FORM.SELECT_GENDER') },
+                      { value: 'Male', label: t('COMMON.MALE') },
+                      { value: 'Female', label: t('COMMON.FEMALE') },
+                      { value: 'Unisex', label: t('COMMON.UNISEX') }
                     ]}
                     Icon={Users}
                   />
-                  {/* Discount */}
                   <TextInputWithIcon
-                    label={t('bannerform.discount_percentage')}
+                    label={t('BANNER_FORM.DISCOUNT_PERCENTAGE')}
                     id={`discount_${index}`}
                     name="discount"
                     value={banner.discount || ''}
@@ -197,12 +191,11 @@ const BannerForm = () => {
                       updatedBanners[index].discount = e.target.value;
                       return { ...prev, banners: updatedBanners };
                     })}
-                    placeholder={t('bannerform.enter_discount_percentage')}
+                    placeholder={t('BANNER_FORM.ENTER_DISCOUNT_PERCENTAGE')}
                     Icon={Percent}
                   />
-                  {/* Price */}
                   <TextInputWithIcon
-                    label={t('bannerform.price')}
+                    label={t('COMMON.PRICE')}
                     id={`price_${index}`}
                     name="price"
                     value={banner.price || ''}
@@ -211,10 +204,9 @@ const BannerForm = () => {
                       updatedBanners[index].price = e.target.value;
                       return { ...prev, banners: updatedBanners };
                     })}
-                    placeholder={t('bannerform.enter_price')}
+                    placeholder={t('BANNER_FORM.ENTER_PRICE')}
                     Icon={DollarSign}
                   />
-                  {/* Delete Button */}
                   <div className="flex items-end">
                     <button
                       onClick={() =>
@@ -223,19 +215,17 @@ const BannerForm = () => {
                           banners: prev.banners.filter((_, i) => i !== index),
                         }))
                       }
-                      className="flex items-center space-x-1 mt-6 ml-2 text-red-600 hover:text-white border border-red-600 hover:bg-red-600 transition-colors duration-200 px-2 py-1 rounded"
+                      className="flex items-center space-x-1 mt-6 ml-2 text-red hover:text-white border border-red-600 hover:bg-red-600 transition-colors duration-200 px-2 py-1 rounded"
                       type="button"
                     >
                       <MdOutlineCancel aria-hidden="true" className="h-4 w-4" />
-                      <span>{t('bannerform.delete')}</span>
+                      <span>{t('COMMON.DELETE')}</span>
                     </button>
                   </div>
                 </div>
               )}
             </div>
           ))}
-
-          {/* Upload New Banner */}
           {bShowInputField && (
             <div className="flex flex-col space-y-2">
               <label
@@ -243,7 +233,7 @@ const BannerForm = () => {
                 className="flex items-center justify-center border-dashed border-2 border-gray-300 p-4 rounded-md cursor-pointer mb-6"
               >
                 <FiUpload size={30} className="text-gray-400 mr-2" />
-                <span className="text-gray-700 text-sm">{t('bannerform.choose_image')}</span>
+                <span className="text-gray-700 text-sm">{t('BANNER_FORM.CHOOSE_IMAGE')}</span>
               </label>
               <input
                 type="file"
@@ -261,14 +251,14 @@ const BannerForm = () => {
             className="btn-secondry"
             disabled={bLoading}
           >
-            {t('bannerform.submit')}
+            {t('COMMON.SUBMIT')}
           </button>
           <button
             type="button"
             onClick={() => window.history.back()}
             className="btn-cancel ml-4"
           >
-            {t('addUser.cancel')}
+            {t('COMMON.CANCEL')}
           </button>
         </div>
       </form>
@@ -276,4 +266,4 @@ const BannerForm = () => {
   );
 };
 
-export default BannerForm; 
+export default BannerForm;

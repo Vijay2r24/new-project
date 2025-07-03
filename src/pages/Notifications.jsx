@@ -3,10 +3,13 @@ import { ArrowLeft, Upload, X, Plus, Bell, Settings, Send, AlertCircle } from 'l
 import TextInputWithIcon from '../components/TextInputWithIcon';
 import { useTranslation } from "react-i18next";
 import ActionButtons from '../components/ActionButtons';
+import BackButton from '../components/BackButton';
+import { useNavigate } from 'react-router-dom';
+
 const Notifications = () => {
   const [sActiveTab, setActiveTab] = useState('push');
   const { t } = useTranslation();
-  // Push Notification State
+  const navigate = useNavigate();
   const [oPushFormData, setPushFormData] = useState({
     title: '',
     message: '',
@@ -14,7 +17,6 @@ const Notifications = () => {
   });
   const [nPreviewUrl, setPreviewUrl] = useState(null);
 
-  // Silent Notification State
   const [oSilentFormData, setSilentFormData] = useState({
     componentName: '',
     json: ''
@@ -44,7 +46,6 @@ const Notifications = () => {
     }
   ]);
 
-  // Push Notification Handlers
   const handlePushChange = (e) => {
     const { name, value } = e.target;
     setPushFormData(prev => ({
@@ -75,11 +76,10 @@ const Notifications = () => {
 
   const handlePushSubmit = (e) => {
     e.preventDefault();
-    // TODO: Add API call to send push notification
+  
     console.log('Push notification submitted:', oPushFormData);
   };
 
-  // Silent Notification Handlers
   const handleSilentChange = (e) => {
     const { name, value } = e.target;
     setSilentFormData(prev => ({
@@ -90,7 +90,7 @@ const Notifications = () => {
 
   const handleSilentSubmit = (e) => {
     e.preventDefault();
-    // TODO: Add API call to create silent notification
+
     console.log('Silent notification submitted:', oSilentFormData);
   };
 
@@ -110,20 +110,15 @@ const Notifications = () => {
         {/* Content */}
         <div className="relative px-8 py-12">
           <div className="flex items-center gap-4 mb-4">
-            <button
-              onClick={() => window.history.back()}
-              className="p-2 hover:bg-white/50 rounded-lg transition-colors duration-200"
-            >
-              <ArrowLeft className="h-5 w-5 text-gray-600" />
-            </button>
+            <BackButton onClick={() => navigate('/dashboard')} />
             <div className="flex items-center gap-3">
               <div className="p-2 bg-white/80 rounded-lg">
                 <Bell className="h-6 w-6 text-custom-bg" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900">{t('notifications.title')}</h1>
+              <h1 className="text-2xl font-bold text-gray-900">{t('NOTIFICATIONS.TITLE')}</h1>
             </div>
           </div>
-          <p className="text-gray-600 ml-14">{t('notifications.description')}</p>
+          <p className="text-caption ml-14">{t('NOTIFICATIONS.DESCRIPTION')}</p>
         </div>
       </div>
 
@@ -139,7 +134,7 @@ const Notifications = () => {
                 } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
             >
               <Send className="h-4 w-4" />
-              {t('tabs.pushNotifications')}
+              {t('TABS.PUSH_NOTIFICATIONS')}
             </button>
             <button
               onClick={() => setActiveTab('silent')}
@@ -149,7 +144,7 @@ const Notifications = () => {
                 } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
             >
               <Settings className="h-4 w-4" />
-              {t('tabs.silentNotifications')}
+              {t('TABS.SILENT_NOTIFICATIONS')}
             </button>
           </nav>
         </div>
@@ -162,31 +157,31 @@ const Notifications = () => {
             <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <Send className="h-5 w-5 text-custom-bg" />
-                {t('pushNotification.detailsTitle')}
+                {t('PUSH_NOTIFICATION.DETAILS_TITLE')}
               </h2>
             </div>
             <div className="p-6 space-y-6">
               <div className="flex gap-4">
                 <div className="flex-1">
                   <TextInputWithIcon
-                    label={t('pushNotification.titleLabel')}
+                    label={t('PUSH_NOTIFICATION.TITLE_LABEL')}
                     id="title"
                     name="title"
                     value={oPushFormData.title}
                     onChange={handlePushChange}
-                    placeholder={t('pushNotification.titlePlaceholder')}
+                    placeholder={t('PUSH_NOTIFICATION.TITLE_PLACEHOLDER')}
                     Icon={Send}
                     required
                   />
                 </div>
                 <div className="flex-1">
                   <TextInputWithIcon
-                    label={t('pushNotification.messageLabel')}
+                    label={t('PUSH_NOTIFICATION.MESSAGE_LABEL')}
                     id="message"
                     name="message"
                     value={oPushFormData.message}
                     onChange={handlePushChange}
-                    placeholder={t('pushNotification.messagePlaceholder')}
+                    placeholder={t('PUSH_NOTIFICATION.MESSAGE_PLACEHOLDER')}
                     Icon={Send}
                     required
                   />
@@ -196,7 +191,7 @@ const Notifications = () => {
               {/* Image Upload */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('pushNotification.imageLabel')}
+                  {t('PUSH_NOTIFICATION.IMAGE_LABEL')}
                 </label>
                 <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-[#5B45E0] transition-colors duration-200">
                   <div className="space-y-1 text-center">
@@ -204,13 +199,13 @@ const Notifications = () => {
                       <div className="relative">
                         <img
                           src={nPreviewUrl}
-                          alt={t('pushNotification.imagePreviewAlt')}
+                          alt={t('PUSH_NOTIFICATION.IMAGE_PREVIEW_ALT')}
                           className="mx-auto h-32 w-auto object-contain rounded-lg"
                         />
                         <button
                           type="button"
                           onClick={removeImage}
-                          className="absolute top-0 right-0 -mt-2 -mr-2 p-1 bg-red-100 rounded-full text-red-600 hover:bg-red-200 transition-colors duration-200"
+                          className="absolute top-0 right-0 -mt-2 -mr-2 p-1 bg-red-100 rounded-full text-red hover:bg-red-200 transition-colors duration-200"
                         >
                           <X className="h-4 w-4" />
                         </button>
@@ -218,12 +213,12 @@ const Notifications = () => {
                     ) : (
                       <>
                         <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                        <div className="flex text-sm text-gray-600">
+                        <div className="flex text-sm text-caption">
                           <label
                             htmlFor="image-upload"
                             className="relative cursor-pointer bg-white rounded-md font-medium text-[#5B45E0] hover:text-[#4c39c7] focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-[#5B45E0] transition-colors duration-200"
                           >
-                            <span>{t('pushNotification.uploadImage')}</span>
+                            <span>{t('COMMON.UPLOAD_A_FILE')}</span>
                             <input
                               id="image-upload"
                               name="image"
@@ -233,7 +228,7 @@ const Notifications = () => {
                               onChange={handleImageChange}
                             />
                           </label>
-                          <p className="pl-1">{t('pushNotification.orDragAndDrop')}</p>
+                          <p className="pl-1">{t('PUSH_NOTIFICATION.OR_DRAG_AND_DROP')}</p>
                         </div>
                       </>
                     )}
@@ -250,14 +245,14 @@ const Notifications = () => {
               onClick={() => window.history.back()}
               className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5B45E0] transition-colors duration-200"
             >
-              {t('buttons.cancel')}
+              {t('COMMON.CANCEL')}
             </button>
             <button
               type="submit"
               className="btn-primary"
             >
               <Send className="h-4 w-4 mr-2" />
-              {t('buttons.sendNotification')}
+              {t('BUTTONS.SEND_NOTIFICATION')}
             </button>
           </div>
         </form>
@@ -271,28 +266,28 @@ const Notifications = () => {
             <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <Settings className="h-5 w-5 text-custom-bg" />
-                {t('silentNotification.addTitle')}
+                {t('SILENT_NOTIFICATION.ADD_TITLE')}
               </h2>
             </div>
             <form onSubmit={handleSilentSubmit} className="p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <TextInputWithIcon
-                  label={t('silentNotification.componentNameLabel')}
+                  label={t('SILENT_NOTIFICATION.COMPONENT_NAME_LABEL')}
                   id="componentName"
                   name="componentName"
                   value={oSilentFormData.componentName}
                   onChange={handleSilentChange}
-                  placeholder={t('silentNotification.componentNamePlaceholder')}
+                  placeholder={t('SILENT_NOTIFICATION.COMPONENT_NAME_PLACEHOLDER')}
                   Icon={Settings}
                   required
                 />
                 <TextInputWithIcon
-                  label={t('silentNotification.jsonLabel')}
+                  label={t('SILENT_NOTIFICATION.JSON_LABEL')}
                   id="json"
                   name="json"
                   value={oSilentFormData.json}
                   onChange={handleSilentChange}
-                  placeholder={t('silentNotification.jsonPlaceholder')}
+                  placeholder={t('SILENT_NOTIFICATION.JSON_PLACEHOLDER')}
                   Icon={AlertCircle}
                   required
                 />
@@ -303,7 +298,7 @@ const Notifications = () => {
                   className="btn-primary"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  {t('buttons.addNotification')}
+                  {t('BUTTONS.ADD_NOTIFICATION')}
                 </button>
               </div>
             </form>
@@ -314,7 +309,7 @@ const Notifications = () => {
             <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 <AlertCircle className="h-5 w-5 text-custom-bg" />
-                {t('componentNotifications.title')}
+                {t('COMPONENT_NOTIFICATIONS.TITLE')}
               </h2>
             </div>
             <table className="min-w-full divide-y divide-gray-200">
@@ -324,31 +319,31 @@ const Notifications = () => {
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
-                 {t('componentNotifications.tableHeaders.id')}
+                    {t('COMPONENT_NOTIFICATIONS.TABLE_HEADERS.ID')}
                   </th>
                   <th
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
-                    {t('componentNotifications.tableHeaders.componentName')}
+                    {t('COMPONENT_NOTIFICATIONS.TABLE_HEADERS.COMPONENT_NAME')}
                   </th>
                   <th
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
-                    {t('componentNotifications.tableHeaders.json')}
+                    {t('COMPONENT_NOTIFICATIONS.TABLE_HEADERS.JSON')}
                   </th>
                   <th
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
-                    {t('componentNotifications.tableHeaders.status')}
+                    {t('COMMON.STATUS')}
                   </th>
                   <th
                     scope="col"
                     className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
-                  {t('componentNotifications.tableHeaders.actions')}
+                    {t('COMPONENT_NOTIFICATIONS.TABLE_HEADERS.ACTIONS')}
                   </th>
                 </tr>
               </thead>
@@ -364,7 +359,7 @@ const Notifications = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {notification.componentName}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
+                    <td className="px-6 py-4 text-secondary">
                       {notification.description}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

@@ -11,6 +11,7 @@ import { useCategories } from '../../../context/AllDataContext';
 import { ToastContainer } from 'react-toastify';
 import { showEmsg } from '../../../utils/ShowEmsg';
 import { STATUS } from '../../../contants/constants';
+import BackButton from '../../../components/BackButton';
 
 const CreateCategory = () => {
   const { id: categoryId } = useParams();
@@ -44,7 +45,7 @@ const CreateCategory = () => {
         try {
           const token = localStorage.getItem("token");
           const oResponse = await apiGet(`${getCategoryById}/${categoryId}`, {}, token);
-          if (oResponse.data.status === STATUS.SUCCESS_1 && oResponse.data.Data) {
+          if (oResponse.data.status === STATUS.SUCCESS.toUpperCase() && oResponse.data.Data) {
             const categoryData = oResponse.data.Data;
             setFormData(prev => ({
               ...prev,
@@ -62,12 +63,12 @@ const CreateCategory = () => {
               setImagePreview(categoryData.CategoryImage);
             }
           } else {
-            showEmsg(t('productSetup.createCategory.unknownError'), 'error');
-            setErrors(prev => ({ ...prev, api: t('productSetup.createCategory.unknownError') }));
+            showEmsg(t('PRODUCT_SETUP.CREATE_CATEGORY.UNKNOWN_ERROR'), STATUS.ERROR);
+            setErrors(prev => ({ ...prev, api: t('PRODUCT_SETUP.CREATE_CATEGORY.UNKNOWN_ERROR') }));
           }
         } catch (err) {
-          showEmsg(t('productSetup.createCategory.unexpectedError'), 'error');
-          setErrors(prev => ({ ...prev, api: t('productSetup.createCategory.unexpectedError') }));
+          showEmsg(t('PRODUCT_SETUP.CREATE_CATEGORY.UNEXPECTED_ERROR'), STATUS.ERROR);
+          setErrors(prev => ({ ...prev, api: t('PRODUCT_SETUP.CREATE_CATEGORY.UNEXPECTED_ERROR') }));
         }
       };
       fetchCategoryDetails();
@@ -94,7 +95,7 @@ const CreateCategory = () => {
       if (file.size > 10 * 1024 * 1024) {
         setErrors(prev => ({
           ...prev,
-          CategoryImage: t("productSetup.createCategory.imageError")
+          CategoryImage: t("PRODUCT_SETUP.CREATE_CATEGORY.IMAGE_ERROR")
         }));
         return;
       }
@@ -131,28 +132,28 @@ const CreateCategory = () => {
     const newErrors = {};
 
     if (!oFormData.CategoryName.trim()) {
-      newErrors.CategoryName = t("productSetup.createCategory.nameError");
+      newErrors.CategoryName = t("PRODUCT_SETUP.CREATE_CATEGORY.NAME_ERROR");
     }
     if (!oFormData.Heading.trim()) {
-      newErrors.Heading = t('productSetup.createCategory.headingRequired');
+      newErrors.Heading = t('PRODUCT_SETUP.CREATE_CATEGORY.HEADING_REQUIRED');
     }
     if (!oFormData.CategoryImage && !isEditing) {
-      newErrors.CategoryImage = t("productSetup.createCategory.imageRequired");
+      newErrors.CategoryImage = t("PRODUCT_SETUP.CREATE_CATEGORY.IMAGE_REQUIRED");
     }
 
     if (!oFormData.ParentCategoryID && !isEditing) {
-      newErrors.ParentCategoryID = t("productSetup.createCategory.parentCategoryRequired");
+      newErrors.ParentCategoryID = t("PRODUCT_SETUP.CREATE_CATEGORY.PARENT_CATEGORY_REQUIRED");
     }
 
     if (oFormData.CategoryDescription.trim().length < 10) {
-      newErrors.CategoryDescription = t("productSetup.createCategory.descriptionMinLength");
+      newErrors.CategoryDescription = t("PRODUCT_SETUP.CREATE_CATEGORY.DESCRIPTION_MIN_LENGTH");
     }
     if (oFormData.CategoryDescription.trim().length > 500) {
-      newErrors.CategoryDescription = t("productSetup.createCategory.descriptionMaxLength");
+      newErrors.CategoryDescription = t("PRODUCT_SETUP.CREATE_CATEGORY.DESCRIPTION_MAX_LENGTH");
     }
 
     if (typeof oFormData.IsActive !== 'boolean') {
-      newErrors.IsActive = t("productSetup.createCategory.statusInvalid");
+      newErrors.IsActive = t("PRODUCT_SETUP.CREATE_CATEGORY.STATUS_INVALID");
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -184,16 +185,16 @@ const CreateCategory = () => {
         oResponse = await apiPost(createCategory, dataToSend, token);
       }
 
-      if (oResponse.data.status === STATUS.SUCCESS_1) {
-        showEmsg(oResponse.data.message || t('common.save'), 'success');
+      if (oResponse.data.status === STATUS.SUCCESS.toUpperCase()) {
+        showEmsg(oResponse.data.message || t('COMMON.SAVE'), STATUS.SUCCESS);
         navigate('/browse/categories', { state: { fromCategoryEdit: true } });
       } else {
-        showEmsg(oResponse.data.message || t('productSetup.createCategory.unknownError'), 'error');
-        setErrors(prev => ({ ...prev, api: oResponse.data.message || t('productSetup.createCategory.unknownError') }));
+        showEmsg(oResponse.data.message || t('PRODUCT_SETUP.CREATE_CATEGORY.UNKNOWN_ERROR'), STATUS.ERROR);
+        setErrors(prev => ({ ...prev, api: oResponse.data.message || t('PRODUCT_SETUP.CREATE_CATEGORY.UNKNOWN_ERROR') }));
       }
     } catch (err) {
-      showEmsg(t('productSetup.createCategory.unexpectedError'), 'error');
-      setErrors(prev => ({ ...prev, api: t('productSetup.createCategory.unexpectedError') }));
+      showEmsg(t('PRODUCT_SETUP.CREATE_CATEGORY.UNEXPECTED_ERROR'), STATUS.ERROR);
+      setErrors(prev => ({ ...prev, api: t('PRODUCT_SETUP.CREATE_CATEGORY.UNEXPECTED_ERROR') }));
     }
   };
 
@@ -201,36 +202,31 @@ const CreateCategory = () => {
     <div className="w-full min-h-screen">
       <ToastContainer />
       <div className="flex items-center mb-6">
-        <button
-          onClick={() => navigate('/browse', { state: { fromCategoryEdit: true } })}
-          className="mr-4 p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-all duration-200"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <h2 className="text-xl font-bold text-gray-900">{isEditing ? t("productSetup.createCategory.editTitle") : t("productSetup.createCategory.createTitle")}</h2>
+        <BackButton onClick={() => navigate('/browse', { state: { fromCategoryEdit: true } })} />
+        <h2 className="text-xl font-bold text-gray-900">{isEditing ? t("PRODUCT_SETUP.CREATE_CATEGORY.EDIT_TITLE") : t("PRODUCT_SETUP.CREATE_CATEGORY.CREATE_TITLE")}</h2>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex flex-col md:flex-row md:space-x-4">
           <div className="w-full md:w-1/2">
             <TextInputWithIcon
-              label={t("productSetup.createCategory.nameLabel")}
+              label={t("PRODUCT_SETUP.CREATE_CATEGORY.NAME_LABEL")}
               id="CategoryName"
               name="CategoryName"
               value={oFormData.CategoryName}
               onChange={handleInputChange}
-              placeholder={t("productSetup.createCategory.namePlaceholder")}
+              placeholder={t("PRODUCT_SETUP.CREATE_CATEGORY.NAME_PLACEHOLDER")}
               error={oErrors.CategoryName}
               Icon={Tag}
             />
           </div>
           <div className="w-full md:w-1/2">
             <TextInputWithIcon
-              label="Heading"
+              label={t("COMMON.HEADING_LABEL") || t("COMMON.TITLE")}
               id="Heading"
               name="Heading"
               value={oFormData.Heading}
               onChange={handleInputChange}
-              placeholder="Enter heading for the category"
+              placeholder={t("PRODUCT_SETUP.CREATE_CATEGORY.HEADING_PLACE") || "Enter heading for the category"}
               error={oErrors.Heading}
               Icon={Info}
             />
@@ -239,7 +235,7 @@ const CreateCategory = () => {
         <div className="flex flex-col md:flex-row md:space-x-4">
           <div className="w-full md:w-1/2">
             <SelectWithIcon
-              label={t("productSetup.createCategory.parentLabel")}
+              label={t("PRODUCT_SETUP.CREATE_CATEGORY.PARENT_LABEL")}
               id="ParentCategoryID"
               name="ParentCategoryID"
               value={oFormData.ParentCategoryID}
@@ -250,20 +246,20 @@ const CreateCategory = () => {
               }))}
               loading={bLoadingCategories}
               error={oErrors.ParentCategoryID || sErrorCategories}
-              placeholder={t("productSetup.createCategory.selectParent")}
+              placeholder={t("PRODUCT_SETUP.CREATE_CATEGORY.SELECT_PARENT")}
               Icon={Tag}
             />
           </div>
           <div className="w-full md:w-1/2">
             <SelectWithIcon
-              label={t("productSetup.createCategory.statusLabel")}
+              label={t("PRODUCT_SETUP.CREATE_CATEGORY.STATUS_LABEL")}
               id="IsActive"
               name="IsActive"
               value={oFormData.IsActive}
               onChange={handleInputChange}
               options={[
-                { value: true, label: t('common.active') },
-                { value: false, label: t('common.inactive') }
+                { value: true, label: t('COMMON.ACTIVE') },
+                { value: false, label: t('COMMON.INACTIVE') }
               ]}
               Icon={Tag}
               error={oErrors.IsActive}
@@ -273,7 +269,7 @@ const CreateCategory = () => {
         <div className="flex flex-col md:flex-row md:space-x-4">
           <div className="w-full md:w-1/2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t("productSetup.createCategory.imageLabel")}
+              {t("PRODUCT_SETUP.CREATE_CATEGORY.IMAGE_LABEL")}
             </label>
             <div
               className={`relative group rounded-xl border-2 ${oErrors.CategoryImage ? 'border-red-300' : 'border-gray-200'} border-dashed transition-all duration-200 hover:border-custom-bg bg-gray-50 hover:bg-gray-50/50`}
@@ -285,12 +281,12 @@ const CreateCategory = () => {
                       <Image className="h-8 w-8 text-gray-400 group-hover:text-[#5B45E0] transition-colors duration-200" />
                     </div>
                   </div>
-                  <div className="flex text-sm text-gray-600 justify-center">
+                  <div className="flex text-sm text-muted justify-center">
                     <label
                       htmlFor="file-upload"
                       className="relative cursor-pointer rounded-md font-medium text-[#5B45E0] hover:text-[#4c39c7] focus-within:outline-none"
                     >
-                      <span>{t("productSetup.createCategory.uploadText")}</span>
+                      <span>{t("COMMON.UPLOAD")}</span>
                       <input
                         id="file-upload"
                         name="CategoryImage"
@@ -300,7 +296,7 @@ const CreateCategory = () => {
                         className="sr-only"
                       />
                     </label>
-                    <p className="pl-1">{t("productSetup.createCategory.dragDropText")}</p>
+                    <p className="pl-1">{t("COMMON.DRAG_DROP_TEXT")}</p>
                   </div>
                   {sImagePreview && (
                     <div className="mt-4 flex justify-center relative group">
@@ -323,7 +319,7 @@ const CreateCategory = () => {
                     </div>
                   )}
                   {oErrors.CategoryImage && (
-                    <p className="text-sm text-red-600 flex items-center justify-center">
+                    <p className="text-sm text-red flex items-center justify-center">
                       <span className="mr-1">⚠️</span>
                       {oErrors.CategoryImage}
                     </p>
@@ -334,11 +330,11 @@ const CreateCategory = () => {
           </div>
           <div className="w-full md:w-1/2">
             <TextAreaWithIcon
-              label={t("productSetup.createCategory.descriptionLabel")}
+              label={t("COMMON.DESCRIPTION")}
               name="CategoryDescription"
               value={oFormData.CategoryDescription}
               onChange={handleInputChange}
-              placeholder={t("productSetup.createCategory.descriptionPlaceholder")}
+              placeholder={t("PRODUCT_SETUP.CREATE_CATEGORY.DESCRIPTION_PLACEHOLDER")}
               icon={Info}
             />
           </div>
@@ -349,13 +345,13 @@ const CreateCategory = () => {
             onClick={() => navigate('/browse/categories', { state: { fromCategoryEdit: true } })}
             className="btn-cancel"
           >
-            {t("productSetup.createCategory.cancelButton")}
+            {t("COMMON.CANCEL")}
           </button>
           <button
             type="submit"
             className="btn-primary"
           >
-             {isEditing ? t("common.saveButton") : (t("productSetup.createCategory.createButton"))}
+             {isEditing ? t("COMMON.SAVE_BUTTON") : (t("PRODUCT_SETUP.CREATE_CATEGORY.CREATE_BUTTON"))}
           </button>
         </div>
       </form>

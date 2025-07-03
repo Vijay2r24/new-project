@@ -52,7 +52,7 @@ const Banners = () => {
       try {
         const token = localStorage.getItem('token');
         const response = await apiGet(GetAllBanners, { pageNumber: nPage, pageSize: rowsPerPage }, token);
-        if (response.data && response.data.status === STATUS.SUCCESS_1) {
+        if (response.data && response.data.status === STATUS.SUCCESS.toUpperCase()) {
           setBanners(response.data.data || []);
           setTotalPages(response.data.totalPages || 1);
           setTotalRecords(response.data.totalRecords || 0);
@@ -61,14 +61,14 @@ const Banners = () => {
           setBanners([]);
           setTotalPages(1);
           setTotalRecords(0);
-          setError(response.data?.message || t('common.errorMessage'));
+          setError(response.data?.message || t('COMMON.ERROR_MESSAGE'));
         }
       } catch (err) {
         setBanners([]);
         setTotalPages(1);
         setTotalRecords(0);
         const backendMessage = err?.response?.data?.message;
-        setError(backendMessage || t('common.errorMessage'));
+        setError(backendMessage || t('COMMON.ERROR_MESSAGE'));
       }
     };
     fetchBanners();
@@ -88,14 +88,14 @@ const Banners = () => {
       const token = localStorage.getItem('token');
       const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
       const response = await apiPatch(`${UpdateBannerStatus}/${id}`, { status: newStatus }, token);
-      if (response.data && response.data.status === 'SUCCESS') {
+      if (response.data && response.data.status === STATUS.SUCCESS.toUpperCase()) {
         setBanners(prev => prev.map(b => b.BannerID === id ? { ...b, Status: newStatus } : b));
-        showEmsg(response.data.message || t('bannerform.bannerStatusUpdateSuccess'), 'success');
+        showEmsg(response.data.message || t('BANNERFORM.BANNER_STATUS_UPDATE_SUCCESS'), STATUS.SUCCESS);
       } else {
-        showEmsg(response.data?.message || t('bannerform.bannerStatusUpdateError'), 'error');
+        showEmsg(response.data?.message || t('BANNERFORM.BANNER_STATUS_UPDATE_ERROR'), STATUS.ERROR);
       }
     } catch (err) {
-      showEmsg(t('bannerform.bannerStatusUpdateError'), 'error');
+      showEmsg(t('BANNERFORM.BANNER_STATUS_UPDATE_ERROR'), STATUS.ERROR);
     }
   };
 
@@ -109,7 +109,7 @@ const Banners = () => {
           onClick={() => navigate('/banners-create')}
         >
           <Plus className="h-5 w-5" />
-         {t('bannerform.create_banner')}
+         {t('BANNER_FORM.CREATE_BANNER')}
         </button>
       </div>
       <div>
@@ -117,9 +117,6 @@ const Banners = () => {
           <div className="mb-4 text-red-500 text-center">{sError}</div>
         )}
         <div className="grid grid-cols-1 mt-4 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {paginatedBanners.length === 0 && (
-            <div className="col-span-full text-center text-gray-500 py-10">{t('bannerform.noBannersFound')}</div>
-          )}
           {paginatedBanners.map((project) => (
             <div
               key={project.BannerID}
@@ -166,13 +163,13 @@ const Banners = () => {
                           className="px-4 py-2 hover:bg-gray-50 cursor-pointer rounded-t-xl"
                           onClick={() => handleEditBanner(project.BannerID)}
                         >
-                         {t('common.edit')}
+                         {t('COMMON.EDIT')}
                         </li>
                         <li
-                          className="px-4 py-2 hover:bg-gray-50 cursor-pointer rounded-b-xl text-red-600"
+                          className="px-4 py-2 hover:bg-gray-50 cursor-pointer rounded-b-xl text-red"
                           onClick={() => handleDeleteBanner(project.BannerID)}
                         >
-                         {t('common.delete')}
+                         {t('COMMON.DELETE')}
                         </li>
                       </ul>
                     </div>
@@ -192,7 +189,7 @@ const Banners = () => {
                       className={`absolute top-1/2 left-0.5 transform -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-200 ${project.Status === 'Active' ? 'translate-x-5' : 'translate-x-0'}`}
                     ></div>
                   </div>
-                  <span className={`text-sm font-medium ml-3 ${project.Status === 'Active' ? 'text-green-600' : 'text-red-600'}`}>
+                  <span className={`text-sm font-medium ml-3 ${project.Status === 'Active' ? 'text-green-600' : 'text-red'}`}>
                     {project.Status}
                   </span>
                 </div>
@@ -206,15 +203,15 @@ const Banners = () => {
             onClick={() => setPage(nPage - 1)}
             className="px-4 py-2 rounded-lg border border-gray-200 bg-white text-custom-bg font-semibold shadow hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {t('common.previous')}
+            {t('COMMON.PREVIOUS')}
           </button>
-          <span className="text-gray-600 flex items-center">Page {nPage} of {totalPages} ({totalRecords} total)</span>
+          <span className="text-caption flex items-center">Page {nPage} of {totalPages} ({totalRecords} total)</span>
           <button
             disabled={nPage === totalPages}
             onClick={() => setPage(nPage + 1)}
             className="px-4 py-2 rounded-lg border border-gray-200 bg-white text-custom-bg font-semibold shadow hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-           {t('common.next')}
+           {t('COMMON.NEXT')}
           </button>
         </div>
       </div>

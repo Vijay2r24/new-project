@@ -7,6 +7,8 @@ import ActionButtons from '../components/ActionButtons';
 import { useTranslation } from 'react-i18next';
 import { useStores } from '../context/AllDataContext';
 import { useTitle } from '../context/TitleContext';
+import BackButton from '../components/BackButton';
+
 const Stores = () => {
   const { t } = useTranslation();
   const { setBackButton, setTitle } = useTitle();
@@ -21,21 +23,21 @@ const Stores = () => {
   });
   const aAdditionalFilters = [
     {
-      label: t('stores.status'),
+      label: t('STORES.STATUS'),
       name: 'status',
       type: 'select',
       value: oFilters.status,
       options: [
-        { value: 'all', label: t('stores.status') + ' ' + t('stores.active') + '/' + t('stores.inactive') },
-        { value: 'Active', label: t('stores.active') },
-        { value: 'Inactive', label: t('stores.inactive') },
+        { value: 'all', label: t('STORES.STATUS') + ' ' + t('STORES.ACTIVE') + '/' + t('STORES.INACTIVE') },
+        { value: 'Active', label: t('STORES.ACTIVE') },
+        { value: 'Inactive', label: t('STORES.INACTIVE') },
       ],
     },
   ];
   const { data: aStores, loading, error, total: totalItems, fetch: fetchStores } = useStores();
   const itemsPerPage = 3;
   const [totalPages, setTotalPages] = useState(1);
-  const [viewMode, setViewMode] = useState('table'); // 'table' or 'grid'
+  const [viewMode, setViewMode] = useState('table'); 
   const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
   const handleEdit = (StoreID) => {
@@ -64,34 +66,29 @@ const Stores = () => {
 React.useEffect(() => {
   fetchStores({ pageNumber: currentPage, pageSize: itemsPerPage, searchText: sSearchTerm });
   setTotalPages(Math.ceil(totalItems / itemsPerPage));
-  setTitle(t('stores.heading'));
+  setTitle(t('STORES.HEADING'));
   setBackButton(
-    <button
-      onClick={() => window.history.back()}
-      className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 mr-2"
-    >
-      <ArrowLeft className="h-5 w-5 text-gray-500" />
-    </button>
+    <BackButton onClick={() => navigate('/dashboard')} />
   );
   return () => {
     setBackButton(null);
     setTitle('');
   };
-}, [currentPage, itemsPerPage, sSearchTerm, totalItems, fetchStores, setBackButton, setTitle, t]);
+}, [currentPage, itemsPerPage, sSearchTerm, totalItems, fetchStores, setBackButton, setTitle, t, navigate]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen bg-gray-50">
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div className="flex-1 min-w-0">
-            <p className="mt-1 text-sm text-gray-500">{t('stores.description')}</p>
+            <p className="mt-1 text-secondary">{t('STORES.DESCRIPTION')}</p>
           </div>
           <Link
             to="/add-store"
             className='btn-primary'
           >
             <Plus className="h-4 w-4 mr-2" />
-            {t('stores.add_store')}
+            {t('STORES.ADD_STORE')}
           </Link>
         </div>
       </div>
@@ -106,7 +103,7 @@ React.useEffect(() => {
         setFilterStatus={setFilterStatus}
         additionalFilters={aAdditionalFilters}
         handleFilterChange={handleFilterChange}
-        placeholder={t('stores.search_placeholder')}
+        searchPlaceholder={t('STORES.SEARCH_PLACEHOLDER')}
       />
       {viewMode === 'table' ? (
         <div className="table-container overflow-hidden">
@@ -115,19 +112,19 @@ React.useEffect(() => {
               <thead className="table-head">
                 <tr>
                   <th scope="col" className="table-head-cell">
-                    {t('stores.store_details')}
+                    {t('STORES.STORE_DETAILS')}
                   </th>
                   <th scope="col" className="table-head-cell">
-                    {t('stores.contact')}
+                    {t('STORES.CONTACT')}
                   </th>
                   <th scope="col" className="table-head-cell">
-                    {t('stores.status')}
+                    {t('COMMON.STATUS')}
                   </th>
                   <th scope="col" className="table-head-cell">
-                    {t('stores.inventory')}
+                    {t('STORES.INVENTORY')}
                   </th>
                   <th scope="col" className="table-head-cell">
-                    {t('stores.actions')}
+                    {t('COMMON.ACTIONS')}
                   </th>
                 </tr>
               </thead>
@@ -202,23 +199,23 @@ React.useEffect(() => {
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 pt-2">
-                  <span className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${store.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{store.status}</span>
-                  <span className="px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Products: {store.products}</span>
-                  <span className="px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Employees: {store.employees}</span>
-                </div>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-xs text-gray-500 border-t border-gray-100 pt-2">
-                  <div className="flex items-center gap-1">
-                    <Phone className="h-4 w-4" />
+                <div className="flex flex-col gap-3 text-sm text-caption">
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-gray-400" />
                     <span>{store.Phone}</span>
                   </div>
-                  <div className="flex items-center gap-1 sm:ml-4 max-w-full overflow-hidden">
-                    <Mail className="h-4 w-4 shrink-0" />
-                    <span className="truncate block">{store.Email}</span>
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-gray-400" />
+                    <span>{store.Email}</span>
                   </div>
-
                 </div>
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 mt-2">
+                <div className="mt-auto pt-4 border-t border-gray-100 flex justify-between items-center">
+                  <span className={`status-badge ${store.status === 'Active'
+                    ? 'status-active'
+                    : 'status-inactive'
+                    }`}>
+                    {store.status}
+                  </span>
                   <ActionButtons
                     id={store.StoreID}
                     onEdit={handleEdit}
@@ -228,19 +225,15 @@ React.useEffect(() => {
               </div>
             ))}
           </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageClick}
+          />
         </>
       )}
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        totalItems={totalItems}
-        itemsPerPage={itemsPerPage}
-        handlePrevPage={handlePrevPage}
-        handleNextPage={handleNextPage}
-        handlePageClick={handlePageClick}
-      />
     </div>
   );
 };
 
-export default Stores; 
+export default Stores;

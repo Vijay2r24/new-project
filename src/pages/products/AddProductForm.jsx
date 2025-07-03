@@ -1,11 +1,23 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { Plus, X, Upload, Tag, DollarSign, Hash, Users, ShoppingBag, Palette, Layers, ArrowLeft } from 'lucide-react';
-import { useDropzone } from 'react-dropzone';
-import TextInputWithIcon from '../../components/TextInputWithIcon';
-import SelectWithIcon from '../../components/SelectWithIcon';
-import { useTranslation } from 'react-i18next';
-import { STATUS } from '../../contants/constants.jsx';
-import { Tab } from '@headlessui/react';
+import { useState, useCallback, useEffect, useRef } from "react";
+import {
+  Plus,
+  X,
+  Upload,
+  Tag,
+  DollarSign,
+  Hash,
+  Users,
+  ShoppingBag,
+  Palette,
+  Layers,
+  ArrowLeft,
+} from "lucide-react";
+import { useDropzone } from "react-dropzone";
+import TextInputWithIcon from "../../components/TextInputWithIcon";
+import SelectWithIcon from "../../components/SelectWithIcon";
+import { useTranslation } from "react-i18next";
+import { STATUS } from "../../contants/constants.jsx";
+import { Tab } from "@headlessui/react";
 import {
   useAttributeTypes,
   useBrands,
@@ -13,38 +25,44 @@ import {
   useAttributes,
   useColors,
   useProducts,
-} from '../../context/AllDataContext';
-import { apiPost, apiGet, apiPut } from '../../utils/ApiUtils.jsx';
-import { createproductWithImages, GET_PRODUCT_BY_ID, updateProductWithImages } from '../../contants/apiRoutes';
-import { showEmsg } from '../../utils/ShowEmsg';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
-import { useParams } from 'react-router-dom';
-import { ToastContainer } from 'react-toastify';
-import { useTitle } from '../../context/TitleContext';
-
+} from "../../context/AllDataContext";
+import { apiPost, apiGet, apiPut } from "../../utils/ApiUtils.jsx";
+import {
+  createproductWithImages,
+  GET_PRODUCT_BY_ID,
+  updateProductWithImages,
+} from "../../contants/apiRoutes";
+import { showEmsg } from "../../utils/ShowEmsg";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
+import { useParams } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import { useTitle } from "../../context/TitleContext";
+import  BackButton from '../../components/BackButton.jsx';
 const AddProductForm = () => {
   const { productId } = useParams();
   const { setTitle, setBackButton } = useTitle();
-  const [aVariants, setVariants] = useState([{
-    ColourID: '',
-    AttributeValues: [],
-    Quantity: '',
-    SellingPrice: '',
-    images: []
-  }]);
+  const [aVariants, setVariants] = useState([
+    {
+      ColourID: "",
+      AttributeValues: [],
+      Quantity: "",
+      SellingPrice: "",
+      images: [],
+    },
+  ]);
   const [nSelectedVariantIndex, setSelectedVariantIndex] = useState(0);
   const [oFormData, setFormData] = useState({
-    AttributeTypeID: '',
-    ProductName: '',
-    ProductDescription: '',
-    BrandID: '',
-    CategoryID: '',
-    MRP: '',
-    ProductDiscount: '',
-    Gender: '',
-    CreatedBy: 'Admin',
-    TraitType: ''
+    AttributeTypeID: "",
+    ProductName: "",
+    ProductDescription: "",
+    BrandID: "",
+    CategoryID: "",
+    MRP: "",
+    ProductDiscount: "",
+    Gender: "",
+    CreatedBy: "Admin",
+    TraitType: "",
   });
   const [oValidationErrors, setValidationErrors] = useState({});
 
@@ -78,11 +96,15 @@ const AddProductForm = () => {
       const fetchProduct = async () => {
         try {
           const token = localStorage.getItem("token");
-          const response = await apiGet(`${GET_PRODUCT_BY_ID}/${productId}`, {}, token);
-          if (response.data.status === 'SUCCESS') {
+          const response = await apiGet(
+            `${GET_PRODUCT_BY_ID}/${productId}`,
+            {},
+            token
+          );
+          if (response.data.status === STATUS.SUCCESS.toUpperCase()) {
             const product = response.data.data;
             setFormData({
-              AttributeTypeID: '',
+              AttributeTypeID: "",
               ProductName: product.productName,
               ProductDescription: product.productDescription,
               BrandID: product.brandId,
@@ -90,96 +112,110 @@ const AddProductForm = () => {
               MRP: product.MRP,
               ProductDiscount: product.productDiscount,
               Gender: product.gender,
-              CreatedBy: product.createdBy || 'Admin',
-              TraitType: product.TraitType || ''
+              CreatedBy: product.createdBy || "Admin",
+              TraitType: product.TraitType || "",
             });
-            if (product.variants && product.variants.length > 0 && product.variants[0].attributes) {
-              const firstAttributeKey = Object.keys(product.variants[0].attributes)[0];
+            if (
+              product.variants &&
+              product.variants.length > 0 &&
+              product.variants[0].attributes
+            ) {
+              const firstAttributeKey = Object.keys(
+                product.variants[0].attributes
+              )[0];
               if (firstAttributeKey && aAttributeTypes.length > 0) {
-                const matchingAttributeType = aAttributeTypes.find(type => type.Name === firstAttributeKey);
+                const matchingAttributeType = aAttributeTypes.find(
+                  (type) => type.Name === firstAttributeKey
+                );
                 if (matchingAttributeType) {
-                  setFormData(prev => ({ ...prev, AttributeTypeID: matchingAttributeType.AttributeTypeID }));
+                  setFormData((prev) => ({
+                    ...prev,
+                    AttributeTypeID: matchingAttributeType.AttributeTypeID,
+                  }));
                 }
               }
             }
 
-            const fetchedVariants = product.variants.map(variant => {
+            const fetchedVariants = product.variants.map((variant) => {
               const attributeValuesFromAPI = Object.values(variant.attributes);
-              const attributeIds = attributeValuesFromAPI.map(attrName => {
-                const matchingAttribute = aAttributes.find(attr => attr.AttributeName === attrName);
-                return matchingAttribute ? matchingAttribute.AttributeID : '';
-              }).filter(id => id !== '');
+              const attributeIds = attributeValuesFromAPI
+                .map((attrName) => {
+                  const matchingAttribute = aAttributes.find(
+                    (attr) => attr.AttributeName === attrName
+                  );
+                  return matchingAttribute ? matchingAttribute.AttributeID : "";
+                })
+                .filter((id) => id !== "");
 
               return {
                 ColourID: variant.colourId,
                 AttributeValues: attributeIds,
                 Quantity: variant.quantity,
                 SellingPrice: variant.price,
-                images: variant.images.map(image => ({
+                images: variant.images.map((image) => ({
                   file: null,
-                  preview: image
-                }))
+                  preview: image,
+                })),
               };
             });
             setVariants(fetchedVariants);
           }
-        } catch (error) {
-        }
+        } catch (error) {}
       };
       fetchProduct();
     }
   }, [productId, aAttributeTypes, aBrands, aCategories, aAttributes, aColors]);
 
   useEffect(() => {
-    setTitle(productId ? t('productCreation.editProduct') : t('productCreation.addNewProduct'));
-    setBackButton(
-      <button
-        onClick={() => window.history.back()}
-        className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 mr-2"
-      >
-        <ArrowLeft className="h-5 w-5 text-gray-500" />
-      </button>
+    setTitle(
+      productId ? t("PRODUCTS.EDIT_PRODUCT") : t("PRODUCTS.ADD_NEW_PRODUCT")
     );
+      setBackButton(<BackButton onClick={() =>window.history.back()} />);
     return () => setBackButton(null);
   }, [setTitle, setBackButton, t, productId]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
-    setValidationErrors(prev => ({
+    setValidationErrors((prev) => ({
       ...prev,
-      [name]: undefined
+      [name]: undefined,
     }));
   };
 
   const handleVariantChange = (index, field, value) => {
     const newVariants = [...aVariants];
-    if (field === 'AttributeValues') {
-      newVariants[index][field] = Array.isArray(value) ? value : value.split(',').map(v => v.trim());
+    if (field === "AttributeValues") {
+      newVariants[index][field] = Array.isArray(value)
+        ? value
+        : value.split(",").map((v) => v.trim());
     } else {
       newVariants[index][field] = value;
     }
     setVariants(newVariants);
-    setValidationErrors(prev => ({
+    setValidationErrors((prev) => ({
       ...prev,
-      [`variant_${index}_${field}`]: undefined
+      [`variant_${index}_${field}`]: undefined,
     }));
   };
 
   const oAddVariant = () => {
-    setVariants([...aVariants, {
-      ColourID: '',
-      AttributeValues: [],
-      Quantity: '',
-      SellingPrice: '',
-      images: []
-    }]);
-    setValidationErrors(prev => {
+    setVariants([
+      ...aVariants,
+      {
+        ColourID: "",
+        AttributeValues: [],
+        Quantity: "",
+        SellingPrice: "",
+        images: [],
+      },
+    ]);
+    setValidationErrors((prev) => {
       const newErrors = { ...prev };
-      Object.keys(newErrors).forEach(key => {
+      Object.keys(newErrors).forEach((key) => {
         if (key.startsWith(`variant_${aVariants.length}_`)) {
           delete newErrors[key];
         }
@@ -190,15 +226,15 @@ const AddProductForm = () => {
 
   const removeVariant = (index) => {
     setVariants(aVariants.filter((_, i) => i !== index));
-    setValidationErrors(prev => {
+    setValidationErrors((prev) => {
       const newErrors = { ...prev };
-      Object.keys(newErrors).forEach(key => {
+      Object.keys(newErrors).forEach((key) => {
         if (key.startsWith(`variant_${index}_`)) {
           delete newErrors[key];
         }
       });
       for (let i = index + 1; i <= aVariants.length - 1; i++) {
-        Object.keys(newErrors).forEach(key => {
+        Object.keys(newErrors).forEach((key) => {
           if (key.startsWith(`variant_${i}_`)) {
             const newKey = key.replace(`variant_${i}_`, `variant_${i - 1}_`);
             newErrors[newKey] = newErrors[key];
@@ -210,16 +246,25 @@ const AddProductForm = () => {
     });
   };
 
-  const onDrop = useCallback((acceptedFiles, variantIndex) => {
-    const newVariants = [...aVariants];
-    const newImages = acceptedFiles.map(file => ({
-      file,
-      preview: URL.createObjectURL(file)
-    }));
-    newVariants[variantIndex].images = [...newVariants[variantIndex].images, ...newImages];
-    setVariants(newVariants);
-    setValidationErrors(prev => ({ ...prev, [`variant_${variantIndex}_images`]: undefined }));
-  }, [aVariants]);
+  const onDrop = useCallback(
+    (acceptedFiles, variantIndex) => {
+      const newVariants = [...aVariants];
+      const newImages = acceptedFiles.map((file) => ({
+        file,
+        preview: URL.createObjectURL(file),
+      }));
+      newVariants[variantIndex].images = [
+        ...newVariants[variantIndex].images,
+        ...newImages,
+      ];
+      setVariants(newVariants);
+      setValidationErrors((prev) => ({
+        ...prev,
+        [`variant_${variantIndex}_images`]: undefined,
+      }));
+    },
+    [aVariants]
+  );
 
   const removeImage = (variantIndex, imageIndex) => {
     const newVariants = [...aVariants];
@@ -227,16 +272,18 @@ const AddProductForm = () => {
     newVariants[variantIndex].images.splice(imageIndex, 1);
     setVariants(newVariants);
     if (newVariants[variantIndex].images.length === 0) {
-      setValidationErrors(prev => ({
+      setValidationErrors((prev) => ({
         ...prev,
-        [`variant_${variantIndex}_images`]: t('productCreation.imageRequired')
+        [`variant_${variantIndex}_images`]: t(
+          "PRODUCT_CREATION.IMAGE_REQUIRED"
+        ),
       }));
     }
   };
 
   const validateForm = () => {
     const errors = {};
-    let firstErrorField = '';
+    let firstErrorField = "";
 
     const addError = (field, message) => {
       if (!errors[field]) {
@@ -244,24 +291,77 @@ const AddProductForm = () => {
         if (!firstErrorField) firstErrorField = field;
       }
     };
-    if (!oFormData.ProductName) addError('ProductName', t('productCreation.productNameRequired'));
-    if (!oFormData.AttributeTypeID) addError('AttributeTypeID', t('productCreation.attributeIdRequired'));
-    if (!oFormData.BrandID) addError('BrandID', t('productCreation.brandIdRequired'));
-    if (!oFormData.MRP) addError('MRP', t('productCreation.mrpRequired'));
-    else if (isNaN(oFormData.MRP) || parseFloat(oFormData.MRP) <= 0) addError('MRP', t('productCreation.mrpInvalid'));
-    if (!oFormData.ProductDiscount && oFormData.ProductDiscount !== 0) addError('ProductDiscount', t('productCreation.productDiscountRequired'));
-    else if (isNaN(oFormData.ProductDiscount) || parseFloat(oFormData.ProductDiscount) < 0 || parseFloat(oFormData.ProductDiscount) > 100) addError('ProductDiscount', t('productCreation.productDiscountInvalid'));
-    if (!oFormData.Gender) addError('Gender', t('productCreation.genderRequired'));
-    if (!oFormData.CategoryID) addError('CategoryID', t('productCreation.categoryIdRequired'));
-    if (!oFormData.ProductDescription) addError('ProductDescription', t('productCreation.productDescriptionRequired'));
+    if (!oFormData.ProductName)
+      addError("ProductName", t("PRODUCT_CREATION.PRODUCT_NAME_REQUIRED"));
+    if (!oFormData.AttributeTypeID)
+      addError("AttributeTypeID", t("PRODUCT_CREATION.ATTRIBUTE_ID_REQUIRED"));
+    if (!oFormData.BrandID)
+      addError("BrandID", t("PRODUCT_CREATION.BRAND_ID_REQUIRED"));
+    if (!oFormData.MRP) addError("MRP", t("PRODUCT_CREATION.MRP_REQUIRED"));
+    else if (isNaN(oFormData.MRP) || parseFloat(oFormData.MRP) <= 0)
+      addError("MRP", t("PRODUCT_CREATION.MRP_INVALID"));
+    if (!oFormData.ProductDiscount && oFormData.ProductDiscount !== 0)
+      addError(
+        "ProductDiscount",
+        t("PRODUCT_CREATION.PRODUCT_DISCOUNT_REQUIRED")
+      );
+    else if (
+      isNaN(oFormData.ProductDiscount) ||
+      parseFloat(oFormData.ProductDiscount) < 0 ||
+      parseFloat(oFormData.ProductDiscount) > 100
+    )
+      addError(
+        "ProductDiscount",
+        t("PRODUCT_CREATION.PRODUCT_DISCOUNT_INVALID")
+      );
+    if (!oFormData.Gender)
+      addError("Gender", t("PRODUCT_CREATION.GENDER_REQUIRED"));
+    if (!oFormData.CategoryID)
+      addError("CategoryID", t("PRODUCT_CREATION.CATEGORY_ID_REQUIRED"));
+    if (!oFormData.ProductDescription)
+      addError(
+        "ProductDescription",
+        t("PRODUCT_CREATION.PRODUCT_DESCRIPTION_REQUIRED")
+      );
     aVariants.forEach((variant, index) => {
-      if (!variant.ColourID) addError(`variant_${index}_ColourID`, t('productCreation.colourIdRequired'));
-      if (!variant.AttributeValues || variant.AttributeValues.length === 0) addError(`variant_${index}_AttributeValues`, t('productCreation.attributeValuesRequired'));
-      if (!variant.Quantity && variant.Quantity !== 0) addError(`variant_${index}_Quantity`, t('productCreation.quantityRequired'));
-      else if (isNaN(variant.Quantity) || parseInt(variant.Quantity) < 0) addError(`variant_${index}_Quantity`, t('productCreation.quantityInvalid'));
-      if (!variant.SellingPrice && variant.SellingPrice !== 0) addError(`variant_${index}_SellingPrice`, t('productCreation.sellingPriceRequired'));
-      else if (isNaN(variant.SellingPrice) || parseFloat(variant.SellingPrice) <= 0) addError(`variant_${index}_SellingPrice`, t('productCreation.sellingPriceInvalid'));
-      if (!variant.images || variant.images.length === 0) addError(`variant_${index}_images`, t('productCreation.imageRequired'));
+      if (!variant.ColourID)
+        addError(
+          `variant_${index}_ColourID`,
+          t("PRODUCT_CREATION.COLOUR_ID_REQUIRED")
+        );
+      if (!variant.AttributeValues || variant.AttributeValues.length === 0)
+        addError(
+          `variant_${index}_AttributeValues`,
+          t("PRODUCT_CREATION.ATTRIBUTE_VALUES_REQUIRED")
+        );
+      if (!variant.Quantity && variant.Quantity !== 0)
+        addError(
+          `variant_${index}_Quantity`,
+          t("PRODUCT_CREATION.QUANTITY_REQUIRED")
+        );
+      else if (isNaN(variant.Quantity) || parseInt(variant.Quantity) < 0)
+        addError(
+          `variant_${index}_Quantity`,
+          t("PRODUCT_CREATION.QUANTITY_INVALID")
+        );
+      if (!variant.SellingPrice && variant.SellingPrice !== 0)
+        addError(
+          `variant_${index}_SellingPrice`,
+          t("PRODUCT_CREATION.SELLING_PRICE_REQUIRED")
+        );
+      else if (
+        isNaN(variant.SellingPrice) ||
+        parseFloat(variant.SellingPrice) <= 0
+      )
+        addError(
+          `variant_${index}_SellingPrice`,
+          t("PRODUCT_CREATION.SELLING_PRICE_INVALID")
+        );
+      if (!variant.images || variant.images.length === 0)
+        addError(
+          `variant_${index}_images`,
+          t("PRODUCT_CREATION.IMAGE_REQUIRED")
+        );
     });
 
     setValidationErrors(errors);
@@ -273,7 +373,7 @@ const AddProductForm = () => {
 
     const firstInvalidField = validateForm();
     if (firstInvalidField) {
-      showEmsg(t('productCreation.validationError'), 'error');
+      showEmsg(t("PRODUCT_CREATION.VALIDATION_ERROR"), STATUS.ERROR);
       const refMap = {
         ProductName: productNameRef,
         AttributeTypeID: attributeTypeRef,
@@ -286,9 +386,12 @@ const AddProductForm = () => {
       };
 
       if (refMap[firstInvalidField] && refMap[firstInvalidField].current) {
-        refMap[firstInvalidField].current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      } else if (firstInvalidField.startsWith('variant_')) {
-        const parts = firstInvalidField.split('_');
+        refMap[firstInvalidField].current.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      } else if (firstInvalidField.startsWith("variant_")) {
+        const parts = firstInvalidField.split("_");
         const index = parseInt(parts[1]);
         const fieldName = parts[2];
         const variantId = `${fieldName}-${index}`;
@@ -296,11 +399,19 @@ const AddProductForm = () => {
         setTimeout(() => {
           const variantFieldRef = variantRefs.current.get(variantId);
           if (variantFieldRef) {
-            variantFieldRef.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            variantFieldRef.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
           } else {
-            const imageUploadContainer = document.getElementById(`variant-image-upload-${index}`);
+            const imageUploadContainer = document.getElementById(
+              `variant-image-upload-${index}`
+            );
             if (imageUploadContainer) {
-              imageUploadContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              imageUploadContainer.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+              });
             }
           }
         }, 100);
@@ -309,34 +420,43 @@ const AddProductForm = () => {
     }
 
     const token = localStorage.getItem("token");
-    const selectedCategory = aCategories.find(cat => cat.CategoryID === oFormData.CategoryID);
-    const categoryName = selectedCategory ? selectedCategory.CategoryName : '';
+    const selectedCategory = aCategories.find(
+      (cat) => cat.CategoryID === oFormData.CategoryID
+    );
+    const categoryName = selectedCategory ? selectedCategory.CategoryName : "";
 
     const data = new FormData();
     const variantsData = aVariants.map((variant) => {
-      const sellingPrice = parseFloat(oFormData.MRP) - (parseFloat(oFormData.MRP) * parseFloat(oFormData.ProductDiscount || 0)) / 100;
+      const sellingPrice =
+        parseFloat(oFormData.MRP) -
+        (parseFloat(oFormData.MRP) *
+          parseFloat(oFormData.ProductDiscount || 0)) /
+          100;
       return {
         ColourID: variant.ColourID,
         AttributeValues: variant.AttributeValues,
         Quantity: parseInt(variant.Quantity) || 0,
-        SellingPrice: sellingPrice
+        SellingPrice: sellingPrice,
       };
     });
-    data.append("Data", JSON.stringify({
-      AttributeTypeID: oFormData.AttributeTypeID,
-      ProductName: oFormData.ProductName,
-      ProductDescription: oFormData.ProductDescription,
-      ProductDiscount: oFormData.ProductDiscount,
-      Gender: oFormData.Gender,
-      CategoryID: oFormData.CategoryID,
-      CategoryName: categoryName,
-      BrandID: oFormData.BrandID,
-      MRP: oFormData.MRP,
-      CreatedBy: "Admin",
-      TenantID: 1,
-      Variants: variantsData,
-      ...(productId && { ProductID: productId })
-    }));
+    data.append(
+      "Data",
+      JSON.stringify({
+        AttributeTypeID: oFormData.AttributeTypeID,
+        ProductName: oFormData.ProductName,
+        ProductDescription: oFormData.ProductDescription,
+        ProductDiscount: oFormData.ProductDiscount,
+        Gender: oFormData.Gender,
+        CategoryID: oFormData.CategoryID,
+        CategoryName: categoryName,
+        BrandID: oFormData.BrandID,
+        MRP: oFormData.MRP,
+        CreatedBy: "Admin",
+        TenantID: 1,
+        Variants: variantsData,
+        ...(productId && { ProductID: productId }),
+      })
+    );
     aVariants.forEach((variant, variantIndex) => {
       variant.images.forEach((img) => {
         if (img.file) {
@@ -347,45 +467,49 @@ const AddProductForm = () => {
 
     try {
       const response = productId
-        ? await apiPut(`${updateProductWithImages}/${productId}`, data, token, true)
+        ? await apiPut(
+            `${updateProductWithImages}/${productId}`,
+            data,
+            token,
+            true
+          )
         : await apiPost(createproductWithImages, data, token, true);
 
       const resData = response?.data;
 
-      if (resData?.status === STATUS.SUCCESS_1) {
+      if (resData?.status === STATUS.SUCCESS.toUpperCase()) {
         showEmsg(
           resData.message ||
             (productId
-              ? t('productCreation.productUpdatedSuccess')
-              : t('productCreation.productCreatedSuccess')),
-          'success'
+              ? t("PRODUCT_CREATION.PRODUCT_UPDATED_SUCCESS")
+              : t("PRODUCT_CREATION.PRODUCT_CREATED_SUCCESS")),
+          STATUS.SUCCESS
         );
       } else {
         showEmsg(
           resData?.message ||
             (productId
-              ? t('productCreation.productUpdateFailed')
-              : t('productCreation.productCreateFailed')),
-          'error'
+              ? t("PRODUCT_CREATION.PRODUCT_UPDATE_FAILED")
+              : t("PRODUCT_CREATION.PRODUCT_CREATE_FAILED")),
+          STATUS.ERROR
         );
       }
     } catch (error) {
       const backendMessage = error?.response?.data?.message;
       showEmsg(
-        backendMessage || t('productCreation.productSubmitError'),
-        'error'
+        backendMessage || t("PRODUCT_CREATION.PRODUCT_SUBMIT_ERROR"),
+        STATUS.ERROR
       );
     }
-
   };
 
   const VariantImageUpload = ({ variantIndex }) => {
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
       onDrop: (files) => onDrop(files, variantIndex),
       accept: {
-        'image/*': ['.jpeg', '.jpg', '.png', '.webp']
+        "image/*": [".jpeg", ".jpg", ".png", ".webp"],
       },
-      maxSize: 5242880
+      maxSize: 5242880,
     });
 
     return (
@@ -394,20 +518,26 @@ const AddProductForm = () => {
         <div
           {...getRootProps()}
           className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-300
-            ${isDragActive
-              ? 'border-blue-500 bg-blue-50 scale-[1.02] shadow-lg'
-              : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50 hover:shadow-md'}`}
+            ${
+              isDragActive
+                ? "border-blue-500 bg-blue-50 scale-[1.02] shadow-lg"
+                : "border-gray-300 hover:border-blue-400 hover:bg-gray-50 hover:shadow-md"
+            }`}
         >
           <input {...getInputProps()} />
           <div className="flex flex-col items-center justify-center space-y-4">
             <div className="p-4 bg-blue-50 rounded-2xl">
               <Upload className="h-8 w-8 text-blue-500" />
             </div>
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-caption">
               {isDragActive ? (
-                <p className="font-medium text-blue-600 text-base">{t('productCreation.dropImagesHere')}</p>
+                <p className="font-medium text-blue-600 text-base">
+                  {t("PRODUCT_CREATION.DROP_IMAGES_HERE")}
+                </p>
               ) : (
-                <p className="text-base">{t('productCreation.dragDropOrClick')}</p>
+                <p className="text-base">
+                  {t("PRODUCT_CREATION.DRAG_DROP_OR_CLICK")}
+                </p>
               )}
             </div>
           </div>
@@ -420,7 +550,9 @@ const AddProductForm = () => {
                 <div className="aspect-square rounded-2xl overflow-hidden bg-gray-100 shadow-md">
                   <img
                     src={image.preview}
-                    alt={`Variant ${variantIndex + 1} - Image ${imageIndex + 1}`}
+                    alt={`Variant ${variantIndex + 1} - Image ${
+                      imageIndex + 1
+                    }`}
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                   />
                 </div>
@@ -446,8 +578,8 @@ const AddProductForm = () => {
           <div className="flex items-center gap-4 mb-4">
             <p className="text-gray-500">
               {productId
-                ? t('productCreation.editProductDescription')
-                : t('productCreation.createNewStoreDescription')}
+                ? t("PRODUCTS.EDIT_PRODUCT_DESCRIPTION")
+                : t("PRODUCTS.CREATE_PRODUCT_DESCRIPTION")}
             </p>
           </div>
         </div>
@@ -457,7 +589,7 @@ const AddProductForm = () => {
             <div className="px-8 py-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
               <h2 className="text-xl font-semibold text-gray-900 flex items-center">
                 <ShoppingBag className="h-6 w-6 mr-3 text-custom-bg" />
-                {t('productCreation.basicInformation')}
+                {t("COMMON.BASIC_INFORMATION")}
               </h2>
             </div>
             <div className="p-8 space-y-8">
@@ -465,12 +597,14 @@ const AddProductForm = () => {
                 <div className="space-y-6">
                   <div>
                     <TextInputWithIcon
-                      label={t('productCreation.productName')}
+                      label={t("PRODUCT_CREATION.PRODUCT_NAME")}
                       id="ProductName"
                       name="ProductName"
                       value={oFormData.ProductName}
                       onChange={handleInputChange}
-                      placeholder={t('productCreation.productNamePlaceholder') || "Enter product name"}
+                      placeholder={
+                        t("PRODUCT_CREATION.PRODUCT_NAME_PLACEHOLDER")
+                      }
                       Icon={Tag}
                       error={oValidationErrors.ProductName}
                       ref={productNameRef}
@@ -478,35 +612,39 @@ const AddProductForm = () => {
                   </div>
                   <div>
                     <SelectWithIcon
-                      label={t('productCreation.attributeId')}
+                      label={t("PRODUCT_CREATION.ATTRIBUTE_ID")}
                       id="AttributeTypeID"
                       name="AttributeTypeID"
                       value={oFormData.AttributeTypeID}
                       onChange={handleInputChange}
-                      options={aAttributeTypes.map(type => ({
+                      options={aAttributeTypes.map((type) => ({
                         value: type.AttributeTypeID,
-                        label: type.Name
+                        label: type.Name,
                       }))}
                       Icon={Hash}
                       error={oValidationErrors.AttributeTypeID}
-                      placeholder={t('productCreation.attributeIdPlaceholder') || "Select attribute type"}
+                      placeholder={
+                        t("PRODUCT_CREATION.ATTRIBUTE_ID_PLACEHOLDER")
+                      }
                       ref={attributeTypeRef}
                     />
                   </div>
                   <div>
                     <SelectWithIcon
-                      label={t('productCreation.brandId')}
+                      label={t("PRODUCT_CREATION.BRAND_ID")}
                       id="BrandID"
                       name="BrandID"
                       value={oFormData.BrandID}
                       onChange={handleInputChange}
-                      options={aBrands.map(brand => ({
+                      options={aBrands.map((brand) => ({
                         value: brand.BrandID,
-                        label: brand.BrandName
+                        label: brand.BrandName,
                       }))}
                       Icon={Tag}
                       error={oValidationErrors.BrandID}
-                      placeholder={t('productCreation.brandIdPlaceholder') || "Select brand"}
+                      placeholder={
+                        t("PRODUCT_CREATION.BRAND_ID_PLACEHOLDER")
+                      }
                       ref={brandRef}
                     />
                   </div>
@@ -514,12 +652,14 @@ const AddProductForm = () => {
                 <div className="space-y-6">
                   <div>
                     <TextInputWithIcon
-                      label={t('productCreation.mrp')}
+                      label={t("PRODUCT_CREATION.MRP")}
                       id="MRP"
                       name="MRP"
                       value={oFormData.MRP}
                       onChange={handleInputChange}
-                      placeholder={t('productCreation.mrpPlaceholder') || "Enter MRP"}
+                      placeholder={
+                        t("PRODUCT_CREATION.MRP_PLACEHOLDER")
+                      }
                       Icon={DollarSign}
                       error={oValidationErrors.MRP}
                       ref={mrpRef}
@@ -527,12 +667,14 @@ const AddProductForm = () => {
                   </div>
                   <div>
                     <TextInputWithIcon
-                      label={t('productCreation.productDiscount')}
+                      label={t("PRODUCT_CREATION.PRODUCT_DISCOUNT")}
                       id="ProductDiscount"
                       name="ProductDiscount"
                       value={oFormData.ProductDiscount}
                       onChange={handleInputChange}
-                      placeholder={t('productCreation.productDiscountPlaceholder') || "Enter discount (e.g., 20%)"}
+                      placeholder={
+                        t("PRODUCT_CREATION.PRODUCT_DISCOUNT_PLACEHOLDER")
+                      }
                       Icon={Tag}
                       error={oValidationErrors.ProductDiscount}
                       ref={productDiscountRef}
@@ -540,15 +682,18 @@ const AddProductForm = () => {
                   </div>
                   <div>
                     <SelectWithIcon
-                      label={t('productCreation.gender')}
+                      label={t("PRODUCT_CREATION.GENDER")}
                       id="Gender"
                       name="Gender"
                       value={oFormData.Gender}
                       onChange={handleInputChange}
                       options={[
-                        { value: 'Male', label: t('productCreation.male') },
-                        { value: 'Female', label: t('productCreation.female') },
-                        { value: 'Other', label: t('productCreation.other') },
+                        { value: "Male", label: t("PRODUCT_CREATION.MALE") },
+                        {
+                          value: "Female",
+                          label: t("PRODUCT_CREATION.FEMALE"),
+                        },
+                        { value: "Other", label: t("PRODUCT_CREATION.OTHER") },
                       ]}
                       Icon={Users}
                       error={oValidationErrors.Gender}
@@ -559,46 +704,60 @@ const AddProductForm = () => {
               </div>
               <div>
                 <SelectWithIcon
-                  label={t('productCreation.categoryId')}
+                  label={t("PRODUCT_CREATION.CATEGORY_ID")}
                   id="CategoryID"
                   name="CategoryID"
                   value={oFormData.CategoryID}
                   onChange={handleInputChange}
-                  options={aCategories.map(category => ({
+                  options={aCategories.map((category) => ({
                     value: category.CategoryID,
-                    label: category.CategoryName
+                    label: category.CategoryName,
                   }))}
                   Icon={Tag}
                   error={oValidationErrors.CategoryID}
-                  placeholder={t('productCreation.categoryIdPlaceholder') || "Select category"}
+                  placeholder={
+                    t("PRODUCT_CREATION.CATEGORY_ID_PLACEHOLDER")
+                  }
                   ref={categoryRef}
                 />
               </div>
               <div>
-                <label htmlFor="ProductDescription" className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('productCreation.productDescription')}
+                <label
+                  htmlFor="ProductDescription"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  {t("PRODUCT_CREATION.PRODUCT_DESCRIPTION")}
                 </label>
                 <ReactQuill
                   theme="snow"
                   value={oFormData.ProductDescription}
-                  onChange={(value) => handleInputChange({ target: { name: 'ProductDescription', value } })}
-                  placeholder={t('productCreation.productDescriptionPlaceholder') || "Enter product description"}
-                  className={`h-32 mb-10 ${oValidationErrors.ProductDescription ? 'border-red-500' : ''}`}
+                  onChange={(value) =>
+                    handleInputChange({
+                      target: { name: "ProductDescription", value },
+                    })
+                  }
+                  placeholder={
+                    t("PRODUCT_CREATION.PRODUCT_DESCRIPTION_PLACEHOLDER")
+                  }
+                  className={`h-32 mb-10 ${
+                    oValidationErrors.ProductDescription ? "border-red-500" : ""
+                  }`}
                   ref={productDescriptionRef}
                 />
                 {oValidationErrors.ProductDescription && (
-                  <p className="text-red-500 text-sm mt-1 mb-2">{oValidationErrors.ProductDescription}</p>
+                  <p className="text-red-500 text-sm mt-1 mb-2">
+                    {oValidationErrors.ProductDescription}
+                  </p>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Product Variant Information */}
           <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden transform transition-all duration-300 hover:shadow-xl">
             <div className="px-8 py-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100 flex justify-between items-center">
               <h2 className="text-xl font-semibold text-gray-900 flex items-center">
                 <Layers className="h-6 w-6 mr-3 text-custom-bg" />
-                {t('productCreation.variantInformation')}
+                {t("PRODUCT_CREATION.VARIANT_INFORMATION")}
               </h2>
               <button
                 type="button"
@@ -606,23 +765,27 @@ const AddProductForm = () => {
                 className="btn-secondry inline-flex items-center space-x-2"
               >
                 <Plus className="h-4 w-4" />
-                <span>{t('productCreation.addNewVariant')}</span>
+                <span>{t("PRODUCT_CREATION.ADD_NEW_VARIANT")}</span>
               </button>
             </div>
-            <Tab.Group selectedIndex={nSelectedVariantIndex} onChange={setSelectedVariantIndex}>
+            <Tab.Group
+              selectedIndex={nSelectedVariantIndex}
+              onChange={setSelectedVariantIndex}
+            >
               <Tab.List className="flex flex-wrap border-b border-gray-200 bg-gray-50 p-4">
                 {aVariants.map((variant, index) => (
                   <Tab
                     key={index}
                     className={({ selected }) =>
                       `px-6 py-3 text-sm font-medium leading-5 border-b-2 outline-none
-                      ${selected
-                        ? 'border-custom-bg text-custom-bg'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ${
+                        selected
+                          ? "border-custom-bg text-custom-bg"
+                          : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                       }`
                     }
                   >
-                    {t('productCreation.variant')} {index + 1}
+                    {t("PRODUCT_CREATION.VARIANT")} {index + 1}
                     {aVariants.length > 1 && (
                       <button
                         type="button"
@@ -645,72 +808,125 @@ const AddProductForm = () => {
                       <div className="space-y-6">
                         <div>
                           <SelectWithIcon
-                            label={t('productCreation.colourId')}
+                            label={t("PRODUCT_CREATION.COLOUR_ID")}
                             id={`ColourID-${index}`}
                             name="ColourID"
                             value={variant.ColourID}
-                            onChange={(e) => handleVariantChange(index, 'ColourID', e.target.value)}
-                            options={aColors.map(color => ({
+                            onChange={(e) =>
+                              handleVariantChange(
+                                index,
+                                "ColourID",
+                                e.target.value
+                              )
+                            }
+                            options={aColors.map((color) => ({
                               value: color.ColourID,
-                              label: `${color.Name}`
+                              label: `${color.Name}`,
                             }))}
                             Icon={Palette}
-                            error={oValidationErrors[`variant_${index}_ColourID`]}
-                            placeholder={t('productCreation.colourIdPlaceholder') || "Select colour"}
-                            ref={el => addVariantRef(`ColourID-${index}`, el)}
+                            error={
+                              oValidationErrors[`variant_${index}_ColourID`]
+                            }
+                            placeholder={
+                              t("PRODUCT_CREATION.COLOUR_ID_PLACEHOLDER") ||
+                              "Select colour"
+                            }
+                            ref={(el) => addVariantRef(`ColourID-${index}`, el)}
                           />
                         </div>
                         <div>
                           <SelectWithIcon
-                            label={t('productCreation.attributeValues')}
+                            label={t("PRODUCT_CREATION.ATTRIBUTE_VALUES")}
                             id={`AttributeValues-${index}`}
                             name="AttributeValues"
                             value={variant.AttributeValues}
-                            onChange={(e) => handleVariantChange(index, 'AttributeValues', e.target.value)}
-                            options={aAttributes.map(attribute => ({
+                            onChange={(e) =>
+                              handleVariantChange(
+                                index,
+                                "AttributeValues",
+                                e.target.value
+                              )
+                            }
+                            options={aAttributes.map((attribute) => ({
                               value: attribute.AttributeID,
-                              label: `${attribute.AttributeName}`
+                              label: `${attribute.AttributeName}`,
                             }))}
                             Icon={Layers}
-                            error={oValidationErrors[`variant_${index}_AttributeValues`]}
-                            placeholder={t('productCreation.attributeValuesPlaceholder') || "Select attribute values"}
+                            error={
+                              oValidationErrors[
+                                `variant_${index}_AttributeValues`
+                              ]
+                            }
+                            placeholder={
+                              t(
+                                "PRODUCT_CREATION.ATTRIBUTE_VALUES_PLACEHOLDER"
+                              ) || "Select attribute values"
+                            }
                             multiple
-                            ref={el => addVariantRef(`AttributeValues-${index}`, el)}
+                            ref={(el) =>
+                              addVariantRef(`AttributeValues-${index}`, el)
+                            }
                           />
                         </div>
                       </div>
                       <div className="space-y-6">
                         <div>
                           <TextInputWithIcon
-                            label={t('productCreation.quantity')}
+                            label={t("PRODUCT_CREATION.QUANTITY")}
                             id={`Quantity-${index}`}
                             name="Quantity"
                             value={variant.Quantity}
-                            onChange={(e) => handleVariantChange(index, 'Quantity', e.target.value)}
-                            placeholder={t('productCreation.quantityPlaceholder') || "Enter quantity"}
+                            onChange={(e) =>
+                              handleVariantChange(
+                                index,
+                                "Quantity",
+                                e.target.value
+                              )
+                            }
+                            placeholder={
+                              t("PRODUCT_CREATION.QUANTITY_PLACEHOLDER") ||
+                              "Enter quantity"
+                            }
                             Icon={Hash}
-                            error={oValidationErrors[`variant_${index}_Quantity`]}
-                            ref={el => addVariantRef(`Quantity-${index}`, el)}
+                            error={
+                              oValidationErrors[`variant_${index}_Quantity`]
+                            }
+                            ref={(el) => addVariantRef(`Quantity-${index}`, el)}
                           />
                         </div>
                         <div>
                           <TextInputWithIcon
-                            label={t('productCreation.sellingPrice')}
+                            label={t("PRODUCT_CREATION.SELLING_PRICE")}
                             id={`SellingPrice-${index}`}
                             name="SellingPrice"
                             value={variant.SellingPrice}
-                            onChange={(e) => handleVariantChange(index, 'SellingPrice', e.target.value)}
-                            placeholder={t('productCreation.sellingPricePlaceholder') || "Enter selling price"}
+                            onChange={(e) =>
+                              handleVariantChange(
+                                index,
+                                "SellingPrice",
+                                e.target.value
+                              )
+                            }
+                            placeholder={
+                              t("PRODUCT_CREATION.SELLING_PRICE_PLACEHOLDER") ||
+                              "Enter selling price"
+                            }
                             Icon={DollarSign}
-                            error={oValidationErrors[`variant_${index}_SellingPrice`]}
-                            ref={el => addVariantRef(`SellingPrice-${index}`, el)}
+                            error={
+                              oValidationErrors[`variant_${index}_SellingPrice`]
+                            }
+                            ref={(el) =>
+                              addVariantRef(`SellingPrice-${index}`, el)
+                            }
                           />
                         </div>
                       </div>
                     </div>
                     <VariantImageUpload variantIndex={index} />
                     {oValidationErrors[`variant_${index}_images`] && (
-                      <p className="text-red-500 text-sm mt-1 mb-2">{oValidationErrors[`variant_${index}_images`]}</p>
+                      <p className="text-red-500 text-sm mt-1 mb-2">
+                        {oValidationErrors[`variant_${index}_images`]}
+                      </p>
                     )}
                   </Tab.Panel>
                 ))}
@@ -720,10 +936,12 @@ const AddProductForm = () => {
           </div>
           <div className="flex justify-end space-x-4 mb-8">
             <button type="button" className="btn-cancel">
-              {t('productCreation.cancel')}
+              {t("PRODUCT_CREATION.CANCEL")}
             </button>
             <button type="submit" className="btn-primary">
-              {productId ? t('productCreation.saveChanges') : t('productCreation.saveProduct')}
+              {productId
+                ? t("PRODUCT_CREATION.SAVE_CHANGES")
+                : t("PRODUCT_CREATION.SAVE_PRODUCT")}
             </button>
           </div>
         </form>
@@ -732,4 +950,4 @@ const AddProductForm = () => {
   );
 };
 
-export default AddProductForm; 
+export default AddProductForm;

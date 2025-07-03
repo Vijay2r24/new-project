@@ -10,6 +10,7 @@ import { useStores } from '../context/AllDataContext';
 import { showEmsg } from '../utils/ShowEmsg';
 import { useTitle } from '../context/TitleContext';
 import { STATUS } from '../contants/constants';
+import BackButton from '../components/BackButton';
 
 const AddUserRole = () => {
   const [sRoleName, setRoleName] = useState('');
@@ -25,14 +26,9 @@ const AddUserRole = () => {
   const { setTitle, setBackButton } = useTitle();
 
   useEffect(() => {
-    setTitle(t('createuserrole.add_user_role'));
+    setTitle(t('CREATE_USER_ROLE.ADD_USER_ROLE'));
     setBackButton(
-      <button
-        onClick={() => window.history.back()}
-        className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 mr-2"
-      >
-        <ArrowLeft className="h-5 w-5 text-gray-500" />
-      </button>
+      <BackButton onClick={() => window.history.back()} />
     );
     return () => {
       setBackButton(null);
@@ -58,7 +54,7 @@ const AddUserRole = () => {
         const resData = oResponse?.data;
         let permissionsArr = [];
 
-        if (resData?.status === STATUS.SUCCESS_1) {
+        if (resData?.status === STATUS.SUCCESS.toUpperCase()) {
           if (resData.data?.rows && Array.isArray(resData.data.rows)) {
             permissionsArr = resData.data.rows;
           } else if (Array.isArray(resData.result)) {
@@ -96,12 +92,12 @@ const AddUserRole = () => {
           }
         } else {
           setPermissionsByModule({});
-          setError(resData?.message || t('createuserrole.failedToFetchPermissions'));
+          setError(resData?.message || t('CREATE_USER_ROLE.FAILED_TO_FETCH_PERMISSIONS'));
         }
       } catch (err) {
         const backendMessage = err?.response?.data?.message;
         setPermissionsByModule({});
-        setError(backendMessage || t('createuserrole.failedToFetchPermissions'));
+        setError(backendMessage || t('CREATE_USER_ROLE.FAILED_TO_FETCH_PERMISSIONS'));
       } finally {
         setLoadingPermissions(false);
       }
@@ -145,7 +141,7 @@ const AddUserRole = () => {
     event.preventDefault();
   };
 
-  if (nError) return <div>{t('createuserrole.failedToFetchPermissions')}</div>;
+  if (nError) return <div>{t('CREATE_USER_ROLE.FAILED_TO_FETCH_PERMISSIONS')}</div>;
 
   const storeOptions = aStores.map((store) => ({
     value: String(store.StoreID),
@@ -159,10 +155,10 @@ const AddUserRole = () => {
   const validateRoleDataSubmit = () => {
     const newErrors = {};
     if (sStoreId === "0") {
-      newErrors.StoreIdError = t('createuserrole.storeIsrequid');
+      newErrors.StoreIdError = t('CREATE_USER_ROLE.STORE_ISREQUID');
     }
     if (!sRoleName) {
-      newErrors.RoleNameError = t('createuserrole.roleIsrequid');
+      newErrors.RoleNameError = t('CREATE_USER_ROLE.ROLE_ISREQUID');
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length > 0;
@@ -189,7 +185,7 @@ const AddUserRole = () => {
         handleSaveRole(event);
       } catch (err) {
         const msg = err?.response?.data?.message;
-        showEmsg(msg || t('createuserrole.failedToSaveRole'), 'error');
+        showEmsg(msg || t('CREATE_USER_ROLE.FAILED_TO_SAVE_ROLE'), 'error');
       }
     }
   };
@@ -202,7 +198,7 @@ const AddUserRole = () => {
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
             <p className="text-gray-500">
-              {t('createuserrole.add_user_role_description')}
+              {t('CREATE_USER_ROLE.ADD_USER_ROLE_DESCRIPTION')}
             </p>
           </div>
         </div>
@@ -215,10 +211,10 @@ const AddUserRole = () => {
             <div className="flex flex-col items-center justify-center">
               <div className=" flex flex-col sm:flex-row justify-center items-center w-full ">
                 <label className="block font-semibold mr-[14px]">
-                  {t('createuserrole:store')}
+                  {t('CREATE_USER_ROLE.SELECT_STORE')}
                 </label>
                 {bStoresLoading ? (
-                  <div className="text-gray-500">Loading stores...</div>
+                  <div className="text-gray-500">{t('COMMON.LOADING')}</div>
                 ) : sStoresError ? (
                   <div className="text-red-500">{sStoresError}</div>
                 ) : (
@@ -226,7 +222,7 @@ const AddUserRole = () => {
                     options={storeOptions}
                     value={sStoreId}
                     onChange={handleStoreChange}
-                    placeholder={t('createuserrole.select_store')}
+                    placeholder={t('CREATE_USER_ROLE.SELECT_STORE')}
                     error={oErrors.StoreIdError}
                     Icon={Store}
                   />
@@ -236,13 +232,13 @@ const AddUserRole = () => {
             <div className="flex flex-col items-center justify-center">
               <div className=" flex flex-col sm:flex-row justify-center items-center w-full ">
                 <label className="block font-semibold mr-[14px]">
-                  {t('createuserrole.role')}
+                  {t('COMMON.ROLE')}
                 </label>
                 <TextwithIcone
                   type="text"
                   value={sRoleName}
                   onChange={(e) => { setRoleName(e.target.value); setErrors(prev => ({ ...prev, RoleNameError: undefined })); }}
-                  placeholder={t('createuserrole.enter_role_name')}
+                  placeholder={t('CREATE_USER_ROLE.ENTER_ROLE_NAME')}
                   error={oErrors.RoleNameError}
                   Icon={Shield}
                 />
@@ -251,7 +247,7 @@ const AddUserRole = () => {
           </div>
           <hr className="border-gray-300 my-4 mb-6" />
           {loadingPermissions ? (
-            <div className="text-center py-8">Loading permissions...</div>
+            <div className="text-center py-8">{t('COMMON.LOADING')}</div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {Object.keys(oPermissionsByModule).map((moduleName) => {
@@ -275,7 +271,7 @@ const AddUserRole = () => {
                           }
                           className="mr-2 form-checkbox h-[12px] w-[12px] text-blue-600"
                         />
-                        {t('createuserrole.select_all')}
+                        {t('CREATE_USER_ROLE.SELECT_ALL')}
                       </label>
                     </div>
                     <hr className="border-gray-300 my-4 mt-2 mb-4" />
@@ -305,13 +301,13 @@ const AddUserRole = () => {
               onClick={handleClose}
               type="button"
             >
-              {t('createuserrole.close')}
+              {t('COMMON.CANCEL')}
             </button>
             <button
               className="btn-primary"
               type="submit"
             >
-              {t('createuserrole.save_role')}
+              {t('CREATE_USER_ROLE.SAVE_ROLE')}
             </button>
           </div>
         </form>

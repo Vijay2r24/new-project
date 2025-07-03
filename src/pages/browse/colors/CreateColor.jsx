@@ -12,6 +12,7 @@ import {
 } from "../../../contants/apiRoutes";
 import { showEmsg } from "../../../utils/ShowEmsg";
 import { STATUS } from "../../../contants/constants";
+import BackButton from '../../../components/BackButton';
 
 const CreateColor = () => {
   const { id: colorId } = useParams();
@@ -41,7 +42,7 @@ const CreateColor = () => {
             token
           );
           if (
-            oResponse.data.status === STATUS.SUCCESS_1 &&
+            oResponse.data.status === STATUS.SUCCESS.toUpperCase() &&
             oResponse.data.data
           ) {
             const colorData = oResponse.data.data;
@@ -95,10 +96,10 @@ const CreateColor = () => {
     const newErrors = {};
 
     if (!oFormData.Name.trim()) {
-      newErrors.Name = t("productSetup.createColor.errors.nameRequired");
+      newErrors.Name = t("PRODUCT_SETUP.CREATE_COLOR.ERRORS.NAME_REQUIRED");
     }
     if (!oFormData.HexCode.trim()) {
-      newErrors.HexCode = t("productSetup.createColor.errors.hexCodeRequired");
+      newErrors.HexCode = t("PRODUCT_SETUP.CREATE_COLOR.ERRORS.HEX_CODE_REQUIRED");
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -131,65 +132,58 @@ const CreateColor = () => {
         oResponse = await apiPost(createColour, payload, token);
       }
 
-      if (oResponse.data.status === STATUS.SUCCESS_1) {
+      if (oResponse.data.status === STATUS.SUCCESS.toUpperCase()) {
         showEmsg(
-          oResponse.data.message || t("productSetup.createColor.success"),
-          "success"
+          oResponse.data.message || t("COMMON.SUCCESS"),
+          STATUS.SUCCESS
         );
         navigate("/browse/colors", { state: { fromColorEdit: true } });
       } else {
         showEmsg(
-          oResponse.data.message || t("productSetup.createColor.unknownError"),
-          "error"
+          oResponse.data.message || t("COMMON.UNKNOWN_ERROR"),
+          STATUS.ERROR
         );
       }
     } catch (err) {
-      showEmsg(t("productSetup.createColor.unexpectedError"), "error");
+      showEmsg(t("COMMON.UNEXPECTED_ERROR"), STATUS.ERROR);
     }
   };
 
   return (
     <div>
       <div className="flex items-center mb-6">
-        <button
-          onClick={() =>
-            navigate("/browse", { state: { fromColorEdit: true } })
-          }
-          className="mr-4 p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-all duration-200"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
+        <BackButton onClick={() => navigate('/browse', { state: { fromColorEdit: true } })} />
         <h2 className="text-xl font-bold text-gray-900">
           {isEditing
-            ? t("productSetup.createColor.editTitle")
-            : t("productSetup.createColor.createTitle")}
+            ? t("PRODUCT_SETUP.CREATE_COLOR.EDIT_TITLE")
+            : t("PRODUCT_SETUP.CREATE_COLOR.CREATE_TITLE")}
         </h2>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex flex-col md:flex-row md:space-x-4">
           <div className="w-full md:w-1/2">
             <TextInputWithIcon
-              label={t("productSetup.createColor.nameLabel")}
+              label={t("PRODUCT_SETUP.CREATE_COLOR.NAME_LABEL")}
               id="Name"
               name="Name"
               value={oFormData.Name}
               onChange={handleInputChange}
-              placeholder={t("productSetup.createColor.namePlaceholder")}
+              placeholder={t("PRODUCT_SETUP.CREATE_COLOR.NAME_PLACEHOLDER")}
               error={
                 oErrors.Name &&
-                t("productSetup.createColor.errors.nameRequired")
+                t("PRODUCT_SETUP.CREATE_COLOR.ERRORS.NAME_REQUIRED")
               }
               Icon={Tag}
             />
           </div>
           <div className="w-full md:w-1/2 mt-4 md:mt-0">
             <TextInputWithIcon
-              label={t("productSetup.createColor.hexCodeLabel")}
+              label={t("PRODUCT_SETUP.CREATE_COLOR.HEX_CODE_LABEL")}
               id="HexCode"
               name="HexCode"
               value={oFormData.HexCode}
               onChange={handleInputChange}
-              placeholder={t("productSetup.createColor.hexCodePlaceholder")}
+              placeholder={t("PRODUCT_SETUP.CREATE_COLOR.HEX_CODE_PLACEHOLDER")}
               error={oErrors.HexCode}
               Icon={Palette}
               inputSlot={
@@ -209,14 +203,14 @@ const CreateColor = () => {
         <div className="flex flex-col md:flex-row md:space-x-4">
           <div className="w-full md:w-1/2">
             <SelectWithIcon
-              label={t("productSetup.createColor.statusLabel")}
+              label={t("PRODUCT_SETUP.CREATE_COLOR.STATUS_LABEL")}
               id="IsActive"
               name="IsActive"
               value={oFormData.IsActive}
               onChange={handleInputChange}
               options={[
-                { value: true, label: t("common.active") },
-                { value: false, label: t("common.inactive") },
+                { value: true, label: t("COMMON.ACTIVE") },
+                { value: false, label: t("COMMON.INACTIVE") },
               ]}
               Icon={Tag}
               error={oErrors.IsActive}
@@ -243,12 +237,12 @@ const CreateColor = () => {
             }
             className="btn-cancel"
           >
-            {t("productSetup.createColor.cancelButton")}
+            {t("COMMON.CANCEL")}
           </button>
           <button type="submit" className="btn-primary">
             {isEditing
-              ? t("common.saveButton")
-              : t("productSetup.createColor.createButton")}
+              ? t("COMMON.SAVE_BUTTON")
+              : t("PRODUCT_SETUP.CREATE_COLOR.CREATE_BUTTON")}
           </button>
         </div>
       </form>

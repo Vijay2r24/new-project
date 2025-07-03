@@ -24,59 +24,59 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
 
   const aNavigation = useMemo(() => [
     { 
-      name: t('sidebar.Dashboard'), 
+      name: t('SIDEBAR.DASHBOARD'), 
       href: '/dashboard', 
       icon: LayoutDashboard,
       section: 'Dashbord',
     },
     { 
-      name: t('sidebar.Orders'), 
+      name: t('SIDEBAR.ORDERS'), 
       href: '/orders', 
       icon: ShoppingCart 
     },
     {
-      name: t('sidebar.ProductManagement'),
+      name: t('SIDEBAR.PRODUCT_MANAGEMENT'),
       href: '#',
       icon: Package,
       section: 'Product Management',
       subItems: [
-        { name: t('sidebar.ProductSetup'), href: '/browse', icon: Settings },
-        { name: t('sidebar.Products'), href: '/productList', icon: Package, relatedPaths: ['/Addproduct'] },
+        { name: t('SIDEBAR.PRODUCT_SETUP'), href: '/browse', icon: Settings },
+        { name: t('SIDEBAR.PRODUCTS'), href: '/productList', icon: Package, relatedPaths: ['/Addproduct'] },
       ]
     },
     { 
-      name: t('sidebar.Stores'), 
+      name: t('SIDEBAR.STORES'), 
       href: '/stores', 
       icon: Store,
       relatedPaths: ['/add-store', '/editStore']
     },
     {
-      name: t('sidebar.UserManagement'),
+      name: t('SIDEBAR.USER_MANAGEMENT'),
       href: '#',
       icon: Users,
       section: 'User Management',
       subItems: [
-        { name: t('sidebar.Users'), href: '/users', icon: Users,  relatedPaths: ['/editUser', '/add-user'] },
-        { name: t('sidebar.Roles'), href: '/userRoles', icon: Shield, relatedPaths: ['/addUserRole'] },
+        { name: t('SIDEBAR.USERS'), href: '/users', icon: Users,  relatedPaths: ['/editUser', '/add-user'] },
+        { name: t('SIDEBAR.ROLES'), href: '/userRoles', icon: Shield, relatedPaths: ['/addUserRole'] },
       ]
     },
     {
-      name: t('sidebar.ContentManagement'),
+      name: t('SIDEBAR.CONTENT_MANAGEMENT'),
       href: '#',
       icon: FileText,
       section: 'Content Management',
       subItems: [
-        { name: t('sidebar.Banners'), href: '/banners', icon: Image, relatedPaths: ['/banners-create'] },
-        { name: t('sidebar.Notifications'), href: '/notifications', icon: Bell },
+        { name: t('SIDEBAR.BANNERS'), href: '/banners', icon: Image, relatedPaths: ['/banners-create'] },
+        { name: t('SIDEBAR.NOTIFICATIONS'), href: '/notifications', icon: Bell },
       ]
     },
     {
-      name: t('sidebar.Settings'),
+      name: t('SIDEBAR.SETTINGS'),
       href: '#',
       icon: Settings,
       section: 'Settings',
       subItems: [
-        { name: t('sidebar.Pages'), href: '/pages', icon: FileText },
+        { name: t('SIDEBAR.PAGES'), href: '/pages', icon: FileText },
       ]
     },
   ], [t]);
@@ -129,7 +129,7 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
             <div className={`absolute top-[48px] bottom-2 left-6 w-px  ${isSectionActive ? 'bg-custom-bg' : 'bg-gray-400'} vertical-connector-line`}></div>
           )}
           <button
-            className={`flex peer relative w-full items-center py-4 px-4 text-sm font-medium leading-none outline-none transition-all duration-100 ease-in-out focus:outline-none border-0 m-0 appearance-none ${isSectionActive ? 'text-gray-900 font-bold' : 'text-gray-600 hover:text-custom-bg'} ${isSectionActive ? 'border-l-4 border-custom-bg' : ''}`}
+            className={`flex peer relative w-full items-center py-4 px-4 text-sm font-medium leading-none outline-none transition-all duration-100 ease-in-out focus:outline-none border-0 m-0 appearance-none ${isSectionActive ? 'text-gray-900 font-bold' : 'text-caption hover:text-custom-bg'} ${isSectionActive ? 'border-l-4 border-custom-bg' : ''}`}
           >
             <span className={`h-full flex items-center justify-center ${isSectionActive ? 'text-custom-bg' : ''} mr-4 w-5`}>
               <Icon className="h-5 w-5 align-middle" />
@@ -148,7 +148,7 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
                     <Link
                       key={subItem.name}
                       to={subItem.href}
-                      className={`flex items-center px-4 py-2 text-sm ${isSubActive ? 'bg-gray-100 text-gray-900 font-bold' : 'text-gray-600 hover:bg-gray-50 hover:text-custom-bg'}`}
+                      className={`flex items-center px-4 py-2 text-sm ${isSubActive ? 'bg-gray-100 text-gray-900 font-bold' : 'text-caption hover:bg-gray-50 hover:text-custom-bg'}`}
                       onClick={isMobileOpen ? onClose : undefined}
                     >
                       <SubIcon className="mr-3 h-4 w-4" />
@@ -182,7 +182,7 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
                       to={subItem.href}
                       className={`flex m-2 cursor-pointer py-2 pl-10 text-sm transition-all duration-100 ease-in-out ${isSubActive
                           ? 'text-custom-bg font-bold'
-                          : 'text-gray-600  hover:text-custom-bg'
+                          : 'text-caption  hover:text-custom-bg'
                         }`}
                       onClick={isMobileOpen ? onClose : undefined}
                     >
@@ -209,7 +209,7 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
       <Link
         key={item.name}
         to={item.href}
-        className={`flex cursor-pointer items-center w-full py-4 px-4 text-sm font-medium leading-none outline-none transition-all duration-100 ease-in-out focus:outline-none border-0 m-0 ${isActive ? 'text-gray-900 font-bold' : 'text-gray-600 hover:text-custom-bg'} ${isActive ? 'border-l-4 border-custom-bg' : ''}`}
+        className={`flex cursor-pointer items-center w-full py-4 px-4 text-sm font-medium leading-none outline-none transition-all duration-100 ease-in-out focus:outline-none border-0 m-0 ${isActive ? 'text-gray-900 font-bold' : 'text-caption hover:text-custom-bg'} ${isActive ? 'border-l-4 border-custom-bg' : ''}`}
         onClick={isMobileOpen ? onClose : undefined}
       >
         <span className={`h-full flex items-center justify-center mr-4 w-5 ${isActive ? 'text-custom-bg' : ''}`}>
@@ -234,7 +234,7 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
             <div className="hidden md:flex items-center justify-end px-4 py-4">
               <button
                 onClick={onToggle}
-                className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 hover:text-custom-bg"
+                className="rounded-lg p-2 text-caption hover:bg-gray-100 hover:text-custom-bg"
               >
                 <AlignLeft className="h-5 w-5" />
               </button>
