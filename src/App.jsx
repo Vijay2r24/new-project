@@ -23,7 +23,7 @@ import CreateCategory from "./pages/browse/categories/CreateCategory";
 import CreateAttributeType from "./pages/browse/attributeTypes/CreateAttributeType";
 import CreateColor from "./pages/browse/colors/CreateColor";
 import CreateAttribute from "./pages/browse/attributes/CreateAttribute";
-import { Toaster } from "react-hot-toast";
+import { toast } from 'react-toastify';
 import { TitleProvider } from "./context/TitleContext";
 import { AllDataProvider } from "./context/AllDataContext";
 
@@ -36,7 +36,7 @@ const App = () => {
     <AllDataProvider>
       <TitleProvider>
         <LocationDataProvider>
-          <Toaster position="top-right" reverseOrder={false} />
+          <toast position="top-right" reverseOrder={false} />
           <Routes>
             <Route path="/" element={<Login />} />
             <Route

@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import { Bell, Search, Menu, Dot } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useTitle } from "../context/TitleContext";
 const aMockNotifications = [
   { id: 1, title: "Order #1234 delivered", time: "2 min ago" },
@@ -9,6 +10,7 @@ const aMockNotifications = [
 ];
 
 const Header = ({ onMenuClick }) => {
+  const { t } = useTranslation();
   const { title, backButton } = useTitle();
   const [bShowNotifications, setShowNotifications] = useState(false);
   const bellRef = useRef();
@@ -90,15 +92,15 @@ const Header = ({ onMenuClick }) => {
               className="fixed right-4 sm:right-6 top-12 w-full max-w-xs sm:w-80 sm:max-w-md rounded-2xl shadow-2xl border border-gray-100 z-50 bg-gradient-to-br from-white via-gray-50 to-indigo-50 animate-fade-in"
               style={{ minWidth: "0" }}
             >
-              {/* Accent bar */}
               <div className="h-1 w-full bg-gradient-to-r from-indigo-400 via-indigo-300 to-indigo-200 rounded-t-2xl" />
               <div className="p-3 sm:p-4 border-b font-semibold text-gray-800 flex items-center gap-2 text-base sm:text-lg">
-                <Bell className="h-5 w-5 text-indigo-500" /> Notifications
+                <Bell className="h-5 w-5 text-indigo-500" />
+                {t("HEADER.NOTIFICATIONS")}
               </div>
               <ul className="max-h-60 sm:max-h-64 overflow-y-auto divide-y divide-gray-100">
                 {aMockNotifications.length === 0 ? (
                   <li className="p-3 sm:p-4 text-gray-500 text-sm">
-                    No notifications
+                    {t("HEADER.NO_NOTIFICATIONS")}
                   </li>
                 ) : (
                   aMockNotifications.map((n) => (
@@ -126,12 +128,11 @@ const Header = ({ onMenuClick }) => {
                   href="/notifications"
                   className="text-indigo-600 text-sm font-medium hover:underline"
                 >
-                  View all
+                  {t("COMMON.VIEW_ALL", "View all")}
                 </a>
               </div>
             </div>
           )}
-          {/* User Profile in Header */}
           <div className="relative flex items-center gap-2 pl-2 sm:pl-3 border-l border-gray-200 ml-2 sm:ml-3">
             <button
               ref={profileRef}
@@ -155,9 +156,7 @@ const Header = ({ onMenuClick }) => {
                 ref={profileDropdownRef}
                 className="absolute right-0 top-10 w-56 rounded-xl shadow-lg border border-gray-100 z-50 bg-white animate-fade-in overflow-hidden"
               >
-                {/* Caret */}
                 <div className="absolute -top-2 right-6 w-4 h-4 bg-white border-t border-l border-gray-100 rotate-45 z-10"></div>
-                {/* Profile Header */}
                 <div className="flex flex-col items-center pt-5 pb-3 px-4">
                   <img
                     className="h-12 w-12 rounded-full border border-gray-200 shadow-sm mb-2"
@@ -173,7 +172,7 @@ const Header = ({ onMenuClick }) => {
                   <button
                     className="w-full flex items-center gap-2 px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 transition font-medium"
                     onClick={() => {
-                      navigate("/profile"); // Replace '/profile' with your actual profile route
+                      navigate("/profile");
                     }}
                   >
                     <svg
@@ -189,12 +188,12 @@ const Header = ({ onMenuClick }) => {
                         d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                       />
                     </svg>
-                    Your Profile
+                    {t("HEADER.YOUR_PROFILE")}
                   </button>
                   <button
                     className="w-full flex items-center gap-2 px-5 py-3 text-sm text-red hover:bg-red-50 transition font-medium"
                     onClick={() => {
-                      setbShowProfileMenu(false); /* handle logout here */
+                      setbShowProfileMenu(false);
                     }}
                   >
                     <svg
@@ -210,7 +209,7 @@ const Header = ({ onMenuClick }) => {
                         d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                       />
                     </svg>
-                    Logout
+                    {t("HEADER.LOGOUT")}
                   </button>
                 </div>
               </div>
