@@ -1,72 +1,46 @@
-import React from 'react';
-import { MoreVertical, Mail, Phone, MapPin, Shield, UserPlus } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { Mail, Phone, MapPin, Shield, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Toolbar from "../components/Toolbar";
-import Pagination from '../components/Pagination';
-import { useTranslation } from 'react-i18next';
-const aMockUsers = [
-  {
-    id: 1,
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '+1 234 567 890',
-    role: 'Admin',
-    status: 'Active',
-    lastActive: '2 hours ago',
-    avatar: 'https://ui-avatars.com/api/?name=John+Doe&background=0D8ABC&color=fff',
-  },
-  {
-    id: 2,
-    name: 'Jane Smith',
-    email: 'jane.smith@example.com',
-    phone: '+1 234 567 891',
-    role: 'Manager',
-    status: 'Active',
-    lastActive: '5 hours ago',
-    avatar: 'https://ui-avatars.com/api/?name=Jane+Smith&background=0D8ABC&color=fff',
-  },
-  {
-    id: 3,
-    name: 'Mike Johnson',
-    email: 'mike.johnson@example.com',
-    phone: '+1 234 567 892',
-    role: 'User',
-    status: 'Inactive',
-    lastActive: '2 days ago',
-    avatar: 'https://ui-avatars.com/api/?name=Mike+Johnson&background=0D8ABC&color=fff',
-  },
-  // Add more mock users as needed
-];
+import Pagination from "../components/Pagination";
+import ActionButtons from "../components/ActionButtons";
+import { useTranslation } from "react-i18next";
+import { apiGet, apiPatch, apiDelete } from "../utils/ApiUtils";
+import {
+  getAllUsers,
+  userActiveStatus,
+  deleteUser,
+} from "../contants/apiRoutes";
+import { useTitle } from "../context/TitleContext";
+import { STATUS } from "../contants/constants";
+import { useRoles } from "../context/AllDataContext";
+import FullscreenErrorPopup from "../components/FullscreenErrorPopup";
+import { showEmsg } from "../utils/ShowEmsg";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import Switch from '../components/Switch';
 
 const Users = () => {
   const navigate = useNavigate();
-  const [sSearchTerm, setSearchTerm] = React.useState('');
+  const [sSearchTerm, setSearchTerm] = useState("");
   const { t } = useTranslation();
-  const [sSelectedRole, setSelectedRole] = React.useState('');
-  const [sSelectedStatus, setSelectedStatus] = React.useState('');
-  const [sViewMode, setViewMode] = React.useState('table'); // 'table' or 'grid'
-  const [nCurrentPage, setCurrentPage] = React.useState(1);
-  const [sFilterStatus, setFilterStatus] = React.useState('all');
-  const [sShowFilterDropdown, setShowFilterDropdown] = React.useState(false);
-  const itemsPerPage = 3;
-  const filteredUsers = aMockUsers.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(sSearchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(sSearchTerm.toLowerCase());
-    const matchesRole = sSelectedRole ? user.role === sSelectedRole : true;
-    const matchesStatus = sSelectedStatus ? user.status === sSelectedStatus : true;
-    return matchesSearch && matchesRole && matchesStatus;
+  const { setTitle } = useTitle();
+  const [sViewMode, setViewMode] = useState("table");
+  const [nCurrentPage, setCurrentPage] = useState(1);
+  const [sFilterStatus, setFilterStatus] = useState("all");
+  const [sShowFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [aUsers, setUsers] = useState([]);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const itemsPerPage = 10;
+
+  const [oFilters, setFilters] = useState({
+    role: "all",
+    status: "all",
   });
-  // Pagination logic
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-  const paginatedUsers = filteredUsers.slice(
-    (nCurrentPage - 1) * itemsPerPage,
-    nCurrentPage * itemsPerPage
-  );
-  const [oFilters, setFilters] = React.useState({
-    role: 'all',
-    status: 'all',
-  });
-  // Handle change for additional filters
+  const roles = useRoles();
   const handleFilterChange = (e, filterName) => {
     setFilters({
       ...oFilters,
@@ -75,25 +49,27 @@ const Users = () => {
   };
   const aAdditionalFilters = [
     {
-      label: 'User Role',
+      label: t('USERS.FILTERS.USER_ROLE'),
       name: 'role',
       value: oFilters.role,
       options: [
-        { value: 'all', label: 'All' },
-        { value: 'admin', label: 'Admin' },
-        { value: 'manager', label: 'Manager' },
-        { value: 'staff', label: 'Staff' },
+        { value: 'all', label: t('COMMON.ALL') },
+        ...(Array.isArray(roles.data)
+          ? roles.data.map((role) => ({
+              value: role.RoleName,
+              label: role.RoleName,
+            }))
+          : []),
       ],
     },
     {
-      label: 'Status',
+      label: t('USERS.FILTERS.STATUS'),
       name: 'status',
       value: oFilters.status,
       options: [
-        { value: 'all', label: 'All' },
-        { value: 'active', label: 'Active' },
-        { value: 'inactive', label: 'Inactive' },
-        { value: 'pending', label: 'Pending' },
+        { value: 'all', label: t('COMMON.ALL') },
+        { value: 'Active', label: t('COMMON.ACTIVE') },
+        { value: 'Inactive', label: t('COMMON.INACTIVE') },
       ],
     },
   ];
@@ -107,29 +83,136 @@ const Users = () => {
   const handlePageClick = (page) => {
     setCurrentPage(page);
   };
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [sSearchTerm, sSelectedRole, sSelectedStatus]);
+
+  const handleEdit = (userId) => {
+    navigate(`/editUser/${userId}`);
+  };
+
+  const [deletePopup, setDeletePopup] = useState({ open: false, userId: null });
+  const handleDelete = (userId) => {
+    setDeletePopup({ open: true, userId });
+  };
+  const handleDeleteConfirm = async () => {
+    const { userId } = deletePopup;
+    try {
+      const token = localStorage.getItem("token");
+      const response = await apiDelete(`${deleteUser}/${userId}`, token);
+      const backendMessage = response.data.MESSAGE;
+
+      showEmsg(backendMessage , STATUS.SUCCESS);
+
+      setUsers((prevUsers) =>
+        prevUsers.filter((user) => user.UserID !== userId)
+      );
+      setDeletePopup({ open: false, userId: null });
+    } catch (err) {
+        const errorMessage = error?.response?.data?.MESSAGE 
+      showEmsg( errorMessage || t('COMMON.API_ERROR') , STATUS.ERROR);
+      setDeletePopup({ open: false, userId: null });
+    }
+  };
+  const handleDeletePopupClose = () => {
+    setDeletePopup({ open: false, userId: null });
+  };
+
+  const [statusPopup, setStatusPopup] = useState({
+    open: false,
+    userId: null,
+    newStatus: null,
+  });
+
+  const handleStatusChange = (userId, isActive) => {
+    setStatusPopup({ open: true, userId, newStatus: !isActive });
+  };
+
+  const handleStatusConfirm = async () => {
+    const { userId, newStatus } = statusPopup;
+    try {
+      const token = localStorage.getItem("token");
+      const payload = { Status: newStatus ? "Active" : "Inactive" };
+      const response = await apiPatch(
+        `${userActiveStatus}/${userId}`,
+        payload,
+        token
+      );
+      const backendMessage = response.data.MESSAGE;
+
+      setUsers((prevUsers) =>
+        prevUsers.map((user) =>
+          user.UserID === userId ? { ...user, Status: payload.Status } : user
+        )
+      );
+
+      showEmsg(backendMessage, STATUS.SUCCESS);
+      setStatusPopup({ open: false, userId: null, newStatus: null });
+    } catch (err) {
+      const errorMessage = error?.response?.data?.MESSAGE 
+      showEmsg(errorMessage || t('COMMON.API_ERROR'),STATUS.ERROR);
+      setStatusPopup({ open: false, userId: null, newStatus: null });
+    }
+  };
+
+  const handleStatusPopupClose = () => {
+    setStatusPopup({ open: false, userId: null, newStatus: null });
+  };
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem("token");
+      const params = {
+        pageNumber: nCurrentPage,
+        pageSize: itemsPerPage,
+        searchText: sSearchTerm || "",
+      };
+      if (oFilters.role !== "all") {
+        params.roleName = oFilters.role;
+      }
+      if (oFilters.status !== "all") {
+        params.status = oFilters.status;
+      }
+      console.log("Fetching users with params:", params);
+      const oResponse = await apiGet(getAllUsers, params, token);
+      console.log("API response:", oResponse.data);
+      if (oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
+        setUsers(oResponse.data.data.data || []);
+        setTotalItems(oResponse.data.data.totalRecords || 0);
+        setTotalPages(oResponse.data.data.totalPages || 1);
+      } else {
+        setError(oResponse.data.message || t("USERS.FETCH_ERROR"));
+      }
+    } catch (err) {
+      setError(t("USERS.FETCH_ERROR"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, [nCurrentPage, itemsPerPage, sSearchTerm, oFilters.role, oFilters.status]);
+
+  useEffect(() => {
+    setTitle(t("USERS.TITLE"));
+  }, [setTitle, t]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen bg-gray-50">
-      {/* Header */}
+      <ToastContainer />
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold text-gray-900">{t('users.title')}</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              {t('users.description')}
+            <p className="mt-1 text-secondary">
+              {t("USERS.DESCRIPTION")}
             </p>
           </div>
           <button onClick={() => navigate("/add-user")} className="btn-primary">
             <UserPlus className="h-5 w-5 mr-2" />
-            {t('users.addUser')}
+            {t("USERS.ADD_USER")}
           </button>
         </div>
       </div>
-
-      {/* Toolbar */}
       <Toolbar
         searchTerm={sSearchTerm}
         setSearchTerm={setSearchTerm}
@@ -141,136 +224,241 @@ const Users = () => {
         setFilterStatus={setFilterStatus}
         additionalFilters={aAdditionalFilters}
         handleFilterChange={handleFilterChange}
-        searchPlaceholder={t('users.searchPlaceholder')}
+        searchPlaceholder={t("USERS.SEARCH_PLACEHOLDER")}
       />
-
-      {/* Users List */}
-      {sViewMode === 'table' ? (
+      {sViewMode === "table" ? (
         <div className="table-container">
           <div className="table-wrapper">
             <table className="table-base">
               <thead className="table-head">
                 <tr>
-                  <th className="table-head-cell">{t('users.table.user')}</th>
-                  <th className="table-head-cell hidden sm:table-cell">{t('users.table.contact')}</th>
-                  <th className="table-head-cell">{t('users.table.role')}</th>
-                  <th className="table-head-cell">{t('users.table.status')}</th>
-                  <th className="table-head-cell hidden sm:table-cell">{t('users.table.lastActive')}</th>
-                  <th className="relative px-4 sm:px-6 py-3">
-                    <span className="sr-only">{t('users.columns.actions')}</span>
+                  <th className="table-head-cell">{t("COMMON.USER")}</th>
+                  <th className="table-head-cell hidden sm:table-cell">
+                    {t("USERS.TABLE.CONTACT")}
+                  </th>
+                  <th className="table-head-cell">{t("COMMON.ROLE")}</th>
+                  <th className="table-head-cell">{t("COMMON.STATUS")}</th>
+                  <th className="table-head-cell hidden sm:table-cell">
+                    {t("COMMON.ACTIONS")}
                   </th>
                 </tr>
               </thead>
               <tbody className="table-body">
-                {paginatedUsers.map((user) => (
-                  <tr key={user.id} className="table-row">
-                    <td className="table-cell">
-                      <div className="flex items-center">
-                        <div className="h-10 w-10 flex-shrink-0">
-                          <img className="h-10 w-10 rounded-full" src={user.avatar} alt="" />
-                        </div>
-                        <div className="ml-4">
-                          <div className="table-cell-text">{user.name}</div>
-                          <div className="table-cell-subtext sm:hidden">{user.email}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="table-cell hidden sm:table-cell">
-                      <div className="flex flex-col space-y-1">
-                        <div className="table-cell-subtext flex items-center">
-                          <Mail className="h-4 w-4 mr-2" />
-                          {user.email}
-                        </div>
-                        <div className="table-cell-subtext flex items-center">
-                          <Phone className="h-4 w-4 mr-2" />
-                          {user.phone}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="table-cell">
-                      <div className="flex items-center">
-                        <Shield className="h-4 w-4 mr-2 text-gray-400" />
-                        <span className="status-badge bg-blue-100 text-blue-800">
-                          {user.role}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="table-cell">
-                      <span className={`status-badge ${user.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                        {t(`users.status.${user.status.toLowerCase()}`)}
-                      </span>
-                    </td>
-                    <td className="table-cell table-cell-subtext hidden sm:table-cell">
-                      {user.lastActive}
-                    </td>
-                    <td className="table-cell text-right font-medium">
-                      <button className="action-button">
-                        <MoreVertical className="h-5 w-5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {paginatedUsers.length === 0 && (
+                {loading ? (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-gray-500">
-                      {t('users.noUsers')}
+                    <td colSpan="6" className="text-center py-4">
+                      {t("COMMON.LOADING")}
                     </td>
                   </tr>
+                ) : error ? (
+                  <tr>
+                    <td colSpan="6" className="text-center py-4 text-red-500">
+                      {t("USERS.FETCH_ERROR")}
+                    </td>
+                  </tr>
+                ) : aUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="text-center py-4">
+                      {t("USERS.NO_USERS_FOUND")}
+                    </td>
+                  </tr>
+                ) : (
+                  aUsers.map((user) => (
+                    <tr key={user.UserID} className="table-row">
+                      <td className="table-cell">
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 flex-shrink-0">
+                            <img
+                              className="h-10 w-10 rounded-full"
+                              src={
+                                user.ProfileImageUrl ||
+                                "https://ui-avatars.com/api/?name=" +
+                                  user.FirstName +
+                                  "+" +
+                                  user.LastName +
+                                  "&background=0D8ABC&color=fff"
+                              }
+                              alt=""
+                            />
+                          </div>
+                          <div className="ml-4">
+                            <div className="table-cell-text">
+                              {user.FirstName} {user.LastName}
+                            </div>
+                            <div className="table-cell-subtext sm:hidden">
+                              {user.Email}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="table-cell hidden sm:table-cell">
+                        <div className="flex flex-col space-y-1">
+                          <div className="table-cell-subtext flex items-center">
+                            <Mail className="h-4 w-4 mr-2" />
+                            {user.Email}
+                          </div>
+                          <div className="table-cell-subtext flex items-center">
+                            <Phone className="h-4 w-4 mr-2" />
+                            {user.PhoneNumber}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="table-cell">
+                        <div className="flex items-center">
+                          <Shield className="h-4 w-4 mr-2 text-gray-400" />
+                          <span className="status-badge bg-blue-100 text-blue-800">
+                            {user.RoleName}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="table-cell">
+                        <Switch checked={user.Status === "Active"} onChange={() => handleStatusChange(user.UserID, user.Status === "Active")} />
+                      </td>
+                      <td className="table-cell text-right">
+                        <ActionButtons
+                          id={user.UserID}
+                          onEdit={handleEdit}
+                          onDelete={handleDelete}
+                        />
+                      </td>
+                    </tr>
+                  ))
                 )}
               </tbody>
             </table>
           </div>
         </div>
       ) : (
-        // Grid View
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {paginatedUsers.map(user => (
-            <div key={user.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col gap-4 hover:shadow-lg transition-shadow duration-200">
-              <div className="flex items-center gap-4">
-                <img className="h-14 w-14 rounded-full object-cover" src={user.avatar} alt={user.name} />
-                <div>
-                  <div className="text-base font-semibold text-gray-900">{user.name}</div>
-                  <div className="text-xs text-gray-500">{user.email}</div>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {loading ? (
+              <div className="col-span-full text-center py-4">
+                  {t("COMMON.LOADING")}
+              </div>
+            ) : error ? (
+              <div className="col-span-full text-center py-4 text-red-500">
+                {t("USERS.FETCH_ERROR")}
+              </div>
+            ) : aUsers.length === 0 ? (
+              <div className="col-span-full text-center py-4">
+                {t("USERS.NO_USERS_FOUND")}
+              </div>
+            ) : (
+              aUsers.map((user) => (
+                <div
+                  key={user.UserID}
+                  className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col gap-4 hover:shadow-xl transition-shadow duration-200"
+                >
+                  <div className="flex items-center gap-4 pb-2 border-b border-gray-100">
+                    <div className="flex-shrink-0 h-12 w-12 bg-gray-100 rounded-full overflow-hidden">
+                      <img
+                        className="h-full w-full object-cover"
+                        src={
+                          user.ProfileImageUrl ||
+                          "https://ui-avatars.com/api/?name=" +
+                            user.FirstName +
+                            "+" +
+                            user.LastName +
+                            "&background=0D8ABC&color=fff"
+                        }
+                        alt=""
+                      />
+                    </div>
+                    <div>
+                      <div className="text-title font-bold text-gray-900">
+                        {user.FirstName} {user.LastName}
+                      </div>
+                      <div className="text-secondary flex items-center mt-1">
+                        <Shield className="h-4 w-4 mr-1" />
+                        {user.RoleName}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 pt-2">
+                    <span
+                      className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        user.Status === "Active"
+                          ? "status-active"
+                          : "status-inactive"
+                      }`}
+                    >
+                      {t(`${user.Status?.toUpperCase()}`)}
+                    </span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-xs text-gray-500 border-t border-gray-100 pt-2">
+                    <div className="flex items-center gap-1">
+                      <Mail className="h-4 w-4" />
+                      <span>{user.Email}</span>
+                    </div>
+                    <div className="flex items-center gap-1 sm:ml-4">
+                      <Phone className="h-4 w-4" />
+                      <span>{user.PhoneNumber}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 mt-2">
+                    <ActionButtons
+                      id={user.UserID}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                    />
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2 mt-2">
-                <Shield className="h-4 w-4 text-gray-400" />
-                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                  {user.role}
-                </span>
-                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                  {t(`users.status.${user.status.toLowerCase()}`)}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-gray-500 mt-2">
-                <Mail className="h-4 w-4" /> {user.email}
-                <Phone className="h-4 w-4 ml-4" /> {user.phone}
-              </div>
-              <div className="flex items-center gap-2 text-xs text-gray-400 mt-2">
-                <MapPin className="h-4 w-4" /> {t('users.lastActive')}: {user.lastActive}
-              </div>
-              <div className="flex items-center justify-end gap-2 mt-2">
-                <button className="text-gray-400 hover:text-gray-500" title={t('users.more')}>
-                  <MoreVertical className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+              ))
+            )}
+          </div>
+        </>
       )}
-
-      {/* Pagination */}
       <Pagination
         currentPage={nCurrentPage}
         totalPages={totalPages}
-        totalItems={filteredUsers.length}
+        totalItems={totalItems}
         itemsPerPage={itemsPerPage}
         handlePrevPage={handlePrevPage}
         handleNextPage={handleNextPage}
         handlePageClick={handlePageClick}
       />
+      {statusPopup.open && (
+        <FullscreenErrorPopup
+          message={`Are you sure you want to set this user as ${
+            statusPopup.newStatus ? "Active" : "Inactive"
+          }?`}
+          onClose={handleStatusPopupClose}
+        >
+          <button
+            onClick={handleStatusConfirm}
+            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
+          >
+              {t('COMMON.CONFIRM')}
+          </button>
+          <button
+            onClick={handleStatusPopupClose}
+            className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 text-sm"
+          >
+              {t('COMMON.CANCEL')}
+          </button>
+        </FullscreenErrorPopup>
+      )}
+      {deletePopup.open && (
+        <FullscreenErrorPopup
+          message={"Are you sure you want to delete this user?"}
+          onClose={handleDeletePopupClose}
+        >
+          <button
+            onClick={handleDeleteConfirm}
+            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+          >
+          {t('COMMON.DELETE')}
+          </button>
+          <button
+            onClick={handleDeletePopupClose}
+            className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 text-sm"
+          >
+           {t('COMMON.CANCEL')}
+          </button>
+        </FullscreenErrorPopup>
+      )}
     </div>
   );
 };
 
-export default Users; 
+export default Users;

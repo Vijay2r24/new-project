@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   TrendingUp,
   ShoppingCart,
@@ -11,8 +11,12 @@ import {
   Clock,
   AlertCircle
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useTitle } from '../../context/TitleContext';
+
 const Dashboard = () => {
+  const navigate = useNavigate();
   const aMetrics = [
     {
       title: 'Total Revenue',
@@ -131,6 +135,7 @@ const Dashboard = () => {
   const [nTopProductsPage, setTopProductsPage] = useState(1);
   const PRODUCTS_PER_PAGE = 3;
   const { t } = useTranslation();
+  const { setTitle } = useTitle();
   const totalTopProductsPages = Math.ceil(aTopProducts.length / PRODUCTS_PER_PAGE);
   const paginatedTopProducts = aTopProducts.slice(
     (nTopProductsPage - 1) * PRODUCTS_PER_PAGE,
@@ -140,13 +145,16 @@ const Dashboard = () => {
   const [nSelectedProduct, setSelectedProduct] = useState(null);
   const [bShowProductModal, setShowProductModal] = useState(false);
 
+  useEffect(() => {
+    setTitle(t('DASHBOARD.TITLE'));
+    return () => setTitle('');
+  }, [setTitle, t]);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2">
-      {/* Product Details Modal */}
       {bShowProductModal && nSelectedProduct && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 animate-fade-in">
           <div className="bg-white rounded-xl shadow-2xl max-w-xs w-full p-0 relative animate-fade-in-up overflow-hidden">
-            {/* Modal Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-indigo-50 via-white to-gray-50">
               <h2 className="text-base font-bold text-gray-900">Product Details</h2>
               <button
@@ -167,7 +175,7 @@ const Dashboard = () => {
                 {nSelectedProduct.name}
               </h3>
               <span className="inline-block mb-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                {nSelectedProduct.category || t('dashboard.productModal.categoryDefault')}
+                {nSelectedProduct.category || t('DASHBOARD.PRODUCT_MODAL.CATEGORY_DEFAULT')}
               </span>
 
               <div className="flex items-center gap-0.5 mb-2">
@@ -186,31 +194,31 @@ const Dashboard = () => {
               <div className="grid grid-cols-2 gap-2 w-full mt-1 mb-1">
                 <div className="flex flex-col items-center">
                   <DollarSign className="h-4 w-4 text-green-500 mb-0.5" />
-                  <span className="text-[11px] text-gray-500">{t('dashboard.productModal.revenue')}</span>
+                  <span className="text-[11px] text-gray-500">{t('DASHBOARD.PRODUCT_MODAL.REVENUE')}</span>
                   <span className="font-semibold text-gray-800 text-sm">{nSelectedProduct.revenue}</span>
                 </div>
 
                 <div className="flex flex-col items-center">
                   <TrendingUp className="h-4 w-4 text-blue-500 mb-0.5" />
-                  <span className="text-[11px] text-gray-500">{t('dashboard.productModal.sales')}</span>
+                  <span className="text-[11px] text-gray-500">{t('DASHBOARD.PRODUCT_MODAL.SALES')}</span>
                   <span className="font-semibold text-gray-800 text-sm">{nSelectedProduct.sales}</span>
                 </div>
 
                 <div className="flex flex-col items-center">
                   <Package className="h-4 w-4 text-gray-500 mb-0.5" />
-                  <span className="text-[11px] text-gray-500">{t('dashboard.productModal.stock')}</span>
-                  <span className={`font-semibold text-sm ${nSelectedProduct.stock < 10 ? 'text-red-600' : 'text-gray-800'}`}>
+                  <span className="text-[11px] text-gray-500">{t('DASHBOARD.PRODUCT_MODAL.STOCK')}</span>
+                  <span className={`font-semibold text-sm ${nSelectedProduct.stock < 10 ? 'text-red' : 'text-gray-800'}`}>
                     {nSelectedProduct.stock}
                   </span>
                 </div>
 
                 <div className="flex flex-col items-center">
                   <Clock className="h-4 w-4 text-indigo-400 mb-0.5" />
-                  <span className="text-[11px] text-gray-500">{t('dashboard.productModal.status')}</span>
+                  <span className="text-[11px] text-gray-500">{t('DASHBOARD.PRODUCT_MODAL.STATUS')}</span>
                   <span className="font-semibold text-sm text-gray-800">
                     {nSelectedProduct.stock < 10
-                      ? t('dashboard.productModal.lowStock')
-                      : t('dashboard.productModal.inStock')}
+                      ? t('DASHBOARD.PRODUCT_MODAL.LOW_STOCK')
+                      : t('DASHBOARD.PRODUCT_MODAL.IN_STOCK')}
                   </span>
                 </div>
               </div>
@@ -220,25 +228,32 @@ const Dashboard = () => {
       )}
       {/* Header */}
       <div className="mb-4">
-        <h1 className="text-2xl font-bold text-gray-900">{t('dashboard.title')}</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          {t('dashboard.description')}
+
+        <p className="mt-1 text-secondary">
+          {t('DASHBOARD.DESCRIPTION')}
         </p>
       </div>
-
-      {/* Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {aMetrics.map((metric, index) => (
           <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">{metric.title}</p>
-                <p className="mt-2 text-3xl font-semibold text-gray-900">{metric.value}</p>
+            <button
+              onClick={() => {
+                if (metric.title === 'Total Orders') {
+                  navigate('/orders');
+                }
+              }}
+              className="w-full text-left"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">{metric.title}</p>
+                  <p className="mt-2 text-3xl font-semibold text-gray-900">{metric.value}</p>
+                </div>
+                <div className={`p-3 rounded-lg ${metric.color}`}>
+                  <metric.icon className="h-6 w-6" />
+                </div>
               </div>
-              <div className={`p-3 rounded-lg ${metric.color}`}>
-                <metric.icon className="h-6 w-6" />
-              </div>
-            </div>
+            </button>
             <div className="mt-4 flex items-center">
               {metric.trend === 'up' ? (
                 <ArrowUp className="h-4 w-4 text-green-500" />
@@ -249,7 +264,7 @@ const Dashboard = () => {
                 }`}>
                 {metric.change}
               </span>
-              <span className="ml-2 text-sm text-gray-500">vs last month</span>
+              <span className="ml-2 text-secondary">vs last month</span>
             </div>
           </div>
         ))}
@@ -262,7 +277,7 @@ const Dashboard = () => {
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col">
             <div className="px-6 py-4 border-b border-gray-100">
               <h2 className="text-lg font-semibold text-gray-900">
-                {t('dashboard.recentOrders.recentOrders')}
+                {t('DASHBOARD.RECENT_ORDERS.RECENT_ORDERS')}
               </h2>
             </div>
             <div className="flex-1 w-full overflow-x-auto">
@@ -270,16 +285,16 @@ const Dashboard = () => {
                 <thead className="bg-gray-50 sticky top-0 z-10">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider align-middle">
-                      {t('dashboard.recentOrders.customer')}
+                      {t('DASHBOARD.RECENT_ORDERS.CUSTOMER')}
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider align-middle">
-                      {t('dashboard.recentOrders.orderId')}
+                      {t('DASHBOARD.RECENT_ORDERS.ORDER_ID')}
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider align-middle">
-                      {t('dashboard.recentOrders.amount')}
+                      {t('DASHBOARD.RECENT_ORDERS.AMOUNT')}
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider align-middle">
-                      {t('dashboard.recentOrders.status')}
+                      {t('DASHBOARD.RECENT_ORDERS.STATUS')}
                     </th>
                   </tr>
                 </thead>
@@ -309,7 +324,7 @@ const Dashboard = () => {
                       ${order.status === 'Pending' ? 'status-pendding' : ''}
                     `}
                         >
-                          {t(`dashboard.statuses.${order.status.toLowerCase()}`)}
+                          {t(`DASHBOARD.STATUSES.${order.status.toUpperCase()}`)}
                         </span>
                       </td>
                     </tr>
@@ -324,7 +339,7 @@ const Dashboard = () => {
         <div>
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col mt-6 md:mt-0">
             <div className="px-6 py-4 border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900">{t('dashboard.topProducts.topProducts')}</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t('DASHBOARD.TOP_PRODUCTS.TOP_PRODUCTS')}</h2>
             </div>
 
             <div className="flex flex-col gap-3 p-4 flex-1">
@@ -359,15 +374,15 @@ const Dashboard = () => {
                       </span>
                       <span className="flex items-center">
                         <TrendingUp className="inline h-4 w-4 mr-1 text-blue-400" />
-                        {t('dashboard.topProducts.sales', { count: product.sales })}
+                        {t('DASHBOARD.TOP_PRODUCTS.SALES', { count: product.sales })}
                       </span>
                       <span className="flex items-center">
                         <Package className="inline h-4 w-4 mr-1 text-gray-400" />
-                        {t('dashboard.topProducts.inStock', { count: product.stock })}
+                        {t('DASHBOARD.TOP_PRODUCTS.IN_STOCK', { count: product.stock })}
                       </span>
                       {product.stock < 10 && (
                         <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">
-                          {t('dashboard.topProducts.lowStock')}
+                          {t('DASHBOARD.TOP_PRODUCTS.LOW_STOCK')}
                         </span>
                       )}
                     </div>
@@ -382,7 +397,7 @@ const Dashboard = () => {
                         setShowProductModal(true);
                       }}
                     >
-                      {t('dashboard.topProducts.view')}
+                      {t('DASHBOARD.TOP_PRODUCTS.VIEW')}
                     </button>
                   </div>
                 </div>
@@ -396,17 +411,17 @@ const Dashboard = () => {
                 onClick={() => setTopProductsPage(p => Math.max(1, p - 1))}
                 disabled={nTopProductsPage === 1}
               >
-                {t('dashboard.topProducts.previous')}
+                {t('DASHBOARD.TOP_PRODUCTS.PREVIOUS')}
               </button>
               <span className="text-xs text-gray-500">
-                {t('dashboard.topProducts.pageInfo', { current: nTopProductsPage, total: totalTopProductsPages })}
+                {t('DASHBOARD.TOP_PRODUCTS.PAGE_INFO', { current: nTopProductsPage, total: totalTopProductsPages })}
               </span>
               <button
                 className="px-3 py-1 rounded bg-gray-200 text-gray-700 text-xs font-medium hover:bg-gray-300 transition disabled:opacity-50"
                 onClick={() => setTopProductsPage(p => Math.min(totalTopProductsPages, p + 1))}
                 disabled={nTopProductsPage === totalTopProductsPages}
               >
-                {t('dashboard.topProducts.next')}
+                {t('DASHBOARD.TOP_PRODUCTS.NEXT')}
               </button>
             </div>
           </div>
@@ -414,7 +429,7 @@ const Dashboard = () => {
           {/* Low Stock Alert */}
           <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-100">
             <div className="px-6 py-4 border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900">{t('dashboard.LowStockAlert.LowStockAlert')}</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t('DASHBOARD.LOW_STOCK_ALERT.LOW_STOCK_ALERT')}</h2>
             </div>
             <div className="divide-y divide-gray-100">
               {aLowStockItems.map((item, index) => (
@@ -424,13 +439,13 @@ const Dashboard = () => {
                       <AlertCircle className="h-5 w-5 text-red-500" />
                       <div className="ml-3">
                         <p className="text-sm font-medium text-gray-900">{item.name}</p>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-secondary">
                           {item.stock} left (min: {item.threshold})
                         </p>
                       </div>
                     </div>
                     <button className="text-sm text-[#5B45E0] hover:text-[#4c39c7]">
-                      {t('dashboard.LowStockAlert.Restock-btn')}
+                      {t('DASHBOARD.LOW_STOCK_ALERT.RESTOCK_BTN')}
                     </button>
                   </div>
                 </div>

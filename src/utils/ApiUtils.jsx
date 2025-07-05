@@ -1,8 +1,5 @@
 import axios from 'axios';
-
-// Your backend base URL
-const BASE_URL = 'https://httpbin.org'; // CHANGE THIS TO YOUR ACTUAL BACKEND URL
-
+import { BASE_URL } from '../contants/apiRoutes';
 // Create axios instance with optional token
 const oCreateApiInstance = (token, isFormData) => {
   return axios.create({
@@ -17,12 +14,12 @@ const oCreateApiInstance = (token, isFormData) => {
 // GET request
 export const apiGet = async (endpoint, oParams = {}, token = null) => {
   const api = oCreateApiInstance(token);
-  const oResponse = await api.get(endpoint, { oParams });
+  const oResponse = await api.get(endpoint, {params : oParams });
   return oResponse;
 };
 
 // POST request
-export const apiPost = async (endpoint, data, token = null, isFormData) => {
+export const apiPost = async (endpoint, data, token = null, isFormData = false) => {
   const api = oCreateApiInstance(token, isFormData);
   const oResponse = await api.post(endpoint, data);
   return oResponse;
@@ -32,6 +29,13 @@ export const apiPost = async (endpoint, data, token = null, isFormData) => {
 export const apiPut = async (endpoint, data, token = null, isFormData = false) => {
   const api = oCreateApiInstance(token, isFormData);
   const oResponse = await api.put(endpoint, data);
+  return oResponse;
+};
+
+// PATCH request
+export const apiPatch = async (endpoint, data, token = null, isFormData = false) => {
+  const api = oCreateApiInstance(token, isFormData);
+  const oResponse = await api.patch(endpoint, data);
   return oResponse;
 };
 

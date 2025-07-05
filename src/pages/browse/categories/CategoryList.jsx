@@ -1,7 +1,12 @@
-import { useState } from 'react';
-import {Edit, Trash} from 'lucide-react';
+import { useState, useEffect } from 'react';
 import Toolbar from '../../../components/Toolbar'
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
+import { useCategories } from '../../../context/AllDataContext';
+import Pagination from '../../../components/Pagination';
+import { showEmsg } from '../../../utils/ShowEmsg';
+import { STATUS } from '../../../contants/constants';
+import Switch from '../../../components/Switch';
 
 const CategoryList = () => {
   const { t } = useTranslation();
@@ -9,102 +14,194 @@ const CategoryList = () => {
   const [sStatusFilter, setStatusFilter] = useState('');
   const [bShowFilters, setShowFilters] = useState(false);
 
-  const [aCategories] = useState([
-    { id: 1, name: 'Electronics', description: 'Electronic devices and accessories', status: 'Active', products: 250 },
-    { id: 2, name: 'Clothing', description: 'Fashion and apparel', status: 'Active', products: 180 },
-    { id: 3, name: 'Books', description: 'Books and publications', status: 'Inactive', products: 90 },
-  ]);
+  const categories = useCategories();
+  const aCategories = categories.data || [];
+  const bLoading = categories.loading;
+  const sError = categories.error;
+  const iTotalItems = categories.total;
+  const toggleCategoryStatus = categories.toggleStatus;
 
-  const filteredCategories = aCategories.filter(category =>
-    (category.name.toLowerCase().includes(sSearchQuery.toLowerCase()) ||
-      category.description.toLowerCase().includes(sSearchQuery.toLowerCase())) &&
-    (sStatusFilter ? category.status === sStatusFilter : true)
-  );
+  const [nCurrentPage, setCurrentPage] = useState(1);
+  const [iItemsPerPage] = useState(10);
+  useEffect(() => {
+    categories.fetch({ pageNumber: nCurrentPage, pageSize: iItemsPerPage, searchText: sSearchQuery });
+  }, [nCurrentPage, iItemsPerPage, sSearchQuery]);
+
+  const handleStatusToggle = async (categoryId, currentIsActive) => {
+    try {
+      const oResponse = await toggleCategoryStatus(categoryId, !currentIsActive);
+      const resData = oResponse;
+
+      if (resData?.status === STATUS.ERROR) {
+        showEmsg(resData?.message, STATUS.ERROR);
+      } else {
+        showEmsg(resData?.message || t('PRODUCT_SETUP.CATEGORIES.STATUS_UPDATE_SUCCESS'), STATUS.SUCCESS);
+      }
+    } catch (error) {
+      const backendMessage = error?.response?.data?.message;
+      showEmsg(backendMessage , STATUS.ERROR);
+    }
+  };
+
+
+  const handlePageClick = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  const handleNextPage = () => {
+    if (nCurrentPage < Math.ceil(iTotalItems / iItemsPerPage)) {
+      setCurrentPage(prev => prev + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (nCurrentPage > 1) {
+      setCurrentPage(prev => prev - 1);
+    }
+  };
+
+  const filteredCategoriesByStatus = aCategories.filter(category => {
+    if (!sStatusFilter) return true;
+    return sStatusFilter === 'Active' ? category.IsActive : !category.IsActive;
+  });
+
+
   return (
     <div>
-      {/* Header with title and Add button */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-medium text-gray-900">{t("productSetup.categories.title")}</h2>
+        <h2 className="text-lg font-medium text-gray-900">{t("PRODUCT_SETUP.CATEGORIES.TITLE")}</h2>
       </div>
-
-      {/* Search and Filter */}
       <div className="mb-6">
-         <Toolbar
+        <Toolbar
           searchTerm={sSearchQuery}
           setSearchTerm={setSearchQuery}
           filterStatus={bShowFilters}
           setFilterStatus={setShowFilters}
-          searchPlaceholder={t("productSetup.categories.searchPlaceholder")}
+          searchPlaceholder={t("PRODUCT_SETUP.CATEGORIES.SEARCH_PLACEHOLDER")}
           showSearch={true}
           showViewToggle={false}
           showFilterButton={true}
         />
+        {bShowFilters && (
+          <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+            <button
+              onClick={() => {
+                setStatusFilter('');
+                setShowFilters(false);
+              }}
+              className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+            >
+              {t('COMMON.ALL')}
+            </button>
+            <button
+              onClick={() => {
+                setStatusFilter('Active');
+                setShowFilters(false);
+              }}
+              className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+            >
+              {t('COMMON.ACTIVE')}
+            </button>
+            <button
+              onClick={() => {
+                setStatusFilter('Inactive');
+                setShowFilters(false);
+              }}
+              className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+            >
+              {t('COMMON.INACTIVE')}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Category Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"> {t("productSetup.categories.table.name")}</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("productSetup.categories.table.description")}</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("productSetup.categories.table.products")}</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("productSetup.categories.table.status")}</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t("productSetup.categories.table.actions")}</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredCategories.map((category) => (
-                <tr key={category.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{category.name}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-500">{category.description}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{category.products}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      category.status === 'Active'
+      {bLoading ? (
+        <div className="text-center py-8 text-gray-500">{t('COMMON.LOADING')}</div>
+      ) : sError ? (
+        <div className="text-center py-8 text-red-500">{t('COMMON.ERROR')}: {sError}</div>
+      ) : (
+        <div className="table-container">
+          <div className="table-wrapper">
+            <table className="table-base">
+              <thead className="table-head">
+                <tr>
+                  <th className="table-head-cell"> {t("PRODUCT_SETUP.CATEGORIES.TABLE.NAME")}</th>
+                  <th className="table-head-cell">{t("PRODUCT_SETUP.CATEGORIES.TABLE.IMAGE")}</th>
+                  <th className="table-head-cell">{t("COMMON.DESCRIPTION")}</th>
+                  <th className="table-head-cell">{t("COMMON.STATUS")}</th>
+                  <th className="table-head-cell">{t("COMMON.UPDATE_STATUS")}</th>
+                </tr>
+              </thead>
+              <tbody className="table-body">
+                {filteredCategoriesByStatus.map((category) => (
+                  <tr
+                    key={category.CategoryID}
+                    className="table-row"
+                  >
+                    <td className="table-cell table-cell-text">
+                      <Link to={`/browse/editcatagiry/${category.CategoryID}`} className="text-blue-600 hover:underline">
+                        {category.CategoryName}
+                      </Link>
+                    </td>
+                    <td className="table-cell">
+                      <div className="h-10 w-10 flex items-center justify-center rounded-full border overflow-hidden">
+                        {category.CategoryImage ? (
+                          <img
+                            src={category.CategoryImage}
+                            alt={category.CategoryName}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-gray-400 text-xs">No Image</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="table-cell table-cell-wrap max-w-[120px] overflow-hidden">
+                      <div className="table-cell-text truncate">{category.CategoryDescription}</div>
+                    </td>
+                    <td className="table-cell">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${category.IsActive
                         ? 'status-active'
                         : 'status-inactive'
-                    }`}>
-                      {category.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                   <div className="flex items-center justify-end space-x-2">
-                        <button onClick={() => handleEdit(store.id)} className="action-button" title={t('common.edit')}>
-                          <Edit className="h-5 w-5" />
-                        </button>
-                        <button onClick={() => handleDelete(store.id)} className="action-button" title={t('common.delete')}>
-                          <Trash className="h-5 w-5" />
-                        </button>
-                      </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                        }`}>
+                        {category.IsActive ? t('COMMON.ACTIVE') : t('COMMON.INACTIVE')}
+                      </span>
+                    </td>
+                    <td className="table-cell" onClick={(e) => e.stopPropagation()}>
+                      <Switch checked={category.IsActive} onChange={() => handleStatusToggle(category.CategoryID, category.IsActive)} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
-
-      {/* Empty State */}
-      {filteredCategories.length === 0 && (
+      )}
+      {!bLoading && !sError && aCategories.length === 0 && (
         <div className="text-center py-12">
-          <div className="text-gray-500">{t("productSetup.categories.empty.message")}</div>
+          <div className="text-gray-500">{t("PRODUCT_SETUP.CATEGORIES.EMPTY.MESSAGE")}</div>
           {sSearchQuery && (
             <button
               onClick={() => setSearchQuery('')}
               className="mt-2 text-[#5B45E0] hover:text-[#4c39c7]"
             >
-             {t("productSetup.categories.empty.clear")}
+              {t("COMMON.CLEAR_SEARCH")}
             </button>
           )}
         </div>
+      )}
+
+      {iTotalItems > 0 && (
+        <Pagination
+          currentPage={nCurrentPage}
+          totalPages={Math.ceil(iTotalItems / iItemsPerPage)}
+          totalItems={iTotalItems}
+          itemsPerPage={iItemsPerPage}
+          handlePrevPage={handlePrevPage}
+          handleNextPage={handleNextPage}
+          handlePageClick={handlePageClick}
+        />
       )}
     </div>
   );

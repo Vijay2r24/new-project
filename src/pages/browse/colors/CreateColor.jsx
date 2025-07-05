@@ -1,42 +1,105 @@
-import { useState } from 'react';
-import { ArrowLeft, Tag, Info, Palette } from 'lucide-react';
-import TextInputWithIcon from '../../../components/TextInputWithIcon';
-import SelectWithIcon from '../../../components/SelectWithIcon';
-import TextAreaWithIcon from '../../../components/TextAreaWithIcon';
-import { useTranslation } from 'react-i18next';
-const CreateColor = ({ setViewMode }) => {
+import { useState, useEffect } from "react";
+import { ArrowLeft, Tag, Info, Palette } from "lucide-react";
+import TextInputWithIcon from "../../../components/TextInputWithIcon";
+import SelectWithIcon from "../../../components/SelectWithIcon";
+import { useTranslation } from "react-i18next";
+import { useParams, useNavigate } from "react-router-dom";
+import { apiPost, apiGet, apiPut } from "../../../utils/ApiUtils";
+import {
+  createColour,
+  getColourById,
+  updateColour,
+} from "../../../contants/apiRoutes";
+import { showEmsg } from "../../../utils/ShowEmsg";
+import { STATUS } from "../../../contants/constants";
+import BackButton from '../../../components/BackButton';
+
+const CreateColor = () => {
+  const { id: colorId } = useParams();
+  const navigate = useNavigate();
+  const isEditing = !!colorId;
   const [oFormData, setFormData] = useState({
-    name: '',
-    hexCode: '#000000',
-    status: 'active',
-    description: ''
+    TenantID: "1",
+    Name: "",
+    HexCode: "#000000",
+    IsActive: true,
+    RgbCode: "",
+    CreatedBy: "Admin",
+    UpdatedBy: "Admin",
   });
 
   const [oErrors, setErrors] = useState({});
   const { t } = useTranslation();
+
+  useEffect(() => {
+    if (isEditing && colorId) {
+      const fetchColorDetails = async () => {
+        try {
+          const token = localStorage.getItem("token");
+          const oResponse = await apiGet(
+            `${getColourById}/${colorId}`,
+            {},
+            token
+          );
+          if (
+            oResponse.data.status === STATUS.SUCCESS.toUpperCase() &&
+            oResponse.data.data
+          ) {
+            const colorData = oResponse.data.data;
+            setFormData((prev) => ({
+              ...prev,
+              Name: colorData.Name || "",
+              HexCode: colorData.HexCode || "#000000",
+              IsActive: colorData.IsActive === true,
+              RgbCode: colorData.RgbCode || "",
+              UpdatedBy: "Admin",
+            }));
+          } else {
+          }
+        } catch (err) {}
+      };
+      fetchColorDetails();
+    }
+  }, [colorId, isEditing]);
+
+  const hexToRgb = (hex) => {
+    if (!hex || typeof hex !== "string") return "";
+    const bigint = parseInt(hex.slice(1), 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return `rgb(${r}, ${g}, ${b})`;
+  };
+
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: type === "checkbox" ? checked : value,
     }));
-    if (oErrors[name]) {
-      setErrors(prev => ({
+    if (name === "HexCode") {
+      setFormData((prev) => ({
         ...prev,
-        [name]: ''
+        RgbCode: hexToRgb(value),
+      }));
+    }
+    if (oErrors[name]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: "",
       }));
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
 
-    if (!oFormData.name.trim()) {
-      newErrors.name =  t('productSetup.createColor.errors.nameRequired');
+    if (!oFormData.Name.trim()) {
+      newErrors.Name = t("PRODUCT_SETUP.CREATE_COLOR.ERRORS.NAME_REQUIRED");
     }
-    if (!oFormData.hexCode) {
-      newErrors.hexCode =  t('productSetup.createColor.errors.hexCodeRequired');
+    if (!oFormData.HexCode.trim()) {
+      newErrors.HexCode = t("PRODUCT_SETUP.CREATE_COLOR.ERRORS.HEX_CODE_REQUIRED");
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -44,52 +107,91 @@ const CreateColor = ({ setViewMode }) => {
       return;
     }
 
-    console.log('Form submitted:', oFormData);
+    try {
+      const token = localStorage.getItem("token");
+      let oResponse;
+      let payload;
+
+      if (isEditing) {
+        payload = {
+          Name: oFormData.Name,
+          HexCode: oFormData.HexCode,
+          RgbCode: oFormData.RgbCode,
+          UpdatedBy: oFormData.UpdatedBy,
+        };
+        oResponse = await apiPut(`${updateColour}/${colorId}`, payload, token);
+      } else {
+        payload = {
+          TenantID: oFormData.TenantID,
+          Name: oFormData.Name,
+          HexCode: oFormData.HexCode,
+          IsActive: oFormData.IsActive,
+          RgbCode: oFormData.RgbCode,
+          CreatedBy: oFormData.CreatedBy,
+        };
+        oResponse = await apiPost(createColour, payload, token);
+      }
+
+      if (oResponse.data.status === STATUS.SUCCESS.toUpperCase()) {
+        showEmsg(
+          oResponse.data.message || t("COMMON.SUCCESS"),
+          STATUS.SUCCESS
+        );
+        navigate("/browse/colors", { state: { fromColorEdit: true } });
+      } else {
+        showEmsg(
+          oResponse.data.message || t("COMMON.UNKNOWN_ERROR"),
+          STATUS.ERROR
+        );
+      }
+    } catch (err) {
+      showEmsg(t("COMMON.UNEXPECTED_ERROR"), STATUS.ERROR);
+    }
   };
 
   return (
     <div>
       <div className="flex items-center mb-6">
-        <button
-          onClick={() => setViewMode('list')}
-          className="mr-4 p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-all duration-200"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <h2 className="text-xl font-bold text-gray-900">{t('productSetup.createColor.createTitle')}</h2>
+        <BackButton onClick={() => navigate('/browse', { state: { fromColorEdit: true } })} />
+        <h2 className="text-xl font-bold text-gray-900">
+          {isEditing
+            ? t("PRODUCT_SETUP.CREATE_COLOR.EDIT_TITLE")
+            : t("PRODUCT_SETUP.CREATE_COLOR.CREATE_TITLE")}
+        </h2>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex flex-col md:flex-row md:space-x-4">
-          {/* Color Name */}
           <div className="w-full md:w-1/2">
             <TextInputWithIcon
-              label={t('productSetup.createColor.nameLabel')}
-              id="name"
-              name="name"
-              value={oFormData.name}
+              label={t("PRODUCT_SETUP.CREATE_COLOR.NAME_LABEL")}
+              id="Name"
+              name="Name"
+              value={oFormData.Name}
               onChange={handleInputChange}
-              placeholder={t('productSetup.createColor.namePlaceholder')}
-              error={oErrors.name && t('productSetup.createColor.errors.nameRequired')}
+              placeholder={t("PRODUCT_SETUP.CREATE_COLOR.NAME_PLACEHOLDER")}
+              error={
+                oErrors.Name &&
+                t("PRODUCT_SETUP.CREATE_COLOR.ERRORS.NAME_REQUIRED")
+              }
               Icon={Tag}
             />
           </div>
-          {/* Color Code */}
           <div className="w-full md:w-1/2 mt-4 md:mt-0">
             <TextInputWithIcon
-              label={t('productSetup.createColor.hexCodeLabel')}
-              id="hexCode"
-              name="hexCode"
-              value={oFormData.hexCode}
+              label={t("PRODUCT_SETUP.CREATE_COLOR.HEX_CODE_LABEL")}
+              id="HexCode"
+              name="HexCode"
+              value={oFormData.HexCode}
               onChange={handleInputChange}
-              placeholder={t('productSetup.createColor.hexCodePlaceholder')}
-              error={oErrors.hexCode}
+              placeholder={t("PRODUCT_SETUP.CREATE_COLOR.HEX_CODE_PLACEHOLDER")}
+              error={oErrors.HexCode}
               Icon={Palette}
               inputSlot={
                 <input
                   type="color"
                   id="colorPicker"
-                  name="hexCode"
-                  value={oFormData.hexCode}
+                  name="HexCode"
+                  value={oFormData.HexCode}
                   onChange={handleInputChange}
                   className="h-10 w-10 rounded-lg border border-gray-200 cursor-pointer"
                   style={{ minWidth: 40, minHeight: 40, padding: 0 }}
@@ -100,47 +202,47 @@ const CreateColor = ({ setViewMode }) => {
         </div>
         <div className="flex flex-col md:flex-row md:space-x-4">
           <div className="w-full md:w-1/2">
-            {/* Status */}
             <SelectWithIcon
-              label={t('productSetup.createColor.statusLabel')}
-              id="status"
-              name="status"
-              value={oFormData.status}
+              label={t("PRODUCT_SETUP.CREATE_COLOR.STATUS_LABEL")}
+              id="IsActive"
+              name="IsActive"
+              value={oFormData.IsActive}
               onChange={handleInputChange}
               options={[
-                { value: 'active', label: t('productSetup.createColor.status.active') },
-                { value: 'inactive', label: t('productSetup.createColor.status.inactive') }
+                { value: true, label: t("COMMON.ACTIVE") },
+                { value: false, label: t("COMMON.INACTIVE") },
               ]}
               Icon={Tag}
-              error={oErrors.status}
+              error={oErrors.IsActive}
             />
           </div>
-          {/* Description */}
           <div className="w-full md:w-1/2 mt-4 md:mt-0">
-            <TextAreaWithIcon
-              label={t('productSetup.createColor.descriptionLabel')}
-              name="description"
-              value={oFormData.description}
+            <TextInputWithIcon
+              label="RGB Code"
+              id="RgbCode"
+              name="RgbCode"
+              value={oFormData.RgbCode}
               onChange={handleInputChange}
-              placeholder={t('productSetup.createColor.descriptionPlaceholder')}
-              icon={Info}
+              placeholder="e.g., rgb(255, 0, 0)"
+              error={oErrors.RgbCode}
+              Icon={Info}
             />
           </div>
         </div>
-        {/* Form Actions */}
         <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
           <button
             type="button"
-            onClick={() => setViewMode('list')}
+            onClick={() =>
+              navigate("/browse/colors", { state: { fromColorEdit: true } })
+            }
             className="btn-cancel"
           >
-            {t('productSetup.createColor.createButton')}
+            {t("COMMON.CANCEL")}
           </button>
-          <button
-            type="submit"
-            className="btn-secondry"
-          >
-            {t('productSetup.createColor.cancelButton')}
+          <button type="submit" className="btn-primary">
+            {isEditing
+              ? t("COMMON.SAVE_BUTTON")
+              : t("PRODUCT_SETUP.CREATE_COLOR.CREATE_BUTTON")}
           </button>
         </div>
       </form>
@@ -148,4 +250,4 @@ const CreateColor = ({ setViewMode }) => {
   );
 };
 
-export default CreateColor; 
+export default CreateColor;

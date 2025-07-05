@@ -4,20 +4,15 @@ import { Edit, Trash, MoreVertical } from 'lucide-react';
 const ActionButtons = ({ id, onEdit, onDelete, onMore }) => {
      const { t } = useTranslation();
   return (
-    <div className="flex items-center justify-end gap-2 mt-2">
+    <div className="flex items-center justify-center gap-2 mt-2">
       {onEdit && (
-        <button onClick={() => onEdit(id)} className="action-button" title={t('common.edit')}>
+        <button onClick={() => onEdit(id)} className="action-button" title={t('COMMON.EDIT')}>
           <Edit className="h-5 w-5" />
         </button>
       )}
       {onDelete && (
-        <button onClick={() => onDelete(id)} className="action-button" title={t('common.delete')}>
+        <button onClick={() => onDelete(id)} className="action-button" title={t('COMMON.DELETE')}>
           <Trash className="h-5 w-5" />
-        </button>
-      )}
-      {onMore && (
-        <button onClick={() => onMore(id)} className="action-button" title={t('common.more')}>
-          <MoreVertical className="h-5 w-5" />
         </button>
       )}
     </div>
