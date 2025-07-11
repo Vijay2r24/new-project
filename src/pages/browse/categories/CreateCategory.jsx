@@ -1,18 +1,22 @@
-import { useState, useEffect } from 'react';
-import { ArrowLeft, Tag, Info, CheckCircle, Image, X } from 'lucide-react';
-import TextInputWithIcon from '../../../components/TextInputWithIcon';
-import SelectWithIcon from '../../../components/SelectWithIcon';
-import { useTranslation } from 'react-i18next';
-import TextAreaWithIcon from '../../../components/TextAreaWithIcon';
-import { useParams, useNavigate } from 'react-router-dom';
-import { apiPost, apiGet, apiPut } from '../../../utils/ApiUtils';
-import { createCategory, getCategoryById, updateCategoryById } from '../../../contants/apiRoutes';
-import { useCategories } from '../../../context/AllDataContext';
-import { ToastContainer } from 'react-toastify';
-import { showEmsg } from '../../../utils/ShowEmsg';
-import { STATUS } from '../../../contants/constants';
-import BackButton from '../../../components/BackButton';
-
+import { useState, useEffect } from "react";
+import { Tag, Info, Image, X } from "lucide-react";
+import TextInputWithIcon from "../../../components/TextInputWithIcon";
+import SelectWithIcon from "../../../components/SelectWithIcon";
+import { useTranslation } from "react-i18next";
+import TextAreaWithIcon from "../../../components/TextAreaWithIcon";
+import { useParams, useNavigate } from "react-router-dom";
+import { apiPost, apiGet, apiPut } from "../../../utils/ApiUtils";
+import {
+  CREATE_CATEGORY,
+  GET_CATEGORY_BY_ID,
+  UPDATE_CATEGORY_BY_ID,
+} from "../../../contants/apiRoutes";
+import { useCategories } from "../../../context/AllDataContext";
+import { showEmsg } from "../../../utils/ShowEmsg";
+import { STATUS } from "../../../contants/constants";
+import BackButton from "../../../components/BackButton";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 const CreateCategory = () => {
   const { id: categoryId } = useParams();
   const navigate = useNavigate();
@@ -25,50 +29,74 @@ const CreateCategory = () => {
   const sErrorCategories = categories.error;
 
   const [oFormData, setFormData] = useState({
-    TenantID: '1',
-    CategoryName: '',
+    TenantID: "1",
+    CategoryName: "",
     CategoryImage: null,
-    IsActive: true,
-    CategoryDescription: '',
-    ParentCategoryID: '',
-    CreatedBy: 'Admin',
-    UpdatedBy: 'Admin',
-    Heading: ''
+    Status: "Active",
+    CategoryDescription: "",
+    ParentCategoryId: "",
+    CreatedBy: "Admin",
+    UpdatedBy: "Admin",
+    Heading: "",
   });
 
   const [oErrors, setErrors] = useState({});
   const [sImagePreview, setImagePreview] = useState(null);
-
   useEffect(() => {
     if (isEditing && categoryId && !bLoadingCategories) {
       const fetchCategoryDetails = async () => {
         try {
           const token = localStorage.getItem("token");
-          const oResponse = await apiGet(`${getCategoryById}/${categoryId}`, {}, token);
-          if (oResponse.data.status === STATUS.SUCCESS.toUpperCase() && oResponse.data.Data) {
-            const categoryData = oResponse.data.Data;
-            setFormData(prev => ({
-              ...prev,
-              TenantID: categoryData.TenantID || '1',
-              CategoryName: categoryData.CategoryName || '',
-              CategoryImage: categoryData.CategoryImage || null,
-              IsActive: categoryData.IsActive === true,
-              CategoryDescription: categoryData.CategoryDescription || '',
-              ParentCategoryID: categoryData.ParentCategoryID || '',
-              CreatedBy: categoryData.CreatedBy || 'Admin',
-              UpdatedBy: 'Admin',
-              Heading: categoryData.Heading || ''
-            }));
-            if (categoryData.CategoryImage) {
-              setImagePreview(categoryData.CategoryImage);
+          const oResponse = await apiGet(
+            `${GET_CATEGORY_BY_ID}/${categoryId}`,
+            {},
+            token
+          );
+
+          if (oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
+            if (oResponse.data.MESSAGE) {
+              setErrors((prev) => ({ ...prev, api: oResponse.data.MESSAGE }));
+            }
+
+            if (oResponse.data.data && oResponse.data.data.Data) {
+              const categoryData = oResponse.data.data.Data;
+              setFormData((prev) => ({
+                ...prev,
+                TenantID: categoryData.TenantID || "1",
+                CategoryName: categoryData.CategoryName || "",
+                CategoryImage: categoryData.CategoryImage || null,
+                Status: categoryData.Status || "Active",
+                CategoryDescription: categoryData.CategoryDescription || "",
+                ParentCategoryId: categoryData.ParentCategoryId || "",
+                CreatedBy: categoryData.CreatedBy || "Admin",
+                UpdatedBy: "Admin",
+                Heading: categoryData.Heading || "",
+              }));
+              if (categoryData.CategoryImage) {
+                setImagePreview(categoryData.CategoryImage);
+              }
+            } else {
+              setErrors((prev) => ({
+                ...prev,
+                api: t("PRODUCT_SETUP.CREATE_CATEGORY.UNKNOWN_ERROR"),
+              }));
             }
           } else {
-            showEmsg(t('PRODUCT_SETUP.CREATE_CATEGORY.UNKNOWN_ERROR'), STATUS.ERROR);
-            setErrors(prev => ({ ...prev, api: t('PRODUCT_SETUP.CREATE_CATEGORY.UNKNOWN_ERROR') }));
+            if (oResponse.data.MESSAGE) {
+              setErrors((prev) => ({ ...prev, api: oResponse.data.MESSAGE }));
+            } else {
+              setErrors((prev) => ({
+                ...prev,
+                api: t("PRODUCT_SETUP.CREATE_CATEGORY.UNKNOWN_ERROR"),
+              }));
+            }
           }
         } catch (err) {
-          showEmsg(t('PRODUCT_SETUP.CREATE_CATEGORY.UNEXPECTED_ERROR'), STATUS.ERROR);
-          setErrors(prev => ({ ...prev, api: t('PRODUCT_SETUP.CREATE_CATEGORY.UNEXPECTED_ERROR') }));
+          let errorMsg = t("PRODUCT_SETUP.CREATE_CATEGORY.UNEXPECTED_ERROR");
+          if (err.response && err.response.data && err.response.data.MESSAGE) {
+            errorMsg = err.response.data.MESSAGE;
+          }
+          setErrors((prev) => ({ ...prev, api: errorMsg }));
         }
       };
       fetchCategoryDetails();
@@ -77,14 +105,14 @@ const CreateCategory = () => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
     if (oErrors[name]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: "",
       }));
     }
   };
@@ -93,35 +121,35 @@ const CreateCategory = () => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 10 * 1024 * 1024) {
-        setErrors(prev => ({
+        setErrors((prev) => ({
           ...prev,
-          CategoryImage: t("PRODUCT_SETUP.CREATE_CATEGORY.IMAGE_ERROR")
+          CategoryImage: t("PRODUCT_SETUP.CREATE_CATEGORY.IMAGE_ERROR"),
         }));
         return;
       }
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        CategoryImage: file
+        CategoryImage: file,
       }));
       setImagePreview(URL.createObjectURL(file));
     } else {
-      setFormData(prev => ({ ...prev, CategoryImage: null }));
+      setFormData((prev) => ({ ...prev, CategoryImage: null }));
       setImagePreview(null);
     }
   };
 
   const handleRemoveImage = () => {
-    if (sImagePreview && sImagePreview.startsWith('blob:')) {
+    if (sImagePreview && sImagePreview.startsWith("blob:")) {
       URL.revokeObjectURL(sImagePreview);
     }
-    setFormData(prev => ({ ...prev, CategoryImage: null }));
+    setFormData((prev) => ({ ...prev, CategoryImage: null }));
     setImagePreview(null);
-    setErrors(prev => ({ ...prev, CategoryImage: '' })); 
+    setErrors((prev) => ({ ...prev, CategoryImage: "" }));
   };
 
   useEffect(() => {
     return () => {
-      if (sImagePreview && sImagePreview.startsWith('blob:')) {
+      if (sImagePreview && sImagePreview.startsWith("blob:")) {
         URL.revokeObjectURL(sImagePreview);
       }
     };
@@ -135,25 +163,33 @@ const CreateCategory = () => {
       newErrors.CategoryName = t("PRODUCT_SETUP.CREATE_CATEGORY.NAME_ERROR");
     }
     if (!oFormData.Heading.trim()) {
-      newErrors.Heading = t('PRODUCT_SETUP.CREATE_CATEGORY.HEADING_REQUIRED');
+      newErrors.Heading = t("PRODUCT_SETUP.CREATE_CATEGORY.HEADING_REQUIRED");
     }
     if (!oFormData.CategoryImage && !isEditing) {
-      newErrors.CategoryImage = t("PRODUCT_SETUP.CREATE_CATEGORY.IMAGE_REQUIRED");
+      newErrors.CategoryImage = t(
+        "PRODUCT_SETUP.CREATE_CATEGORY.IMAGE_REQUIRED"
+      );
     }
 
-    if (!oFormData.ParentCategoryID && !isEditing) {
-      newErrors.ParentCategoryID = t("PRODUCT_SETUP.CREATE_CATEGORY.PARENT_CATEGORY_REQUIRED");
+    if (!oFormData.ParentCategoryId && !isEditing) {
+      newErrors.ParentCategoryId = t(
+        "PRODUCT_SETUP.CREATE_CATEGORY.PARENT_CATEGORY_REQUIRED"
+      );
     }
 
     if (oFormData.CategoryDescription.trim().length < 10) {
-      newErrors.CategoryDescription = t("PRODUCT_SETUP.CREATE_CATEGORY.DESCRIPTION_MIN_LENGTH");
+      newErrors.CategoryDescription = t(
+        "PRODUCT_SETUP.CREATE_CATEGORY.DESCRIPTION_MIN_LENGTH"
+      );
     }
     if (oFormData.CategoryDescription.trim().length > 500) {
-      newErrors.CategoryDescription = t("PRODUCT_SETUP.CREATE_CATEGORY.DESCRIPTION_MAX_LENGTH");
+      newErrors.CategoryDescription = t(
+        "PRODUCT_SETUP.CREATE_CATEGORY.DESCRIPTION_MAX_LENGTH"
+      );
     }
 
-    if (typeof oFormData.IsActive !== 'boolean') {
-      newErrors.IsActive = t("PRODUCT_SETUP.CREATE_CATEGORY.STATUS_INVALID");
+    if (!oFormData.Status) {
+      newErrors.Status = t("PRODUCT_SETUP.CREATE_CATEGORY.STATUS_INVALID");
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -162,39 +198,53 @@ const CreateCategory = () => {
     }
 
     const dataToSend = new FormData();
-    dataToSend.append('TenantID', oFormData.TenantID);
-    dataToSend.append('CategoryName', oFormData.CategoryName);
-    dataToSend.append('IsActive', oFormData.IsActive ? 'true' : 'false');
-    dataToSend.append('CategoryDescription', oFormData.CategoryDescription);
-    dataToSend.append('Heading', oFormData.Heading);
-    if (oFormData.ParentCategoryID) {
-      dataToSend.append('ParentCategoryID', oFormData.ParentCategoryID);
+    dataToSend.append("TenantID", oFormData.TenantID);
+    dataToSend.append("CategoryName", oFormData.CategoryName);
+    dataToSend.append("Status", oFormData.Status);
+    dataToSend.append("CategoryDescription", oFormData.CategoryDescription);
+    dataToSend.append("Heading", oFormData.Heading);
+    if (oFormData.ParentCategoryId) {
+      dataToSend.append("ParentCategoryId", oFormData.ParentCategoryId);
     }
-
+    dataToSend.append("UpdatedBy", oFormData.UpdatedBy);
     if (oFormData.CategoryImage) {
-      dataToSend.append('UploadCategoryImages', oFormData.CategoryImage);
-      console.log("UploadCategoryImages",oFormData.CategoryImage)
+      if (Array.isArray(oFormData.CategoryImage)) {
+        oFormData.CategoryImage.forEach((file) => {
+          dataToSend.append("UploadCategoryImages", file);
+        });
+      } else {
+        dataToSend.append("UploadCategoryImages", oFormData.CategoryImage);
+      }
     }
 
     try {
       const token = localStorage.getItem("token");
       let oResponse;
       if (isEditing) {
-        oResponse = await apiPut(`${updateCategoryById}/${categoryId}`, dataToSend, token);
+        oResponse = await apiPut(
+          `${UPDATE_CATEGORY_BY_ID}/${categoryId}`,
+          dataToSend,
+          token,
+          true
+        );
       } else {
-        oResponse = await apiPost(createCategory, dataToSend, token);
+        oResponse = await apiPost(CREATE_CATEGORY, dataToSend, token, true);
       }
 
-      if (oResponse.data.status === STATUS.SUCCESS.toUpperCase()) {
-        showEmsg(oResponse.data.message || t('COMMON.SAVE'), STATUS.SUCCESS);
-        navigate('/browse/categories', { state: { fromCategoryEdit: true } });
+      if (oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
+        showEmsg(oResponse.data.MESSAGE, STATUS.SUCCESS);
       } else {
-        showEmsg(oResponse.data.message || t('PRODUCT_SETUP.CREATE_CATEGORY.UNKNOWN_ERROR'), STATUS.ERROR);
-        setErrors(prev => ({ ...prev, api: oResponse.data.message || t('PRODUCT_SETUP.CREATE_CATEGORY.UNKNOWN_ERROR') }));
+        showEmsg(oResponse.data.MESSAGE, STATUS.WARNING);
+        setErrors((prev) => ({
+          ...prev,
+          api: oResponse.data.MESSAGE,
+        }));
       }
     } catch (err) {
-      showEmsg(t('PRODUCT_SETUP.CREATE_CATEGORY.UNEXPECTED_ERROR'), STATUS.ERROR);
-      setErrors(prev => ({ ...prev, api: t('PRODUCT_SETUP.CREATE_CATEGORY.UNEXPECTED_ERROR') }));
+      console.error(err);
+      const errorMessage =
+        err?.response?.data?.MESSAGE || t("COMMON.API_ERROR");
+      showEmsg(errorMessage, STATUS.ERROR);
     }
   };
 
@@ -202,8 +252,16 @@ const CreateCategory = () => {
     <div className="w-full min-h-screen">
       <ToastContainer />
       <div className="flex items-center mb-6">
-        <BackButton onClick={() => navigate('/browse', { state: { fromCategoryEdit: true } })} />
-        <h2 className="text-xl font-bold text-gray-900">{isEditing ? t("PRODUCT_SETUP.CREATE_CATEGORY.EDIT_TITLE") : t("PRODUCT_SETUP.CREATE_CATEGORY.CREATE_TITLE")}</h2>
+        <BackButton
+          onClick={() =>
+            navigate("/browse", { state: { fromCategoryEdit: true } })
+          }
+        />
+        <h2 className="text-xl font-bold text-gray-900">
+          {isEditing
+            ? t("PRODUCT_SETUP.CREATE_CATEGORY.EDIT_TITLE")
+            : t("PRODUCT_SETUP.CREATE_CATEGORY.CREATE_TITLE")}
+        </h2>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex flex-col md:flex-row md:space-x-4">
@@ -226,7 +284,10 @@ const CreateCategory = () => {
               name="Heading"
               value={oFormData.Heading}
               onChange={handleInputChange}
-              placeholder={t("PRODUCT_SETUP.CREATE_CATEGORY.HEADING_PLACE") || "Enter heading for the category"}
+              placeholder={
+                t("PRODUCT_SETUP.CREATE_CATEGORY.HEADING_PLACE") ||
+                "Enter heading for the category"
+              }
               error={oErrors.Heading}
               Icon={Info}
             />
@@ -236,16 +297,16 @@ const CreateCategory = () => {
           <div className="w-full md:w-1/2">
             <SelectWithIcon
               label={t("PRODUCT_SETUP.CREATE_CATEGORY.PARENT_LABEL")}
-              id="ParentCategoryID"
-              name="ParentCategoryID"
-              value={oFormData.ParentCategoryID}
+              id="ParentCategoryId"
+              name="ParentCategoryId"
+              value={oFormData.ParentCategoryId}
               onChange={handleInputChange}
-              options={aCategories.map(cat => ({
+              options={aCategories.map((cat) => ({
                 value: cat.CategoryID,
-                label: cat.CategoryName
+                label: cat.CategoryName,
               }))}
               loading={bLoadingCategories}
-              error={oErrors.ParentCategoryID || sErrorCategories}
+              error={oErrors.ParentCategoryId || sErrorCategories}
               placeholder={t("PRODUCT_SETUP.CREATE_CATEGORY.SELECT_PARENT")}
               Icon={Tag}
             />
@@ -253,16 +314,16 @@ const CreateCategory = () => {
           <div className="w-full md:w-1/2">
             <SelectWithIcon
               label={t("PRODUCT_SETUP.CREATE_CATEGORY.STATUS_LABEL")}
-              id="IsActive"
-              name="IsActive"
-              value={oFormData.IsActive}
+              id="Status"
+              name="Status"
+              value={oFormData.Status}
               onChange={handleInputChange}
               options={[
-                { value: true, label: t('COMMON.ACTIVE') },
-                { value: false, label: t('COMMON.INACTIVE') }
+                { value: "Active", label: t("COMMON.ACTIVE") },
+                { value: "Inactive", label: t("COMMON.INACTIVE") },
               ]}
               Icon={Tag}
-              error={oErrors.IsActive}
+              error={oErrors.Status}
             />
           </div>
         </div>
@@ -272,7 +333,9 @@ const CreateCategory = () => {
               {t("PRODUCT_SETUP.CREATE_CATEGORY.IMAGE_LABEL")}
             </label>
             <div
-              className={`relative group rounded-xl border-2 ${oErrors.CategoryImage ? 'border-red-300' : 'border-gray-200'} border-dashed transition-all duration-200 hover:border-custom-bg bg-gray-50 hover:bg-gray-50/50`}
+              className={`relative group rounded-xl border-2 ${
+                oErrors.CategoryImage ? "border-red-300" : "border-gray-200"
+              } border-dashed transition-all duration-200 hover:border-custom-bg bg-gray-50 hover:bg-gray-50/50`}
             >
               <div className="p-6">
                 <div className="space-y-3 text-center">
@@ -299,23 +362,20 @@ const CreateCategory = () => {
                     <p className="pl-1">{t("COMMON.DRAG_DROP_TEXT")}</p>
                   </div>
                   {sImagePreview && (
-                    <div className="mt-4 flex justify-center relative group">
-                      <img src={sImagePreview} alt="Category Preview" className="max-h-32 max-w-full rounded-md" />
+                    <div className="mt-4 flex justify-center relative">
+                      <img
+                        src={sImagePreview}
+                        alt="Category Preview"
+                        className="max-h-32 max-w-full rounded-md border border-gray-200 shadow"
+                      />
                       <button
                         type="button"
                         onClick={handleRemoveImage}
-                        className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                        className="absolute -top-3 -right-3 p-1.5 bg-white border border-gray-300 text-gray-600 rounded-full shadow hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors duration-200 z-10"
+                        title="Remove image"
                       >
                         <X className="h-4 w-4" />
                       </button>
-                    </div>
-                  )}
-                  {oFormData.CategoryImage && (
-                    <div className="mt-2 p-2 bg-green-50 rounded-lg border border-green-100 flex items-center justify-center">
-                      <CheckCircle className="h-4 w-4 mr-1.5 text-green-600" />
-                      <p className="text-sm text-green-600 truncate">
-                        {typeof oFormData.CategoryImage === 'string' ? oFormData.CategoryImage.split('/').pop() : oFormData.CategoryImage.name}
-                      </p>
                     </div>
                   )}
                   {oErrors.CategoryImage && (
@@ -334,7 +394,9 @@ const CreateCategory = () => {
               name="CategoryDescription"
               value={oFormData.CategoryDescription}
               onChange={handleInputChange}
-              placeholder={t("PRODUCT_SETUP.CREATE_CATEGORY.DESCRIPTION_PLACEHOLDER")}
+              placeholder={t(
+                "PRODUCT_SETUP.CREATE_CATEGORY.DESCRIPTION_PLACEHOLDER"
+              )}
               icon={Info}
             />
           </div>
@@ -342,16 +404,19 @@ const CreateCategory = () => {
         <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
           <button
             type="button"
-            onClick={() => navigate('/browse/categories', { state: { fromCategoryEdit: true } })}
+            onClick={() =>
+              navigate("/browse", {
+                state: { fromCategoryEdit: true },
+              })
+            }
             className="btn-cancel"
           >
             {t("COMMON.CANCEL")}
           </button>
-          <button
-            type="submit"
-            className="btn-primary"
-          >
-             {isEditing ? t("COMMON.SAVE_BUTTON") : (t("PRODUCT_SETUP.CREATE_CATEGORY.CREATE_BUTTON"))}
+          <button type="submit" className="btn-primary">
+            {isEditing
+              ? t("COMMON.SAVE_BUTTON")
+              : t("PRODUCT_SETUP.CREATE_CATEGORY.CREATE_BUTTON")}
           </button>
         </div>
       </form>
@@ -359,4 +424,4 @@ const CreateCategory = () => {
   );
 };
 
-export default CreateCategory; 
+export default CreateCategory;

@@ -6,31 +6,37 @@ import { Link } from "react-router-dom";
 import { useBrands } from "../../../context/AllDataContext";
 import Pagination from "../../../components/Pagination";
 import { showEmsg } from "../../../utils/ShowEmsg";
-import { STATUS } from "../../../contants/constants";
+import FullscreenErrorPopup from "../../../components/FullscreenErrorPopup";
+import { UPDATE_BRAND_STATUS } from '../../../contants/apiRoutes';
 import Switch from '../../../components/Switch';
 
 const BrandList = () => {
   const [bShowCreate, setShowCreate] = useState(false);
   const [sSearchQuery, setSearchQuery] = useState("");
   const [bShowFilters, setShowFilters] = useState(false);
-  const [sStatusFilter, setStatusFilter] = useState("");
+  const [oFilters, setFilters] = useState({ status: "all" });
   const { t } = useTranslation();
   const brands = useBrands();
   const aBrands = brands.data || [];
   const bLoading = brands.loading;
   const sError = brands.error;
-  const fetchBrands = brands.fetch;
   const iTotalItems = brands.total;
-  const toggleBrandStatus = brands.toggleStatus;
   const [nCurrentPage, setCurrentPage] = useState(1);
   const [iItemsPerPage] = useState(10);
+  const { updateStatusById } = useBrands();
+  const [statusPopup, setStatusPopup] = useState({ open: false, brandId: null, newStatus: null });
+
   useEffect(() => {
-    brands.fetch({
+    const params = {
       pageNumber: nCurrentPage,
       pageSize: iItemsPerPage,
       searchText: sSearchQuery,
-    });
-  }, [nCurrentPage, iItemsPerPage, sSearchQuery]);
+    };
+    if (oFilters.status && oFilters.status !== "all") {
+      params.status = oFilters.status;
+    }
+    brands.fetch(params);
+  }, [nCurrentPage, iItemsPerPage, sSearchQuery, oFilters.status]);
 
   const handlePageClick = (pageNumber) => {
     setCurrentPage(pageNumber);
@@ -48,26 +54,26 @@ const BrandList = () => {
     }
   };
 
-  const handleStatusChange = async (brandId, currentIsActive) => {
-    try {
-      const response = await toggleBrandStatus(brandId, !currentIsActive, {
-        pageNumber: nCurrentPage,
-        pageSize: iItemsPerPage,
-        searchText: sSearchQuery,
-      });
-      if (response.status === STATUS.ERROR) {
-        showEmsg(response.message || t('PRODUCT_SETUP.BRANDS.STATUS_UPDATE_ERROR'), STATUS.ERROR);
-      } else {
-        showEmsg(response.message || t('PRODUCT_SETUP.BRANDS.STATUS_UPDATE_SUCCESS'), STATUS.SUCCESS);
-        fetchBrands({
-          pageNumber: nCurrentPage,
-          pageSize: iItemsPerPage,
-          searchText: sSearchQuery,
-        });
-      }
-    } catch (error) {
-      showEmsg(t('PRODUCT_SETUP.BRANDS.UNEXPECTED_ERROR'),STATUS.ERROR);
-    }
+  const handleStatusChange = (brandId, currentIsActive) => {
+    setStatusPopup({ open: true, brandId, newStatus: !currentIsActive });
+  };
+
+  const handleStatusConfirm = async () => {
+    const { brandId, newStatus } = statusPopup;
+    const result = await updateStatusById(brandId, newStatus, UPDATE_BRAND_STATUS, 'BrandID');
+    showEmsg(result.message, result.status);
+    setStatusPopup({ open: false, brandId: null, newStatus: null });
+  };
+
+  const handleStatusPopupClose = () => {
+    setStatusPopup({ open: false, brandId: null, newStatus: null });
+  };
+
+  const handleFilterChange = (e, filterName) => {
+    setFilters({
+      ...oFilters,
+      [filterName]: e.target.value,
+    });
   };
 
   if (bShowCreate) {
@@ -86,12 +92,29 @@ const BrandList = () => {
         <Toolbar
           searchTerm={sSearchQuery}
           setSearchTerm={setSearchQuery}
-          filterStatus={bShowFilters}
-          setFilterStatus={setShowFilters}
+          showFilterDropdown={bShowFilters}
+          setShowFilterDropdown={setShowFilters}
           searchPlaceholder={t("PRODUCT_SETUP.BRANDS.SEARCH_PLACEHOLDER")}
           showSearch={true}
           showViewToggle={false}
           showFilterButton={true}
+          additionalFilters={
+            bShowFilters
+              ? [
+                  {
+                    label: t("COMMON.STATUS"),
+                    name: "status",
+                    value: oFilters.status,
+                    options: [
+                      { value: "all", label: t("COMMON.ALL") },
+                      { value: "Active", label: t("COMMON.ACTIVE") },
+                      { value: "Inactive", label: t("COMMON.INACTIVE") },
+                    ],
+                  },
+                ]
+              : []
+          }
+          handleFilterChange={bShowFilters ? handleFilterChange : undefined}
         />
       </div>
 
@@ -115,9 +138,7 @@ const BrandList = () => {
                   <th className="table-head-cell">
                     {t("PRODUCT_SETUP.BRANDS.TABLE.LOGO")}
                   </th>
-                  <th className="table-head-cell">
-                    {t("COMMON.STATUS")}
-                  </th>
+                  <th className="table-head-cell">{t("COMMON.STATUS")}</th>
                   <th className="table-head-cell">
                     {t("PRODUCT_SETUP.BRANDS.TABLE.CREATED_AT")}
                   </th>
@@ -138,30 +159,39 @@ const BrandList = () => {
                       </Link>
                     </td>
                     <td className="table-cell">
-                      <div className="h-10 w-10 flex items-center justify-center rounded-full border overflow-hidden">
-                        <img
-                          src={brand.BrandLogo}
-                          alt={brand.BrandName}
-                          className="max-w-[70%] max-h-[70%] object-contain"
-                        />
+                      <div className="h-10 w-10 flex items-center justify-center rounded-full border overflow-hidden bg-white">
+                        {brand.BrandLogo ? (
+                          <img
+                            src={brand.BrandLogo.startsWith('http') ? brand.BrandLogo : `${process.env.REACT_APP_IMAGE_BASE_URL || ''}${brand.BrandLogo}`}
+                            alt={brand.BrandName}
+                           className="w-full h-full object-cover"
+                            onError={e => { e.target.onerror = null; e.target.src = '/no-image.png'; }}
+                          />
+                        ) : (
+                          <span className="text-gray-400 text-xs">No Image</span>
+                        )}
                       </div>
                     </td>
                     <td className="table-cell">
                       <span
                         className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          brand.IsActive ? "status-active" : "status-inactive"
+                          brand.Status === t("COMMON.ACTIVE")
+                            ? "status-active"
+                            : "status-inactive"
                         }`}
                       >
-                        {brand.IsActive
-                          ? t("COMMON.ACTIVE")
-                          : t("COMMON.INACTIVE")}
+                        {brand.Status}
                       </span>
                     </td>
+
                     <td className="table-cell table-cell-text">
                       {new Date(brand.CreatedAt).toLocaleDateString()}
                     </td>
                     <td className="table-cell table-cell-text text-blue-600 hover:underline cursor-pointer">
-                      <Switch checked={brand.IsActive} onChange={() => handleStatusChange(brand.BrandID, brand.IsActive)} />
+                      <Switch
+                        checked={brand.Status === t("COMMON.ACTIVE")}
+                        onChange={() => handleStatusChange(brand.BrandID, brand.Status === t("COMMON.ACTIVE"))}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -194,6 +224,14 @@ const BrandList = () => {
           handlePrevPage={handlePrevPage}
           handleNextPage={handleNextPage}
           handlePageClick={handlePageClick}
+        />
+      )}
+
+      {statusPopup.open && (
+        <FullscreenErrorPopup
+          message={statusPopup.newStatus ? t("PRODUCT_SETUP.BRANDS.CONFIRM_ACTIVATE") : t("PRODUCT_SETUP.BRANDS.CONFIRM_DEACTIVATE")}
+          onClose={handleStatusPopupClose}
+           onConfirm={handleStatusConfirm}
         />
       )}
     </div>

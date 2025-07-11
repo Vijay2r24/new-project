@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Edit, Trash, } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import CreateAttribute from './CreateAttribute';
 import Toolbar from '../../../components/Toolbar';
 import { useTranslation } from 'react-i18next';
@@ -7,17 +6,18 @@ import { Link } from 'react-router-dom';
 import { useAttributes } from '../../../context/AllDataContext';
 import Pagination from '../../../components/Pagination';
 import FullscreenErrorPopup from '../../../components/FullscreenErrorPopup';
-import { STATUS } from '../../../contants/constants';
 import Switch from '../../../components/Switch';
+import { showEmsg } from '../../../utils/ShowEmsg';
+import { UPDATE_ATTRIBUTE_STATUS } from '../../../contants/apiRoutes';
 
 const AttributeList = () => {
   const [sSearchQuery, setSearchQuery] = useState('');
-  const [sStatusFilter, setStatusFilter] = useState('');
+  const [oFilters, setFilters] = useState({ status: "all" });
   const [bShowFilter, setShowFilter] = useState(false);
   const [bShowCreate, setShowCreate] = useState(false);
   const { t } = useTranslation();
 
-  const { data: aAttributes = [], loading: bLoading, error: sError } = useAttributes();
+  const { data: aAttributes = [], loading: bLoading, error: sError, total: iTotalItems, fetch, updateStatusById } = useAttributes();
 
   const [iCurrentPage, setCurrentPage] = useState(1);
   const [iItemsPerPage] = useState(10); 
@@ -25,38 +25,50 @@ const AttributeList = () => {
   const [bShowErrorPopup, setShowErrorPopup] = useState(false);
   const [sErrorMessage, setErrorMessage] = useState('');
 
-const handleStatusChange = async (attributeId, currentIsActive) => {
-  try {
-    if (currentIsActive) {
-      setErrorMessage(t('PRODUCT_SETUP.ATTRIBUTES.STATUS_UPDATE_WARNING'));
-      setShowErrorPopup(true);
-      return; 
+  const [statusPopup, setStatusPopup] = useState({ open: false, attributeId: null, newStatus: null });
+
+  const iTotalPages = Math.ceil(iTotalItems / iItemsPerPage);
+
+  useEffect(() => {
+    const params = {
+      pageNumber: iCurrentPage,
+      pageSize: iItemsPerPage,
+      searchText: sSearchQuery,
+    };
+    if (oFilters.status && oFilters.status !== 'all') {
+      params.status = oFilters.status;
     }
+    fetch(params);
+  }, [iCurrentPage, iItemsPerPage, sSearchQuery, oFilters.status]);
 
-    const response = { status: 'ERROR', message: 'API call for status toggle not implemented yet.' };
+  const handleStatusChange = (attributeId, currentIsActive) => {
+    setStatusPopup({ open: true, attributeId, newStatus: !currentIsActive });
+  };
 
-      if (response.status === STATUS.SUCCESS.toUpperCase()) {
-        setShowErrorPopup(false);
-        setErrorMessage('');
-      } else {
-        setErrorMessage(response.message || t('PRODUCT_SETUP.ATTRIBUTES.STATUS_UPDATE_ERROR'));
-        setShowErrorPopup(true);
-      }
-    } catch (error) {
-      setErrorMessage(t('PRODUCT_SETUP.ATTRIBUTES.STATUS_UPDATE_ERROR'));
-      setShowErrorPopup(true);
+  const handleStatusConfirm = async () => {
+    const { attributeId, newStatus } = statusPopup;
+    try {
+      const result = await updateStatusById(attributeId, newStatus, UPDATE_ATTRIBUTE_STATUS, 'AttributeID');
+      showEmsg(result.message, result.status);
+    } finally {
+      setStatusPopup({ open: false, attributeId: null, newStatus: null });
     }
   };
-  const filteredAttributes = aAttributes.filter(attribute => {
-    return attribute.AttributeName.toLowerCase().includes(sSearchQuery.toLowerCase());
-  });
 
-  const iTotalPages = Math.ceil(filteredAttributes.length / iItemsPerPage);
-  const iIndexOfLastItem = iCurrentPage * iItemsPerPage;
-  const iIndexOfFirstItem = iIndexOfLastItem - iItemsPerPage;
-  const currentItems = filteredAttributes.slice(iIndexOfFirstItem, iIndexOfLastItem);
+  const handleStatusPopupClose = () => {
+    setStatusPopup({ open: false, attributeId: null, newStatus: null });
+  };
 
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  const handleFilterChange = (e, filterName) => {
+    setFilters({
+      ...oFilters,
+      [filterName]: e.target.value,
+    });
+  };
+
+  const handlePageClick = (pageNumber) => setCurrentPage(pageNumber);
+  const handlePrevPage = () => setCurrentPage((prev) => (prev > 1 ? prev - 1 : prev));
+  const handleNextPage = () => setCurrentPage((prev) => (prev < iTotalPages ? prev + 1 : prev));
 
   if (bShowCreate) {
     return <CreateAttribute onBack={() => setShowCreate(false)} />;
@@ -68,50 +80,30 @@ const handleStatusChange = async (attributeId, currentIsActive) => {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-medium text-gray-900">{t('PRODUCT_SETUP.ATTRIBUTES.TITLE')}</h2>
       </div>
-
-      {/* Filters */}
       <div className="mb-6">
-         <Toolbar
+        <Toolbar
           searchTerm={sSearchQuery}
           setSearchTerm={setSearchQuery}
-          filterStatus={bShowFilter}
-          setFilterStatus={setShowFilter}
+          showFilterDropdown={bShowFilter}
+          setShowFilterDropdown={setShowFilter}
           searchPlaceholder={t('PRODUCT_SETUP.ATTRIBUTES.SEARCH_PLACEHOLDER')}
           showSearch={true}
           showViewToggle={false}
           showFilterButton={true}
+          additionalFilters={bShowFilter ? [
+            {
+              label: t('COMMON.STATUS'),
+              name: 'status',
+              value: oFilters.status,
+              options: [
+                { value: 'all', label: t('COMMON.ALL') },
+                { value: 'Active', label: t('COMMON.ACTIVE') },
+                { value: 'Inactive', label: t('COMMON.INACTIVE') },
+              ],
+            },
+          ] : []}
+          handleFilterChange={bShowFilter ? handleFilterChange : undefined}
         />
-          {bShowFilter && (
-            <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-              <button
-                onClick={() => {
-                  setStatusFilter('');
-                  setShowFilter(false);
-                }}
-                className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-              >
-                {t('COMMON.ALL')}
-              </button>
-              <button
-                onClick={() => {
-                  setStatusFilter('Active');
-                  setShowFilter(false);
-                }}
-                className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-              >
-                {t('COMMON.ACTIVE')}
-              </button>
-              <button
-                onClick={() => {
-                  setStatusFilter('Inactive');
-                  setShowFilter(false);
-                }}
-                className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-              >
-                {t('COMMON.INACTIVE')}
-              </button>
-            </div>
-          )}
       </div>
       {/* Table */}
         {bLoading && (
@@ -141,42 +133,40 @@ const handleStatusChange = async (attributeId, currentIsActive) => {
               </tr>
             </thead>
                 <tbody className="table-body">
-                  {currentItems.map((attribute) => (
+                  {aAttributes.map((attribute) => (
                     <tr key={attribute.AttributeID} className="table-row">
                       <td className="table-cell table-cell-text ">
                         <Link to={`/browse/editattribute/${attribute.AttributeID}`} className="text-blue-600 hover:underline">
                           {attribute.AttributeName}
-                    </Link>
-                  </td>
-                      <td className="table-cell table-cell-text">{attribute.Description}</td>
+                        </Link>
+                      </td>
+                      <td className="table-cell table-cell-text">{attribute.AttributeDescription}</td>
                       <td className="table-cell">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${attribute.IsActive
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${attribute.Status === t("COMMON.ACTIVE")
                         ? 'status-active'
                         : 'status-inactive'
                       }`}>
-                          {t(`COMMON.${attribute.IsActive ? 'ACTIVE' : 'INACTIVE'}`)}
-                    </span>
-                  </td>
+                          {t(`COMMON.${attribute.Status === 'Active' ? 'ACTIVE' : 'INACTIVE'}`)}
+                        </span>
+                      </td>
                       <td className="table-cell table-cell-text">
-                    <Switch checked={attribute.IsActive} onChange={() => handleStatusChange(attribute.AttributeID, attribute.IsActive)} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                        <Switch checked={attribute.Status === t("COMMON.ACTIVE")} onChange={() => handleStatusChange(attribute.AttributeID, attribute.Status === t("COMMON.ACTIVE"))} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         )}
-
-      {/* Empty State */}
-        {!bLoading && !sError && filteredAttributes.length === 0 && (
+        {!bLoading && !sError && aAttributes.length === 0 && (
         <div className="text-center py-12">
           <div className="text-gray-500">{t('PRODUCT_SETUP.ATTRIBUTES.EMPTY_MESSAGE')}</div>
-            {(sSearchQuery || sStatusFilter) && (
+            {(sSearchQuery || oFilters.status !== 'all') && (
             <button
               onClick={() => {
                 setSearchQuery('');
-                setStatusFilter('');
+                setFilters({ status: 'all' });
               }}
               className="mt-2 text-[#5B45E0] hover:text-[#4c39c7]"
             >
@@ -185,12 +175,15 @@ const handleStatusChange = async (attributeId, currentIsActive) => {
           )}
         </div>
       )}
-        {!bLoading && !sError && filteredAttributes.length > 0 && (
+        {!bLoading && !sError && iTotalItems > 0 && (
           <Pagination
             itemsPerPage={iItemsPerPage}
-            totalItems={filteredAttributes.length}
-            paginate={paginate}
+            totalItems={iTotalItems}
             currentPage={iCurrentPage}
+            totalPages={iTotalPages}
+            handlePageClick={handlePageClick}
+            handlePrevPage={handlePrevPage}
+            handleNextPage={handleNextPage}
           />
         )}
       </div>
@@ -200,7 +193,13 @@ const handleStatusChange = async (attributeId, currentIsActive) => {
           onClose={() => setShowErrorPopup(false)}
         />
       )}
-
+      {statusPopup.open && (
+        <FullscreenErrorPopup
+          message={statusPopup.newStatus ? t("PRODUCT_SETUP.ATTRIBUTES.CONFIRM_ACTIVATE") : t("PRODUCT_SETUP.ATTRIBUTES.CONFIRM_DEACTIVATE")}
+          onClose={handleStatusPopupClose}
+          onConfirm={handleStatusConfirm}
+        />
+      )}
     </>
   );
 };

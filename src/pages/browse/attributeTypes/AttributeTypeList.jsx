@@ -1,18 +1,18 @@
 import { useState, useEffect } from "react";
-import { Edit, Trash } from "lucide-react";
 import Toolbar from "../../../components/Toolbar";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { useAttributeTypes } from "../../../context/AllDataContext";
 import { showEmsg } from "../../../utils/ShowEmsg";
 import Pagination from "../../../components/Pagination";
-import { STATUS } from "../../../contants/constants";
-import Switch from '../../../components/Switch';
+import FullscreenErrorPopup from "../../../components/FullscreenErrorPopup";
+import Switch from "../../../components/Switch";
+import { UPDATE_ATTRIBUTE_TYPE_STATUS } from "../../../contants/apiRoutes";
 
 const AttributeTypeList = () => {
   const [sSearchQuery, setSearchQuery] = useState("");
   const [bShowFilter, setShowFilter] = useState(false);
-  const [sSelectedStatus, setSelectedStatus] = useState("");
+  const [oFilters, setFilters] = useState({ status: "all" });
   const { t } = useTranslation();
 
   const {
@@ -21,108 +21,107 @@ const AttributeTypeList = () => {
     error: sError,
     total: iTotalItems,
     fetch: fetchAttributeTypes,
-    toggleStatus: toggleAttributeTypeStatus,
+    updateStatusById
   } = useAttributeTypes();
 
   const [iCurrentPage, setCurrentPage] = useState(1);
   const [iItemsPerPage] = useState(10);
+  const [statusPopup, setStatusPopup] = useState({ open: false, attributeTypeId: null, newStatus: null });
 
   useEffect(() => {
-    fetchAttributeTypes({
+    const params = {
       pageNumber: iCurrentPage,
       pageSize: iItemsPerPage,
       searchText: sSearchQuery,
-    });
-  }, [iCurrentPage, iItemsPerPage, sSearchQuery]);
+    };
+    if (oFilters.status && oFilters.status !== "all") {
+      params.status = oFilters.status;
+    }
+    fetchAttributeTypes(params);
+  }, [iCurrentPage, iItemsPerPage, sSearchQuery, oFilters.status]);
 
-  const handleStatusChange = async (attributeTypeId, currentIsActive) => {
-    try {
-      const response = await toggleAttributeTypeStatus(
-        attributeTypeId,
-        !currentIsActive
-      );
-      if (response.status === STATUS.SUCCESS.toUpperCase()) {
-        showEmsg(response.message, "error");
-      }
-    } catch (error) {
-      console.error("Error toggling attribute type status:", error);
-      showEmsg("An unexpected error occurred.", "error");
+  const handleStatusChange = (attributeTypeId, currentIsActive) => {
+    setStatusPopup({ open: true, attributeTypeId, newStatus: !currentIsActive });
+  };
+
+  const handleStatusConfirm = async () => {
+    const { attributeTypeId, newStatus } = statusPopup;
+    const result = await updateStatusById(attributeTypeId, newStatus, UPDATE_ATTRIBUTE_TYPE_STATUS, 'AttributeTypeID');
+    showEmsg(result.message, result.status);
+    setStatusPopup({ open: false, attributeTypeId: null, newStatus: null });
+    
+    const params = {
+      pageNumber: iCurrentPage,
+      pageSize: iItemsPerPage,
+      searchText: sSearchQuery,
+    };
+    if (oFilters.status && oFilters.status !== "all") {
+      params.status = oFilters.status;
+    }
+    fetchAttributeTypes(params);
+  };
+
+  const handleStatusPopupClose = () => {
+    setStatusPopup({ open: false, attributeTypeId: null, newStatus: null });
+  };
+
+  const handleFilterChange = (e, filterName) => {
+    setFilters({
+      ...oFilters,
+      [filterName]: e.target.value,
+    });
+  };
+
+  const iTotalPages = Math.ceil(iTotalItems / iItemsPerPage);
+  const iIndexOfLastItem = iCurrentPage * iItemsPerPage;
+
+  const handlePageClick = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  const handleNextPage = () => {
+    if (iCurrentPage < iTotalPages) {
+      setCurrentPage((prev) => prev + 1);
     }
   };
 
-  const filteredTypes = aAttributeTypes.filter((type) => {
-    const matchesSearch = type.Name.toLowerCase().includes(
-      sSearchQuery.toLowerCase()
-    );
-
-    const matchesStatus = sSelectedStatus
-      ? type.IsActive === (sSelectedStatus === "Active")
-      : true;
-    return matchesSearch && matchesStatus;
-  });
-
-  // Pagination logic
-  const iTotalPages = Math.ceil(iTotalItems / iItemsPerPage);
-  const iIndexOfLastItem = iCurrentPage * iItemsPerPage;
-  const iIndexOfFirstItem = iIndexOfLastItem - iItemsPerPage;
-  const currentItems = aAttributeTypes;
-
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  const handlePrevPage = () => {
+    if (iCurrentPage > 1) {
+      setCurrentPage((prev) => prev - 1);
+    }
+  };
 
   return (
     <div>
-      {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-medium text-gray-900">
           {t("PRODUCT_SETUP.ATTRIBUTE_TYPE.LIST_TITLE")}
         </h2>
       </div>
-
-      {/* Search & Filter */}
       <div className="mb-6">
         <Toolbar
           searchTerm={sSearchQuery}
           setSearchTerm={setSearchQuery}
-          filterStatus={bShowFilter}
-          setFilterStatus={setShowFilter}
-          searchPlaceholder={t(
-            "PRODUCT_SETUP.ATTRIBUTE_TYPE.SEARCH_PLACEHOLDER"
-          )}
+          showFilterDropdown={bShowFilter}
+          setShowFilterDropdown={setShowFilter}
+          searchPlaceholder={t("PRODUCT_SETUP.ATTRIBUTE_TYPE.SEARCH_PLACEHOLDER")}
           showSearch={true}
           showViewToggle={false}
           showFilterButton={true}
+          additionalFilters={bShowFilter ? [
+            {
+              label: t("COMMON.STATUS"),
+              name: "status",
+              value: oFilters.status,
+              options: [
+                { value: 'all', label: t('COMMON.ALL') },
+                { value: 'Active', label: t('COMMON.ACTIVE') },
+                { value: 'Inactive', label: t('COMMON.INACTIVE') },
+              ],
+            },
+          ] : []}
+          handleFilterChange={bShowFilter ? handleFilterChange : undefined}
         />
-        {bShowFilter && (
-          <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-            <button
-              onClick={() => {
-                setSelectedStatus("");
-                setShowFilter(false);
-              }}
-              className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-            >
-              {t("COMMON.ALL")}
-            </button>
-            <button
-              onClick={() => {
-                setSelectedStatus("Active");
-                setShowFilter(false);
-              }}
-              className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-            >
-              {t("COMMON.ACTIVE")}
-            </button>
-            <button
-              onClick={() => {
-                setSelectedStatus("Inactive");
-                setShowFilter(false);
-              }}
-              className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-            >
-              {t("COMMON.INACTIVE")}
-            </button>
-          </div>
-        )}
       </div>
       {bLoading && (
         <div className="text-center py-12 text-gray-500">
@@ -135,8 +134,6 @@ const AttributeTypeList = () => {
           {t("COMMON.ERROR")}: {sError}
         </div>
       )}
-
-      {/* Table */}
       {!bLoading && !sError && (
         <div className="table-container">
           <div className="table-wrapper">
@@ -162,44 +159,47 @@ const AttributeTypeList = () => {
                 </tr>
               </thead>
               <tbody className="table-body">
-                {currentItems.map((type) => (
-                  <tr key={type.AttributeTypeID} className="table-row">
+                {aAttributeTypes.map((type) => (
+                  <tr key={type.attributeTypeID} className="table-row">
                     <td className="table-cell table-cell-text">
                       <Link
-                        to={`/browse/editattributetype/${type.AttributeTypeID}`}
+                        to={`/browse/editattributetype/${type.attributeTypeID}`}
                         className="text-sm font-medium text-blue-600 hover:underline"
                       >
-                        {type.Name}
+                        {type.name}
                       </Link>
                     </td>
                     <td className="table-cell">
-                      <div className="text-secondary">{type.Code}</div>
+                      <div className="text-secondary">{type.code}</div>
                     </td>
 
                     <td className="table-cell">
                       <div className="text-sm text-gray-500">
-                        {type.AttributeTypeDescription}
+                        {type.attributeTypeDescription}
                       </div>
                     </td>
 
-                    <td className="table-cell text-right table-cell-text">
-                      <div className="text-sm text-gray-900 text-right">
-                        {type.AttributeCount}
+                    <td className="table-cell table-cell-text text-center">
+                      <div className="text-sm text-gray-900 text-center">
+                        {type.count}
                       </div>
                     </td>
 
                     <td className="table-cell">
                       <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          type.IsActive ? "status-active" : "status-inactive"
+                        className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          type.status === t("COMMON.ACTIVE") ? 'status-active' : 'status-inactive'
                         }`}
                       >
-                        {type.IsActive ? t("COMMON.ACTIVE") : t("COMMON.INACTIVE")}
+                        {t(`COMMON.${type.status === 'Active' ? 'ACTIVE' : 'INACTIVE'}`)}
                       </span>
                     </td>
 
                     <td className="table-cell table-cell-text">
-                      <Switch checked={type.IsActive} onChange={() => handleStatusChange(type.AttributeTypeID, type.IsActive)} />
+                      <Switch
+                        checked={type.status === t("COMMON.ACTIVE")}
+                        onChange={() => handleStatusChange(type.attributeTypeID, type.status === t("COMMON.ACTIVE"))}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -209,7 +209,6 @@ const AttributeTypeList = () => {
         </div>
       )}
 
-      {/* Empty State */}
       {!bLoading && !sError && aAttributeTypes.length === 0 && (
         <div className="text-center py-12">
           <div className="text-gray-500">
@@ -225,19 +224,23 @@ const AttributeTypeList = () => {
           )}
         </div>
       )}
-
-      {/* Pagination */}
       {iTotalItems > 0 && !bLoading && (
         <Pagination
           currentPage={iCurrentPage}
           totalPages={iTotalPages}
           totalItems={iTotalItems}
           itemsPerPage={iItemsPerPage}
-          handlePageClick={paginate}
-          handlePrevPage={() => setCurrentPage((p) => (p > 1 ? p - 1 : p))}
-          handleNextPage={() =>
-            setCurrentPage((p) => (p < iTotalPages ? p + 1 : p))
-          }
+          handlePrevPage={handlePrevPage}
+          handleNextPage={handleNextPage}
+          handlePageClick={handlePageClick}
+        />
+      )}
+
+      {statusPopup.open && (
+        <FullscreenErrorPopup
+          message={statusPopup.newStatus ? t("PRODUCT_SETUP.ATTRIBUTE_TYPE.CONFIRM_ACTIVATE") : t("PRODUCT_SETUP.ATTRIBUTE_TYPE.CONFIRM_DEACTIVATE")}
+          onClose={handleStatusPopupClose}
+           onConfirm={handleStatusConfirm}
         />
       )}
     </div>

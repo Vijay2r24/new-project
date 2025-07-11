@@ -26,6 +26,8 @@ import CreateAttribute from "./pages/browse/attributes/CreateAttribute";
 import { toast } from 'react-toastify';
 import { TitleProvider } from "./context/TitleContext";
 import { AllDataProvider } from "./context/AllDataContext";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const ProtectedRoute = ({ children }) => {
   return <Layout>{children}</Layout>;
@@ -36,7 +38,7 @@ const App = () => {
     <AllDataProvider>
       <TitleProvider>
         <LocationDataProvider>
-          <toast position="top-right" reverseOrder={false} />
+          <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
           <Routes>
             <Route path="/" element={<Login />} />
             <Route

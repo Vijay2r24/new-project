@@ -6,14 +6,15 @@ import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiPost, apiGet, apiPut } from "../../../utils/ApiUtils";
 import {
-  createColour,
-  getColourById,
-  updateColour,
+  CREATE_COLOUR,
+  GET_COLOUR_BY_ID,
+  UPDATE_COLOUR,
 } from "../../../contants/apiRoutes";
 import { showEmsg } from "../../../utils/ShowEmsg";
 import { STATUS } from "../../../contants/constants";
-import BackButton from '../../../components/BackButton';
-
+import BackButton from "../../../components/BackButton";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 const CreateColor = () => {
   const { id: colorId } = useParams();
   const navigate = useNavigate();
@@ -37,20 +38,21 @@ const CreateColor = () => {
         try {
           const token = localStorage.getItem("token");
           const oResponse = await apiGet(
-            `${getColourById}/${colorId}`,
+            `${GET_COLOUR_BY_ID}/${colorId}`,
             {},
             token
           );
           if (
-            oResponse.data.status === STATUS.SUCCESS.toUpperCase() &&
-            oResponse.data.data
+            oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase() &&
+            oResponse.data.data &&
+            oResponse.data.data.data
           ) {
-            const colorData = oResponse.data.data;
+            const colorData = oResponse.data.data.data;
             setFormData((prev) => ({
               ...prev,
               Name: colorData.Name || "",
               HexCode: colorData.HexCode || "#000000",
-              IsActive: colorData.IsActive === true,
+              IsActive: colorData.Status === "Active",
               RgbCode: colorData.RgbCode || "",
               UpdatedBy: "Admin",
             }));
@@ -99,7 +101,9 @@ const CreateColor = () => {
       newErrors.Name = t("PRODUCT_SETUP.CREATE_COLOR.ERRORS.NAME_REQUIRED");
     }
     if (!oFormData.HexCode.trim()) {
-      newErrors.HexCode = t("PRODUCT_SETUP.CREATE_COLOR.ERRORS.HEX_CODE_REQUIRED");
+      newErrors.HexCode = t(
+        "PRODUCT_SETUP.CREATE_COLOR.ERRORS.HEX_CODE_REQUIRED"
+      );
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -117,9 +121,10 @@ const CreateColor = () => {
           Name: oFormData.Name,
           HexCode: oFormData.HexCode,
           RgbCode: oFormData.RgbCode,
-          UpdatedBy: oFormData.UpdatedBy,
+          Status: oFormData.IsActive ? "Active" : "Inactive",
+          TenantID: 1,
         };
-        oResponse = await apiPut(`${updateColour}/${colorId}`, payload, token);
+        oResponse = await apiPut(`${UPDATE_COLOUR}/${colorId}`, payload, token);
       } else {
         payload = {
           TenantID: oFormData.TenantID,
@@ -129,30 +134,33 @@ const CreateColor = () => {
           RgbCode: oFormData.RgbCode,
           CreatedBy: oFormData.CreatedBy,
         };
-        oResponse = await apiPost(createColour, payload, token);
+        oResponse = await apiPost(CREATE_COLOUR, payload, token);
       }
 
-      if (oResponse.data.status === STATUS.SUCCESS.toUpperCase()) {
-        showEmsg(
-          oResponse.data.message || t("COMMON.SUCCESS"),
-          STATUS.SUCCESS
-        );
-        navigate("/browse/colors", { state: { fromColorEdit: true } });
+      if (oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
+        showEmsg(oResponse.data.MESSAGE, STATUS.SUCCESS);
       } else {
         showEmsg(
-          oResponse.data.message || t("COMMON.UNKNOWN_ERROR"),
-          STATUS.ERROR
+          oResponse.data.MESSAGE,
+          STATUS.WARNING
         );
       }
     } catch (err) {
-      showEmsg(t("COMMON.UNEXPECTED_ERROR"), STATUS.ERROR);
+      const errorMessage =
+        err?.response?.data?.MESSAGE || t("COMMON.API_ERROR");
+      showEmsg(errorMessage, STATUS.ERROR);
     }
   };
 
   return (
     <div>
+      <ToastContainer />
       <div className="flex items-center mb-6">
-        <BackButton onClick={() => navigate('/browse', { state: { fromColorEdit: true } })} />
+        <BackButton
+          onClick={() =>
+            navigate("/browse", { state: { fromColorEdit: true } })
+          }
+        />
         <h2 className="text-xl font-bold text-gray-900">
           {isEditing
             ? t("PRODUCT_SETUP.CREATE_COLOR.EDIT_TITLE")
@@ -233,7 +241,7 @@ const CreateColor = () => {
           <button
             type="button"
             onClick={() =>
-              navigate("/browse/colors", { state: { fromColorEdit: true } })
+              navigate("/browse", { state: { fromColorEdit: true } })
             }
             className="btn-cancel"
           >

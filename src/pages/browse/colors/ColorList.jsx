@@ -1,48 +1,60 @@
 import { useState, useEffect } from 'react';
-import { Edit, Trash} from 'lucide-react';
 import Toolbar from '../../../components/Toolbar';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useColors } from '../../../context/AllDataContext';
 import Pagination from '../../../components/Pagination';
 import { showEmsg } from '../../../utils/ShowEmsg';
-import { STATUS } from '../../../contants/constants';
 import Switch from '../../../components/Switch';
+import FullscreenErrorPopup from '../../../components/FullscreenErrorPopup';
+import { UPDATE_COLOUR_STATUS } from '../../../contants/apiRoutes';
 
 const ColorList = () => {
   const [sSearchQuery, setSearchQuery] = useState('');
-  const [sStatusFilter, setStatusFilter] = useState('');
+  const [oFilters, setFilters] = useState({ status: "all" });
   const [bShowFilters, setShowFilters] = useState(false);
   const { t } = useTranslation();
 
-  const { data: aColors, loading: bLoading, error: sError, total: iTotalItems, fetch: fetchColors, toggleStatus: toggleColorStatus } = useColors();
+  const { data: aColors, loading: bLoading, error: sError, total: iTotalItems, fetch: fetchColors, toggleStatus: toggleColorStatus, updateStatusById } = useColors();
 
-  // Pagination state
   const [nCurrentPage, setCurrentPage] = useState(1);
-  const [iItemsPerPage] = useState(10); // Or a configurable value
+  const [iItemsPerPage] = useState(10); 
+
+  const [statusPopup, setStatusPopup] = useState({ open: false, colorId: null, newStatus: null });
 
   useEffect(() => {
-    fetchColors({ pageNumber: nCurrentPage, pageSize: iItemsPerPage, searchText: sSearchQuery });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nCurrentPage, iItemsPerPage, sSearchQuery]);
-
-  const handleStatusChange = async (colorId, currentIsActive) => {
-    try {
-      const response = await toggleColorStatus(colorId, !currentIsActive);
-      if (response.status === STATUS.ERROR) {
-        showEmsg(response.message || t('COMMON.STATUS_UPDATE_ERROR'), STATUS.ERROR);
-      } else {
-        showEmsg(response.message || t('COMMON.STATUS_UPDATE_SUCCESS'), STATUS.SUCCESS);
-      }
-    } catch (error) {
-      showEmsg(t('COMMON.UNEXPECTED_ERROR'), STATUS.ERROR);
+    const params = {
+      pageNumber: nCurrentPage,
+      pageSize: iItemsPerPage,
+      searchText: sSearchQuery,
+    };
+    if (oFilters.status && oFilters.status !== "all") {
+      params.status = oFilters.status;
     }
+    fetchColors(params);
+  }, [nCurrentPage, iItemsPerPage, sSearchQuery, oFilters.status]);
+
+  const handleStatusChange = (colorId, currentIsActive) => {
+    setStatusPopup({ open: true, colorId, newStatus: !currentIsActive });
   };
 
-  const filteredColorsByStatus = aColors.filter((color) => {
-    const matchesStatus = sStatusFilter ? color.IsActive === (sStatusFilter === 'Active') : true;
-    return matchesStatus;
-  });
+  const handleStatusConfirm = async () => {
+    const { colorId, newStatus } = statusPopup;
+    const result = await updateStatusById(colorId, newStatus, UPDATE_COLOUR_STATUS, 'ColourID');
+    showEmsg(result.message, result.status);
+    setStatusPopup({ open: false, colorId: null, newStatus: null });
+  };
+
+  const handleStatusPopupClose = () => {
+    setStatusPopup({ open: false, colorId: null, newStatus: null });
+  };
+
+  const handleFilterChange = (e, filterName) => {
+    setFilters({
+      ...oFilters,
+      [filterName]: e.target.value,
+    });
+  };
 
   const handlePageClick = (pageNumber) => {
     setCurrentPage(pageNumber);
@@ -70,44 +82,26 @@ const ColorList = () => {
         <Toolbar
           searchTerm={sSearchQuery}
           setSearchTerm={setSearchQuery}
-          filterStatus={bShowFilters}
-          setFilterStatus={setShowFilters}
+          showFilterDropdown={bShowFilters}
+          setShowFilterDropdown={setShowFilters}
           searchPlaceholder={t("PRODUCT_SETUP.COLORS.SEARCH_PLACEHOLDER")}
           showSearch={true}
           showViewToggle={false}
           showFilterButton={true}
+          additionalFilters={bShowFilters ? [
+            {
+              label: t("COMMON.STATUS"),
+              name: "status",
+              value: oFilters.status,
+              options: [
+                { value: "all", label: t("COMMON.ALL") },
+                { value: "Active", label: t("COMMON.ACTIVE") },
+                { value: "Inactive", label: t("COMMON.INACTIVE") },
+              ],
+            },
+          ] : []}
+          handleFilterChange={bShowFilters ? handleFilterChange : undefined}
         />
-        {bShowFilters && (
-          <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-            <button
-              onClick={() => {
-                setStatusFilter('');
-                setShowFilters(false);
-              }}
-              className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-            >
-              {t('COMMON.ALL')}
-            </button>
-            <button
-              onClick={() => {
-                setStatusFilter('Active');
-                setShowFilters(false);
-              }}
-              className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-            >
-              {t('COMMON.ACTIVE')}
-            </button>
-            <button
-              onClick={() => {
-                setStatusFilter('Inactive');
-                setShowFilters(false);
-              }}
-              className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-            >
-              {t('COMMON.INACTIVE')}
-            </button>
-          </div>
-        )}
       </div>
 
       {bLoading ? (
@@ -127,7 +121,7 @@ const ColorList = () => {
                 </tr>
               </thead>
               <tbody className="table-body">
-                {filteredColorsByStatus.map((color) => (
+                {aColors.map((color) => (
                   <tr key={color.ColorID} className="table-row">
                     <td className="table-cell table-cell-text">
                       <div className="flex items-center">
@@ -145,7 +139,7 @@ const ColorList = () => {
                     <td className="table-cell table-cell-text text-secondary">{color.HexCode}</td>
                     <td className="table-cell">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        color.IsActive
+                        color.Status === t("COMMON.ACTIVE")
                           ? 'status-active'
                           : 'status-inactive'
                       }`}>
@@ -153,8 +147,8 @@ const ColorList = () => {
                       </span>
                     </td>
                     <td className="table-cell table-cell-text">
-                      <Switch checked={color.IsActive} onChange={() => handleStatusChange(color.ColorID, color.IsActive)} />
-                    </td>
+                      <Switch checked={color.Status === t("COMMON.ACTIVE")} onChange={() => handleStatusChange(color.ColourID, color.Status === t("COMMON.ACTIVE"))} />
+                    </td> 
                   </tr>
                 ))}
               </tbody>
@@ -166,11 +160,11 @@ const ColorList = () => {
       {iTotalItems === 0 && !bLoading && !sError && (
         <div className="text-center py-12">
           <div className="text-gray-500">{t("PRODUCT_SETUP.COLORS.EMPTY.MESSAGE")}</div>
-          {(sSearchQuery || sStatusFilter) && (
+          {sSearchQuery && (
             <button
               onClick={() => {
-                setSearchQuery('');
-                setStatusFilter('');
+                setSearchQuery("");
+                setFilters({ status: "all" });
               }}
               className="mt-2 text-[#5B45E0] hover:text-[#4c39c7]"
             >
@@ -189,6 +183,14 @@ const ColorList = () => {
           handlePrevPage={handlePrevPage}
           handleNextPage={handleNextPage}
           handlePageClick={handlePageClick}
+        />
+      )}
+
+      {statusPopup.open && (
+        <FullscreenErrorPopup
+          message={statusPopup.newStatus ? t("PRODUCT_SETUP.COLORS.CONFIRM_ACTIVATE") : t("PRODUCT_SETUP.COLORS.CONFIRM_DEACTIVATE")}
+          onClose={handleStatusPopupClose}
+          onConfirm={handleStatusConfirm}
         />
       )}
     </div>

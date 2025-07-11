@@ -157,7 +157,9 @@
       "CLEAR_FILTERS_BTN": "Clear filters",
       "EDIT_TITLE": "Edit Attribute",
       "STATUS_UPDATE_WARNING": "This attribute is used in one or more products. Deactivating it may affect product listings.",
-      "EMPTY_MESSAGE": "No attributes found."
+      "EMPTY_MESSAGE": "No attributes found.",
+      "CONFIRM_ACTIVATE": "Are you sure you want to activate this attribute?",
+      "CONFIRM_DEACTIVATE": "Are you sure you want to deactivate this attribute?"
     },
     "CREATE_ATTRIBUTES": {
       "CREATE_TITLE": "Create Attribute",
@@ -184,7 +186,9 @@
       "DESCRIPTION_PLACEHOLDER": "Enter trait type description",
       "ATTRIBUTES": "Attributes",
       "EMPTY_MESSAGE": "No Trait types found",
-      "EDIT_TITLE": "Edit trait Type"
+      "EDIT_TITLE": "Edit trait Type",
+      "CONFIRM_ACTIVATE": "Are you sure you want to activate this trait type?",
+      "CONFIRM_DEACTIVATE": "Are you sure you want to deactivate this trait type?"
     },
     "CREATE_ATTRIBUTE_TYPE": {
       "CREATE_TITLE": "Create trait Type",
@@ -196,7 +200,8 @@
       "CREATE_BUTTON": "Create trait Type",
       "CODE_REQUIRED": "Code is required",
       "DESCRIPTION_REQUIRED": "Description is required",
-      "FETCH_ERROR": "Failed to fetch attribute type details."
+      "FETCH_ERROR": "Failed to fetch attribute type details.",
+      "NAME_REQUIRED": "Trait type name is required"
     },
     "BRANDS": {
       "HEADING": "Brands",
@@ -212,6 +217,8 @@
         "MESSAGE": "Changing the status of this brand will affect {{count}} associated product(s). Do you wish to proceed?",
         "CONFIRM_BUTTON": "Confirm"
       },
+      "CONFIRM_ACTIVATE": "Are you sure you want to activate this brand?",
+      "CONFIRM_DEACTIVATE": "Are you sure you want to deactivate this brand?",
       "NO_BRANDS_FOUND": "No brands found."
     },
     "CREATE_BRAND": {
@@ -231,7 +238,8 @@
       "CATEGORY_REQUIRED": "Category is required",
       "HEADING_REQUIRED": "Heading is required",
       "BRAND_CODE_REQUIRED": "Brand code is required",
-      "BRAND_LOGO_REQUIRED": "Brand logo is required"
+      "BRAND_LOGO_REQUIRED": "Brand logo is required",
+      "IMAGE_ERROR": "File size should be less than 10MB"
     },
     "CATEGORIES": {
       "TITLE": "Categories",
@@ -247,7 +255,9 @@
         "TITLE": "Confirm Status Change",
         "MESSAGE": "Activating this category will make it visible on the storefront. Do you wish to proceed?",
         "CONFIRM_BUTTON": "Confirm"
-      }
+      },
+      "CONFIRM_ACTIVATE": "Are you sure you want to activate this category?",
+      "CONFIRM_DEACTIVATE": "Are you sure you want to deactivate this category?"
     },
     "CREATE_CATEGORY": {
       "CREATE_TITLE": "Create Category",
@@ -281,7 +291,9 @@
       },
       "EMPTY": {
         "MESSAGE": "No colors found"
-      }
+      },
+      "CONFIRM_ACTIVATE": "Are you sure you want to activate this color?",
+      "CONFIRM_DEACTIVATE": "Are you sure you want to deactivate this color?"
     },
     "CREATE_COLOR": {
       "CREATE_TITLE": "Create Color",
@@ -361,7 +373,9 @@
     "ADD_NEW_PRODUCT": "Add a new product",
     "EDIT_PRODUCT": "Edit an existing product",
     "CREATE_PRODUCT_DESCRIPTION": "Fill in the details below to create a new product for your store.",
-    "EDIT_PRODUCT_DESCRIPTION": "Update the product details below."
+    "EDIT_PRODUCT_DESCRIPTION": "Update the product details below.",
+    "CONFIRM_DELETE_TITLE": "Delete Product?",
+    "CONFIRM_DELETE_MESSAGE": "Are you sure you want to delete this product? This action cannot be undone."
   },
   "PRODUCT_CREATION": {
     "PRODUCT_NAME": "Product Name",
@@ -377,6 +391,7 @@
     "GENDER": "Gender",
     "MALE": "Male",
     "FEMALE": "Female",
+    "UNISEX": "Unisex",
     "OTHER": "Other",
     "CATEGORY_ID": "Category",
     "CATEGORY_ID_PLACEHOLDER": "Select category",
@@ -411,6 +426,7 @@
     "COLOUR_ID_REQUIRED": "Colour is required",
     "ATTRIBUTE_VALUES_REQUIRED": "Attribute values are required",
     "QUANTITY_REQUIRED": "Quantity is required",
+    "STORE_ID_PLACEHOLDER":"Select store",
     "QUANTITY_INVALID": "Quantity must be a non-negative integer",
     "SELLING_PRICE_REQUIRED": "Selling price is required",
     "SELLING_PRICE_INVALID": "Selling price must be a positive number",
@@ -727,6 +743,6 @@
     "ERROR_UPDATING_STATUS": "Failed to update status."
   },
   "FULLSCREEN_ERROR_POPUP": {
-    "TITLE": "Error"
+    "TITLE": "Warning"
   }
 }

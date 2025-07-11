@@ -5,10 +5,15 @@ import Toolbar from '../../components/Toolbar';
 import Pagination from '../../components/Pagination';
 import ActionButtons from '../../components/ActionButtons';
 import { useTranslation } from 'react-i18next';
-import { apiGet } from '../../utils/ApiUtils.jsx';
-import { getProductDetails } from '../../contants/apiRoutes';
+import { apiGet, apiDelete } from '../../utils/ApiUtils.jsx';
+import { GETPRODUCTDETAILS, DELETE_PRODUCT_WITH_IMAGES } from '../../contants/apiRoutes';
 import { useTitle } from '../../context/TitleContext';
 import { STATUS } from '../../contants/constants.jsx';
+import { useCategories, useBrands, useStores } from '../../context/AllDataContext';
+import FullscreenErrorPopup from '../../components/FullscreenErrorPopup';
+import { ToastContainer } from "react-toastify";
+import { showEmsg } from "../../utils/ShowEmsg.jsx";
+import "react-toastify/dist/ReactToastify.css";
 
 const getStatusBadgeClass = (status) => {
   if (status === 'active') return 'status-active';
@@ -20,7 +25,6 @@ const ProductList = () => {
   const [sSearchTerm, setSearchTerm] = useState('');
   const [sViewMode, setViewMode] = useState('table');
   const [nCurrentPage, setCurrentPage] = useState(1);
-  const [sFilterStatus, setFilterStatus] = useState('all');
   const { t } = useTranslation();
   const itemsPerPage = 10; 
   const navigate = useNavigate();
@@ -31,76 +35,185 @@ const ProductList = () => {
   const [nTotalItems, setTotalItems] = useState(0);
   const [nTotalPages, setTotalPages] = useState(0);
   const { setTitle } = useTitle();
+  const [deletePopup, setDeletePopup] = useState({ open: false, productId: null });
+
+  const { data: aCategories, fetch: fetchCategories } = useCategories();
+  const { data: aBrands, fetch: fetchBrands } = useBrands();
+  const { data: aStores, fetch: fetchStores } = useStores();
+
+  const defaultFilters = {
+    category: 'all',
+    brand: 'all',
+    store: 'all',
+    status: 'all',
+    price: [0, 1000],
+  };
+
+  const [oFilters, setFilters] = useState(defaultFilters);
+
+  const handleClearFilters = () => {
+    setFilters(defaultFilters);
+    setCurrentPage(1); // Optionally reset pagination
+  };
 
   const handleEdit = (productId) => {
     navigate(`/Addproduct/${productId}`);
   };
-useEffect(() => {
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const token = localStorage.getItem("token");
-      const params = {
-        pageNumber: nCurrentPage,
-        pageSize: itemsPerPage,
-        searchText: sSearchTerm,
-      };
-      const oResponse = await apiGet(getProductDetails, params, token);
-      const resData = oResponse?.data;
 
-      if (resData?.status === STATUS.SUCCESS.toUpperCase()) {
-        setProducts(resData.data);
-        setTotalItems(resData.totalRecords);
-        setTotalPages(resData.totalPages);
-      } else {
-        setError(resData?.message || t('PRODUCTS.FETCH_ERROR'));
-      }
+  const handleDelete = (productId) => {
+    setDeletePopup({ open: true, productId });
+  };
+
+  const handleDeleteConfirm = async () => {
+    const { productId } = deletePopup;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await apiDelete(`${DELETE_PRODUCT_WITH_IMAGES}/${productId}`, token);
+      const backendMessage = response.data.MESSAGE;
+
+      showEmsg(backendMessage , STATUS.SUCCESS);
+
+      setUsers((prevUsers) =>
+        prevUsers.filter((user) => user.UserID !== userId)
+      );
+      setDeletePopup({ open: false, userId: null });
     } catch (err) {
-      const backendMessage = err?.response?.data?.message;
-      setError(backendMessage || t('PRODUCTS.FETCH_ERROR'));
-    } finally {
-      setLoading(false);
+        const errorMessage = err?.response?.data?.MESSAGE 
+      showEmsg( errorMessage || t('COMMON.API_ERROR') , STATUS.ERROR);
+      setDeletePopup({ open: false, userId: null });
     }
   };
 
-  fetchProducts();
-}, [nCurrentPage, itemsPerPage, sSearchTerm]);
+  const handleDeletePopupClose = () => {
+    setDeletePopup({ open: false, productId: null });
+  };
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const token = localStorage.getItem("token");
+        const params = {
+          pageNumber: nCurrentPage,
+          pageSize: itemsPerPage,
+          searchText: sSearchTerm,
+        };
+        if (oFilters.status && oFilters.status !== 'all') {
+          params.status = oFilters.status;
+        }
+        if (oFilters.category && oFilters.category !== 'all') {
+          params.categoryName = oFilters.category;
+        }
+        if (oFilters.brand && oFilters.brand !== 'all') {
+          params.brandName = oFilters.brand;
+        }
+        if (oFilters.store && oFilters.store !== 'all') {
+          params.storeName = oFilters.store;
+        }
+        const oResponse = await apiGet(GETPRODUCTDETAILS, params, token);
+        const resData = oResponse?.data;
+
+        if (resData?.STATUS === STATUS.SUCCESS.toUpperCase()) {
+          const dataObj = resData.data || {};
+          setProducts(Array.isArray(dataObj.data) ? dataObj.data : []);
+          setTotalItems(dataObj.totalRecords || 0);
+          setTotalPages(dataObj.totalPages || 0);
+        } else {
+          setError(resData?.MESSAGE);
+        }
+      } catch (err) {
+        const backendMessage = err?.response?.data?.MESSAGE;
+        setError(backendMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [nCurrentPage, itemsPerPage, sSearchTerm, oFilters, t]);
 
   useEffect(() => {
     setTitle(t('PRODUCTS.TITLE'));
   }, [setTitle, t]);
-
-  const handleDelete = (productId) => {
-   
-    alert('Delete product: ' + productId);
+  const categoryOptions = [
+    { value: 'all', label: t('COMMON.ALL') },
+    ...aCategories.map((cat) => ({ value: cat.CategoryName, label: cat.CategoryName })),
+  ];
+  const brandOptions = [
+    { value: 'all', label: t('COMMON.ALL') },
+    ...aBrands.map((brand) => ({ value: brand.BrandName, label: brand.BrandName })),
+  ];
+  const storeOptions = [
+    { value: 'all', label: t('COMMON.ALL') },
+    ...aStores.map((store) => ({ value: store.StoreName, label: store.StoreName })),
+  ];
+  const statusOptions = [
+    { value: 'all', label: t('COMMON.ALL') },
+    { value: 'Active', label: t('COMMON.ACTIVE') },
+    { value: 'Inactive', label: t('COMMON.INACTIVE') },
+  ];
+  const handleDropdownInputChange = (inputValue, filterName) => {
+    if (filterName === 'category') {
+      if (inputValue && inputValue.trim() !== '') {
+        fetchCategories({ searchText: inputValue });
+      } else {
+        fetchCategories(); // fetch all if no search
+      }
+    } else if (filterName === 'brand') {
+      if (inputValue && inputValue.trim() !== '') {
+        fetchBrands({ searchText: inputValue });
+      } else {
+        fetchBrands();
+      }
+    } else if (filterName === 'store') {
+      if (inputValue && inputValue.trim() !== '') {
+        fetchStores({ searchText: inputValue });
+      } else {
+        fetchStores();
+      }
+    }
   };
-  const [oFilters, setFilters] = useState({
-    category: 'all',
-    status: 'all',
-  });
+
   const additionalFilters = [
     {
-      label: 'Category',
+      label: t('PRODUCT_SETUP.TABS.CATEGORIES'),
       name: 'category',
       value: oFilters.category,
-      aOptions: [
-        { value: 'all', label: 'All' },
-        { value: 'Electronics', label: 'Electronics' },
-        { value: 'Computers', label: 'Computers' },
-      ],
+      options: categoryOptions,
+      placeholder: t('PRODUCT_SETUP.TABS.CATEGORIES'),
+      searchable: true,
+      searchPlaceholder: t('COMMON.SEARCH_CATEGORY'),
+      onInputChange: (inputValue) => handleDropdownInputChange(inputValue, 'category'),
     },
     {
-      label: 'Status',
+      label: t('PRODUCT_SETUP.TABS.BRANDS'),
+      name: 'brand',
+      value: oFilters.brand,
+      options: brandOptions,
+      placeholder: t('PRODUCT_SETUP.TABS.BRANDS'),
+      searchable: true,
+      searchPlaceholder: t('COMMON.SEARCH_BRAND'),
+      onInputChange: (inputValue) => handleDropdownInputChange(inputValue, 'brand'),
+    },
+    {
+      label: t('SIDEBAR.STORES'),
+      name: 'store',
+      value: oFilters.store,
+      options: storeOptions,
+      placeholder: t('PRODUCT_SETUP.TABS.STORES'),
+      searchable: true,
+      searchPlaceholder: t('COMMON.SEARCH_STORE'),
+      onInputChange: (inputValue) => handleDropdownInputChange(inputValue, 'store'),
+    },
+    {
+      label: t('COMMON.STATUS'),
       name: 'status',
       value: oFilters.status,
-      aOptions: [
-        { value: 'all', label: 'All' },
-        { value: 'active', label: 'Active' },
-        { value: 'out-of-stock', label: 'Out of Stock' },
-      ],
+      options: statusOptions,
     },
   ];
+
   const handleFilterChange = (e, filterName) => {
     setFilters({
       ...oFilters,
@@ -123,6 +236,7 @@ useEffect(() => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen bg-gray-50">
+      <ToastContainer/>
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div className="flex-1 min-w-0">
@@ -145,16 +259,15 @@ useEffect(() => {
         setViewMode={setViewMode}
         showFilterDropdown={bShowFilterDropdown}
         setShowFilterDropdown={setShowFilterDropdown}
-        filterStatus={sFilterStatus}
-        setFilterStatus={setFilterStatus}
         additionalFilters={additionalFilters}
         handleFilterChange={handleFilterChange}
         searchPlaceholder={t('PRODUCTS.SEARCH_PLACEHOLDER')}
+        onClearFilters={handleClearFilters}
       />
       {bLoading ? (
         <div className="text-center py-8 text-gray-500">{t('COMMON.LOADING')}</div>
       ) : sError ? (
-        <div className="text-center py-8 text-red-500">{t('PRODUCTS.FETCH_ERROR')}</div>
+        <div className="text-center py-8 text-red-500">{sError}</div>
       ) : sViewMode === 'table' ? (
         <div className="table-container">
           <div className="table-wrapper">
@@ -162,8 +275,8 @@ useEffect(() => {
               <thead className="table-head">
                 <tr>
                   <th className="table-head-cell">{t('PRODUCTS.TITLE')}</th>
-                  <th className="table-head-cell">{t('PRODUCTS.CATEGORY')}</th>
-                  <th className="table-head-cell">{t('PRODUCTS.PRICE')}</th>
+                  <th className="table-head-cell">{t('COMMON.CATEGORY')}</th>
+                  <th className="table-head-cell">{t('COMMON.PRICE')}</th>
                   <th className="table-head-cell">{t('PRODUCTS.STOCK')}</th>
                   <th className="table-head-cell">{t('COMMON.STATUS')}</th>
                   <th className="table-head-cell">{t('PRODUCTS.STORE_NAME')}</th>
@@ -232,11 +345,11 @@ useEffect(() => {
                   </div>
                 </div>
                 <div className="text-sm text-gray-900 mt-2">
-                  <span className="font-medium">{t('PRODUCTS.CATEGORY')}</span> {product.subCategory}
+                  <span className="font-medium">{t('COMMON.CATEGORY')}</span> {product.subCategory}
                 </div>
                 <div className="flex items-center justify-between mt-2">
                   <div className="text-secondary">{t('PRODUCTS.STOCK')}<span className="font-semibold text-gray-900">{product.variants[0]?.quantity}</span></div>
-                  <div className="text-lg font-bold text-indigo-600">${parseFloat(product.MRP).toFixed(2)}</div>
+                  <div className="text-lg font-bold text-indigo-600">₹{parseFloat(product.MRP).toFixed(2)}</div>
                 </div>
                 <ActionButtons
                   id={product.productId}
@@ -249,6 +362,7 @@ useEffect(() => {
           </div>
         </>
       )}
+      {!bLoading && !sError && nTotalItems > 0 && (
       <Pagination
         currentPage={nCurrentPage}
         totalPages={nTotalPages}
@@ -258,6 +372,15 @@ useEffect(() => {
         handleNextPage={handleNextPage}
         handlePageClick={handlePageClick}
       />
+       )}
+      {deletePopup.open && (
+        <FullscreenErrorPopup
+          title={t('PRODUCTS.CONFIRM_DELETE_TITLE')}
+          message={t('PRODUCTS.CONFIRM_DELETE_MESSAGE')}
+          onClose={handleDeletePopupClose}
+          onConfirm={handleDeleteConfirm}
+        />
+      )}
     </div>
   );
 };

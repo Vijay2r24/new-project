@@ -1,31 +1,46 @@
-import { useState, useEffect } from 'react';
-import { ArrowLeft, Upload, Building, Info, CheckCircle, Tag, Hash, LayoutList } from 'lucide-react';
-import TextInputWithIcon from '../../../components/TextInputWithIcon';
-import SelectWithIcon from '../../../components/SelectWithIcon';
-import TextAreaWithIcon from '../../../components/TextAreaWithIcon';
-import { useTranslation } from 'react-i18next'
-import { apiPost, apiGet, apiPut } from '../../../utils/ApiUtils';
-import { createBrand, getBrandById, updateBrandById } from '../../../contants/apiRoutes';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useCategories } from '../../../context/AllDataContext';
-import { ToastContainer } from 'react-toastify';
-import { showEmsg } from '../../../utils/ShowEmsg';
-import { STATUS } from '../../../contants/constants';
+import { useState, useEffect } from "react";
+import {
+  ArrowLeft,
+  Building,
+  Info,
+  Tag,
+  Hash,
+  LayoutList,
+  Image,
+  X,
+} from "lucide-react";
+import TextInputWithIcon from "../../../components/TextInputWithIcon";
+import SelectWithIcon from "../../../components/SelectWithIcon";
+import TextAreaWithIcon from "../../../components/TextAreaWithIcon";
+import { useTranslation } from "react-i18next";
+import { apiPost, apiGet, apiPut } from "../../../utils/ApiUtils";
+import {
+  CREATE_BRAND,
+  GET_BRAND_BY_ID,
+  UPDATE_BRAND_BY_ID,
+} from "../../../contants/apiRoutes";
+import { useNavigate, useParams } from "react-router-dom";
+import { useCategories } from "../../../context/AllDataContext";
+import { ToastContainer } from "react-toastify";
+import { showEmsg } from "../../../utils/ShowEmsg";
+import { STATUS } from "../../../contants/constants";
+
 const CreateBrand = () => {
   const [oFormData, setFormData] = useState({
-    TenantID: '1',
-    BrandName: '',
-    CategoryID: '',
-    Heading: '',
-    BrandCode: '',
+    TenantID: "1",
+    BrandName: "",
+    CategoryID: "",
+    Heading: "",
+    BrandCode: "",
     IsActive: true,
     BrandLogo: null,
-    description: '',
-    CreatedBy: 'Admin',
-    UpdatedBy: 'Admin'
+    description: "",
+    CreatedBy: "Admin",
+    UpdatedBy: "Admin",
   });
 
   const [oErrors, setErrors] = useState({});
+  const [sImagePreview, setImagePreview] = useState(null);
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { id: brandId } = useParams();
@@ -41,27 +56,35 @@ const CreateBrand = () => {
       const fetchBrandDetails = async () => {
         try {
           const token = localStorage.getItem("token");
-          const oResponse = await apiGet(getBrandById + `/${brandId}`, {}, token);
-          if (oResponse.data.status === STATUS.SUCCESS.toLocaleUpperCase() && oResponse.data.data) {
-            const brandData = oResponse.data.data;
-            setFormData(prev => ({
+          const oResponse = await apiGet(
+            `${GET_BRAND_BY_ID}/${brandId}`,
+            {},
+            token
+          );
+          if (
+            oResponse.data.STATUS === STATUS.SUCCESS.toLocaleUpperCase() &&
+            oResponse.data.data
+          ) {
+            const brandData = oResponse.data.data.brand;
+            setFormData((prev) => ({
               ...prev,
-              TenantID: brandData.TenantID || '1',
-              BrandName: brandData.BrandName || '',
-              CategoryID: brandData.CategoryID || '',
-              Heading: brandData.Heading || '',
-              BrandCode: brandData.BrandCode || '',
+              TenantID: brandData.TenantID || "1",
+              BrandName: brandData.BrandName || "",
+              CategoryID: brandData.CategoryID || "",
+              Heading: brandData.Heading || "",
+              BrandCode: brandData.BrandCode || "",
               IsActive: brandData.IsActive === true,
               BrandLogo: brandData.BrandLogo || null,
-              description: brandData.Description || '',
-              CreatedBy: brandData.CreatedBy || 'Admin',
-              UpdatedBy: 'Admin'
+              description: brandData.BrandDescription || "",
+              CreatedBy: brandData.CreatedBy || t("COMMON.ADMIN"),
+              UpdatedBy: t("COMMON.ADMIN"),
             }));
+            if (brandData.BrandLogo) {
+              setImagePreview(brandData.BrandLogo);
+            }
           } else {
           }
-        } catch (err) {
-          console.error('Error fetching brand details:', err);
-        }
+        } catch (err) {}
       };
       fetchBrandDetails();
     }
@@ -69,14 +92,14 @@ const CreateBrand = () => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === "checkbox" ? checked : value,
     }));
     if (oErrors[name]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: "",
       }));
     }
   };
@@ -85,37 +108,58 @@ const CreateBrand = () => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 10 * 1024 * 1024) {
-        setErrors(prev => ({
+        setErrors((prev) => ({
           ...prev,
-          BrandLogo: 'File size should be less than 10MB'
+          BrandLogo: t("PRODUCT_SETUP.CREATE_BRAND.IMAGE_ERROR"),
         }));
         return;
       }
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        BrandLogo: file
+        BrandLogo: file,
       }));
+      setImagePreview(URL.createObjectURL(file));
+    } else {
+      setFormData((prev) => ({ ...prev, BrandLogo: null }));
+      setImagePreview(null);
     }
   };
+
+  const handleRemoveImage = () => {
+    if (sImagePreview && sImagePreview.startsWith("blob:")) {
+      URL.revokeObjectURL(sImagePreview);
+    }
+    setFormData((prev) => ({ ...prev, BrandLogo: null }));
+    setImagePreview(null);
+    setErrors((prev) => ({ ...prev, BrandLogo: "" }));
+  };
+
+  useEffect(() => {
+    return () => {
+      if (sImagePreview && sImagePreview.startsWith("blob:")) {
+        URL.revokeObjectURL(sImagePreview);
+      }
+    };
+  }, [sImagePreview]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
 
     if (!oFormData.BrandName.trim()) {
-      newErrors.BrandName = t('PRODUCT_SETUP.CREATE_BRAND.BRAND_NAME_REQUIRED');
+      newErrors.BrandName = t("PRODUCT_SETUP.CREATE_BRAND.BRAND_NAME_REQUIRED");
     }
     if (!oFormData.CategoryID) {
-      newErrors.CategoryID = t('PRODUCT_SETUP.CREATE_BRAND.CATEGORY_REQUIRED');
+      newErrors.CategoryID = t("PRODUCT_SETUP.CREATE_BRAND.CATEGORY_REQUIRED");
     }
     if (!oFormData.Heading.trim()) {
-      newErrors.Heading = t('PRODUCT_SETUP.CREATE_BRAND.HEADING_REQUIRED');
+      newErrors.Heading = t("PRODUCT_SETUP.CREATE_BRAND.HEADING_REQUIRED");
     }
     if (!oFormData.BrandCode.trim()) {
-      newErrors.BrandCode = t('PRODUCT_SETUP.CREATE_BRAND.BRAND_CODE_REQUIRED');
+      newErrors.BrandCode = t("PRODUCT_SETUP.CREATE_BRAND.BRAND_CODE_REQUIRED");
     }
-    if (!oFormData.BrandLogo && !isEditing) { 
-      newErrors.BrandLogo = t('PRODUCT_SETUP.CREATE_BRAND.BRAND_LOGO_REQUIRED');
+    if (!oFormData.BrandLogo && !isEditing) {
+      newErrors.BrandLogo = t("PRODUCT_SETUP.CREATE_BRAND.BRAND_LOGO_REQUIRED");
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -124,53 +168,68 @@ const CreateBrand = () => {
     }
 
     const dataToSend = new FormData();
-    dataToSend.append('BrandName', oFormData.BrandName);
-    dataToSend.append('CategoryID', oFormData.CategoryID);
-    dataToSend.append('Heading', oFormData.Heading);
-    dataToSend.append('BrandCode', oFormData.BrandCode);
-    dataToSend.append('IsActive', oFormData.IsActive ? 'true' : 'false');
-    dataToSend.append('Description', oFormData.description);
+    dataToSend.append("BrandName", oFormData.BrandName);
+    dataToSend.append("CategoryID", oFormData.CategoryID);
+    dataToSend.append("Heading", oFormData.Heading);
+    dataToSend.append("BrandCode", oFormData.BrandCode);
+    dataToSend.append("IsActive", oFormData.IsActive ? "true" : "false");
+    dataToSend.append("BrandDescription", oFormData.description);
 
-    if (oFormData.BrandLogo && typeof oFormData.BrandLogo !== 'string') { 
-      dataToSend.append('BrandLogo', oFormData.BrandLogo);
+    if (oFormData.BrandLogo) {
+      dataToSend.append("BrandLogo", oFormData.BrandLogo);
     }
 
     try {
       const token = localStorage.getItem("token");
       let response;
       if (isEditing) {
-        dataToSend.append('UpdatedBy', oFormData.UpdatedBy);
-        response = await apiPut(`${updateBrandById}/${brandId}`, dataToSend, token);
+        dataToSend.append("UpdatedBy", oFormData.UpdatedBy);
+        response = await apiPut(
+          `${UPDATE_BRAND_BY_ID}/${brandId}`,
+          dataToSend,
+          token,
+          true
+        );
       } else {
-        dataToSend.append('TenantID', oFormData.TenantID);
-        dataToSend.append('CreatedBy', oFormData.CreatedBy);
-        response = await apiPost(createBrand, dataToSend, token);
+        dataToSend.append("TenantID", oFormData.TenantID);
+        dataToSend.append("CreatedBy", oFormData.CreatedBy);
+        response = await apiPost(CREATE_BRAND, dataToSend, token, true);
       }
 
-      if (response.data.status === STATUS.SUCCESS.toLocaleUpperCase()) {
-        showEmsg(response.data.message || t('COMMON.SUCCESS'), STATUS.SUCCESS);
+      if (response.data.STATUS === STATUS.SUCCESS.toLocaleUpperCase()) {
+        showEmsg(response.data.MESSAGE, STATUS.SUCCESS);
       } else {
-        showEmsg(response.data.message || t('COMMON.UNKNOWN_ERROR'), STATUS.ERROR);
-        setErrors(prev => ({ ...prev, api: response.data.message || t('COMMON.UNKNOWN_ERROR') }));
+        showEmsg(response.data.MESSAGE, STATUS.WARNING);
+        setErrors((prev) => ({
+          ...prev,
+          api: response.data.MESSAGE,
+        }));
       }
     } catch (err) {
-      setErrors(prev => ({ ...prev, api: t('COMMON.UNEXPECTED_ERROR') }));
+      console.error(err);
+      const errorMessage =
+        err?.response?.data?.MESSAGE || t("COMMON.API_ERROR");
+      showEmsg(errorMessage, STATUS.ERROR);
     }
   };
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <ToastContainer/>
+      <ToastContainer />
       <div className="w-full p-0 sm:p-0">
         <div className="flex items-center mb-4">
           <button
-            onClick={() => navigate('/browse', { state: { fromBrandEdit: true } })}
+            onClick={() =>
+              navigate("/browse", { state: { fromBrandEdit: true } })
+            }
             className="mr-3 p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-all duration-200"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
           <h2 className="text-xl font-bold text-gray-900">
-            {isEditing ? t("PRODUCT_SETUP.CREATE_BRAND.EDIT_TITLE") : t("PRODUCT_SETUP.CREATE_BRAND.CREATE_TITLE")}
+            {isEditing
+              ? t("PRODUCT_SETUP.CREATE_BRAND.EDIT_TITLE")
+              : t("PRODUCT_SETUP.CREATE_BRAND.CREATE_TITLE")}
           </h2>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -196,7 +255,10 @@ const CreateBrand = () => {
                 name="CategoryID"
                 value={oFormData.CategoryID}
                 onChange={handleInputChange}
-                options={aCategories.map(cat => ({ value: cat.CategoryID, label: cat.CategoryName }))}
+                options={aCategories.map((cat) => ({
+                  value: cat.CategoryID,
+                  label: cat.CategoryName,
+                }))}
                 loading={bLoadingCategories}
                 error={oErrors.CategoryID || sErrorCategories}
                 placeholder={t("PRODUCT_SETUP.CREATE_CATEGORY.SELECT_PARENT")}
@@ -212,7 +274,9 @@ const CreateBrand = () => {
                 name="Heading"
                 value={oFormData.Heading}
                 onChange={handleInputChange}
-                placeholder={t("PRODUCT_SETUP.CREATE_BRAND.HEADING_PLACEHOLDER")}
+                placeholder={t(
+                  "PRODUCT_SETUP.CREATE_BRAND.HEADING_PLACEHOLDER"
+                )}
                 error={oErrors.Heading}
                 Icon={LayoutList}
               />
@@ -224,7 +288,9 @@ const CreateBrand = () => {
                 name="BrandCode"
                 value={oFormData.BrandCode}
                 onChange={handleInputChange}
-                placeholder={t("PRODUCT_SETUP.CREATE_BRAND.BRAND_CODE_PLACEHOLDER")}
+                placeholder={t(
+                  "PRODUCT_SETUP.CREATE_BRAND.BRAND_CODE_PLACEHOLDER"
+                )}
                 error={oErrors.BrandCode}
                 Icon={Hash}
               />
@@ -251,16 +317,18 @@ const CreateBrand = () => {
                 {t("PRODUCT_SETUP.CREATE_BRAND.LOGO_LABEL")}
               </label>
               <div
-                className={`relative group rounded-xl border-2 ${oErrors.BrandLogo ? 'border-red-300' : 'border-gray-200'} border-dashed transition-all duration-200 hover:border-[#5B45E0] bg-gray-50 hover:bg-gray-50/50`}
+                className={`relative group rounded-xl border-2 ${
+                  oErrors.BrandLogo ? "border-red-300" : "border-gray-200"
+                } border-dashed transition-all duration-200 hover:border-custom-bg bg-gray-50 hover:bg-gray-50/50`}
               >
                 <div className="p-6">
                   <div className="space-y-3 text-center">
                     <div className="flex justify-center">
                       <div className="p-3 rounded-full bg-white shadow-sm border border-gray-100">
-                        <Upload className="h-8 w-8 text-gray-400 group-hover:text-[#5B45E0] transition-colors duration-200" />
+                        <Image className="h-8 w-8 text-gray-400 group-hover:text-[#5B45E0] transition-colors duration-200" />
                       </div>
                     </div>
-                    <div className="flex text-sm text-caption justify-center">
+                    <div className="flex text-sm text-muted justify-center">
                       <label
                         htmlFor="file-upload"
                         className="relative cursor-pointer rounded-md font-medium text-[#5B45E0] hover:text-[#4c39c7] focus-within:outline-none"
@@ -277,12 +345,21 @@ const CreateBrand = () => {
                       </label>
                       <p className="pl-1">{t("COMMON.DRAG_DROP_TEXT")}</p>
                     </div>
-                    {oFormData.BrandLogo && (
-                      <div className="mt-2 p-2 bg-green-50 rounded-lg border border-green-100 flex items-center justify-center">
-                        <CheckCircle className="h-4 w-4 mr-1.5 text-green-600" />
-                        <p className="text-sm text-green-600 truncate">
-                          {typeof oFormData.BrandLogo === 'string' ? oFormData.BrandLogo.split('/').pop() : oFormData.BrandLogo.name}
-                        </p>
+                    {sImagePreview && (
+                      <div className="mt-4 flex justify-center relative">
+                        <img
+                          src={sImagePreview}
+                          alt="Brand Logo Preview"
+                          className="max-h-32 max-w-full rounded-md border border-gray-200 shadow"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleRemoveImage}
+                          className="absolute -top-3 -right-3 p-1.5 bg-white border border-gray-300 text-gray-600 rounded-full shadow hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors duration-200 z-10"
+                          title="Remove image"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
                       </div>
                     )}
                     {oErrors.BrandLogo && (
@@ -302,23 +379,26 @@ const CreateBrand = () => {
               name="description"
               value={oFormData.description}
               onChange={handleInputChange}
-              placeholder={t("PRODUCT_SETUP.CREATE_BRAND.DESCRIPTION_PLACEHOLDER")}
+              placeholder={t(
+                "PRODUCT_SETUP.CREATE_BRAND.DESCRIPTION_PLACEHOLDER"
+              )}
               icon={Info}
             />
           </div>
           <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
             <button
               type="button"
-              onClick={() => navigate('/browse/brands', { state: { fromBrandEdit: true } })}
+              onClick={() =>
+                navigate("/browse", { state: { fromBrandEdit: true } })
+              }
               className="btn-cancel"
             >
-                {t("COMMON.CANCEL")}
+              {t("COMMON.CANCEL")}
             </button>
-            <button
-              type="submit"
-              className="btn-primary"
-            >
-             {isEditing ? t("COMMON.SAVE_BUTTON") : t("PRODUCT_SETUP.CREATE_BRAND.CREATE_BUTTON")}
+            <button type="submit" className="btn-primary">
+              {isEditing
+                ? t("COMMON.SAVE_BUTTON")
+                : t("PRODUCT_SETUP.CREATE_BRAND.CREATE_BUTTON")}
             </button>
           </div>
         </form>
