@@ -56,8 +56,8 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
       icon: Users,
       section: 'User Management',
       subItems: [
-        { name: t('SIDEBAR.USERS'), href: '/users', icon: Users,  relatedPaths: ['/editUser', '/add-user'] },
-        { name: t('SIDEBAR.ROLES'), href: '/userRoles', icon: Shield, relatedPaths: ['/addUserRole'] },
+        { name: t('SIDEBAR.USERS'), href: '/users', icon: Users,  relatedPaths: ['/add-user','/editUser'] },
+        { name: t('SIDEBAR.ROLES'), href: '/userRoles', icon: Shield, relatedPaths: ['/addUserRole','/edit-UserRole'] },
       ]
     },
     {
@@ -101,7 +101,11 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
       if (!navItem.href || navItem.href === '#') return false;
       const isActivePath = location.pathname.startsWith(navItem.href);
       const isRelatedActive = navItem.relatedPaths?.some(p => location.pathname.startsWith(p));
-      return isActivePath || isRelatedActive;
+      const result = isActivePath || isRelatedActive;
+      if (result) {
+        console.log('Sidebar active:', navItem.name, 'for path', location.pathname);
+      }
+      return result;
     }
 
     const isActive = checkIsActive(item);

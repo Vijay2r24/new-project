@@ -1,24 +1,24 @@
 import { useState, useEffect } from "react";
-import { Mail, Phone, MapPin, Shield, UserPlus } from "lucide-react";
+import { Mail, Phone,Shield, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Toolbar from "../components/Toolbar";
 import Pagination from "../components/Pagination";
 import ActionButtons from "../components/ActionButtons";
 import { useTranslation } from "react-i18next";
-import { apiGet, apiPatch, apiDelete } from "../utils/ApiUtils";
+import { apiDelete } from "../utils/ApiUtils";
 import {
-  getAllUsers,
-  userActiveStatus,
-  deleteUser,
+  USER_ACTIVE_STATUS,
+  DELETE_USER,
 } from "../contants/apiRoutes";
 import { useTitle } from "../context/TitleContext";
 import { STATUS } from "../contants/constants";
-import { useRoles } from "../context/AllDataContext";
+import { useRoles, useUsers } from "../context/AllDataContext";
 import FullscreenErrorPopup from "../components/FullscreenErrorPopup";
 import { showEmsg } from "../utils/ShowEmsg";
 import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import Switch from '../components/Switch';
+import userProfile from '../../assets/images/userProfile.svg';
+
 
 const Users = () => {
   const navigate = useNavigate();
@@ -27,50 +27,70 @@ const Users = () => {
   const { setTitle } = useTitle();
   const [sViewMode, setViewMode] = useState("table");
   const [nCurrentPage, setCurrentPage] = useState(1);
-  const [sFilterStatus, setFilterStatus] = useState("all");
   const [sShowFilterDropdown, setShowFilterDropdown] = useState(false);
-  const [aUsers, setUsers] = useState([]);
-  const [totalItems, setTotalItems] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const itemsPerPage = 10;
+  const { data: usersData = [], updateStatusById, fetch, loading: contextLoading, error: contextError, total } = useUsers();
+  const nTotalPages = Math.ceil((total || 0) / itemsPerPage);
 
-  const [oFilters, setFilters] = useState({
-    role: "all",
-    status: "all",
-  });
-  const roles = useRoles();
+  const { data: aRoles, fetch: fetchRoles } = useRoles();
+
+  const defaultFilters = {
+    role: 'all',
+    status: 'all',
+  };
+
+  const [oFilters, setFilters] = useState(defaultFilters);
+
+  const handleClearFilters = () => {
+    setFilters(defaultFilters);
+    setCurrentPage(1);
+  };
+
   const handleFilterChange = (e, filterName) => {
     setFilters({
       ...oFilters,
       [filterName]: e.target.value,
     });
   };
-  const aAdditionalFilters = [
+  const roleOptions = [
+    { value: 'all', label: t('COMMON.ALL') },
+    ...(Array.isArray(aRoles)
+      ? aRoles.map((role) => ({
+          value: role.RoleName,
+          label: role.RoleName,
+        }))
+      : []),
+  ];
+
+  const statusOptions = [
+    { value: 'all', label: t('COMMON.ALL') },
+    { value: 'Active', label: t('COMMON.ACTIVE') },
+    { value: 'Inactive', label: t('COMMON.INACTIVE') },
+  ];
+  const handleDropdownInputChange = (inputValue, filterName) => {
+    if (filterName === 'role') {
+      fetchRoles({ searchText: inputValue });
+    }
+  };
+
+  const additionalFilters = [
     {
       label: t('USERS.FILTERS.USER_ROLE'),
       name: 'role',
       value: oFilters.role,
-      options: [
-        { value: 'all', label: t('COMMON.ALL') },
-        ...(Array.isArray(roles.data)
-          ? roles.data.map((role) => ({
-              value: role.RoleName,
-              label: role.RoleName,
-            }))
-          : []),
-      ],
+      options: roleOptions,
+      placeholder: t('USERS.FILTERS.USER_ROLE'),
+      searchable: true,
+      searchPlaceholder: t('COMMON.SEARCH_ROLE') || 'Search role',
+      onInputChange: (inputValue) => handleDropdownInputChange(inputValue, 'role'),
     },
     {
       label: t('USERS.FILTERS.STATUS'),
       name: 'status',
       value: oFilters.status,
-      options: [
-        { value: 'all', label: t('COMMON.ALL') },
-        { value: 'Active', label: t('COMMON.ACTIVE') },
-        { value: 'Inactive', label: t('COMMON.INACTIVE') },
-      ],
+      options: statusOptions,
     },
   ];
 
@@ -78,7 +98,7 @@ const Users = () => {
     setCurrentPage((prev) => Math.max(prev - 1, 1));
   };
   const handleNextPage = () => {
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+    setCurrentPage((prev) => Math.min(prev + 1, nTotalPages));
   };
   const handlePageClick = (page) => {
     setCurrentPage(page);
@@ -96,17 +116,13 @@ const Users = () => {
     const { userId } = deletePopup;
     try {
       const token = localStorage.getItem("token");
-      const response = await apiDelete(`${deleteUser}/${userId}`, token);
+      const response = await apiDelete(`${DELETE_USER}/${userId}`, token);
       const backendMessage = response.data.MESSAGE;
-
       showEmsg(backendMessage , STATUS.SUCCESS);
-
-      setUsers((prevUsers) =>
-        prevUsers.filter((user) => user.UserID !== userId)
-      );
+      fetch({ pageNumber: nCurrentPage, pageSize: itemsPerPage, searchText: sSearchTerm });
       setDeletePopup({ open: false, userId: null });
     } catch (err) {
-        const errorMessage = error?.response?.data?.MESSAGE 
+      const errorMessage = error?.response?.data?.MESSAGE 
       showEmsg( errorMessage || t('COMMON.API_ERROR') , STATUS.ERROR);
       setDeletePopup({ open: false, userId: null });
     }
@@ -127,75 +143,33 @@ const Users = () => {
 
   const handleStatusConfirm = async () => {
     const { userId, newStatus } = statusPopup;
-    try {
-      const token = localStorage.getItem("token");
-      const payload = { Status: newStatus ? "Active" : "Inactive" };
-      const response = await apiPatch(
-        `${userActiveStatus}/${userId}`,
-        payload,
-        token
-      );
-      const backendMessage = response.data.MESSAGE;
-
-      setUsers((prevUsers) =>
-        prevUsers.map((user) =>
-          user.UserID === userId ? { ...user, Status: payload.Status } : user
-        )
-      );
-
-      showEmsg(backendMessage, STATUS.SUCCESS);
-      setStatusPopup({ open: false, userId: null, newStatus: null });
-    } catch (err) {
-      const errorMessage = error?.response?.data?.MESSAGE 
-      showEmsg(errorMessage || t('COMMON.API_ERROR'),STATUS.ERROR);
-      setStatusPopup({ open: false, userId: null, newStatus: null });
-    }
+    if (!updateStatusById) return;
+    const result = await updateStatusById(userId, newStatus,USER_ACTIVE_STATUS, 'UserID');
+    showEmsg(result.message, result.status);
+    setStatusPopup({ open: false, userId: null, newStatus: null });
   };
 
   const handleStatusPopupClose = () => {
     setStatusPopup({ open: false, userId: null, newStatus: null });
   };
 
-  const fetchUsers = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const token = localStorage.getItem("token");
-      const params = {
-        pageNumber: nCurrentPage,
-        pageSize: itemsPerPage,
-        searchText: sSearchTerm || "",
-      };
-      if (oFilters.role !== "all") {
-        params.roleName = oFilters.role;
-      }
-      if (oFilters.status !== "all") {
-        params.status = oFilters.status;
-      }
-      console.log("Fetching users with params:", params);
-      const oResponse = await apiGet(getAllUsers, params, token);
-      console.log("API response:", oResponse.data);
-      if (oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
-        setUsers(oResponse.data.data.data || []);
-        setTotalItems(oResponse.data.data.totalRecords || 0);
-        setTotalPages(oResponse.data.data.totalPages || 1);
-      } else {
-        setError(oResponse.data.message || t("USERS.FETCH_ERROR"));
-      }
-    } catch (err) {
-      setError(t("USERS.FETCH_ERROR"));
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchUsers();
-  }, [nCurrentPage, itemsPerPage, sSearchTerm, oFilters.role, oFilters.status]);
+    fetch({
+      pageNumber: nCurrentPage,
+      pageSize: itemsPerPage,
+      searchText: sSearchTerm || "",
+      ...(oFilters.role !== "all" ? { roleName: oFilters.role } : {}),
+      ...(oFilters.status !== "all" ? { status: oFilters.status } : {}),
+    });
+  }, [nCurrentPage, itemsPerPage, sSearchTerm, oFilters]);
 
   useEffect(() => {
     setTitle(t("USERS.TITLE"));
   }, [setTitle, t]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sSearchTerm, oFilters]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen bg-gray-50">
@@ -220,11 +194,10 @@ const Users = () => {
         setViewMode={setViewMode}
         showFilterDropdown={sShowFilterDropdown}
         setShowFilterDropdown={setShowFilterDropdown}
-        filterStatus={sFilterStatus}
-        setFilterStatus={setFilterStatus}
-        additionalFilters={aAdditionalFilters}
+        additionalFilters={additionalFilters}
         handleFilterChange={handleFilterChange}
         searchPlaceholder={t("USERS.SEARCH_PLACEHOLDER")}
+        onClearFilters={handleClearFilters}
       />
       {sViewMode === "table" ? (
         <div className="table-container">
@@ -256,28 +229,22 @@ const Users = () => {
                       {t("USERS.FETCH_ERROR")}
                     </td>
                   </tr>
-                ) : aUsers.length === 0 ? (
+                ) : usersData.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="text-center py-4">
                       {t("USERS.NO_USERS_FOUND")}
                     </td>
                   </tr>
                 ) : (
-                  aUsers.map((user) => (
+                  usersData.map((user) => (
                     <tr key={user.UserID} className="table-row">
                       <td className="table-cell">
                         <div className="flex items-center">
                           <div className="h-10 w-10 flex-shrink-0">
                             <img
                               className="h-10 w-10 rounded-full"
-                              src={
-                                user.ProfileImageUrl ||
-                                "https://ui-avatars.com/api/?name=" +
-                                  user.FirstName +
-                                  "+" +
-                                  user.LastName +
-                                  "&background=0D8ABC&color=fff"
-                              }
+                              src={user.ProfileImageUrl || userProfile}
+                              onError={(e) => { e.target.onerror = null; e.target.src = userProfile; console.log('Fallback image loaded'); }}
                               alt=""
                             />
                           </div>
@@ -339,12 +306,12 @@ const Users = () => {
               <div className="col-span-full text-center py-4 text-red-500">
                 {t("USERS.FETCH_ERROR")}
               </div>
-            ) : aUsers.length === 0 ? (
+            ) : usersData.length === 0 ? (
               <div className="col-span-full text-center py-4">
                 {t("USERS.NO_USERS_FOUND")}
               </div>
             ) : (
-              aUsers.map((user) => (
+              usersData.map((user) => (
                 <div
                   key={user.UserID}
                   className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col gap-4 hover:shadow-xl transition-shadow duration-200"
@@ -353,14 +320,8 @@ const Users = () => {
                     <div className="flex-shrink-0 h-12 w-12 bg-gray-100 rounded-full overflow-hidden">
                       <img
                         className="h-full w-full object-cover"
-                        src={
-                          user.ProfileImageUrl ||
-                          "https://ui-avatars.com/api/?name=" +
-                            user.FirstName +
-                            "+" +
-                            user.LastName +
-                            "&background=0D8ABC&color=fff"
-                        }
+                        src={user.ProfileImageUrl || userProfile}
+                        onError={(e) => { e.target.onerror = null; e.target.src = userProfile; console.log('Fallback image loaded'); }}
                         alt=""
                       />
                     </div>
@@ -410,8 +371,8 @@ const Users = () => {
       )}
       <Pagination
         currentPage={nCurrentPage}
-        totalPages={totalPages}
-        totalItems={totalItems}
+        totalPages={nTotalPages}
+        totalItems={total}
         itemsPerPage={itemsPerPage}
         handlePrevPage={handlePrevPage}
         handleNextPage={handleNextPage}
@@ -420,42 +381,18 @@ const Users = () => {
       {statusPopup.open && (
         <FullscreenErrorPopup
           message={`Are you sure you want to set this user as ${
-            statusPopup.newStatus ? "Active" : "Inactive"
+            statusPopup.newStatus ? t('COMMON.ACTIVE') : t('COMMON.INACTIVE')
           }?`}
           onClose={handleStatusPopupClose}
-        >
-          <button
-            onClick={handleStatusConfirm}
-            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
-          >
-              {t('COMMON.CONFIRM')}
-          </button>
-          <button
-            onClick={handleStatusPopupClose}
-            className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 text-sm"
-          >
-              {t('COMMON.CANCEL')}
-          </button>
-        </FullscreenErrorPopup>
+          onConfirm={handleStatusConfirm}
+        />
       )}
       {deletePopup.open && (
         <FullscreenErrorPopup
-          message={"Are you sure you want to delete this user?"}
+          message={t('USERS.DELETE_CONFIRM_MESSAGE')}
           onClose={handleDeletePopupClose}
-        >
-          <button
-            onClick={handleDeleteConfirm}
-            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
-          >
-          {t('COMMON.DELETE')}
-          </button>
-          <button
-            onClick={handleDeletePopupClose}
-            className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 text-sm"
-          >
-           {t('COMMON.CANCEL')}
-          </button>
-        </FullscreenErrorPopup>
+          onConfirm={handleDeleteConfirm}
+        />
       )}
     </div>
   );

@@ -6,17 +6,19 @@ import { useTranslation } from 'react-i18next';
 import { LocationDataContext } from '../context/LocationDataProvider';
 import { useParams } from 'react-router-dom';
 import { apiGet, apiPost } from '../utils/ApiUtils';
-import { getStoreById, createOrUpdateStore } from '../contants/apiRoutes';
+import { GET_STORE_BY_ID,CREATE_OR_UPDATE_STORE } from '../contants/apiRoutes';
 import { showEmsg } from '../utils/ShowEmsg';
 import { useTitle } from '../context/TitleContext';
 import { STATUS } from '../contants/constants';
 import BackButton from '../components/BackButton';
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 const getArray = (data) =>
   Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : []);
 
 const AddStore = () => {
   const { t } = useTranslation();
-  const { countriesData, statesData, citiesData } = useContext(LocationDataContext);
+  const { aCountriesData, aStatesData, aCitiesData } = useContext(LocationDataContext);
   const { id } = useParams();
   const { setTitle, setBackButton } = useTitle();
   const [oFormData, setFormData] = useState({
@@ -40,12 +42,12 @@ const AddStore = () => {
       const fetchStore = async () => {
         try {
           const token = localStorage.getItem('token');
-          const response = await apiGet(`${getStoreById}/${id}`, {}, token);
-          if (response.data && response.data.status === STATUS.SUCCESS.toUpperCase() && response.data.store) {
-            const store = response.data.store;
-            const foundCountry = getArray(countriesData).find(c => c.CountryName === store.CountryName);
-            const foundState = getArray(statesData).find(s => s.StateName === store.StateName && String(s.CountryID) === String(foundCountry?.CountryID));
-            const foundCity = getArray(citiesData).find(c => c.CityName === store.CityName && String(c.StateID) === String(foundState?.StateID));
+          const oResponse = await apiGet(`${GET_STORE_BY_ID}/${id}`, {}, token);
+          if (oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
+            const store = oResponse.data.data.store;
+            const foundCountry = getArray(aCountriesData).find(c => c.CountryName === store.CountryName);
+            const foundState = getArray(aStatesData).find(s => s.StateName === store.StateName && String(s.CountryID) === String(foundCountry?.CountryID));
+            const foundCity = getArray(aCitiesData).find(c => c.CityName === store.CityName && String(c.StateID) === String(foundState?.StateID));
             setFormData(prevFormData => ({
               ...prevFormData,
               name: store.StoreName || '',
@@ -57,13 +59,13 @@ const AddStore = () => {
               phone: store.Phone || '',
               email: store.Email || '',
               status: store.Status || 'Active',
-              countryName: store.CountryName || '',
-              stateName: store.StateName || '',
-              cityName: store.CityName || ''
+              countryName: store.CountryName || (foundCountry ? foundCountry.CountryName : ''),
+              stateName: store.StateName || (foundState ? foundState.StateName : ''),
+              cityName: store.CityName || (foundCity ? foundCity.CityName : '')
             }));
             setError(null);
           } else {
-            setError(response.data?.message || t('COMMON.ERROR_MESSAGE'));
+            setError(oResponse.data?.message || t('COMMON.ERROR_MESSAGE'));
           }
         } catch (error) {
           const backendMessage = error?.response?.data?.message;
@@ -72,7 +74,7 @@ const AddStore = () => {
       };
       fetchStore();
     }
-  }, [id, countriesData, statesData, citiesData, t]);
+  }, [id, aCountriesData, aStatesData, aCitiesData, t]);
 
   useEffect(() => {
     setTitle(id ? t('STORES.EDIT_STORE') : t('STORES.ADD_STORE'));
@@ -82,9 +84,6 @@ const AddStore = () => {
       setTitle('');
     };
   }, [setTitle, setBackButton, t, id]);
-
-  const filteredStates = getArray(statesData).filter(s => String(s.CountryID) === String(oFormData.country));
-  const filteredCities = getArray(citiesData).filter(c => String(c.StateID) === String(oFormData.state));
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -96,7 +95,6 @@ const AddStore = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
-    const userId = localStorage.getItem('userId'); 
     const payload = {
       StoreID: id ? parseInt(id, 10) : 0,
       TenantID: 0,
@@ -113,27 +111,27 @@ const AddStore = () => {
       CountryName: oFormData.countryName,
       StateName: oFormData.stateName,
       CityName: oFormData.cityName,
-      ...(id ? { UpdatedBy: parseInt(userId, 10) } : { CreatedBy: parseInt(userId, 10) })
+      ...(id ? { UpdatedBy: "Admin" } : { CreatedBy: "Admin" })
     };
     try {
-      const response = await apiPost(createOrUpdateStore, payload, token);
-      if (response.data && response.data.status === STATUS.SUCCESS.toUpperCase()) {
-        showEmsg(response.data?.message, STATUS.SUCCESS);
+      const oResponse = await apiPost(CREATE_OR_UPDATE_STORE, payload, token);
+      if (oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
+        showEmsg(oResponse.data?.MESSAGE, STATUS.SUCCESS);
       } else {
-        showEmsg(response.data?.message || t('COMMON.FAILED_OPERATION'), STATUS.ERROR);
+        showEmsg(oResponse.data?.MESSAGE, STATUS.WARNING);
       }
-    } catch (error) {
-      showEmsg(t('COMMON.ERROR_MESSAGE'), STATUS.ERROR);
+      } catch (err) {
+      const errorMessage =
+        err?.response?.data?.MESSAGE || t("COMMON.API_ERROR");
+      showEmsg(errorMessage, STATUS.ERROR);
     }
   };
   return (
     <div className="max-w-7xl mx-auto">
+      <ToastContainer />
       <div className="mb-8">
         <p className="text-gray-500">{id ? t('STORES.EDIT_EXISTING_STORE') : t('STORES.CREATE_NEW_STORE')}</p>
       </div>
-      {sError && (
-        <div className="mb-4 text-red-500 text-center">{sError}</div>
-      )}
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
@@ -174,7 +172,7 @@ const AddStore = () => {
                   name="country"
                   value={oFormData.country}
                   onChange={handleChange}
-                  options={getArray(countriesData).map(c => ({ value: c.CountryID, label: c.CountryName }))}
+                  options={getArray(aCountriesData).map(c => ({ value: c.CountryID, label: c.CountryName }))}
                   Icon={Building}
                   required
                 />
@@ -186,7 +184,7 @@ const AddStore = () => {
                   name="state"
                   value={oFormData.state}
                   onChange={handleChange}
-                  options={getArray(statesData).filter(s => String(s.CountryID) === String(oFormData.country)).map(s => ({ value: s.StateID, label: s.StateName }))}
+                  options={getArray(aStatesData).filter(s => String(s.CountryID) === String(oFormData.country)).map(s => ({ value: s.StateID, label: s.StateName }))}
                   Icon={Building}
                   required
                 />
@@ -198,7 +196,7 @@ const AddStore = () => {
                   name="city"
                   value={oFormData.city}
                   onChange={handleChange}
-                  options={getArray(citiesData).filter(c => String(c.StateID) === String(oFormData.state)).map(c => ({ value: c.CityID, label: c.CityName }))}
+                  options={getArray(aCitiesData).filter(c => String(c.StateID) === String(oFormData.state)).map(c => ({ value: c.CityID, label: c.CityName }))}
                   Icon={Building}
                   required
                 />
