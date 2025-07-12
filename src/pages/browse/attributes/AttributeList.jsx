@@ -114,7 +114,7 @@ const AttributeList = () => {
 
         {sError && !bLoading && (
           <div className="text-center py-12 text-red-500">
-            {t('COMMON.ERROR')}: {sError}
+             {sError}
           </div>
         )}
 

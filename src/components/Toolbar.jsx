@@ -9,8 +9,6 @@ const OrderToolbar = ({
     setViewMode,
     showFilterDropdown,
     setShowFilterDropdown,
-    filterStatus,
-    setFilterStatus,
     additionalFilters,
     handleFilterChange,
     searchPlaceholder,
@@ -73,8 +71,6 @@ const OrderToolbar = ({
                     </div>
                 )}
             </div>
-
-            {/* Filter Panel */}
             {showFilterDropdown && (
                 <div className="mt-4 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
                     <div className="flex justify-between items-center mb-4">
@@ -91,70 +87,37 @@ const OrderToolbar = ({
 
                     <div className="flex flex-wrap gap-4">
                         {additionalFilters.map((filter, index) => (
-                            <div key={index} className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    {filter.label}
-                                </label>
-                                {filter.type === 'range' ? (
-                                    <div className="flex flex-col items-center w-60">
-                                        <div className="flex w-full justify-between mb-1">
-                                            <span>{filter.value[0]}</span>
-                                            <span>{filter.value[1]}</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min={filter.min}
-                                            max={filter.max}
-                                            step={filter.step}
-                                            value={filter.value[0]}
-                                            onChange={e =>
-                                                handleFilterChange(
-                                                    { target: { value: [Number(e.target.value), filter.value[1]] } },
-                                                    filter.name
-                                                )
-                                            }
-                                            className="w-full mb-2"
+                            filter.type !== 'range' && (
+                                <div key={index} className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        {filter.label}
+                                    </label>
+                                    {filter.searchable ? (
+                                        <Select
+                                            value={filter.options && filter.options.find(opt => opt.value === filter.value) || null}
+                                            onChange={option => handleFilterChange({ target: { value: option.value } }, filter.name)}
+                                            options={filter.options}
+                                            placeholder={filter.searchPlaceholder || 'Search...'}
+                                            isSearchable
+                                            className="w-48"
+                                            classNamePrefix="react-select"
+                                            onInputChange={filter.onInputChange}
                                         />
-                                        <input
-                                            type="range"
-                                            min={filter.min}
-                                            max={filter.max}
-                                            step={filter.step}
-                                            value={filter.value[1]}
-                                            onChange={e =>
-                                                handleFilterChange(
-                                                    { target: { value: [filter.value[0], Number(e.target.value)] } },
-                                                    filter.name
-                                                )
-                                            }
-                                            className="w-full"
-                                        />
-                                    </div>
-                                ) : filter.searchable ? (
-                                    <Select
-                                        value={filter.options && filter.options.find(opt => opt.value === filter.value) || null}
-                                        onChange={option => handleFilterChange({ target: { value: option.value } }, filter.name)}
-                                        options={filter.options}
-                                        placeholder={filter.searchPlaceholder || 'Search...'}
-                                        isSearchable
-                                        className="w-48"
-                                        classNamePrefix="react-select"
-                                        onInputChange={filter.onInputChange}
-                                    />
-                                ) : (
-                                    <select
-                                        value={filter.value}
-                                        onChange={e => handleFilterChange(e, filter.name)}
-                                        className="block w-48 px-3 py-2 border border-gray-300 rounded-lg focus:ring-[#5B45E0] focus:border-[#5B45E0] sm:text-sm"
-                                    >
-                                        {filter.options && filter.options.map((option, idx) => (
-                                            <option key={idx} value={option.value}>
-                                                {option.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                )}
-                            </div>
+                                    ) : (
+                                        <select
+                                            value={filter.value}
+                                            onChange={e => handleFilterChange(e, filter.name)}
+                                            className="block w-48 px-3 py-2 border border-gray-300 rounded-lg focus:ring-[#5B45E0] focus:border-[#5B45E0] sm:text-sm"
+                                        >
+                                            {filter.options && filter.options.map((option, idx) => (
+                                                <option key={idx} value={option.value}>
+                                                    {option.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
+                                </div>
+                            )
                         ))}
                     </div>
                 </div>

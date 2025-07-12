@@ -25,7 +25,6 @@ import { STATUS } from "../contants/constants";
 import md5 from "md5";
 import BackButton from "../components/BackButton";
 import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 const getArray = (data) =>
   Array.isArray(data)
     ? data

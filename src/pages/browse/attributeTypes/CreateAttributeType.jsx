@@ -14,7 +14,7 @@ import { STATUS } from "../../../contants/constants";
 import BackButton from "../../../components/BackButton";
 import SelectWithIcon from "../../../components/SelectWithIcon";
 import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+
 const CreateAttributeType = () => {
   const { id: attributeTypeId } = useParams();
   const navigate = useNavigate();

@@ -14,7 +14,7 @@ import { showEmsg } from "../../../utils/ShowEmsg";
 import { STATUS } from "../../../contants/constants";
 import BackButton from "../../../components/BackButton";
 import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+
 const CreateColor = () => {
   const { id: colorId } = useParams();
   const navigate = useNavigate();

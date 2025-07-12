@@ -23,7 +23,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 import { useTitle } from "../../context/TitleContext";
 import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(" ");

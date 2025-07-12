@@ -62,7 +62,7 @@ const CreateBrand = () => {
             token
           );
           if (
-            oResponse.data.STATUS === STATUS.SUCCESS.toLocaleUpperCase() &&
+            oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase() &&
             oResponse.data.data
           ) {
             const brandData = oResponse.data.data.brand;
@@ -196,7 +196,7 @@ const CreateBrand = () => {
         response = await apiPost(CREATE_BRAND, dataToSend, token, true);
       }
 
-      if (response.data.STATUS === STATUS.SUCCESS.toLocaleUpperCase()) {
+      if (response.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
         showEmsg(response.data.MESSAGE, STATUS.SUCCESS);
       } else {
         showEmsg(response.data.MESSAGE, STATUS.WARNING);

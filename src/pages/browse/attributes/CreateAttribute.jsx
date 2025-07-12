@@ -14,7 +14,7 @@ import {
 import { STATUS } from "../../../contants/constants";
 import BackButton from '../../../components/BackButton';
 import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+
 const CreateAttribute = ({ setViewMode }) => {
   const { id: attributeId } = useParams();
   const navigate = useNavigate();

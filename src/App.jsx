@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route} from "react-router-dom";
 import Layout from "./layout/Layout";
 import Browse from "./pages/browse/Browse";
 import Dashboard from "./pages/dashboard/Dashboard";
@@ -23,11 +23,8 @@ import CreateCategory from "./pages/browse/categories/CreateCategory";
 import CreateAttributeType from "./pages/browse/attributeTypes/CreateAttributeType";
 import CreateColor from "./pages/browse/colors/CreateColor";
 import CreateAttribute from "./pages/browse/attributes/CreateAttribute";
-import { toast } from 'react-toastify';
 import { TitleProvider } from "./context/TitleContext";
 import { AllDataProvider } from "./context/AllDataContext";
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 
 const ProtectedRoute = ({ children }) => {
   return <Layout>{children}</Layout>;
@@ -38,7 +35,6 @@ const App = () => {
     <AllDataProvider>
       <TitleProvider>
         <LocationDataProvider>
-          <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
           <Routes>
             <Route path="/" element={<Login />} />
             <Route

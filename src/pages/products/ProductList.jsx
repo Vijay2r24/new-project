@@ -13,7 +13,7 @@ import { useCategories, useBrands, useStores } from '../../context/AllDataContex
 import FullscreenErrorPopup from '../../components/FullscreenErrorPopup';
 import { ToastContainer } from "react-toastify";
 import { showEmsg } from "../../utils/ShowEmsg.jsx";
-import "react-toastify/dist/ReactToastify.css";
+
 
 const getStatusBadgeClass = (status) => {
   if (status === 'active') return 'status-active';
@@ -46,14 +46,13 @@ const ProductList = () => {
     brand: 'all',
     store: 'all',
     status: 'all',
-    price: [0, 1000],
   };
 
   const [oFilters, setFilters] = useState(defaultFilters);
 
   const handleClearFilters = () => {
     setFilters(defaultFilters);
-    setCurrentPage(1); // Optionally reset pagination
+    setCurrentPage(1);
   };
 
   const handleEdit = (productId) => {
@@ -158,7 +157,7 @@ const ProductList = () => {
       if (inputValue && inputValue.trim() !== '') {
         fetchCategories({ searchText: inputValue });
       } else {
-        fetchCategories(); // fetch all if no search
+        fetchCategories();
       }
     } else if (filterName === 'brand') {
       if (inputValue && inputValue.trim() !== '') {

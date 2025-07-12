@@ -16,7 +16,7 @@ import { showEmsg } from "../../../utils/ShowEmsg";
 import { STATUS } from "../../../contants/constants";
 import BackButton from "../../../components/BackButton";
 import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+
 const CreateCategory = () => {
   const { id: categoryId } = useParams();
   const navigate = useNavigate();

@@ -505,7 +505,7 @@ const AddProductForm = () => {
         BrandID: oFormData.BrandID,
         MRP: oFormData.MRP,
         CreatedBy: "Admin",
-        TenantID: 1,
+        TenantID: localStorage.getItem('tenantID'),
         Variants: variantsData,
         ...(productId && { ProductID: productId }),
       })
