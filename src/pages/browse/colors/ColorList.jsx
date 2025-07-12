@@ -8,6 +8,7 @@ import { showEmsg } from '../../../utils/ShowEmsg';
 import Switch from '../../../components/Switch';
 import FullscreenErrorPopup from '../../../components/FullscreenErrorPopup';
 import { UPDATE_COLOUR_STATUS } from '../../../contants/apiRoutes';
+import { ITEMS_PER_PAGE } from '../../../contants/constants';
 
 const ColorList = () => {
   const [sSearchQuery, setSearchQuery] = useState('');
@@ -18,7 +19,7 @@ const ColorList = () => {
   const { data: aColors, loading: bLoading, error: sError, total: iTotalItems, fetch: fetchColors, toggleStatus: toggleColorStatus, updateStatusById } = useColors();
 
   const [nCurrentPage, setCurrentPage] = useState(1);
-  const [iItemsPerPage] = useState(10); 
+  const [iItemsPerPage] = useState(ITEMS_PER_PAGE); 
 
   const [statusPopup, setStatusPopup] = useState({ open: false, colorId: null, newStatus: null });
 

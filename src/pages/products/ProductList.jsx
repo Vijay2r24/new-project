@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { apiGet, apiDelete } from '../../utils/ApiUtils.jsx';
 import { GETPRODUCTDETAILS, DELETE_PRODUCT_WITH_IMAGES } from '../../contants/apiRoutes';
 import { useTitle } from '../../context/TitleContext';
-import { STATUS } from '../../contants/constants.jsx';
+import { ITEMS_PER_PAGE, STATUS } from '../../contants/constants.jsx';
 import { useCategories, useBrands, useStores } from '../../context/AllDataContext';
 import FullscreenErrorPopup from '../../components/FullscreenErrorPopup';
 import { ToastContainer } from "react-toastify";
@@ -26,7 +26,7 @@ const ProductList = () => {
   const [sViewMode, setViewMode] = useState('table');
   const [nCurrentPage, setCurrentPage] = useState(1);
   const { t } = useTranslation();
-  const itemsPerPage = 10; 
+  const itemsPerPage = ITEMS_PER_PAGE; 
   const navigate = useNavigate();
   const [bShowFilterDropdown, setShowFilterDropdown] = useState(false);
   const [aProducts, setProducts] = useState([]);

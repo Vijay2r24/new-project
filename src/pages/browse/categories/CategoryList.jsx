@@ -8,6 +8,7 @@ import { showEmsg } from "../../../utils/ShowEmsg";
 import FullscreenErrorPopup from "../../../components/FullscreenErrorPopup";
 import { UPDATE_CATEGORY_STATUS } from "../../../contants/apiRoutes";
 import Switch from '../../../components/Switch';
+import { ITEMS_PER_PAGE } from "../../../contants/constants";
 
 const CategoryList = () => {
   const { t } = useTranslation();
@@ -23,7 +24,7 @@ const CategoryList = () => {
 
 
   const [nCurrentPage, setCurrentPage] = useState(1);
-  const [iItemsPerPage] = useState(10);
+  const [iItemsPerPage] = useState(ITEMS_PER_PAGE);
 
  
   const [statusPopup, setStatusPopup] = useState({ open: false, categoryId: null, newStatus: null });

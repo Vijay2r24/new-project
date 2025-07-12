@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
-import { apiGet, apiPut, apiPatch, apiPost } from '../utils/ApiUtils.jsx';
+import { apiGet, apiPatch} from '../utils/ApiUtils.jsx';
 import { STATUS } from '../contants/constants.jsx';
 import { useTranslation } from 'react-i18next';
 import {

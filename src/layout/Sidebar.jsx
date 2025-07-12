@@ -102,9 +102,6 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
       const isActivePath = location.pathname.startsWith(navItem.href);
       const isRelatedActive = navItem.relatedPaths?.some(p => location.pathname.startsWith(p));
       const result = isActivePath || isRelatedActive;
-      if (result) {
-        console.log('Sidebar active:', navItem.name, 'for path', location.pathname);
-      }
       return result;
     }
 

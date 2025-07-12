@@ -11,3 +11,4 @@ export const COLORS = {
   SECONDARY: "#2ecc71",
   ERROR: "#e74c3c",
 };
+export const ITEMS_PER_PAGE = 10;

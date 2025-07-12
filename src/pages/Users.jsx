@@ -11,7 +11,7 @@ import {
   DELETE_USER,
 } from "../contants/apiRoutes";
 import { useTitle } from "../context/TitleContext";
-import { STATUS } from "../contants/constants";
+import { ITEMS_PER_PAGE, STATUS } from "../contants/constants";
 import { useRoles, useUsers } from "../context/AllDataContext";
 import FullscreenErrorPopup from "../components/FullscreenErrorPopup";
 import { showEmsg } from "../utils/ShowEmsg";
@@ -30,7 +30,7 @@ const Users = () => {
   const [sShowFilterDropdown, setShowFilterDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const itemsPerPage = 10;
+  const itemsPerPage = ITEMS_PER_PAGE;
   const { data: usersData = [], updateStatusById, fetch, loading: contextLoading, error: contextError, total } = useUsers();
   const nTotalPages = Math.ceil((total || 0) / itemsPerPage);
 

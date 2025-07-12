@@ -8,6 +8,7 @@ import Pagination from "../../../components/Pagination";
 import FullscreenErrorPopup from "../../../components/FullscreenErrorPopup";
 import Switch from "../../../components/Switch";
 import { UPDATE_ATTRIBUTE_TYPE_STATUS } from "../../../contants/apiRoutes";
+import { ITEMS_PER_PAGE } from "../../../contants/constants";
 
 const AttributeTypeList = () => {
   const [sSearchQuery, setSearchQuery] = useState("");
@@ -25,7 +26,7 @@ const AttributeTypeList = () => {
   } = useAttributeTypes();
 
   const [iCurrentPage, setCurrentPage] = useState(1);
-  const [iItemsPerPage] = useState(10);
+  const [iItemsPerPage] = useState(ITEMS_PER_PAGE);
   const [statusPopup, setStatusPopup] = useState({ open: false, attributeTypeId: null, newStatus: null });
 
   useEffect(() => {

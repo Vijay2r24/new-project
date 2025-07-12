@@ -14,7 +14,7 @@ import { UPDATE_ROLE_STATUS, DELETEROLESBYID_API } from '../contants/apiRoutes';
 import { showEmsg } from '../utils/ShowEmsg';
 import { ToastContainer } from "react-toastify";
 import { apiDelete } from '../utils/ApiUtils';
-import { STATUS } from '../contants/constants.jsx';
+import { ITEMS_PER_PAGE, STATUS } from '../contants/constants.jsx';
 
 const UserRolesList = () => {
   const { t } = useTranslation();
@@ -28,7 +28,7 @@ const UserRolesList = () => {
   const [selectedStore, setSelectedStore] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
-  const itemsPerPage = 10;
+  const itemsPerPage = ITEMS_PER_PAGE;
   const nTotalPages = Math.ceil(total / itemsPerPage);
   const [statusPopup, setStatusPopup] = useState({
     open: false,

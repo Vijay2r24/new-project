@@ -13,8 +13,7 @@ import { UPDATE_STORE_STATUS, DELETE_STORE } from '../contants/apiRoutes';
 import { showEmsg } from '../utils/ShowEmsg';
 import FullscreenErrorPopup from '../components/FullscreenErrorPopup';
 import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import { STATUS } from '../contants/constants';
+import { ITEMS_PER_PAGE, STATUS } from '../contants/constants';
 import { apiDelete } from '../utils/ApiUtils';
 
 const Stores = () => {
@@ -42,7 +41,7 @@ const Stores = () => {
   const [statusPopup, setStatusPopup] = useState({ open: false, storeId: null, newStatus: null });
   const [deletePopup, setDeletePopup] = useState({ open: false, storeId: null });
   const { data: aStores, loading, error, total: totalItems, fetch: fetchStores, updateStatusById } = useStores();
-  const itemsPerPage = 10;
+  const itemsPerPage = ITEMS_PER_PAGE;
   const [totalPages, setTotalPages] = useState(1);
   const [viewMode, setViewMode] = useState('table'); 
   const [currentPage, setCurrentPage] = useState(1);

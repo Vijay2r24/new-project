@@ -9,6 +9,7 @@ import FullscreenErrorPopup from '../../../components/FullscreenErrorPopup';
 import Switch from '../../../components/Switch';
 import { showEmsg } from '../../../utils/ShowEmsg';
 import { UPDATE_ATTRIBUTE_STATUS } from '../../../contants/apiRoutes';
+import { ITEMS_PER_PAGE } from '../../../contants/constants';
 
 const AttributeList = () => {
   const [sSearchQuery, setSearchQuery] = useState('');
@@ -20,7 +21,7 @@ const AttributeList = () => {
   const { data: aAttributes = [], loading: bLoading, error: sError, total: iTotalItems, fetch, updateStatusById } = useAttributes();
 
   const [iCurrentPage, setCurrentPage] = useState(1);
-  const [iItemsPerPage] = useState(10); 
+  const [iItemsPerPage] = useState(ITEMS_PER_PAGE); 
 
   const [bShowErrorPopup, setShowErrorPopup] = useState(false);
   const [sErrorMessage, setErrorMessage] = useState('');
