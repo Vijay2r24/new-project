@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route} from "react-router-dom";
 import Layout from "./layout/Layout";
 import Browse from "./pages/browse/Browse";
 import Dashboard from "./pages/dashboard/Dashboard";
@@ -23,7 +23,6 @@ import CreateCategory from "./pages/browse/categories/CreateCategory";
 import CreateAttributeType from "./pages/browse/attributeTypes/CreateAttributeType";
 import CreateColor from "./pages/browse/colors/CreateColor";
 import CreateAttribute from "./pages/browse/attributes/CreateAttribute";
-import { toast } from 'react-toastify';
 import { TitleProvider } from "./context/TitleContext";
 import { AllDataProvider } from "./context/AllDataContext";
 
@@ -36,7 +35,6 @@ const App = () => {
     <AllDataProvider>
       <TitleProvider>
         <LocationDataProvider>
-          <toast position="top-right" reverseOrder={false} />
           <Routes>
             <Route path="/" element={<Login />} />
             <Route

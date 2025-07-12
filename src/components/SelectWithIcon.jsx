@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, forwardRef } from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import ReactDOM from 'react-dom';
 
 const SelectWithIcon = forwardRef(({
   label,
@@ -24,8 +23,6 @@ const SelectWithIcon = forwardRef(({
   const selectRef = useRef(null);
   const inputRef = useRef(null);
   const optionsRef = useRef(null);
-  const portalDropdownRef = useRef(null);
-  const [dropdownStyle, setDropdownStyle] = useState({});
 
   const selectedOptionLabels = Array.isArray(value)
     ? options.filter(option => value.includes(option.value)).map(option => option.label)
@@ -36,6 +33,7 @@ const SelectWithIcon = forwardRef(({
     : selectedOptionLabels[0];
 
   const filteredOptions = options.filter(option =>
+    typeof option.label === 'string' &&
     option.label.toLowerCase().includes(sSearchTerm.toLowerCase())
   );
 
@@ -56,19 +54,6 @@ const SelectWithIcon = forwardRef(({
       }
     }
   }, [nHighlightedIndex, isOpen]);
-
-  useEffect(() => {
-    if (isOpen && selectRef.current) {
-      const rect = selectRef.current.getBoundingClientRect();
-      setDropdownStyle({
-        position: 'absolute',
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-        zIndex: 9999,
-      });
-    }
-  }, [isOpen]);
 
   const handleSelect = (optionValue) => {
     let newValue;
@@ -114,11 +99,9 @@ const SelectWithIcon = forwardRef(({
   };
 
   const handleClickOutside = (event) => {
-    const portalDropdown = portalDropdownRef.current;
     if (
       selectRef.current &&
-      !selectRef.current.contains(event.target) &&
-      (!portalDropdown || !portalDropdown.contains(event.target))
+      !selectRef.current.contains(event.target)
     ) {
       setIsOpen(false);
       setSearchTerm('');
@@ -133,11 +116,11 @@ const SelectWithIcon = forwardRef(({
   }, []);
 
   return (
-    <div className="w-full mt-4 md:mt-0" ref={selectRef}>
+    <div className="w-full mt-4 md:mt-0">
       <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-2">
         {label}
       </label>
-      <div className="relative group">
+      <div className="relative group" ref={selectRef}>
         <div
           ref={ref}
           className={`relative w-full pl-12 pr-4 py-3 border ${error ? 'border-red-300' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-custom-bg focus:border-custom-bg transition-all duration-200 group-hover:border-custom-bg bg-white shadow-sm cursor-pointer flex items-center justify-between ${multiple && value.length > 0 ? 'h-auto min-h-[46px] items-start py-2' : 'h-[46px]'}`}
@@ -186,8 +169,8 @@ const SelectWithIcon = forwardRef(({
             {error}
           </p>
         )}
-        {isOpen && typeof window !== 'undefined' && document.getElementById('portal-root') && ReactDOM.createPortal(
-          <div ref={portalDropdownRef} style={dropdownStyle} className="rounded-md bg-white shadow-lg border border-gray-200 max-h-60 overflow-auto focus:outline-none">
+        {isOpen && (
+          <div className="absolute left-0 top-full mt-1 w-full rounded-md bg-white shadow-lg border border-gray-200 max-h-60 overflow-auto z-50">
             <div className="px-4 py-2">
               <div className="relative">
                 <input
@@ -199,6 +182,9 @@ const SelectWithIcon = forwardRef(({
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
                     setHighlightedIndex(-1);
+                    if (typeof rest.onInputChange === 'function') {
+                      rest.onInputChange(e.target.value);
+                    }
                   }}
                   onKeyDown={handleKeyDown}
                 />
@@ -243,12 +229,11 @@ const SelectWithIcon = forwardRef(({
                 ))}
               </ul>
             )}
-          </div>,
-          document.getElementById('portal-root')
+          </div>
         )}
       </div>
     </div>
   );
 });
 
-export default SelectWithIcon; 
+export default SelectWithIcon;

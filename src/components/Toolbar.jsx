@@ -1,5 +1,6 @@
 import { Search, List, LayoutGrid, Filter } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import Select from 'react-select';
 
 const OrderToolbar = ({
     searchTerm,
@@ -8,14 +9,13 @@ const OrderToolbar = ({
     setViewMode,
     showFilterDropdown,
     setShowFilterDropdown,
-    filterStatus,
-    setFilterStatus,
     additionalFilters,
     handleFilterChange,
     searchPlaceholder,
     showSearch = true,
     showViewToggle = true,
     showFilterButton = true,
+    onClearFilters,
 }) => {
     const { t } = useTranslation();
     return (
@@ -71,40 +71,53 @@ const OrderToolbar = ({
                     </div>
                 )}
             </div>
-
-            {/* Filter Panel */}
             {showFilterDropdown && (
                 <div className="mt-4 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-sm font-medium text-gray-900">{t('TOOLBAR.FILTERS')}</h3>
-                        {filterStatus !== 'all' && (
+                        {onClearFilters && (
                             <button
-                                onClick={() => setFilterStatus('all')}
+                                onClick={onClearFilters}
                                 className="text-secondary hover:text-gray-700 flex items-center"
                             >
-                                {t('TOOLBAR.CLEAR')}
+                                {t('COMMON.CLEAR')}
                             </button>
                         )}
                     </div>
 
                     <div className="flex flex-wrap gap-4">
                         {additionalFilters.map((filter, index) => (
-                            <div key={index} className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    {filter.label}
-                                </label>
-                                <select
-                                    value={filter.value}
-                                    onChange={(e) => handleFilterChange(e, filter.name)}
-                                    className="block w-48 px-3 py-2 border border-gray-300 rounded-lg focus:ring-[#5B45E0] focus:border-[#5B45E0] sm:text-sm"
-                                >
-                                    {filter.options.map((option, idx) => (
-                                        <option key={idx} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
+                            filter.type !== 'range' && (
+                                <div key={index} className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        {filter.label}
+                                    </label>
+                                    {filter.searchable ? (
+                                        <Select
+                                            value={filter.options && filter.options.find(opt => opt.value === filter.value) || null}
+                                            onChange={option => handleFilterChange({ target: { value: option.value } }, filter.name)}
+                                            options={filter.options}
+                                            placeholder={filter.searchPlaceholder || 'Search...'}
+                                            isSearchable
+                                            className="w-48"
+                                            classNamePrefix="react-select"
+                                            onInputChange={filter.onInputChange}
+                                        />
+                                    ) : (
+                                        <select
+                                            value={filter.value}
+                                            onChange={e => handleFilterChange(e, filter.name)}
+                                            className="block w-48 px-3 py-2 border border-gray-300 rounded-lg focus:ring-[#5B45E0] focus:border-[#5B45E0] sm:text-sm"
+                                        >
+                                            {filter.options && filter.options.map((option, idx) => (
+                                                <option key={idx} value={option.value}>
+                                                    {option.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
+                                </div>
+                            )
                         ))}
                     </div>
                 </div>

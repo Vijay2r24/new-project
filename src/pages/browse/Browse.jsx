@@ -22,6 +22,8 @@ import {
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 import { useTitle } from "../../context/TitleContext";
+import { ToastContainer } from "react-toastify";
+
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(" ");
@@ -185,6 +187,7 @@ const Browse = () => {
           </Tab.Panels>
         </Tab.Group>
       </div>
+      <ToastContainer />
     </div>
   );
 };
