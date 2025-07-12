@@ -16,7 +16,7 @@ import { useTranslation } from "react-i18next";
 import { FaCamera } from "react-icons/fa";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiGet, apiPost } from "../utils/ApiUtils";
-import { getUserById, userCreateOrUpdate } from "../contants/apiRoutes";
+import { GET_USER_BY_ID, USER_CREATE_OR_UPDATE } from "../contants/apiRoutes";
 import { showEmsg } from "../utils/ShowEmsg";
 import { LocationDataContext } from "../context/LocationDataProvider";
 import { useTitle } from "../context/TitleContext";
@@ -25,6 +25,7 @@ import { STATUS } from "../contants/constants";
 import md5 from "md5";
 import BackButton from "../components/BackButton";
 import { ToastContainer } from "react-toastify";
+import userProfile from '../../assets/images/userProfile.svg';
 const getArray = (data) =>
   Array.isArray(data)
     ? data
@@ -87,7 +88,7 @@ const AddUser = () => {
       const fetchUser = async () => {
         const token = localStorage.getItem("token");
         try {
-          const oResponse = await apiGet(`${getUserById}/${id}`, {}, token);
+          const oResponse = await apiGet(`${GET_USER_BY_ID}/${id}`, {}, token);
           const resData = oResponse.data;
 
           if (
@@ -170,15 +171,19 @@ const AddUser = () => {
     const file = e.target.files[0];
     if (file) {
       setProfileImage(file);
+      setImgError(false); // Reset error state on new upload
       setImgLoading(true);
       const reader = new FileReader();
       reader.onloadend = () => {
         setProfileImagePreview(reader.result);
+        setImgLoading(false); // Set loading false after preview is ready
       };
       reader.readAsDataURL(file);
     } else {
       setProfileImage(null);
       setProfileImagePreview(null);
+      setImgError(false);
+      setImgLoading(false);
     }
   };
 
@@ -295,15 +300,10 @@ const AddUser = () => {
     if (nProfileImage) {
       formData.append("ProfileImage", nProfileImage);
     }
-    if (id) {
-      formData.append("UpdatedBy", parseInt(userId, 10));
-    } else {
-      formData.append("CreatedBy", parseInt(userId, 10));
-    }
 
     try {
       const oResponse = await apiPost(
-        userCreateOrUpdate,
+      USER_CREATE_OR_UPDATE,
         formData,
         token,
         true
@@ -353,7 +353,7 @@ const AddUser = () => {
             src={
               !bImgError && nProfileImagePreview
                 ? nProfileImagePreview
-                : "../../assets/images/download.jpg"
+                : userProfile
             }
             alt={t("ADD_USER.PROFILE_PREVIEW")}
             className={`h-20 w-20 rounded-full object-cover border ${
@@ -453,20 +453,62 @@ const AddUser = () => {
           </div>
           <div className="p-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <TextInputWithIcon
-                label={t("COMMON.PASSWORD")}
-                id="password"
-                name="password"
-                value={oFormData.password}
+              <SelectWithIcon
+                label={t("ADD_USER.USER_ROLE")}
+                id="role"
+                name="role"
+                value={oFormData.role}
                 onChange={handleChange}
-                placeholder={t("COMMON.ENTER_PASSWORD")}
-                Icon={Lock}
-                type="password"
-                error={oErrors.password}
+                options={roles.map((r) => ({
+                  value: r.RoleID,
+                  label: r.RoleName,
+                }))}
+                Icon={Building}
+                disabled={rolesLoading}
+                error={oErrors.role || rolesError}
+                placeholder={
+                  rolesLoading ? t("COMMON.LOADING") : t("ADD_USER.SELECT_ROLE")
+                }
+                searchable
+                searchPlaceholder={t('COMMON.SEARCH_ROLE') || 'Search role'}
+                onInputChange={(inputValue) => fetchRoles({ searchText: inputValue })}
               />
+
+              {/* Password and Confirm Password side by side */}
+              <div className="col-span-1 md:col-span-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <TextInputWithIcon
+                    label={t("COMMON.PASSWORD")}
+                    id="password"
+                    name="password"
+                    value={oFormData.password}
+                    onChange={handleChange}
+                    placeholder={t("COMMON.ENTER_PASSWORD")}
+                    Icon={Lock}
+                    type="password"
+                    error={oErrors.password}
+                  />
+                  <TextInputWithIcon
+                    label={t("COMMON.CONFIRM_PASSWORD")}
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    value={oFormData.confirmPassword}
+                    onChange={handleChange}
+                    placeholder={t("COMMON.CONFIRM_PASSWORD")}
+                    Icon={Lock}
+                    type="password"
+                    error={oErrors.confirmPassword}
+                  />
+                </div>
+              </div>
+
+              {/* Password strength & requirements stay full width */}
               {typeof oFormData.password === "string" &&
                 oFormData.password.length > 0 && (
-                  <div style={{ marginTop: 4 }}>
+                  <div
+                    className="col-span-1 md:col-span-2"
+                    style={{ marginTop: 4 }}
+                  >
                     <span
                       style={{
                         color:
@@ -480,10 +522,10 @@ const AddUser = () => {
                       }}
                     >
                       {passwordStrength === "strong"
-                        ? t("COMMON.PASSWORD_STRONG")
+                        ? t("ADD_USER.PASSWORD_STRONG")
                         : passwordStrength === "medium"
-                        ? t("COMMON.PASSWORD_MEDIUM")
-                        : t("COMMON.PASSWORD_WEAK")}
+                        ? t("ADD_USER.PASSWORD_MEDIUM")
+                        : t("ADD_USER.PASSWORD_WEAK")}
                     </span>
                     <ul
                       style={{
@@ -532,34 +574,6 @@ const AddUser = () => {
                     )}
                   </div>
                 )}
-              <TextInputWithIcon
-                label={t("COMMON.CONFIRM_PASSWORD")}
-                id="confirmPassword"
-                name="confirmPassword"
-                value={oFormData.confirmPassword}
-                onChange={handleChange}
-                placeholder={t("COMMON.CONFIRM_PASSWORD")}
-                Icon={Lock}
-                type="password"
-                error={oErrors.confirmPassword}
-              />
-              <SelectWithIcon
-                label={t("ADD_USER.USER_ROLE")}
-                id="role"
-                name="role"
-                value={oFormData.role}
-                onChange={handleChange}
-                options={roles.map((r) => ({
-                  value: r.RoleID,
-                  label: r.RoleName,
-                }))}
-                Icon={Building}
-                disabled={rolesLoading}
-                error={oErrors.role || rolesError}
-                placeholder={
-                  rolesLoading ? t("COMMON.LOADING") : t("ADD_USER.SELECT_ROLE")
-                }
-              />
             </div>
           </div>
         </div>

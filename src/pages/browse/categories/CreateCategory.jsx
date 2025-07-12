@@ -309,6 +309,7 @@ const CreateCategory = () => {
               error={oErrors.ParentCategoryId || sErrorCategories}
               placeholder={t("PRODUCT_SETUP.CREATE_CATEGORY.SELECT_PARENT")}
               Icon={Tag}
+              onInputChange={(value) => categories.fetch({ searchText: value })}
             />
           </div>
           <div className="w-full md:w-1/2">

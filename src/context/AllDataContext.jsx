@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
-import { apiGet, apiPut, apiPatch, apiPost } from '../utils/ApiUtils.jsx';
+import { apiGet, apiPatch} from '../utils/ApiUtils.jsx';
 import { STATUS } from '../contants/constants.jsx';
 import { useTranslation } from 'react-i18next';
 import {
@@ -10,6 +10,7 @@ import {
   ATTRIBUTE_TYPE,
   GET_ALL_ROLES_API,
   GET_ALL_STORES,
+  GET_ALL_USERS,
 } from '../contants/apiRoutes';
 
 const AllDataContext = createContext();
@@ -54,6 +55,12 @@ const aResourceConfigsStatic = [
     api: GETALL_CATEGORY,
     totalKey: 'totalRecords',
     idField: 'CategoryID',
+  },
+  {
+    key: 'users',
+    api: GET_ALL_USERS,
+    totalKey: 'totalRecords',
+    idField: 'UserID',
   },
 ];
 
@@ -105,6 +112,7 @@ export const AllDataProvider = ({ children }) => {
       const filteredParams = { ...params };
       if (filteredParams.pageNumber === undefined) delete filteredParams.pageNumber;
       // Don't remove pageSize - let it be optional for the API
+      console.log('API params for', key, filteredParams); // Debug log for params
       const oResponse = await apiGet(api, filteredParams, token);
       let data = [];
       let total = 0;

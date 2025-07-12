@@ -375,12 +375,12 @@
     "CREATE_PRODUCT_DESCRIPTION": "Fill in the details below to create a new product for your store.",
     "EDIT_PRODUCT_DESCRIPTION": "Update the product details below.",
     "CONFIRM_DELETE_TITLE": "Delete Product?",
-    "CONFIRM_DELETE_MESSAGE": "Are you sure you want to delete this product? This action cannot be undone."
+    "CONFIRM_DELETE_MESSAGE": "Are you sure you want to delete this product? this action cannot be undone."
   },
   "PRODUCT_CREATION": {
     "PRODUCT_NAME": "Product Name",
     "PRODUCT_NAME_PLACEHOLDER": "Enter product name",
-    "ATTRIBUTE_ID": "Attribute ID",
+    "ATTRIBUTE_ID": "Attribute",
     "ATTRIBUTE_ID_PLACEHOLDER": "Select attribute type",
     "BRAND_ID": "Brand",
     "BRAND_ID_PLACEHOLDER": "Select brand",
@@ -427,6 +427,7 @@
     "ATTRIBUTE_VALUES_REQUIRED": "Attribute values are required",
     "QUANTITY_REQUIRED": "Quantity is required",
     "STORE_ID_PLACEHOLDER":"Select store",
+    "STORE_ID_REQUIRED": "Store is required",
     "QUANTITY_INVALID": "Quantity must be a non-negative integer",
     "SELLING_PRICE_REQUIRED": "Selling price is required",
     "SELLING_PRICE_INVALID": "Selling price must be a positive number",
@@ -453,7 +454,10 @@
     "FILTERS": {
       "USER_ROLE": "User Role",
       "STATUS": "Status"
-    }
+    },
+    "STATUS_CONFIRM_ACTIVE": "Are you sure you want to set this store as Active?",
+    "STATUS_CONFIRM_INACTIVE": "Are you sure you want to set this store as Inactive?",
+    "DELETE_CONFIRM_MESSAGE":"Are you sure you want to delete this store? this action cannot be undone."
   },
   "CREATE_STORE": {
     "STORE_NAME": "Store Name",
@@ -486,7 +490,8 @@
     "FILTERS": {
       "USER_ROLE": "User Role",
       "STATUS": "Status"
-    }
+    },
+    "DELETE_CONFIRM_MESSAGE": "Are you sure you want to delete this user? this action cannot be undone."
   },
   "ADD_USER": {
     "ADD_NEW_USER": "Add New User",
@@ -725,7 +730,9 @@
       "STORE_NAME": "Store Name"
     },
     "NO_ROLES_FOUND": "No user roles found.",
-    "NO_ROLES_ON_PAGE": "No user roles found on this page."
+    "NO_ROLES_ON_PAGE": "No user roles found on this page.",
+    "STATUS_CONFIRM_MESSAGE": "Are you sure you want to set this role as {{status}}?",
+    "DELETE_CONFIRM_MESSAGE": "Are you sure you want to delete this role? this action cannot be undone."
   },
   "TOOLBAR": {
     "TABLE_VIEW": "Table View",

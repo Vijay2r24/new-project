@@ -375,6 +375,8 @@ const AddProductForm = () => {
         "ProductDescription",
         t("PRODUCT_CREATION.PRODUCT_DESCRIPTION_REQUIRED")
       );
+    if (!oFormData.StoreID)
+      addError("StoreID", t("PRODUCT_CREATION.STORE_ID_REQUIRED") || "Store is required");
     aVariants.forEach((variant, index) => {
       if (!variant.ColourID)
         addError(
@@ -505,7 +507,7 @@ const AddProductForm = () => {
         BrandID: oFormData.BrandID,
         MRP: oFormData.MRP,
         CreatedBy: "Admin",
-        TenantID: localStorage.getItem('tenantID'),
+        TenantID:"1" ,
         Variants: variantsData,
         ...(productId && { ProductID: productId }),
       })

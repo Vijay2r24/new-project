@@ -9,6 +9,7 @@ import { showEmsg } from "../../../utils/ShowEmsg";
 import FullscreenErrorPopup from "../../../components/FullscreenErrorPopup";
 import { UPDATE_BRAND_STATUS } from '../../../contants/apiRoutes';
 import Switch from '../../../components/Switch';
+import { ITEMS_PER_PAGE } from "../../../contants/constants";
 
 const BrandList = () => {
   const [bShowCreate, setShowCreate] = useState(false);
@@ -22,7 +23,7 @@ const BrandList = () => {
   const sError = brands.error;
   const iTotalItems = brands.total;
   const [nCurrentPage, setCurrentPage] = useState(1);
-  const [iItemsPerPage] = useState(10);
+  const [iItemsPerPage] = useState(ITEMS_PER_PAGE);
   const { updateStatusById } = useBrands();
   const [statusPopup, setStatusPopup] = useState({ open: false, brandId: null, newStatus: null });
 

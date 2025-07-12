@@ -158,7 +158,7 @@ const App = () => {
               }
             />
             <Route
-              path="/editUserRole/:roleId"
+              path="/edit-UserRole/:roleId"
               element={
                 <ProtectedRoute>
                   <AddUserRole />
