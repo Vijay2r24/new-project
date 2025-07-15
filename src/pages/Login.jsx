@@ -182,7 +182,7 @@ const Login = () => {
           () => {
             localStorage.setItem("token", data.token);
             localStorage.setItem("userId", data.UserID);
-            localStorage.setItem("tenantID", data.tenantID);
+            localStorage.setItem("tenantID", data.TenantID);
             fetchApiData();
             navigate("/dashboard");
           }

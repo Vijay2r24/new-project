@@ -136,9 +136,6 @@ const BrandList = () => {
                   <th className="table-head-cell">
                     {t("PRODUCT_SETUP.BRANDS.TABLE.NAME")}
                   </th>
-                  <th className="table-head-cell">
-                    {t("PRODUCT_SETUP.BRANDS.TABLE.LOGO")}
-                  </th>
                   <th className="table-head-cell">{t("COMMON.STATUS")}</th>
                   <th className="table-head-cell">
                     {t("PRODUCT_SETUP.BRANDS.TABLE.CREATED_AT")}
@@ -150,27 +147,27 @@ const BrandList = () => {
               </thead>
               <tbody className="table-body">
                 {aBrands.map((brand) => (
-                  <tr key={brand.BrandID} className="table-row">
-                    <td className="table-cell table-cell-text">
-                      <Link
-                        to={`/browse/editbrand/${brand.BrandID}`}
-                        className="text-blue-600 hover:underline"
-                      >
-                        {brand.BrandName}
-                      </Link>
-                    </td>
-                    <td className="table-cell">
-                      <div className="h-10 w-10 flex items-center justify-center rounded-full border overflow-hidden bg-white">
-                        {brand.BrandLogo ? (
-                          <img
-                            src={brand.BrandLogo.startsWith('http') ? brand.BrandLogo : `${process.env.REACT_APP_IMAGE_BASE_URL || ''}${brand.BrandLogo}`}
-                            alt={brand.BrandName}
-                           className="w-full h-full object-cover"
-                            onError={e => { e.target.onerror = null; e.target.src = '/no-image.png'; }}
-                          />
-                        ) : (
-                          <span className="text-gray-400 text-xs">No Image</span>
-                        )}
+                  <tr key={brand.BrandID} className="table-row items-center align-middle">
+                    <td className="table-cell table-cell-text align-middle">
+                      <div className="flex items-center gap-2">
+                        <div className="h-10 w-10 flex items-center justify-center rounded-full border overflow-hidden bg-white">
+                          {brand.BrandLogo ? (
+                            <img
+                              src={brand.BrandLogo.startsWith('http') ? brand.BrandLogo : `${process.env.REACT_APP_IMAGE_BASE_URL || ''}${brand.BrandLogo}`}
+                              alt={brand.BrandName}
+                              className="w-full h-full object-cover"
+                              onError={e => { e.target.onerror = null; e.target.src = '/no-image.png'; }}
+                            />
+                          ) : (
+                            <span className="text-gray-400 text-xs">{t("COMMON.NO_IMAGE")}</span>
+                          )}
+                        </div>
+                        <Link
+                          to={`/browse/editbrand/${brand.BrandID}`}
+                          className="text-blue-600 hover:underline"
+                        >
+                          {brand.BrandName}
+                        </Link>
                       </div>
                     </td>
                     <td className="table-cell">
@@ -184,9 +181,8 @@ const BrandList = () => {
                         {brand.Status}
                       </span>
                     </td>
-
                     <td className="table-cell table-cell-text">
-                      {new Date(brand.CreatedAt).toLocaleDateString()}
+                      {new Date(brand.CreatedAt).toLocaleString(undefined, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true })}
                     </td>
                     <td className="table-cell table-cell-text text-blue-600 hover:underline cursor-pointer">
                       <Switch

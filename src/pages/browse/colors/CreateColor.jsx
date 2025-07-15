@@ -20,7 +20,7 @@ const CreateColor = () => {
   const navigate = useNavigate();
   const isEditing = !!colorId;
   const [oFormData, setFormData] = useState({
-    TenantID: "1",
+    TenantID: localStorage.getItem('tenantID'),
     Name: "",
     HexCode: "#000000",
     IsActive: true,
@@ -122,7 +122,7 @@ const CreateColor = () => {
           HexCode: oFormData.HexCode,
           RgbCode: oFormData.RgbCode,
           Status: oFormData.IsActive ? "Active" : "Inactive",
-          TenantID: 1,
+          TenantID: oFormData.TenantID,
         };
         oResponse = await apiPut(`${UPDATE_COLOUR}/${colorId}`, payload, token);
       } else {
@@ -154,7 +154,7 @@ const CreateColor = () => {
 
   return (
     <div>
-      <ToastContainer />
+      {isEditing && <ToastContainer />}
       <div className="flex items-center mb-6">
         <BackButton
           onClick={() =>

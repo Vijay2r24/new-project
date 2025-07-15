@@ -25,7 +25,7 @@ const CreateAttributeType = () => {
     Code: "",
     AttributeTypeDescription: "",
     Status: true,
-    TenantID: "1",
+    TenantID: localStorage.getItem('tenantID'),
   });
 
   const [oErrors, setErrors] = useState({});
@@ -117,7 +117,7 @@ const CreateAttributeType = () => {
       if (isEditing) {
         payload = {
           AttributeTypeID: attributeTypeId,
-          TenantID: parseInt(oFormData.TenantID),
+          TenantID: oFormData.TenantID,
           Name: oFormData.AttributeTypeName,
           Code: oFormData.Code,
           AttributeTypeDescription: oFormData.AttributeTypeDescription,
@@ -126,7 +126,7 @@ const CreateAttributeType = () => {
         };
       } else {
         payload = {
-          TenantID: parseInt(oFormData.TenantID),
+          TenantID: oFormData.TenantID,
           Name: oFormData.AttributeTypeName,
           Code: oFormData.Code,
           AttributeTypeDescription: oFormData.AttributeTypeDescription,
@@ -158,7 +158,7 @@ const CreateAttributeType = () => {
 
   return (
     <div>
-      <ToastContainer />
+      {isEditing && <ToastContainer />}
       <div className="flex items-center mb-6">
         <BackButton
           onClick={() =>

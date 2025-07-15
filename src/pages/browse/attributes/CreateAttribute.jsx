@@ -23,7 +23,7 @@ const CreateAttribute = ({ setViewMode }) => {
     name: "",
     type: "",
     description: "",
-    TenantID: "1",
+    TenantID: localStorage.getItem('tenantID'),
     status: "Active",
   });
   const { t } = useTranslation();
@@ -57,7 +57,7 @@ const CreateAttribute = ({ setViewMode }) => {
               name: attributeData.AttributeName || "",
               type: attributeData.AttributeTypeID || "",
               description: attributeData.AttributeDescription || "",
-              TenantID: attributeData.TenantID?.toString() || "1",
+              TenantID: attributeData.TenantID?.toString(),
               status: attributeData.Status,
             }));
           } else {
@@ -127,7 +127,7 @@ const CreateAttribute = ({ setViewMode }) => {
     }
 
     const payload = {
-      TenantID: parseInt(oFormData.TenantID, 10),
+      TenantID:oFormData.TenantID,
       AttributeName: oFormData.name,
       Status: oFormData.status,
       AttributeTypeID: oFormData.type,
@@ -162,7 +162,7 @@ const CreateAttribute = ({ setViewMode }) => {
   };
   return (
     <div>
-      <ToastContainer />
+      {isEditing && <ToastContainer />}
       <div className="flex items-center mb-6">
         <BackButton onClick={() => navigate('/browse', { state: { fromAttributeEdit: true } })} />
         <h2 className="text-xl font-bold text-gray-900">
@@ -198,7 +198,7 @@ const CreateAttribute = ({ setViewMode }) => {
                   label: attributeTypesLoading 
                     ? t("COMMON.LOADING") 
                     : attributeTypesError 
-                    ? t("COMMON.ERROR_LOADING_TYPES")
+                    ? t("COMMON.ERROR")
                     : t("PRODUCT_SETUP.CREATE_ATTRIBUTES.SELECT_TYPE"),
                 },
                 ...aAttributeTypes.map((type) => ({

@@ -38,6 +38,18 @@ const UserRolesList = () => {
   const [roles, setRoles] = useState([]);
   const [deletePopup, setDeletePopup] = useState({ open: false, roleId: null });
 
+  // Add useEffect to fetch all stores on mount
+  useEffect(() => {
+    fetchStores();
+  }, []);
+
+  // Add useEffect to fetch stores when filter dropdown is opened
+  useEffect(() => {
+    if (showFilterDropdown) {
+      fetchStores();
+    }
+  }, [showFilterDropdown]);
+
   const storeOptions = [
     { value: 'all', label: t('COMMON.ALL') },
     ...aStores.map(store => ({
@@ -94,7 +106,7 @@ const UserRolesList = () => {
       searchText: sSearchTerm,
     };
     if (selectedStore !== 'all') {
-      filterParams.StoreID = selectedStore;
+      filterParams.StoreIDs = selectedStore;
     }
     if (selectedStatus !== 'all') {
       filterParams.status = selectedStatus;
@@ -229,7 +241,7 @@ const UserRolesList = () => {
                 ) : nError ? (
                   <tr>
                     <td colSpan={5} className="text-center py-4 text-red-500">
-                      {t('USER_ROLES_LIST.FETCH_ERROR')}
+                      {t('USER_ROLES_LIST.NO_ROLES_FOUND')}
                     </td>
                   </tr>
                 ) : paginatedRoles.length === 0 ? (

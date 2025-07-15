@@ -171,7 +171,7 @@ const AddProductForm = () => {
         };
       });
       setVariants(fetchedVariants);
-      setFetchedProduct(null); // Prevent re-running
+      setFetchedProduct(null);
     }
   }, [fetchedProduct, aAttributes]);
 
@@ -261,8 +261,7 @@ const AddProductForm = () => {
   const removeVariant = (index) => {
     setVariants(prevVariants => {
       const newVariants = prevVariants.filter((_, i) => i !== index);
-      
-      // Update validation errors
+    
       setValidationErrors((prev) => {
         const newErrors = { ...prev };
         Object.keys(newErrors).forEach((key) => {
@@ -305,7 +304,7 @@ const AddProductForm = () => {
         [`variant_${variantIndex}_images`]: undefined,
       }));
     },
-    [] // Remove aVariants dependency
+    []
   );
 
   const removeImage = (variantIndex, imageIndex) => {
@@ -314,7 +313,6 @@ const AddProductForm = () => {
       URL.revokeObjectURL(newVariants[variantIndex].images[imageIndex].preview);
       newVariants[variantIndex].images.splice(imageIndex, 1);
       
-      // Check if no images remain after removal
       if (newVariants[variantIndex].images.length === 0) {
         setValidationErrors((prev) => ({
           ...prev,
@@ -507,7 +505,7 @@ const AddProductForm = () => {
         BrandID: oFormData.BrandID,
         MRP: oFormData.MRP,
         CreatedBy: "Admin",
-        TenantID:"1" ,
+        TenantID: localStorage.getItem('tenantID'),
         Variants: variantsData,
         ...(productId && { ProductID: productId }),
       })
@@ -569,7 +567,6 @@ const AddProductForm = () => {
 
     return (
       <div className="mt-4">
-        <ToastContainer />
         <div
           {...getRootProps()}
           className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-300
@@ -628,6 +625,7 @@ const AddProductForm = () => {
 
   return (
     <div className="min-h-screen">
+        <ToastContainer />
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
@@ -713,7 +711,11 @@ const AddProductForm = () => {
                       placeholder={
                         t("PRODUCT_CREATION.MRP_PLACEHOLDER")
                       }
-                      Icon={DollarSign}
+                      Icon={() => (
+                        <span className="text-lg font-bold text-gray-400" style={{ fontFamily: 'inherit' }}>
+                          ₹
+                        </span>
+                      )}
                       error={oValidationErrors.MRP}
                       ref={mrpRef}
                     />
@@ -986,7 +988,11 @@ const AddProductForm = () => {
                               t("PRODUCT_CREATION.SELLING_PRICE_PLACEHOLDER") ||
                               "Enter selling price"
                             }
-                            Icon={DollarSign}
+                            Icon={() => (
+                              <span className="text-lg font-bold text-gray-400" style={{ fontFamily: 'inherit' }}>
+                                ₹
+                              </span>
+                            )}
                             error={
                               oValidationErrors[`variant_${index}_SellingPrice`]
                             }

@@ -102,6 +102,13 @@ const OrderToolbar = ({
                                             className="w-48"
                                             classNamePrefix="react-select"
                                             onInputChange={filter.onInputChange}
+                                            components={{
+                                                DropdownIndicator: (props) => (
+                                                    <div className="pl-2 flex items-center">
+                                                        <Search className="h-4 w-4 text-gray-400" />
+                                                    </div>
+                                                ),
+                                            }}
                                         />
                                     ) : (
                                         <select
