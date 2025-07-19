@@ -66,7 +66,7 @@ const ProductList = () => {
   };
 
   const handleEdit = (productId) => {
-    navigate(`/Addproduct/${productId}`);
+    navigate(`/edit-product/${productId}`);
   };
 
   const handleDelete = (productId) => {

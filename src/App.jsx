@@ -27,6 +27,27 @@ import { TitleProvider } from "./context/TitleContext";
 import { AllDataProvider } from "./context/AllDataContext";
 import ProtectedRoute from './components/ProtectedRoute';
 import NotAuthorized from './pages/NotAuthorized';
+import { getPermissionCode } from './utils/permissionUtils';
+
+
+const dashboardPermission = getPermissionCode('Menu Management', 'Dashboard');
+const ordersPermission = getPermissionCode('Menu Management', 'Orders');
+const storesPermission = getPermissionCode('Menu Management', 'Stores');
+const usersPermission = getPermissionCode('Menu Management', 'Users');
+const userRolesPermission = getPermissionCode('Menu Management', 'UserRoles');
+const bannersPermission = getPermissionCode('Menu Management', 'Banners');
+const notificationsPermission = getPermissionCode('Menu Management', 'Notification');
+const productsPermission = getPermissionCode('Menu Management', 'Products');
+const addProductPermission = getPermissionCode('Menu Management', 'Products');
+const editProductPermission = getPermissionCode('Menu Management', 'Products');
+const addStorePermission = getPermissionCode('Menu Management', 'Stores');
+const editStorePermission = getPermissionCode('Menu Management', 'Stores');
+const addUserPermission = getPermissionCode('Menu Management', 'Users');
+const editUserPermission = getPermissionCode('Menu Management', 'Users');
+const addUserRolePermission = getPermissionCode('Menu Management', 'UserRoles');
+const editUserRolePermission = getPermissionCode('Menu Management', 'UserRoles');
+const bannersCreatePermission = getPermissionCode('Menu Management', 'Banners');
+const orderDetailPermission = getPermissionCode('Menu Management', 'Orders');
 
 
 const App = () => {
@@ -39,7 +60,7 @@ const App = () => {
             <Route
               path="/dashboard"
               element={
-                <ProtectedRoute permissionCode="ACCESS_DASBOARD">
+                <ProtectedRoute permissionCode={dashboardPermission}>
                   <Dashboard />
                 </ProtectedRoute>
               }
@@ -47,7 +68,7 @@ const App = () => {
             <Route
               path="/browse"
               element={
-                <ProtectedRoute permissionCode="ACCESS_PRODUCTS">
+                <ProtectedRoute permissionCode={productsPermission}>
                   <Browse />
                 </ProtectedRoute>
               }
@@ -55,7 +76,7 @@ const App = () => {
             <Route
               path="/browse/editbrand/:id"
               element={
-                <ProtectedRoute permissionCode="ACCESS_PRODUCTS">
+                <ProtectedRoute permissionCode={productsPermission}>
                   <CreateBrand />
                 </ProtectedRoute>
               }
@@ -63,7 +84,7 @@ const App = () => {
             <Route
               path="/browse/editcatagiry/:id"
               element={
-                <ProtectedRoute permissionCode="ACCESS_PRODUCTS">
+                <ProtectedRoute permissionCode={productsPermission}>
                   <CreateCategory />
                 </ProtectedRoute>
               }
@@ -71,7 +92,7 @@ const App = () => {
             <Route
               path="/browse/editattributetype/:id"
               element={
-                <ProtectedRoute permissionCode="ACCESS_PRODUCTS">
+                <ProtectedRoute permissionCode={productsPermission}>
                   <CreateAttributeType />
                 </ProtectedRoute>
               }
@@ -79,7 +100,7 @@ const App = () => {
             <Route
               path="/browse/editcolor/:id"
               element={
-                <ProtectedRoute permissionCode="ACCESS_PRODUCTS">
+                <ProtectedRoute permissionCode={productsPermission}>
                   <CreateColor />
                 </ProtectedRoute>
               }
@@ -87,7 +108,7 @@ const App = () => {
             <Route
               path="/browse/editattribute/:id"
               element={
-                <ProtectedRoute permissionCode="ACCESS_PRODUCTS">
+                <ProtectedRoute permissionCode={productsPermission}>
                   <CreateAttribute />
                 </ProtectedRoute>
               }
@@ -95,7 +116,7 @@ const App = () => {
             <Route
               path="/orders"
               element={
-                <ProtectedRoute permissionCode="ACCESS_ORDERS">
+                <ProtectedRoute permissionCode={ordersPermission}>
                   <Orders />
                 </ProtectedRoute>
               }
@@ -103,7 +124,7 @@ const App = () => {
             <Route
               path="/orders/:orderId"
               element={
-                <ProtectedRoute permissionCode="ACCESS_ORDERS">
+                <ProtectedRoute permissionCode={orderDetailPermission}>
                   <OrderDetailPage />
                 </ProtectedRoute>
               }
@@ -111,7 +132,7 @@ const App = () => {
             <Route
               path="/userRoles"
               element={
-                <ProtectedRoute permissionCode="ACCESS_USERROLES">
+                <ProtectedRoute permissionCode={userRolesPermission}>
                   <UserRoles />
                 </ProtectedRoute>
               }
@@ -119,7 +140,7 @@ const App = () => {
             <Route
               path="/productList"
               element={
-                <ProtectedRoute permissionCode="ACCESS_PRODUCTS">
+                <ProtectedRoute permissionCode={productsPermission}>
                   <ProductList />
                 </ProtectedRoute>
               }
@@ -127,15 +148,23 @@ const App = () => {
             <Route
               path="/banners-create"
               element={
-                <ProtectedRoute permissionCode="ACCESS_BANNERS">
+                <ProtectedRoute permissionCode={bannersCreatePermission}>
                   <Bannerscreate />
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/Addproduct/:productId?"
+              <Route
+              path="/Addproduct"
               element={
-                <ProtectedRoute permissionCode="ACCESS_PRODUCTS">
+                <ProtectedRoute permissionCode={addProductPermission}>
+                  <Addproduct />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/edit-product/:productId?"
+              element={
+                <ProtectedRoute permissionCode={editProductPermission}>
                   <Addproduct />
                 </ProtectedRoute>
               }
@@ -151,7 +180,7 @@ const App = () => {
             <Route
               path="/addUserRole"
               element={
-                <ProtectedRoute permissionCode="ACCESS_USERROLES">
+                <ProtectedRoute permissionCode={addUserRolePermission}>
                   <AddUserRole />
                 </ProtectedRoute>
               }
@@ -159,7 +188,7 @@ const App = () => {
             <Route
               path="/edit-UserRole/:roleId"
               element={
-                <ProtectedRoute permissionCode="ACCESS_USERROLES">
+                <ProtectedRoute permissionCode={editUserRolePermission}>
                   <AddUserRole />
                 </ProtectedRoute>
               }
@@ -167,7 +196,7 @@ const App = () => {
             <Route
               path="/stores"
               element={
-                <ProtectedRoute permissionCode="ACCESS_STORES">
+                <ProtectedRoute permissionCode={storesPermission}>
                   <Stores />
                 </ProtectedRoute>
               }
@@ -175,7 +204,7 @@ const App = () => {
             <Route
               path="/add-store"
               element={
-                <ProtectedRoute permissionCode="ACCESS_STORES">
+                <ProtectedRoute permissionCode={addStorePermission}>
                   <AddStore />
                 </ProtectedRoute>
               }
@@ -183,7 +212,7 @@ const App = () => {
             <Route
               path="/editStore/:id"
               element={
-                <ProtectedRoute permissionCode="ACCESS_STORES">
+                <ProtectedRoute permissionCode={editStorePermission}>
                   <AddStore />
                 </ProtectedRoute>
               }
@@ -191,7 +220,7 @@ const App = () => {
             <Route
               path="/add-user"
               element={
-                <ProtectedRoute permissionCode="ACCESS_USERS">
+                <ProtectedRoute permissionCode={addUserPermission}>
                   <AddUser />
                 </ProtectedRoute>
               }
@@ -199,7 +228,7 @@ const App = () => {
             <Route
               path="/editUser/:id"
               element={
-                <ProtectedRoute permissionCode="ACCESS_USERS">
+                <ProtectedRoute permissionCode={editUserPermission}>
                   <AddUser />
                 </ProtectedRoute>
               }
@@ -207,7 +236,7 @@ const App = () => {
             <Route
               path="/users"
               element={
-                <ProtectedRoute permissionCode="ACCESS_USERS">
+                <ProtectedRoute permissionCode={usersPermission}>
                   <Users />
                 </ProtectedRoute>
               }
@@ -216,7 +245,7 @@ const App = () => {
             <Route
               path="/banners"
               element={
-                <ProtectedRoute permissionCode="ACCESS_BANNERS">
+                <ProtectedRoute permissionCode={bannersPermission}>
                   <Banners />
                 </ProtectedRoute>
               }
@@ -224,7 +253,7 @@ const App = () => {
             <Route
               path="/notifications"
               element={
-                <ProtectedRoute permissionCode="ACCESS_NOTIFICATIONS">
+                <ProtectedRoute permissionCode={notificationsPermission}>
                   <Notifications />
                 </ProtectedRoute>
               }

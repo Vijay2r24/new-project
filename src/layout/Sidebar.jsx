@@ -14,6 +14,7 @@ import {
   AlignLeft,
   LayoutDashboard,
 } from 'lucide-react';
+import { getPermissionCode } from '../utils/permissionUtils';
 
 const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
   const location = useLocation();
@@ -100,22 +101,23 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
       .map(perm => perm.Code);
   }, [allPermissions, userPermissionIDs]);
 
-  const menuPermissionMap = {
-    '/dashboard': 'ACCESS_DASBOARD',
-    '/orders': 'ACCESS_ORDERS',
-    '/stores': 'ACCESS_STORES',
-    '/users': 'ACCESS_USERS',
-    '/userRoles': 'ACCESS_USERROLES',
-    '/banners': 'ACCESS_BANNERS',
-    '/notifications': 'ACCESS_NOTIFICATIONS',
-    '/pages': 'ACCESS_PAGES',
-    '/browse': 'ACCESS_PRODUCTS',
-    '/productList': 'ACCESS_PRODUCTS',
-  };
+  // Dynamic permission code lookup for each menu item
+  const menuPermissionCode = useMemo(() => ({
+    '/dashboard': getPermissionCode('Menu Management', 'Dashboard'),
+    '/orders': getPermissionCode('Menu Management', 'Orders'),
+    '/stores': getPermissionCode('Menu Management', 'Stores'),
+    '/users': getPermissionCode('Menu Management', 'Users'),
+    '/userRoles': getPermissionCode('Menu Management', 'UserRoles'),
+    '/banners': getPermissionCode('Menu Management', 'Banners'),
+    '/notifications': getPermissionCode('Menu Management', 'Notification'),
+    '/pages': getPermissionCode('Menu Management', 'Pages'),
+    '/browse': getPermissionCode('Menu Management', 'Products'),
+    '/productList': getPermissionCode('Menu Management', 'Products'),
+  }), []);
 
   const filteredNavigation = useMemo(() => {
     const isAllowed = (href) => {
-      const code = menuPermissionMap[href];
+      const code = menuPermissionCode[href];
       if (!code) return true;
       return allowedPermissionCodes.includes(code);
     };
@@ -132,7 +134,7 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
         }
       })
       .filter(Boolean);
-  }, [aNavigation, allowedPermissionCodes]);
+  }, [aNavigation, allowedPermissionCodes, menuPermissionCode]);
 
   useEffect(() => {
     const activeSection = filteredNavigation.find(item =>
