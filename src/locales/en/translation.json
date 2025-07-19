@@ -165,7 +165,7 @@
       "CREATE_TITLE": "Create Attribute",
       "NAME_LABEL": "Attribute Name",
       "NAME_PLACEHOLDER": "Enter attribute name",
-      "TYPE_LABEL": "Attribute Type",
+      "TYPE_LABEL": "Trait Type",
       "SELECT_TYPE": "Select Type",
       "CREATE_BUTTON": "Create Attribute",
       "DESCRIPTION_PLACEHOLDER": "Enter attribute description",
