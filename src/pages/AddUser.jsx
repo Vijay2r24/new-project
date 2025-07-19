@@ -273,7 +273,7 @@ const AddUser = () => {
 
     const formData = new FormData();
     if (id) formData.append("UserID", parseInt(id, 10));
-    formData.append("TenantID", 1);
+    formData.append("TenantID", localStorage.getItem('tenantID'));
     formData.append("FirstName", oFormData.firstName || "");
     formData.append("LastName", oFormData.lastName || "");
     formData.append("Email", oFormData.email || "");

@@ -29,7 +29,7 @@ const CreateCategory = () => {
   const sErrorCategories = categories.error;
 
   const [oFormData, setFormData] = useState({
-    TenantID: "1",
+    TenantID: localStorage.getItem("tenantID"),
     CategoryName: "",
     CategoryImage: null,
     Status: "Active",
@@ -62,7 +62,7 @@ const CreateCategory = () => {
               const categoryData = oResponse.data.data.Data;
               setFormData((prev) => ({
                 ...prev,
-                TenantID: categoryData.TenantID || "1",
+                TenantID: categoryData.TenantID,
                 CategoryName: categoryData.CategoryName || "",
                 CategoryImage: categoryData.CategoryImage || null,
                 Status: categoryData.Status || "Active",
@@ -171,12 +171,6 @@ const CreateCategory = () => {
       );
     }
 
-    if (!oFormData.ParentCategoryId && !isEditing) {
-      newErrors.ParentCategoryId = t(
-        "PRODUCT_SETUP.CREATE_CATEGORY.PARENT_CATEGORY_REQUIRED"
-      );
-    }
-
     if (oFormData.CategoryDescription.trim().length < 10) {
       newErrors.CategoryDescription = t(
         "PRODUCT_SETUP.CREATE_CATEGORY.DESCRIPTION_MIN_LENGTH"
@@ -203,10 +197,12 @@ const CreateCategory = () => {
     dataToSend.append("Status", oFormData.Status);
     dataToSend.append("CategoryDescription", oFormData.CategoryDescription);
     dataToSend.append("Heading", oFormData.Heading);
-    if (oFormData.ParentCategoryId) {
-      dataToSend.append("ParentCategoryId", oFormData.ParentCategoryId);
-    }
+
+    // ✅ Always send ParentCategoryId, even if empty
+    dataToSend.append("ParentCategoryId", oFormData.ParentCategoryId || "");
+
     dataToSend.append("UpdatedBy", oFormData.UpdatedBy);
+
     if (oFormData.CategoryImage) {
       if (Array.isArray(oFormData.CategoryImage)) {
         oFormData.CategoryImage.forEach((file) => {
@@ -250,7 +246,7 @@ const CreateCategory = () => {
 
   return (
     <div className="w-full min-h-screen">
-      <ToastContainer />
+      {isEditing && <ToastContainer />}
       <div className="flex items-center mb-6">
         <BackButton
           onClick={() =>
@@ -263,7 +259,7 @@ const CreateCategory = () => {
             : t("PRODUCT_SETUP.CREATE_CATEGORY.CREATE_TITLE")}
         </h2>
       </div>
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-4">
         <div className="flex flex-col md:flex-row md:space-x-4">
           <div className="w-full md:w-1/2">
             <TextInputWithIcon
@@ -306,7 +302,6 @@ const CreateCategory = () => {
                 label: cat.CategoryName,
               }))}
               loading={bLoadingCategories}
-              error={oErrors.ParentCategoryId || sErrorCategories}
               placeholder={t("PRODUCT_SETUP.CREATE_CATEGORY.SELECT_PARENT")}
               Icon={Tag}
               onInputChange={(value) => categories.fetch({ searchText: value })}
@@ -414,13 +409,13 @@ const CreateCategory = () => {
           >
             {t("COMMON.CANCEL")}
           </button>
-          <button type="submit" className="btn-primary">
+          <button type="submit" className="btn-primary" onClick={handleSubmit}>
             {isEditing
               ? t("COMMON.SAVE_BUTTON")
               : t("PRODUCT_SETUP.CREATE_CATEGORY.CREATE_BUTTON")}
           </button>
         </div>
-      </form>
+      </div>
     </div>
   );
 };

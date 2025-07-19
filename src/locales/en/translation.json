@@ -634,7 +634,7 @@
     "PREFERENCES": "Preferences"
   },
   "COMMON": {
-    "UPDATE_STATUS": "Status Update",
+    "UPDATE_STATUS": "Active",
     "SAVE_BUTTON": "Save Changes",
     "CANCEL": "Cancel",
     "STATUS": "Status",
@@ -673,6 +673,7 @@
     "CONFIRM_PASSWORD": "Confirm Password",
     "EMAIL_ADDRESS": "Email Address",
     "PHONE_NUMBER": "Phone Number",
+    "CREATED_AT": "Created At",
     "STREET_ADDRESS": "Street Address",
     "HEADING_LABEL": "Heading",
     "CITY": "City",

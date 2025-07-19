@@ -127,14 +127,11 @@ const CategoryList = () => {
               <thead className="table-head">
                 <tr>
                   <th className="table-head-cell">
-                    {" "}
                     {t("PRODUCT_SETUP.CATEGORIES.TABLE.NAME")}
-                  </th>
-                  <th className="table-head-cell">
-                    {t("PRODUCT_SETUP.CATEGORIES.TABLE.IMAGE")}
                   </th>
                   <th className="table-head-cell">{t("COMMON.DESCRIPTION")}</th>
                   <th className="table-head-cell">{t("COMMON.STATUS")}</th>
+                  <th className="table-head-cell">{t("COMMON.CREATED_AT")}</th>
                   <th className="table-head-cell">
                     {t("COMMON.UPDATE_STATUS")}
                   </th>
@@ -143,27 +140,25 @@ const CategoryList = () => {
               <tbody className="table-body">
                 {aCategories.map((category) => (
                   <tr key={category.CategoryID} className="table-row">
-                    <td className="table-cell table-cell-text">
-                      <Link
-                        to={`/browse/editcatagiry/${category.CategoryID}`}
-                        className="text-blue-600 hover:underline"
-                      >
-                        {category.CategoryName}
-                      </Link>
-                    </td>
-                    <td className="table-cell">
-                      <div className="h-10 w-10 flex items-center justify-center rounded-full border overflow-hidden">
-                        {category.CategoryImage ? (
-                          <img
-                            src={category.CategoryImage}
-                            alt={category.CategoryName}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-gray-400 text-xs">
-                            No Image
-                          </span>
-                        )}
+                    <td className="table-cell table-cell-text align-middle">
+                      <div className="flex items-center gap-2">
+                        <div className="h-10 w-10 flex items-center justify-center rounded-full border overflow-hidden bg-white">
+                          {category.CategoryImage ? (
+                            <img
+                              src={category.CategoryImage}
+                              alt={category.CategoryName}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-gray-400 text-xs">No Image</span>
+                          )}
+                        </div>
+                        <Link
+                          to={`/browse/editcatagiry/${category.CategoryID}`}
+                          className="text-blue-600 hover:underline"
+                        >
+                          {category.CategoryName}
+                        </Link>
                       </div>
                     </td>
                     <td className="table-cell table-cell-wrap max-w-[120px] overflow-hidden">
@@ -180,7 +175,9 @@ const CategoryList = () => {
                         {t(`COMMON.${category.Status === 'Active' ? 'ACTIVE' : 'INACTIVE'}`)}
                       </span>
                     </td>
-
+                    <td className="table-cell table-cell-text">
+                      {new Date(category.CreatedAt).toLocaleString(undefined, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true })}
+                    </td>
                     <td
                       className="table-cell"
                       onClick={(e) => e.stopPropagation()}

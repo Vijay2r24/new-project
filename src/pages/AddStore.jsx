@@ -97,7 +97,7 @@ const AddStore = () => {
     const token = localStorage.getItem('token');
     const payload = {
       StoreID: id ? parseInt(id, 10) : 0,
-      TenantID: 0,
+      TenantID:  localStorage.getItem('tenantID'),
       StoreName: oFormData.name,
       Email: oFormData.email,
       Phone: oFormData.phone,

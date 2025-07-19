@@ -41,6 +41,22 @@ const ProductList = () => {
   const { data: aBrands, fetch: fetchBrands } = useBrands();
   const { data: aStores, fetch: fetchStores } = useStores();
 
+  // Add useEffect to fetch all filter data on mount
+  useEffect(() => {
+    fetchCategories();
+    fetchBrands();
+    fetchStores();
+  }, []);
+
+  // Add useEffect to fetch filter data when filter dropdown is opened
+  useEffect(() => {
+    if (bShowFilterDropdown) {
+      fetchCategories();
+      fetchBrands();
+      fetchStores();
+    }
+  }, [bShowFilterDropdown]);
+
   const defaultFilters = {
     category: 'all',
     brand: 'all',
@@ -213,11 +229,13 @@ const ProductList = () => {
     },
   ];
 
+  // In handleFilterChange, set page to 1 when filter changes
   const handleFilterChange = (e, filterName) => {
     setFilters({
       ...oFilters,
       [filterName]: e.target.value,
     });
+    setCurrentPage(1);
   };
 
   const handlePrevPage = () => {

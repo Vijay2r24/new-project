@@ -53,6 +53,7 @@ const Users = () => {
       ...oFilters,
       [filterName]: e.target.value,
     });
+    setCurrentPage(1);
   };
   const roleOptions = [
     { value: 'all', label: t('COMMON.ALL') },
@@ -171,6 +172,18 @@ const Users = () => {
     setCurrentPage(1);
   }, [sSearchTerm, oFilters]);
 
+  // Add useEffect to fetch all roles on mount
+  useEffect(() => {
+    fetchRoles();
+  }, []);
+
+  // Add useEffect to fetch roles when filter dropdown is opened
+  useEffect(() => {
+    if (sShowFilterDropdown) {
+      fetchRoles();
+    }
+  }, [sShowFilterDropdown]);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen bg-gray-50">
       <ToastContainer />
@@ -231,7 +244,7 @@ const Users = () => {
                   </tr>
                 ) : usersData.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="text-center py-4">
+                    <td colSpan="6" className="text-center text-red-500 py-4">
                       {t("USERS.NO_USERS_FOUND")}
                     </td>
                   </tr>
@@ -349,7 +362,7 @@ const Users = () => {
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-xs text-gray-500 border-t border-gray-100 pt-2">
                     <div className="flex items-center gap-1">
                       <Mail className="h-4 w-4" />
-                      <span>{user.Email}</span>
+                      <span className="truncate max-w-[120px] block" title={user.Email}>{user.Email}</span>
                     </div>
                     <div className="flex items-center gap-1 sm:ml-4">
                       <Phone className="h-4 w-4" />

@@ -21,13 +21,13 @@ import {
 } from "../../../contants/apiRoutes";
 import { useNavigate, useParams } from "react-router-dom";
 import { useCategories } from "../../../context/AllDataContext";
-import { ToastContainer } from "react-toastify";
 import { showEmsg } from "../../../utils/ShowEmsg";
 import { STATUS } from "../../../contants/constants";
+import { ToastContainer } from "react-toastify";
 
 const CreateBrand = () => {
   const [oFormData, setFormData] = useState({
-    TenantID: "1",
+    TenantID: localStorage.getItem('tenantID'),
     BrandName: "",
     CategoryID: "",
     Heading: "",
@@ -68,7 +68,7 @@ const CreateBrand = () => {
             const brandData = oResponse.data.data.brand;
             setFormData((prev) => ({
               ...prev,
-              TenantID: brandData.TenantID || "1",
+              TenantID: brandData.TenantID || localStorage.getItem('tenantID'),
               BrandName: brandData.BrandName || "",
               CategoryID: brandData.CategoryID || "",
               Heading: brandData.Heading || "",
@@ -89,6 +89,10 @@ const CreateBrand = () => {
       fetchBrandDetails();
     }
   }, [brandId, isEditing, bLoadingCategories]);
+
+  useEffect(() => {
+    categories.fetchAll();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -215,7 +219,7 @@ const CreateBrand = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <ToastContainer />
+      {isEditing && <ToastContainer />}
       <div className="w-full p-0 sm:p-0">
         <div className="flex items-center mb-4">
           <button

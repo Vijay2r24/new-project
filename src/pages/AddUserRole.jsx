@@ -11,7 +11,7 @@ import { showEmsg } from '../utils/ShowEmsg';
 import { useTitle } from '../context/TitleContext';
 import { STATUS } from '../contants/constants';
 import BackButton from '../components/BackButton';
-
+import { ToastContainer } from "react-toastify"; 
 const AddUserRole = () => {
   const [sRoleName, setRoleName] = useState('');
   const [sStoreId, setStoreId] = useState('0');
@@ -182,21 +182,27 @@ const AddUserRole = () => {
         roleId: roleId ? Number(roleId) : 0,
         roleName: sRoleName,
         permissions,
-        TenantID: 1, // Always pass TenantID 1
+        TenantID:localStorage.getItem('tenantID'),
         storeId: Number(sStoreId),
         ...(roleId
-          ? { UpdatedBy: 'admin' } // When updating
-          : { CreatedBy: 'admin' } // When creating
+          ? { UpdatedBy: 'admin' } 
+          : { CreatedBy: 'admin' }
         ),
       };
 
       try {
         const token = localStorage.getItem('token');
         const res = await apiPost(CREATE_OR_UPDATE_ROLE, roleData, token);
+        const resData = res?.data;
+        if (resData?.STATUS === STATUS.SUCCESS.toUpperCase()) {
+          showEmsg(resData.MESSAGE || t('CREATE_USER_ROLE.SAVE_SUCCESS'), STATUS.SUCCESS);
+        } else {
+          showEmsg(resData?.MESSAGE || t('CREATE_USER_ROLE.FAILED_TO_SAVE_ROLE'), STATUS.WARNING);
+        }
         handleSaveRole(event);
       } catch (err) {
         const msg = err?.response?.data?.message;
-        showEmsg(msg || t('CREATE_USER_ROLE.FAILED_TO_SAVE_ROLE'), 'error');
+        showEmsg(msg || t('CREATE_USER_ROLE.FAILED_TO_SAVE_ROLE'), STATUS.ERROR);
       }
     }
   };
@@ -205,6 +211,7 @@ const AddUserRole = () => {
     <div
       className={`max-w-7xl mx-auto`}
     >
+      <ToastContainer />
       <div>
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
@@ -222,7 +229,6 @@ const AddUserRole = () => {
                 <label className="block font-semibold mr-[14px]">
                   {t('CREATE_USER_ROLE.SELECT_STORE')}
                 </label>
-                {/* Store Dropdown - always show, no loading state */}
                 <SelectwithIcone
                   options={storeOptions}
                   value={sStoreId}
