@@ -113,6 +113,7 @@ const CreateAttributeType = () => {
       const token = localStorage.getItem("token");
       let response;
       let payload;
+      const userId = localStorage.getItem('userId');
 
       if (isEditing) {
         payload = {
@@ -122,7 +123,7 @@ const CreateAttributeType = () => {
           Code: oFormData.Code,
           AttributeTypeDescription: oFormData.AttributeTypeDescription,
           Status: oFormData.Status ? "Active" : "Inactive",
-          UpdatedBy:  t("COMMON.ADMIN"),
+          UpdatedBy: userId,
         };
       } else {
         payload = {
@@ -131,7 +132,7 @@ const CreateAttributeType = () => {
           Code: oFormData.Code,
           AttributeTypeDescription: oFormData.AttributeTypeDescription,
           Status: oFormData.Status ? "Active" : "Inactive",
-          CreatedBy: t("COMMON.ADMIN"),
+          CreatedBy: userId,
         };
       }
 
@@ -140,7 +141,11 @@ const CreateAttributeType = () => {
       if (response.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
         showEmsg(
           response.data.MESSAGE,
-          STATUS.SUCCESS
+          STATUS.SUCCESS,
+          3000,
+          async () => {
+            navigate('/browse', { state: { fromAttributeTypeEdit: true } });
+          }
         );
       } else {
         showEmsg(

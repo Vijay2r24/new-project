@@ -182,6 +182,13 @@ React.useEffect(() => {
                 </tr>
               </thead>
               <tbody className="table-body">
+                {aStores.length === 0 && !loading && (
+                  <tr>
+                    <td colSpan={4} className="py-8 text-center text-gray-500">
+                      {t('STORES.NO_STORES_FOUND')}
+                    </td>
+                  </tr>
+                )}
                 {aStores.map((store) => (
                   <tr key={store.id} className="table-row">
                     <td className="table-cell">

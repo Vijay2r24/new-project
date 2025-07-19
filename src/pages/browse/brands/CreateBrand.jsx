@@ -185,9 +185,10 @@ const CreateBrand = () => {
 
     try {
       const token = localStorage.getItem("token");
+      const userId = localStorage.getItem('userId');
       let response;
       if (isEditing) {
-        dataToSend.append("UpdatedBy", oFormData.UpdatedBy);
+        dataToSend.append("UpdatedBy", userId);
         response = await apiPut(
           `${UPDATE_BRAND_BY_ID}/${brandId}`,
           dataToSend,
@@ -196,12 +197,14 @@ const CreateBrand = () => {
         );
       } else {
         dataToSend.append("TenantID", oFormData.TenantID);
-        dataToSend.append("CreatedBy", oFormData.CreatedBy);
+        dataToSend.append("CreatedBy", userId);
         response = await apiPost(CREATE_BRAND, dataToSend, token, true);
       }
 
       if (response.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
-        showEmsg(response.data.MESSAGE, STATUS.SUCCESS);
+        showEmsg(response.data.MESSAGE, STATUS.SUCCESS, 3000, async () => {
+          navigate('/browse', { state: { fromBrandEdit: true } });
+        });
       } else {
         showEmsg(response.data.MESSAGE, STATUS.WARNING);
         setErrors((prev) => ({

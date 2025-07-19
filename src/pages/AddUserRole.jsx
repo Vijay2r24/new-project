@@ -178,6 +178,7 @@ const AddUserRole = () => {
           isChecked: !!permission.IsChecked
         }));
 
+      const userId = localStorage.getItem('userId');
       const roleData = {
         roleId: roleId ? Number(roleId) : 0,
         roleName: sRoleName,
@@ -185,8 +186,8 @@ const AddUserRole = () => {
         TenantID:localStorage.getItem('tenantID'),
         storeId: Number(sStoreId),
         ...(roleId
-          ? { UpdatedBy: 'admin' } 
-          : { CreatedBy: 'admin' }
+          ? { UpdatedBy: userId } 
+          : { CreatedBy: userId }
         ),
       };
 
@@ -195,11 +196,12 @@ const AddUserRole = () => {
         const res = await apiPost(CREATE_OR_UPDATE_ROLE, roleData, token);
         const resData = res?.data;
         if (resData?.STATUS === STATUS.SUCCESS.toUpperCase()) {
-          showEmsg(resData.MESSAGE || t('CREATE_USER_ROLE.SAVE_SUCCESS'), STATUS.SUCCESS);
+          showEmsg(resData.MESSAGE || t('CREATE_USER_ROLE.SAVE_SUCCESS'), STATUS.SUCCESS, 3000, async () => {
+            navigate('/userRoles');
+          });
         } else {
           showEmsg(resData?.MESSAGE || t('CREATE_USER_ROLE.FAILED_TO_SAVE_ROLE'), STATUS.WARNING);
         }
-        handleSaveRole(event);
       } catch (err) {
         const msg = err?.response?.data?.message;
         showEmsg(msg || t('CREATE_USER_ROLE.FAILED_TO_SAVE_ROLE'), STATUS.ERROR);

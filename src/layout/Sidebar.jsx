@@ -9,12 +9,12 @@ import {
   Bell,
   Store,
   Image,
-  BarChart2,
   FileText,
   Shield,
   AlignLeft,
   LayoutDashboard,
 } from 'lucide-react';
+import { getPermissionCode } from '../utils/permissionUtils';
 
 const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
   const location = useLocation();
@@ -80,9 +80,64 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
       ]
     },
   ], [t]);
+  const userPermissionIDs = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem('PermissionIDs')) || [];
+    } catch {
+      return [];
+    }
+  }, []);
+  const allPermissions = useMemo(() => {
+    try {
+      const perms = JSON.parse(localStorage.getItem('AllPermissions'));
+      return perms?.data?.rows || [];
+    } catch {
+      return [];
+    }
+  }, []);
+  const allowedPermissionCodes = useMemo(() => {
+    return allPermissions
+      .filter(perm => userPermissionIDs.includes(perm.ID))
+      .map(perm => perm.Code);
+  }, [allPermissions, userPermissionIDs]);
+
+  // Dynamic permission code lookup for each menu item
+  const menuPermissionCode = useMemo(() => ({
+    '/dashboard': getPermissionCode('Menu Management', 'Dashboard'),
+    '/orders': getPermissionCode('Menu Management', 'Orders'),
+    '/stores': getPermissionCode('Menu Management', 'Stores'),
+    '/users': getPermissionCode('Menu Management', 'Users'),
+    '/userRoles': getPermissionCode('Menu Management', 'UserRoles'),
+    '/banners': getPermissionCode('Menu Management', 'Banners'),
+    '/notifications': getPermissionCode('Menu Management', 'Notification'),
+    '/pages': getPermissionCode('Menu Management', 'Pages'),
+    '/browse': getPermissionCode('Menu Management', 'Products'),
+    '/productList': getPermissionCode('Menu Management', 'Products'),
+  }), []);
+
+  const filteredNavigation = useMemo(() => {
+    const isAllowed = (href) => {
+      const code = menuPermissionCode[href];
+      if (!code) return true;
+      return allowedPermissionCodes.includes(code);
+    };
+    return aNavigation
+      .map(item => {
+        if (item.subItems) {
+          const filteredSubItems = item.subItems.filter(sub => isAllowed(sub.href));
+          if (filteredSubItems.length > 0) {
+            return { ...item, subItems: filteredSubItems };
+          }
+          return null;
+        } else {
+          return isAllowed(item.href) ? item : null;
+        }
+      })
+      .filter(Boolean);
+  }, [aNavigation, allowedPermissionCodes, menuPermissionCode]);
 
   useEffect(() => {
-    const activeSection = aNavigation.find(item =>
+    const activeSection = filteredNavigation.find(item =>
       item.subItems?.some(subItem => 
         location.pathname.startsWith(subItem.href) || subItem.relatedPaths?.some(p => location.pathname.startsWith(p))
       )
@@ -90,7 +145,7 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
     if (activeSection) {
       setExpandedSection(activeSection.name);
     }
-  }, [location.pathname, aNavigation]);
+  }, [location.pathname, filteredNavigation]);
 
   const toggleSection = (section) => {
     setExpandedSection(nExpandedSection === section ? null : section);
@@ -166,7 +221,7 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
               {item.subItems.map((subItem) => {
                 const SubIcon = subItem.icon;
                 const isSubActive = checkIsActive(subItem);
-                const showArrow = isSectionActive; // still can keep for arrow visibility logic if needed
+                const showArrow = isSectionActive;
 
                 const arrowBaseClass = 'absolute top-1/2 left-6 w-3.5 h-px transform -translate-y-1/2';
                 const arrowActiveClass = 'bg-custom-bg after:content-[\'\'] after:absolute after:left-full after:top-1/2 after:transform after:-translate-y-1/2 after:-ml-px after:border-t-[3px] after:border-t-transparent after:border-b-[3px] after:border-b-transparent after:border-l-[3px] after:border-l-custom-bg';
@@ -230,7 +285,6 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
     <div className={`h-screen bg-gray-100 ${isMobileOpen ? 'block' : 'hidden lg:block'}`}>
       <div className={`h-full transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-56'}`}>
         <div className="flex h-full flex-col bg-white shadow-md">
-          {/* Header Section */}
           <div className="bg-white">
             <div className="hidden md:flex items-center justify-end px-4 py-4">
               <button
@@ -241,11 +295,9 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
               </button>
             </div>
           </div>
-
-          {/* Navigation Sections */}
           <div className="flex-1">
             <nav className="h-full">
-              {aNavigation.map((item) => renderNavigationItem(item))}
+              {filteredNavigation.map((item) => renderNavigationItem(item))}
             </nav>
           </div>
         </div>

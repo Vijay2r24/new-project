@@ -17,12 +17,13 @@ import { useNavigate } from "react-router-dom";
 import TextInputWithIcon from "../components/TextInputWithIcon";
 import { useTranslation } from "react-i18next";
 import md5 from "md5";
-import { apiPost } from "../utils/ApiUtils";
+import { apiPost, apiGet } from "../utils/ApiUtils";
 import {
   LOGIN,
   FORGOT_USER_PASSWORD,
   VALIDATE_UPDATE_PASSWORD,
   VALIDATE_OTP,
+  GET_ALL_PERMISSIONS,
 } from "../contants/apiRoutes";
 import { showEmsg } from "../utils/ShowEmsg";
 import { ToastContainer } from "react-toastify";
@@ -177,12 +178,21 @@ const Login = () => {
       ) {
         showEmsg(
           message,
-          STATUS.SUCCESS,
-          3000, // duration in ms
-          () => {
+          STATUS.SUCCESS, 
+          3000,
+          async () => {
             localStorage.setItem("token", data.token);
             localStorage.setItem("userId", data.UserID);
             localStorage.setItem("tenantID", data.TenantID);
+            localStorage.setItem("PermissionIDs", JSON.stringify(data.PermissionIDs || []));
+            try {
+              const token = data.token;
+              const permResponse = await apiGet(GET_ALL_PERMISSIONS, {}, token);
+              if (permResponse?.data?.STATUS === STATUS.SUCCESS.toUpperCase()) {
+                localStorage.setItem("AllPermissions", JSON.stringify(permResponse.data.data));
+              }
+            } catch (e) {
+            }
             fetchApiData();
             navigate("/dashboard");
           }
@@ -238,7 +248,7 @@ const Login = () => {
         showEmsg(message, STATUS.WARNING);
       }
     } catch (error) {
-      const errMsg = error?.oResponse?.data?.MESSAGE;
+      const errMsg = error?.response?.data?.MESSAGE;
       showEmsg(errMsg || t("OTP.ERROR"), STATUS.ERROR);
     }
   };

@@ -42,13 +42,7 @@ const ProductList = () => {
   const { data: aStores, fetch: fetchStores } = useStores();
 
   // Add useEffect to fetch all filter data on mount
-  useEffect(() => {
-    fetchCategories();
-    fetchBrands();
-    fetchStores();
-  }, []);
 
-  // Add useEffect to fetch filter data when filter dropdown is opened
   useEffect(() => {
     if (bShowFilterDropdown) {
       fetchCategories();
@@ -72,7 +66,7 @@ const ProductList = () => {
   };
 
   const handleEdit = (productId) => {
-    navigate(`/Addproduct/${productId}`);
+    navigate(`/edit-product/${productId}`);
   };
 
   const handleDelete = (productId) => {
@@ -402,4 +396,4 @@ const ProductList = () => {
   );
 };
 
-export default ProductList;  
+export default ProductList;
