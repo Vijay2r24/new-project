@@ -165,7 +165,7 @@
       "CREATE_TITLE": "Create Attribute",
       "NAME_LABEL": "Attribute Name",
       "NAME_PLACEHOLDER": "Enter attribute name",
-      "TYPE_LABEL": "Traite Type",
+      "TYPE_LABEL": "Trait Type",
       "SELECT_TYPE": "Select Type",
       "CREATE_BUTTON": "Create Attribute",
       "DESCRIPTION_PLACEHOLDER": "Enter attribute description",
@@ -318,13 +318,28 @@
     "EXPORT_BUTTON": "Export All Orders",
     "VIEW_DETAILS": "View Details",
     "DELIVERY": "Delivery",
-    "SEARCH_PLACEHOLDER": "Search by Customer Name, Email...",
+    "SEARCH_PLACEHOLDER": "Search by order Number, product",
     "TABLE": {
       "ORDER_NUMBER": "Order Number",
       "ORDER_DATE": "Order Date",
       "PRODUCT_NAME": "Product Name",
       "CUSTOMER_INFO": "Customer Info",
       "DELIVERY_INFO": "Delivery Info"
+    },
+    "FILTERS": {
+      "ORDER_STATUS": "Order Status",
+      "PAYMENT_STATUS": "Payment Status",
+      "START_DATE": "Start Date",
+      "END_DATE": "End Date",
+      "PAID": "Paid",
+      "FAILED": "Failed",
+      "FAILD": "Failed",
+      "PENDING": "Pending",
+      "REFUNDED": "Refunded",
+      "PROCESSING": "Processing",
+      "SHIPPED": "Shipped",
+      "DELIVERED": "Delivered",
+      "CANCELLED": "Cancelled"
     }
   },
   "VIEW_ORDER": {

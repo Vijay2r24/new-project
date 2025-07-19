@@ -32,17 +32,49 @@ const Pagination = ({
           >
             {t("COMMON.PREVIOUS")}
           </button>
-          {[...Array(totalPages)].map((_, idx) => (
-            <button
-              key={idx + 1}
-              className={`pagination-btn${
-                currentPage === idx + 1 ? " pagination-btn-active" : ""
-              }`}
-              onClick={() => handlePageClick(idx + 1)}
-            >
-              {idx + 1}
-            </button>
-          ))}
+          {/* Show only a limited set of page numbers */}
+          {(() => {
+            const pageButtons = [];
+            const maxVisible = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+            let endPage = startPage + maxVisible - 1;
+            if (endPage > totalPages) {
+              endPage = totalPages;
+              startPage = Math.max(1, endPage - maxVisible + 1);
+            }
+            if (startPage > 1) {
+              pageButtons.push(
+                <button key={1} className={`pagination-btn${currentPage === 1 ? " pagination-btn-active" : ""}`} onClick={() => handlePageClick(1)}>
+                  1
+                </button>
+              );
+              if (startPage > 2) {
+                pageButtons.push(<span key="start-ellipsis" className="px-2">...</span>);
+              }
+            }
+            for (let i = startPage; i <= endPage; i++) {
+              pageButtons.push(
+                <button
+                  key={i}
+                  className={`pagination-btn${currentPage === i ? " pagination-btn-active" : ""}`}
+                  onClick={() => handlePageClick(i)}
+                >
+                  {i}
+                </button>
+              );
+            }
+            if (endPage < totalPages) {
+              if (endPage < totalPages - 1) {
+                pageButtons.push(<span key="end-ellipsis" className="px-2">...</span>);
+              }
+              pageButtons.push(
+                <button key={totalPages} className={`pagination-btn${currentPage === totalPages ? " pagination-btn-active" : ""}`} onClick={() => handlePageClick(totalPages)}>
+                  {totalPages}
+                </button>
+              );
+            }
+            return pageButtons;
+          })()}
           <button
             className="pagination-btn"
             onClick={handleNextPage}
