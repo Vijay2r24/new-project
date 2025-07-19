@@ -16,7 +16,7 @@ import { showEmsg } from "../../utils/ShowEmsg.jsx";
 
 
 const getStatusBadgeClass = (status) => {
-  if (status === 'active') return 'status-active';a
+  if (status === 'active') return 'status-active';
   if (status === 'out-of-stock') return 'status-inactive';
   return 'status-active';
 };
