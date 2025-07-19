@@ -1020,7 +1020,7 @@ const AddProductForm = () => {
             <div id={`variant-image-upload-${nSelectedVariantIndex}`} />
           </div>
           <div className="flex justify-end space-x-4 mb-8">
-            <button type="button" className="btn-cancel">
+            <button type="button" className="btn-cancel" onClick={() => navigate('/productList')}>
               {t("PRODUCT_CREATION.CANCEL")}
             </button>
             <button type="submit" className="btn-primary">

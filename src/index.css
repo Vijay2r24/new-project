@@ -199,3 +199,8 @@ code {
 .status-inactive {
   @apply bg-red-100 text-red-800;
 }
+
+/* Lower z-index for carousel arrows so popup menus appear above */
+.react-multiple-carousel__arrow {
+  z-index: 10 !important;
+}
