@@ -294,7 +294,7 @@ const Dashboard = () => {
                       {t('DASHBOARD.RECENT_ORDERS.AMOUNT')}
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider align-middle">
-                      {t('DASHBOARD.RECENT_ORDERS.STATUS')}
+                      {t('COMMON.STATUS')}
                     </th>
                   </tr>
                 </thead>
@@ -411,7 +411,7 @@ const Dashboard = () => {
                 onClick={() => setTopProductsPage(p => Math.max(1, p - 1))}
                 disabled={nTopProductsPage === 1}
               >
-                {t('DASHBOARD.TOP_PRODUCTS.PREVIOUS')}
+                {t('COMMON.PREVIOUS')}
               </button>
               <span className="text-xs text-gray-500">
                 {t('DASHBOARD.TOP_PRODUCTS.PAGE_INFO', { current: nTopProductsPage, total: totalTopProductsPages })}
@@ -421,7 +421,7 @@ const Dashboard = () => {
                 onClick={() => setTopProductsPage(p => Math.min(totalTopProductsPages, p + 1))}
                 disabled={nTopProductsPage === totalTopProductsPages}
               >
-                {t('DASHBOARD.TOP_PRODUCTS.NEXT')}
+                {t('COMMON.NEXT')}
               </button>
             </div>
           </div>

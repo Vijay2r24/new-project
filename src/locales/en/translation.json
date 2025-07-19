@@ -570,6 +570,7 @@
   "BANNER_FORM": {
     "CREATE_BANNER": "Create banner",
     "UPLOAD_BANNER": "Upload Banner",
+    "EDIT_BANNER": "Edit Banner",
     "BANNER_NAME": "Banner Name",
     "ENTER_BANNER_NAME": "Enter banner name",
     "UPLOAD_BANNERS_LABEL": "Upload Banners:",
@@ -734,7 +735,8 @@
     "ENTER_ZIP_CODE": "Enter ZIP code",
     "ENTER_PHONE_NUMBER": "Enter phone number",
     "ENTER_EMAIL_ADDRESS": "Enter email address",
-    "ENTER_PASSWORD":"Enter password"
+    "ENTER_PASSWORD":"Enter password",
+    "REQUIRED": "is required"
   },
   "USER_ROLES_LIST": {
     "TITLE": "User Roles",

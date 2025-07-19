@@ -154,6 +154,14 @@ const App = () => {
               }
             />
               <Route
+              path="/banners-edit/:bannerId?"
+              element={
+                <ProtectedRoute>
+                  <Bannerscreate />
+                </ProtectedRoute>
+              }
+            />
+              <Route
               path="/Addproduct"
               element={
                 <ProtectedRoute permissionCode={addProductPermission}>
