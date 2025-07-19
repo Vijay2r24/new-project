@@ -115,6 +115,7 @@ const CreateColor = () => {
       const token = localStorage.getItem("token");
       let oResponse;
       let payload;
+      const userId = localStorage.getItem('userId');
 
       if (isEditing) {
         payload = {
@@ -123,6 +124,7 @@ const CreateColor = () => {
           RgbCode: oFormData.RgbCode,
           Status: oFormData.IsActive ? "Active" : "Inactive",
           TenantID: oFormData.TenantID,
+          UpdatedBy: userId,
         };
         oResponse = await apiPut(`${UPDATE_COLOUR}/${colorId}`, payload, token);
       } else {
@@ -132,13 +134,15 @@ const CreateColor = () => {
           HexCode: oFormData.HexCode,
           IsActive: oFormData.IsActive,
           RgbCode: oFormData.RgbCode,
-          CreatedBy: oFormData.CreatedBy,
+          CreatedBy: userId,
         };
         oResponse = await apiPost(CREATE_COLOUR, payload, token);
       }
 
       if (oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
-        showEmsg(oResponse.data.MESSAGE, STATUS.SUCCESS);
+        showEmsg(oResponse.data.MESSAGE, STATUS.SUCCESS, 3000, async () => {
+          navigate('/browse', { state: { fromColorEdit: true } });
+        });
       } else {
         showEmsg(
           oResponse.data.MESSAGE,

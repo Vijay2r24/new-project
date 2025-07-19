@@ -240,13 +240,13 @@ const UserRolesList = () => {
                   </tr>
                 ) : nError ? (
                   <tr>
-                    <td colSpan={5} className="text-center py-4 text-red-500">
+                    <td colSpan={5} className="text-center py-4 text-muted">
                       {t('USER_ROLES_LIST.NO_ROLES_FOUND')}
                     </td>
                   </tr>
                 ) : paginatedRoles.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="text-center py-4">
+                    <td colSpan={5} className="text-center py-4 text-muted">
                       {t('USER_ROLES_LIST.NO_ROLES_FOUND')}
                     </td>
                   </tr>

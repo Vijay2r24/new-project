@@ -4,7 +4,7 @@ import TextInputWithIcon from '../components/TextInputWithIcon';
 import SelectWithIcon from '../components/SelectWithIcon';
 import { useTranslation } from 'react-i18next';
 import { LocationDataContext } from '../context/LocationDataProvider';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { apiGet, apiPost } from '../utils/ApiUtils';
 import { GET_STORE_BY_ID,CREATE_OR_UPDATE_STORE } from '../contants/apiRoutes';
 import { showEmsg } from '../utils/ShowEmsg';
@@ -20,6 +20,7 @@ const AddStore = () => {
   const { t } = useTranslation();
   const { aCountriesData, aStatesData, aCitiesData } = useContext(LocationDataContext);
   const { id } = useParams();
+  const navigate = useNavigate();
   const { setTitle, setBackButton } = useTitle();
   const [oFormData, setFormData] = useState({
     name: '',
@@ -95,6 +96,7 @@ const AddStore = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId');
     const payload = {
       StoreID: id ? parseInt(id, 10) : 0,
       TenantID:  localStorage.getItem('tenantID'),
@@ -111,12 +113,14 @@ const AddStore = () => {
       CountryName: oFormData.countryName,
       StateName: oFormData.stateName,
       CityName: oFormData.cityName,
-      ...(id ? { UpdatedBy: "Admin" } : { CreatedBy: "Admin" })
+      ...(id ? { UpdatedBy: userId } : { CreatedBy: userId })
     };
     try {
       const oResponse = await apiPost(CREATE_OR_UPDATE_STORE, payload, token);
       if (oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
-        showEmsg(oResponse.data?.MESSAGE, STATUS.SUCCESS);
+        showEmsg(oResponse.data?.MESSAGE, STATUS.SUCCESS, 3000, async () => {
+          navigate('/stores');
+        });
       } else {
         showEmsg(oResponse.data?.MESSAGE, STATUS.WARNING);
       }

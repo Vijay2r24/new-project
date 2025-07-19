@@ -133,16 +133,19 @@ const CreateAttribute = ({ setViewMode }) => {
       AttributeTypeID: oFormData.type,
       AttributeDescription: oFormData.description,
     };
+    const userId = localStorage.getItem('userId');
     if (isEditing) {
       payload.AttributeID = attributeId;
-      payload.UpdatedBy = t("COMMON.ADMIN");
+      payload.UpdatedBy = userId;
     } else {
-      payload.CreatedBy = t("COMMON.ADMIN");
+      payload.CreatedBy = userId;
     }
 
     const handleResponse = (response) => {
       if (response.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
-        showEmsg(response.data.MESSAGE, STATUS.SUCCESS);
+        showEmsg(response.data.MESSAGE, STATUS.SUCCESS, 3000, async () => {
+          navigate('/browse', { state: { fromAttributeEdit: true } });
+        });
       } else {
         showEmsg(response.data.MESSAGE, STATUS.ERROR);
       }

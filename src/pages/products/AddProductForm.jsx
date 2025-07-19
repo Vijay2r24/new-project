@@ -34,12 +34,13 @@ import {
 import { showEmsg } from "../../utils/ShowEmsg";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { useTitle } from "../../context/TitleContext";
 import  BackButton from '../../components/BackButton.jsx';
 const AddProductForm = () => {
   const { productId } = useParams();
+  const navigate = useNavigate();
   const { setTitle, setBackButton } = useTitle();
   const [aVariants, setVariants] = useState([
     {
@@ -536,7 +537,10 @@ const AddProductForm = () => {
             (productId
               ? t("PRODUCT_CREATION.PRODUCT_UPDATED_SUCCESS")
               : t("PRODUCT_CREATION.PRODUCT_CREATED_SUCCESS")),
-          STATUS.SUCCESS
+          STATUS.SUCCESS, 3000, // duration in ms
+          async () => {
+             navigate('/productList');
+          }
         );
       } else {
         showEmsg(

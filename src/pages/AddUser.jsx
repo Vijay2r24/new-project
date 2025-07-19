@@ -269,8 +269,7 @@ const AddUser = () => {
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length > 0) return;
     const token = localStorage.getItem("token");
-    const userId = localStorage.getItem("userId");
-
+    const userId = localStorage.getItem('userId');
     const formData = new FormData();
     if (id) formData.append("UserID", parseInt(id, 10));
     formData.append("TenantID", localStorage.getItem('tenantID'));
@@ -291,7 +290,7 @@ const AddUser = () => {
       "StateID",
       oFormData.state ? parseInt(oFormData.state, 10) : 0
     );
-    formData.append(
+     formData.append(
       "CountryID",
       oFormData.country ? parseInt(oFormData.country, 10) : 0
     );
@@ -299,6 +298,11 @@ const AddUser = () => {
     formData.append("RoleID", oFormData.role || "");
     if (nProfileImage) {
       formData.append("ProfileImage", nProfileImage);
+    }
+    if (id) {
+      formData.append("UpdatedBy", userId);
+    } else {
+      formData.append("CreatedBy", userId);
     }
 
     try {
@@ -311,7 +315,13 @@ const AddUser = () => {
       const resData = oResponse?.data;
 
       if (resData?.STATUS === STATUS.SUCCESS.toUpperCase()) {
-        showEmsg(resData.MESSAGE, STATUS.SUCCESS);
+        showEmsg(
+          resData?.MESSAGE || t('ADD_USER.SUCCESS'),
+          STATUS.SUCCESS, 3000,
+          async () => {
+            navigate('/users');
+          }
+        );
       } else {
         showEmsg(
           resData?.MESSAGE || t("COMMON.FAILED_OPERATION"),

@@ -16,7 +16,7 @@ import { showEmsg } from "../../utils/ShowEmsg.jsx";
 
 
 const getStatusBadgeClass = (status) => {
-  if (status === 'active') return 'status-active';
+  if (status === 'active') return 'status-active';a
   if (status === 'out-of-stock') return 'status-inactive';
   return 'status-active';
 };
@@ -42,13 +42,7 @@ const ProductList = () => {
   const { data: aStores, fetch: fetchStores } = useStores();
 
   // Add useEffect to fetch all filter data on mount
-  useEffect(() => {
-    fetchCategories();
-    fetchBrands();
-    fetchStores();
-  }, []);
 
-  // Add useEffect to fetch filter data when filter dropdown is opened
   useEffect(() => {
     if (bShowFilterDropdown) {
       fetchCategories();
@@ -402,4 +396,4 @@ const ProductList = () => {
   );
 };
 
-export default ProductList;  
+export default ProductList;

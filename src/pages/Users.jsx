@@ -238,13 +238,13 @@ const Users = () => {
                   </tr>
                 ) : error ? (
                   <tr>
-                    <td colSpan="6" className="text-center py-4 text-red-500">
+                    <td colSpan="6" className="text-center py-4 text-muted">
                       {t("USERS.FETCH_ERROR")}
                     </td>
                   </tr>
                 ) : usersData.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="text-center text-red-500 py-4">
+                    <td colSpan="6" className="text-center text-muted py-4">
                       {t("USERS.NO_USERS_FOUND")}
                     </td>
                   </tr>

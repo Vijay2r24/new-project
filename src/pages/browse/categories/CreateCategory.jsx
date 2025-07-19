@@ -201,7 +201,12 @@ const CreateCategory = () => {
     // ✅ Always send ParentCategoryId, even if empty
     dataToSend.append("ParentCategoryId", oFormData.ParentCategoryId || "");
 
-    dataToSend.append("UpdatedBy", oFormData.UpdatedBy);
+    const userId = localStorage.getItem('userId');
+    if (isEditing) {
+      dataToSend.append("UpdatedBy", userId);
+    } else {
+      dataToSend.append("CreatedBy", userId);
+    }
 
     if (oFormData.CategoryImage) {
       if (Array.isArray(oFormData.CategoryImage)) {
@@ -228,7 +233,9 @@ const CreateCategory = () => {
       }
 
       if (oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
-        showEmsg(oResponse.data.MESSAGE, STATUS.SUCCESS);
+        showEmsg(oResponse.data.MESSAGE, STATUS.SUCCESS, 3000, async () => {
+          navigate('/browse', { state: { fromCategoryEdit: true } });
+        });
       } else {
         showEmsg(oResponse.data.MESSAGE, STATUS.WARNING);
         setErrors((prev) => ({
