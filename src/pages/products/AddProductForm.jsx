@@ -590,7 +590,7 @@ const AddProductForm = () => {
                 <p className="font-medium text-blue-600 text-base">
                   {t("PRODUCT_CREATION.DROP_IMAGES_HERE")}
                 </p>
-              ) : (
+              ) : (  
                 <p className="text-base">
                   {t("PRODUCT_CREATION.DRAG_DROP_OR_CLICK")}
                 </p>

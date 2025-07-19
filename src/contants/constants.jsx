@@ -3,7 +3,8 @@ export const STATUS = {
   PENDING: "pending",
   SUCCESS: "success",
   ERROR: "error",
-  WARNING:"warning"
+  WARNING:"warning",
+  FAILURE:"failure"
 };
 
 export const COLORS = {

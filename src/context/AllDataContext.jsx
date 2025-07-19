@@ -11,6 +11,7 @@ import {
   GET_ALL_ROLES_API,
   GET_ALL_STORES,
   GET_ALL_USERS,
+  ORDER_STATUS_API,
 } from '../contants/apiRoutes';
 
 const AllDataContext = createContext();
@@ -61,6 +62,12 @@ const aResourceConfigsStatic = [
     api: GET_ALL_USERS,
     totalKey: 'totalRecords',
     idField: 'UserID',
+  },
+  {
+    key: 'orderStatuses',
+    api: ORDER_STATUS_API,
+    totalKey: null,
+    idField: null,
   },
 ];
 
@@ -119,7 +126,7 @@ export const AllDataProvider = ({ children }) => {
       if (rolesPagination) {  
         if (
           oResponse.data &&
-          (oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase() || oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase()) &&
+          (oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase() || oResponse.data.status === STATUS.SUCCESS.toUpperCase()) &&
           oResponse.data.data &&
           oResponse.data.data.RolesPAginationData &&
           Array.isArray(oResponse.data.data.RolesPAginationData.data)
@@ -127,7 +134,11 @@ export const AllDataProvider = ({ children }) => {
           data = oResponse.data.data.RolesPAginationData.data;
           total = oResponse.data.data.RolesPAginationData.totalRecords || 0;
         }
-      } else if (oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
+      } else if (
+        oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase() ||
+        oResponse.data.status === STATUS.SUCCESS ||
+        oResponse.data.status === STATUS.SUCCESS.toUpperCase()
+      ) {
         if (oResponse.data.data && Array.isArray(oResponse.data.data.data)) {
           data = oResponse.data.data.data;
           if (totalKey && oResponse.data.data[totalKey] !== undefined) {
@@ -135,6 +146,10 @@ export const AllDataProvider = ({ children }) => {
           }
         } else {
           data = oResponse.data.data;
+          // Flatten orderStatuses: if data has rows, use rows as the array
+          if (key === 'orderStatuses' && data && Array.isArray(data.rows)) {
+            data = data.rows;
+          }
           if (totalKey && oResponse.data[totalKey] !== undefined) {
             total = oResponse.data[totalKey];
           } else if (totalKey && oResponse.data.data && oResponse.data.data[totalKey] !== undefined) {
@@ -219,4 +234,5 @@ export const useAttributeTypes = () => useContext(AllDataContext).attributeTypes
 export const useRoles = () => useContext(AllDataContext).roles;
 export const useStores = () => useContext(AllDataContext).stores;
 export const useProducts = () => useContext(AllDataContext).products;
-export const useUsers = () => useContext(AllDataContext).users; 
+export const useUsers = () => useContext(AllDataContext).users;
+export const useOrderStatuses = () => useContext(AllDataContext).orderStatuses; 

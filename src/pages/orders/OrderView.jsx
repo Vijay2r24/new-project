@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react';
 import {
   X,
   Package,
@@ -23,7 +23,7 @@ import { GETORDER_BYID_API, UPDATE_ORDER_ITEM_STATUS } from '../../contants/apiR
 import SelectWithIcon from '../../components/SelectWithIcon';
 import TextAreaWithIcon from '../../components/TextAreaWithIcon';
 import StatusBadge from './StatusBadge'
-import { LocationDataContext } from '../../context/LocationDataProvider';
+import { useOrderStatuses } from '../../context/AllDataContext';
 import { showEmsg } from '../../utils/ShowEmsg';
 import { ToastContainer } from 'react-toastify';
 import { useTitle } from '../../context/TitleContext';
@@ -44,11 +44,31 @@ const OrderView = () => {
   const [sEditedStatusId, setEditedStatusId] = useState(null);
 
 
-  const { orderStatusData } = useContext(LocationDataContext);
+  const { data: orderStatusData, loading: orderStatusLoading, error: orderStatusError, fetch: fetchOrderStatuses } = useOrderStatuses();
+
+  const orderStatusArray = (() => {
+    if (!orderStatusData) return [];
+    if (Array.isArray(orderStatusData)) return orderStatusData;
+    if (orderStatusData.data && orderStatusData.data.data && Array.isArray(orderStatusData.data.data.rows)) {
+      return orderStatusData.data.data.rows;
+    }
+    if (orderStatusData.data && Array.isArray(orderStatusData.data.rows)) {
+      return orderStatusData.data.rows;
+    }
+    if (orderStatusData.rows && Array.isArray(orderStatusData.rows)) {
+      return orderStatusData.rows;
+    }
+    if (orderStatusData && typeof orderStatusData === 'object') return [orderStatusData];
+    return [];
+  })();
+
+  useEffect(() => {
+    fetchOrderStatuses();
+  }, []);
 
   const openEditDialog = (item) => {
     setEditingItem(item);
-    const currentStatus = orderStatusData?.data?.find(status => status.OrderStatus === item.status);
+    const currentStatus = orderStatusArray.find(status => status.OrderStatus === item.status);
     setEditedStatus(item.status || '');
     setEditedStatusId(currentStatus?.StatusID || null);
     setEditedRemarks('');
@@ -62,79 +82,78 @@ const OrderView = () => {
     setEditedStatusId(null);
     setEditedRemarks('');
   };
-  const fetchData = async () => {
-    const token = localStorage.getItem("token")
-    try {
-      const response = await apiGet(`${GETORDER_BYID_API}/${orderId}`, {}, token);
-      const data = response.data.data;
-      const mappedOrder = {
-        orderId: data.orderId,
-        orderDate: data.orderDate,
-        totalAmount: data.totalAmount,
-        customer: {
-          name: data.customerDetails?.name,
-          email: data.customerDetails?.email,
-          phone: data.customerDetails?.phoneNumber,
-        },
-        delivery: {
-          address: `${data.address?.addressLine1}, ${data.address?.addressLine2}`,
-          city: data.address?.city,
-          state: data.address?.state,
-          country: data.address?.country,
-        },
-        orderItems: data.orderItems.map((item) => ({
-          id: item.orderItemId,
-          name: item.product?.productName,
-          sku: item.product?.productId,
-          image: item.product?.images?.[0] || null,
-          price: parseFloat(item.price),
-          quantity: item.quantity,
-          status: item.product?.orderHistory?.status || null,
-          paymentMethod: item.product?.payments?.[0]?.paymentMethod || "N/A",
-          paymentStatus: item.product?.payments?.[0]?.paymentStatus || "N/A",
-          paymentDate: item.product?.payments?.[0]?.paymentDate || "N/A",
-        })),
-
-      };
-      setOrder(mappedOrder);
-    } catch (error) {
-      console.error('Failed to fetch data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const fetchDataRef = useRef();
   useEffect(() => {
-    fetchData();
+    fetchDataRef.current = async () => {
+      const token = localStorage.getItem("token")
+      try {
+        const oResponse = await apiGet(`${GETORDER_BYID_API}/${orderId}`, {}, token);
+        const data = oResponse.data.data.data;
+        const mappedOrder = {
+          orderId: data.orderId,
+          orderDate: data.orderDate,
+          totalAmount: data.totalAmount,
+          customer: {
+            name: data.customerDetails?.name,
+            email: data.customerDetails?.email,
+            phone: data.customerDetails?.phoneNumber,
+          },
+          delivery: {
+            address: `${data.address?.addressLine1}, ${data.address?.addressLine2}`,
+            city: data.address?.city,
+            state: data.address?.state,
+            country: data.address?.country,
+          },
+          orderItems: data.orderItems.map((item) => ({
+            id: item.orderItemId,
+            name: item.product?.productName,
+            sku: item.product?.productId,
+            image: item.product?.images?.[0] || null,
+            price: parseFloat(item.price),
+            quantity: item.quantity,
+            status: item.product?.orderHistory?.status || null,
+            paymentMethod: item.product?.payments?.[0]?.paymentMethod || "N/A",
+            paymentStatus: item.product?.payments?.[0]?.paymentStatus || "N/A",
+            paymentDate: item.product?.payments?.[0]?.paymentDate || "N/A",
+          })),
+        };
+        setOrder(mappedOrder);
+      } catch (error) {
+        console.error('Failed to fetch data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDataRef.current();
     setTitle(t('VIEW_ORDER.ORDER_DETAILS'));
-   setBackButton(<BackButton onClick={() =>window.history.back()}/>)
+    setBackButton(<BackButton onClick={() =>window.history.back()}/>)
     return () => {
       setBackButton(null);
       setTitle('');
     };
-  }, [fetchData, setTitle, setBackButton, t]);
+  }, [orderId, setTitle, setBackButton, t]);
   const handleSaveChanges = async () => {
     const payload = {
-      OrderItemID: oEditingItem?.id,
-      StatusID: sEditedStatusId,
+      orderItemId: oEditingItem?.id,
+      statusId: sEditedStatusId,
       remarks: sEditedRemarks,
     };
 
     const token = localStorage.getItem("token");
 
     try {
-      const response = await apiPut(`${UPDATE_ORDER_ITEM_STATUS}/${orderId}`, payload, token, false);
-      console.log('API Response:', response.data);
+      const oResponse = await apiPut(`${UPDATE_ORDER_ITEM_STATUS}/${orderId}`, payload, token, false);
 
-      if (response?.data?.status === STATUS.SUCCESS.toUpperCase()) {
-        showEmsg(response.data.message,STATUS.SUCCESS);
-        fetchData();
+      if (oResponse?.data?.STATUS === STATUS.SUCCESS.toUpperCase()) {
+        showEmsg(oResponse.data.MESSAGE,STATUS.SUCCESS);
+        if (fetchDataRef.current) await fetchDataRef.current();
         closeEditDialog();
       } else {
-        showEmsg(response.data.message, STATUS.ERROR);
+        showEmsg(oResponse.data.MESSAGE, STATUS.ERROR);
       }
 
     } catch (error) {
-      showEmsg(error?.response?.data?.message ||t('API_ERROR'), STATUS.ERROR);
+      showEmsg(error?.response?.data?.MESSAGE ||t('API_ERROR'), STATUS.ERROR);
     }
   };
   if (bLoading) {
@@ -156,6 +175,14 @@ const OrderView = () => {
   if (!nOrder) {
     return <NotFoundMessage message={t('VIEW_ORDER.ORDER_NOT_FOUND')} />;
   }
+
+  // Safely map order status options with null checks
+  const orderStatusOptions = orderStatusArray
+    .filter(status => status && typeof status.StatusID !== 'undefined' && typeof status.OrderStatus !== 'undefined')
+    .map(status => ({
+      value: status.StatusID.toString(),
+      label: status.OrderStatus
+    }));
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2  print:bg-white">
@@ -351,15 +378,15 @@ const OrderView = () => {
                   <tfoot className="bg-gray-100 print:bg-white">
                     <tr>
                       <td colSpan="3" className="px-6 py-3 text-left text-base font-semibold text-gray-900 print:px-3 print:py-2 print:text-sm">{t('VIEW_ORDER.SUBTOTAL')}</td>
-                      <td colSpan="2" className="px-6 py-3 text-right text-base font-semibold text-gray-900 print:px-3 print:py-2 print:text-sm">${nOrder.total?.toFixed(2) || '0.00'}</td>
+                      <td colSpan="2" className="px-6 py-3 text-right text-base font-semibold text-gray-900 print:px-3 print:py-2 print:text-sm">₹{nOrder.total?.toFixed(2) || '0.00'}</td>
                     </tr>
                     <tr>
                       <td colSpan="3" className="px-6 py-3 text-left text-base font-semibold text-gray-900 print:px-3 print:py-2 print:text-sm">{t('VIEW_ORDER.SHIPPING')}</td>
-                      <td colSpan="2" className="px-6 py-3 text-right text-base font-semibold text-gray-900 print:px-3 print:py-2 print:text-sm">$0.00</td>
+                      <td colSpan="2" className="px-6 py-3 text-right text-base font-semibold text-gray-900 print:px-3 print:py-2 print:text-sm">₹0.00</td>
                     </tr>
                     <tr>
                       <td colSpan="3" className="px-6 py-3 text-left text-base font-semibold text-gray-900 print:px-3 print:py-2 print:text-sm">{t('VIEW_ORDER.TAX')}</td>
-                      <td colSpan="2" className="px-6 py-3 text-right text-base font-semibold text-gray-900 print:px-3 print:py-2 print:text-sm">$0.00</td>
+                      <td colSpan="2" className="px-6 py-3 text-right text-base font-semibold text-gray-900 print:px-3 print:py-2 print:text-sm">₹0.00</td>
                     </tr>
                     <tr>
                       <td colSpan="3" className="px-6 py-3 text-left text-lg font-bold text-gray-900 print:px-3 print:py-2 print:text-base">{t('VIEW_ORDER.TOTAL_AMOUNT')}</td>
@@ -394,7 +421,7 @@ const OrderView = () => {
                   </div>
                   <div className="flex items-center justify-between font-medium border-t border-gray-100 pt-3 mt-3 print:border-gray-200 print:pt-2 print:mt-2">
                     <span className="text-base text-gray-900 print:text-sm">{t('VIEW_ORDER.TOTAL_AMOUNT')}</span>
-                    <span className="text-lg font-bold text-[#5B45E0] print:text-base">${nOrder.total?.toFixed(2) || '0.00'}</span>
+                    <span className="text-lg font-bold text-[#5B45E0] print:text-base">₹{nOrder.total?.toFixed(2) || '0.00'}</span>
                   </div>
                 </div>
               </div>
@@ -417,11 +444,11 @@ const OrderView = () => {
                   value={sEditedStatusId !== null ? sEditedStatusId.toString() : ''}
                   onChange={(e) => {
                     const selectedStatusId = e.target.value;
-                    const selectedStatus = orderStatusData?.data?.find(status => status.StatusID === parseInt(selectedStatusId));
+                    const selectedStatus = orderStatusArray.find(status => status.StatusID === parseInt(selectedStatusId));
                     setEditedStatusId(parseInt(selectedStatusId));
                     setEditedStatus(selectedStatus?.OrderStatus || '');
                   }}
-                  options={orderStatusData?.data?.map(status => ({ value: status.StatusID.toString(), label: status.OrderStatus })) || []}
+                  options={orderStatusOptions}
                   Icon={Truck}
                 />
               </div>

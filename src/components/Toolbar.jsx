@@ -1,6 +1,7 @@
 import { Search, List, LayoutGrid, Filter } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Select from 'react-select';
+import CustomDatePicker from './CustomDatePicker';
 
 const OrderToolbar = ({
     searchTerm,
@@ -86,46 +87,63 @@ const OrderToolbar = ({
                     </div>
 
                     <div className="flex flex-wrap gap-4">
-                        {additionalFilters.map((filter, index) => (
-                            filter.type !== 'range' && (
-                                <div key={index} className="mb-4">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        {filter.label}
-                                    </label>
-                                    {filter.searchable ? (
-                                        <Select
-                                            value={filter.options && filter.options.find(opt => opt.value === filter.value) || null}
-                                            onChange={option => handleFilterChange({ target: { value: option.value } }, filter.name)}
-                                            options={filter.options}
-                                            placeholder={filter.searchPlaceholder || 'Search...'}
-                                            isSearchable
-                                            className="w-48"
-                                            classNamePrefix="react-select"
-                                            onInputChange={filter.onInputChange}
-                                            components={{
-                                                DropdownIndicator: (props) => (
-                                                    <div className="pl-2 flex items-center">
-                                                        <Search className="h-4 w-4 text-gray-400" />
-                                                    </div>
-                                                ),
-                                            }}
-                                        />
-                                    ) : (
-                                        <select
+                        {additionalFilters.map((filter, index) => {
+                            if (filter.type === 'date') {
+                                return (
+                                    <div key={index} className="mb-4 w-48">
+                                        <CustomDatePicker
+                                            label={filter.label}
                                             value={filter.value}
-                                            onChange={e => handleFilterChange(e, filter.name)}
-                                            className="block w-48 px-3 py-2 border border-gray-300 rounded-lg focus:ring-[#5B45E0] focus:border-[#5B45E0] sm:text-sm"
-                                        >
-                                            {filter.options && filter.options.map((option, idx) => (
-                                                <option key={idx} value={option.value}>
-                                                    {option.label}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    )}
-                                </div>
-                            )
-                        ))}
+                                            onChange={val => handleFilterChange({ target: { value: val } }, filter.name)}
+                                            name={filter.name}
+                                            error={filter.error}
+                                            disableFuture={filter.disableFuture}
+                                        />
+                                    </div>
+                                );
+                            }
+                            if (filter.type !== 'range') {
+                                return (
+                                    <div key={index} className="mb-4">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            {filter.label}
+                                        </label>
+                                        {filter.searchable ? (
+                                            <Select
+                                                value={filter.options && filter.options.find(opt => opt.value === filter.value) || null}
+                                                onChange={option => handleFilterChange({ target: { value: option.value } }, filter.name)}
+                                                options={filter.options}
+                                                placeholder={filter.searchPlaceholder || 'Search...'}
+                                                isSearchable
+                                                className="w-48"
+                                                classNamePrefix="react-select"
+                                                onInputChange={filter.onInputChange}
+                                                components={{
+                                                    DropdownIndicator: (props) => (
+                                                        <div className="pl-2 flex items-center">
+                                                            <Search className="h-4 w-4 text-gray-400" />
+                                                        </div>
+                                                    ),
+                                                }}
+                                            />
+                                        ) : (
+                                            <select
+                                                value={filter.value}
+                                                onChange={e => handleFilterChange(e, filter.name)}
+                                                className="block w-48 px-3 py-2 border border-gray-300 rounded-lg focus:ring-[#5B45E0] focus:border-[#5B45E0] sm:text-sm"
+                                            >
+                                                {filter.options && filter.options.map((option, idx) => (
+                                                    <option key={idx} value={option.value}>
+                                                        {option.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        )}
+                                    </div>
+                                );
+                            }
+                            return null;
+                        })}
                     </div>
                 </div>
             )}
