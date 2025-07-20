@@ -652,9 +652,10 @@ const Login = () => {
   };
 
   return (
+    <>
+     <ToastContainer />
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-gradient-to-br from-custom-bg to-blue-100">
       <div className="hidden lg:flex flex-col justify-center items-center px-12 bg-custom-bg/50 text-white relative overflow-hidden">
-        <ToastContainer />
         <div
           className="absolute inset-0 bg-repeat opacity-20"
           style={{ backgroundImage: 'url("/path/to/subtle-pattern.png")' }}
@@ -804,6 +805,7 @@ const Login = () => {
         </div>
       )}
     </div>
+    </>
   );
 };
 
