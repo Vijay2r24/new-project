@@ -30,10 +30,12 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { fetchApiData } from "./FetchApiData";
 import { STATUS } from "../contants/constants";
+import { useUserDetails } from "../../src/context/AllDataContext";
 const Login = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [bShowPassword, setShowPassword] = useState(false);
+
   const [oFormData, setFormData] = useState({
     email: "",
     password: "",
@@ -55,7 +57,7 @@ const Login = () => {
   const [sConfirmPassword, setConfirmPassword] = useState("");
   const [bShowNewPassword, setShowNewPassword] = useState(false);
   const [bShowConfirmPassword, setShowConfirmPassword] = useState(false);
-
+  const { data: userDetails, fetch: fetchUserDetails } = useUserDetails();
   const passwordRules = [
     {
       label: t("RESET_PASSWORD.RULES.LENGTH"),
@@ -111,7 +113,7 @@ const Login = () => {
     let fieldError = "";
     let updatedFormData = { ...oFormData };
     if (field === "phone") {
-      value = value.replace(/\D/g, "");  
+      value = value.replace(/\D/g, "");
     }
 
     if (sCurrentView === "login") {
@@ -142,7 +144,7 @@ const Login = () => {
     setError((prev) => ({ ...prev, [field]: fieldError, submit: "" }));
   };
 
-  const loginUser = async () => {
+ const loginUser = async () => {
   const emailError = validateEmail(oFormData.email);
   const passwordError = validatePassword(oFormData.password);
 
@@ -198,6 +200,7 @@ const Login = () => {
             );
           }
         } catch (e) {}
+        await fetchUserDetails(data.UserID, data.token);
 
         fetchApiData();
         navigate("/dashboard");
@@ -214,8 +217,6 @@ const Login = () => {
     showEmsg(errorMessage, STATUS.ERROR);
   }
 };
-
-
   const handleForgotPasswordClick = () => {
     setCurrentView("forgotPassword");
     setError({

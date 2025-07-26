@@ -104,7 +104,7 @@ const OrderList = () => {
         } else {
           setLoading(true);
         }
-        
+
         const token = localStorage.getItem("token");
         const params = {
           searchText: sSearchTerm,
@@ -113,7 +113,9 @@ const OrderList = () => {
           orderStatus:
             oFilters.orderStatus !== "all" ? oFilters.orderStatus : undefined,
           paymentStatus:
-            oFilters.paymentStatus !== "all" ? oFilters.paymentStatus : undefined,
+            oFilters.paymentStatus !== "all"
+              ? oFilters.paymentStatus
+              : undefined,
           startDate: oFilters.startDate || undefined,
           endDate: oFilters.endDate || undefined,
         };
@@ -174,7 +176,13 @@ const OrderList = () => {
     };
 
     fetchData();
-  }, [nCurrentPage, nProductsPerPage, sSearchTerm, oFilters, initialLoadComplete]);
+  }, [
+    nCurrentPage,
+    nProductsPerPage,
+    sSearchTerm,
+    oFilters,
+    initialLoadComplete,
+  ]);
 
   useEffect(() => {
     setTitle(t("ORDERS.TITLE"));
@@ -234,39 +242,37 @@ const OrderList = () => {
       {sViewMode === "table" ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100">
           <div className="overflow-x-auto">
-            {bLoading ? (
-              <div className="text-center py-8 text-gray-500">
-                {t("COMMON.LOADING")}
-              </div>
-            ) : bFilterLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader size="small" />
-              </div>
-            ) : sError ? (
-              <div className="text-center py-8 text-gray-600">{sError}</div>
-            ) : (
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="table-head">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="table-head">
+                <tr>
+                  <th className="table-head-cell">
+                    {t("ORDERS.TABLE.ORDER_NUMBER")}
+                  </th>
+                  <th className="table-head-cell">
+                    {t("ORDERS.TABLE.PRODUCT_NAME")}
+                  </th>
+                  <th className="table-head-cell">{t("COMMON.QUANTITY")}</th>
+                  <th className="table-head-cell">{t("COMMON.STATUS")}</th>
+                  <th className="table-head-cell">{t("COMMON.ACTIONS")}</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {bFilterLoading ? (
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {t("ORDERS.TABLE.ORDER_NUMBER")}
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {t("ORDERS.TABLE.PRODUCT_NAME")}
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {t("COMMON.QUANTITY")}
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {t("COMMON.STATUS")}
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {t("COMMON.ACTIONS")}
-                    </th>
+                    <td colSpan={7} className="py-8 text-center">
+                      <div className="flex justify-center">
+                        <Loader size="small" />
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {aProductRows.map((productRow) => (
+                ) : sError ? (
+                  <tr>
+                    <td colSpan="5" className="text-center py-8 text-gray-600">
+                      {sError}
+                    </td>
+                  </tr>
+                ) : (
+                  aProductRows.map((productRow) => (
                     <tr
                       key={
                         productRow.orderItemId ||
@@ -275,23 +281,22 @@ const OrderList = () => {
                       }
                       className="hover:bg-gray-50 transition-colors duration-150"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="table-cell">
                         <div className="text-caption font-semibold truncate max-w-[150px]">
                           {productRow.orderId}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="table-cell">
                         <div className="text-sm text-gray-700 truncate max-w-[200px]">
-                          {productRow.product?.productName ||
-                            "Unnamed Product"}
+                          {productRow.product?.productName || "Unnamed Product"}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="table-cell">
                         <div className="text-sm text-gray-900 text-center">
                           {productRow.quantity}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="table-cell">
                         <span
                           className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${getStatusColor(
                             productRow.orderStatus
@@ -300,7 +305,7 @@ const OrderList = () => {
                           {productRow.orderStatus}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-secondary">
+                      <td className="table-cell">
                         <button
                           onClick={() => handleViewOrder(productRow)}
                           className="text-[#5B45E0] hover:text-[#4c39c7] font-medium transition-colors duration-150"
@@ -309,10 +314,10 @@ const OrderList = () => {
                         </button>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       ) : (
