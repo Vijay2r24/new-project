@@ -38,6 +38,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { useTitle } from "../../context/TitleContext";
 import  BackButton from '../../components/BackButton.jsx';
+import Loader from '../../components/Loader';
+import { hideLoaderWithDelay } from '../../utils/loaderUtils';
 const AddProductForm = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
@@ -67,6 +69,7 @@ const AddProductForm = () => {
   });
   const [oValidationErrors, setValidationErrors] = useState({});
   const [fetchedProduct, setFetchedProduct] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const productNameRef = useRef(null);
   const attributeTypeRef = useRef(null);
@@ -472,6 +475,7 @@ const AddProductForm = () => {
       return;
     }
 
+    setSubmitting(true);
     const token = localStorage.getItem("token");
     const selectedCategory = aCategories.find(
       (cat) => cat.CategoryID === oFormData.CategoryID
@@ -557,6 +561,8 @@ const AddProductForm = () => {
         backendMessage || t("PRODUCT_CREATION.PRODUCT_SUBMIT_ERROR"),
         STATUS.ERROR
       );
+    } finally {
+      hideLoaderWithDelay(setSubmitting);
     }
   };
 
@@ -627,8 +633,15 @@ const AddProductForm = () => {
     );
   };
 
+  const loaderOverlay = submitting ? (
+    <div className="global-loader-overlay">
+      <Loader />
+    </div>
+  ) : null;
+
   return (
     <div className="min-h-screen">
+      {loaderOverlay}
         <ToastContainer />
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">

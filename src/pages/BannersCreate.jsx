@@ -228,12 +228,6 @@ const BannerForm = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen">
       <ToastContainer />
-      <div className="flex items-center gap-3 mb-4">
-        <p className="mt-1 text-secondary">
-          {t("BANNER_FORM.CREATE_BANNER_DESCRIPTION")}
-        </p>
-      </div>
-
       {error && <div className="text-red-500 mb-4">{error}</div>}
       <form onSubmit={handleSubmit}>
         <TextInputWithIcon

@@ -214,7 +214,7 @@ const Dashboard = () => {
 
                 <div className="flex flex-col items-center">
                   <Clock className="h-4 w-4 text-indigo-400 mb-0.5" />
-                  <span className="text-[11px] text-gray-500">{t('DASHBOARD.PRODUCT_MODAL.STATUS')}</span>
+                  <span className="text-[11px] text-gray-500">{t('COMMON.STATUS')}</span>
                   <span className="font-semibold text-sm text-gray-800">
                     {nSelectedProduct.stock < 10
                       ? t('DASHBOARD.PRODUCT_MODAL.LOW_STOCK')

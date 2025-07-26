@@ -10,20 +10,19 @@ import ColorList from "./colors/ColorList";
 import ColorCreate from "./colors/CreateColor";
 import AttributeList from "./attributes/AttributeList";
 import AttributeCreate from "./attributes/CreateAttribute";
+import Loader from "../../components/Loader";
+import { hideLoaderWithDelay } from "../../utils/loaderUtils";
 import {
-  Plus,
   Package,
   Tag,
   Palette,
   Layers,
   Settings,
-  ArrowLeft,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 import { useTitle } from "../../context/TitleContext";
 import { ToastContainer } from "react-toastify";
-
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(" ");
@@ -32,9 +31,44 @@ function classNames(...classes) {
 const Browse = () => {
   const [nSelectedTab, setSelectedTab] = useState(0);
   const [sViewMode, setViewMode] = useState("list");
+  const [submitting, setSubmitting] = useState(false);
+
   const { t } = useTranslation();
   const location = useLocation();
   const { setTitle } = useTitle();
+
+  const aTabs = [
+    {
+      name: t("PRODUCT_SETUP.TABS.BRANDS"),
+      list: BrandList,
+      create: BrandCreate,
+      icon: Package,
+    },
+    {
+      name: t("PRODUCT_SETUP.TABS.CATEGORIES"),
+      list: CategoryList,
+      create: CategoryCreate,
+      icon: Tag,
+    },
+    {
+      name: t("PRODUCT_SETUP.TABS.ATTRIBUTE_TYPES"),
+      list: AttributeTypeList,
+      create: AttributeTypeCreate,
+      icon: Settings,
+    },
+    {
+      name: t("PRODUCT_SETUP.TABS.COLORS"),
+      list: ColorList,
+      create: ColorCreate,
+      icon: Palette,
+    },
+    {
+      name: t("PRODUCT_SETUP.TABS.ATTRIBUTES"),
+      list: AttributeList,
+      create: AttributeCreate,
+      icon: Layers,
+    },
+  ];
 
   useEffect(() => {
     if (location.state && location.state.fromCategoryEdit) {
@@ -89,67 +123,25 @@ const Browse = () => {
     setTitle(t("PRODUCT_SETUP.PRODUCT_SETUP"));
   }, [setTitle, t]);
 
-  const aTabs = [
-    {
-      name: t("PRODUCT_SETUP.TABS.BRANDS"),
-      list: BrandList,
-      create: BrandCreate,
-      icon: Package,
-    },
-    {
-      name: t("PRODUCT_SETUP.TABS.CATEGORIES"),
-      list: CategoryList,
-      create: CategoryCreate,
-      icon: Tag,
-    },
-    {
-      name: t("PRODUCT_SETUP.TABS.ATTRIBUTE_TYPES"),
-      list: AttributeTypeList,
-      create: AttributeTypeCreate,
-      icon: Settings,
-    },
-    {
-      name: t("PRODUCT_SETUP.TABS.COLORS"),
-      list: ColorList,
-      create: ColorCreate,
-      icon: Palette,
-    },
-    {
-      name: t("PRODUCT_SETUP.TABS.ATTRIBUTES"),
-      list: AttributeList,
-      create: AttributeCreate,
-      icon: Layers,
-    },
-  ];
+  const loaderOverlay = submitting ? (
+    <div className="global-loader-overlay">
+      <Loader />
+    </div>
+  ) : null;
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2">
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
-        <div>
-          <p className="mt-1 text-sm text-gray-500">
-            {t("PRODUCT_SETUP.PRODUCT_SETUP_SUBHEADING")}
-          </p>
-        </div>
-        <button
-          onClick={() => setViewMode(sViewMode === "list" ? "create" : "list")}
-          className="btn-primary"
-        >
-          {sViewMode === "list" ? (
-            <>
-              <Plus className="h-4 w-4 mr-2" />
-              {t("PRODUCT_SETUP.CREATE")}
-            </>
-          ) : (
-            <>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              {t("PRODUCT_SETUP.VIEW_LIST")}
-            </>
-          )}
-        </button>
-      </div>
-
       {/* Tabs Section */}
       <div className="overflow-visible">
-        <Tab.Group selectedIndex={nSelectedTab} onChange={setSelectedTab}>
+        <Tab.Group
+          selectedIndex={nSelectedTab}
+          onChange={(index) => {
+            setSubmitting(true); // ✅ Show loader
+            setSelectedTab(index);
+            setViewMode("list");
+            hideLoaderWithDelay(setSubmitting, 500); // ✅ Hide loader after 0.5s
+          }}
+        >
           <div className="overflow-x-auto">
             <Tab.List className="flex space-x-4 min-w-max border-b border-gray-200 px-4 sm:px-6">
               {aTabs.map((tab) => {
@@ -176,11 +168,17 @@ const Browse = () => {
 
           <Tab.Panels>
             {aTabs.map((tab, idx) => (
-              <Tab.Panel key={idx} className="p-4 sm:p-6 animate-fadeIn">
+              <Tab.Panel key={idx} className="p-4 sm:p-6">
                 {sViewMode === "list" ? (
-                  <tab.list />
+                  <tab.list
+                    onCreate={() => setViewMode("create")}
+                    setSubmitting={setSubmitting}
+                  />
                 ) : (
-                  <tab.create setViewMode={setViewMode} />
+                  <tab.create
+                    setViewMode={setViewMode}
+                    setSubmitting={setSubmitting}
+                  />
                 )}
               </Tab.Panel>
             ))}
@@ -188,6 +186,7 @@ const Browse = () => {
         </Tab.Group>
       </div>
       <ToastContainer />
+      {loaderOverlay}
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Loader from '../components/Loader';
 import { useNavigate, useParams } from "react-router-dom";
 import TextwithIcone from "../components/TextInputWithIcon";
 import SelectwithIcone from "../components/SelectWithIcon";
@@ -11,7 +12,8 @@ import { showEmsg } from '../utils/ShowEmsg';
 import { useTitle } from '../context/TitleContext';
 import { STATUS } from '../contants/constants';
 import BackButton from '../components/BackButton';
-import { ToastContainer } from "react-toastify"; 
+import { ToastContainer } from "react-toastify";
+import { hideLoaderWithDelay } from '../utils/loaderUtils';
 const AddUserRole = () => {
   const [sRoleName, setRoleName] = useState('');
   const [sStoreId, setStoreId] = useState('0');
@@ -20,6 +22,7 @@ const AddUserRole = () => {
   const [nError, setError] = useState(null);
   const [oErrors, setErrors] = useState({});
   const [loadingPermissions, setLoadingPermissions] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const { t } = useTranslation();
   const { data: aStores = [], loading: bStoresLoading, error: sStoresError, fetch: fetchStores } = useStores();
   const { data: roles = [], loading: rolesLoading, error: rolesError, fetch: fetchRoles } = useRoles();
@@ -53,7 +56,7 @@ const AddUserRole = () => {
             permissionsArr = roleData.data.data.rows;
           } else if (roleData.data?.rows && Array.isArray(roleData.data.rows)) {
             permissionsArr = roleData.data.rows;
-          } 
+          }
         }
       } else {
         const res = await apiGet(GET_ALL_PERMISSIONS, {}, token);
@@ -171,6 +174,7 @@ const AddUserRole = () => {
   const handleSave = async (event) => {
     event.preventDefault();
     if (!validateRoleDataSubmit()) {
+      setSubmitting(true);
       const permissions = Object.values(oPermissionsByModule)
         .flat()
         .map(permission => ({
@@ -186,7 +190,7 @@ const AddUserRole = () => {
         TenantID:localStorage.getItem('tenantID'),
         storeId: Number(sStoreId),
         ...(roleId
-          ? { UpdatedBy: userId } 
+          ? { UpdatedBy: userId }
           : { CreatedBy: userId }
         ),
       };
@@ -200,20 +204,27 @@ const AddUserRole = () => {
             navigate('/userRoles');
           });
         } else {
-          showEmsg(resData?.MESSAGE || t('CREATE_USER_ROLE.FAILED_TO_SAVE_ROLE'), STATUS.WARNING);
+          showEmsg(resData?.MESSAGE || t('COMMON.API_ERROR'), STATUS.ERROR);
         }
       } catch (err) {
-        const msg = err?.response?.data?.message;
-        showEmsg(msg || t('CREATE_USER_ROLE.FAILED_TO_SAVE_ROLE'), STATUS.ERROR);
+        showEmsg(t('COMMON.API_ERROR'), STATUS.ERROR);
+      } finally {
+        hideLoaderWithDelay(setSubmitting);
       }
     }
   };
 
+  // Loader overlay for submit
+  const loaderOverlay = submitting ? (
+    <div className="global-loader-overlay">
+      <Loader />
+    </div>
+  ) : null;
+
   return (
-    <div
-      className={`max-w-7xl mx-auto`}
-    >
+    <div className={`max-w-7xl mx-auto`}>
       <ToastContainer />
+      {loaderOverlay}
       <div>
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">

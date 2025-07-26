@@ -24,10 +24,11 @@ import { useCategories } from "../../../context/AllDataContext";
 import { showEmsg } from "../../../utils/ShowEmsg";
 import { STATUS } from "../../../contants/constants";
 import { ToastContainer } from "react-toastify";
-
+import Loader from "../../../components/Loader";
+import { hideLoaderWithDelay } from "../../../utils/loaderUtils";
 const CreateBrand = () => {
   const [oFormData, setFormData] = useState({
-    TenantID: localStorage.getItem('tenantID'),
+    TenantID: localStorage.getItem("tenantID"),
     BrandName: "",
     CategoryID: "",
     Heading: "",
@@ -44,7 +45,7 @@ const CreateBrand = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { id: brandId } = useParams();
-
+  const [bSubmitting, setSubmitting] = useState(false);
   const isEditing = !!brandId;
   const categories = useCategories();
   const aCategories = categories.data || [];
@@ -68,12 +69,12 @@ const CreateBrand = () => {
             const brandData = oResponse.data.data.brand;
             setFormData((prev) => ({
               ...prev,
-              TenantID: brandData.TenantID || localStorage.getItem('tenantID'),
+              TenantID: brandData.TenantID || localStorage.getItem("tenantID"),
               BrandName: brandData.BrandName || "",
               CategoryID: brandData.CategoryID || "",
               Heading: brandData.Heading || "",
               BrandCode: brandData.BrandCode || "",
-              IsActive: brandData.IsActive === true,
+              IsActive: brandData.Status,
               BrandLogo: brandData.BrandLogo || null,
               description: brandData.BrandDescription || "",
               CreatedBy: brandData.CreatedBy || t("COMMON.ADMIN"),
@@ -107,7 +108,6 @@ const CreateBrand = () => {
       }));
     }
   };
-
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -128,7 +128,6 @@ const CreateBrand = () => {
       setImagePreview(null);
     }
   };
-
   const handleRemoveImage = () => {
     if (sImagePreview && sImagePreview.startsWith("blob:")) {
       URL.revokeObjectURL(sImagePreview);
@@ -170,13 +169,13 @@ const CreateBrand = () => {
       setErrors(newErrors);
       return;
     }
-
+    setSubmitting(true);
     const dataToSend = new FormData();
     dataToSend.append("BrandName", oFormData.BrandName);
     dataToSend.append("CategoryID", oFormData.CategoryID);
     dataToSend.append("Heading", oFormData.Heading);
     dataToSend.append("BrandCode", oFormData.BrandCode);
-    dataToSend.append("IsActive", oFormData.IsActive ? "true" : "false");
+    dataToSend.append("IsActive", oFormData.IsActive);
     dataToSend.append("BrandDescription", oFormData.description);
 
     if (oFormData.BrandLogo) {
@@ -185,7 +184,7 @@ const CreateBrand = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const userId = localStorage.getItem('userId');
+      const userId = localStorage.getItem("userId");
       let response;
       if (isEditing) {
         dataToSend.append("UpdatedBy", userId);
@@ -203,7 +202,7 @@ const CreateBrand = () => {
 
       if (response.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
         showEmsg(response.data.MESSAGE, STATUS.SUCCESS, 3000, async () => {
-          navigate('/browse', { state: { fromBrandEdit: true } });
+          navigate("/browse", { state: { fromBrandEdit: true } });
         });
       } else {
         showEmsg(response.data.MESSAGE, STATUS.WARNING);
@@ -217,11 +216,20 @@ const CreateBrand = () => {
       const errorMessage =
         err?.response?.data?.MESSAGE || t("COMMON.API_ERROR");
       showEmsg(errorMessage, STATUS.ERROR);
+    } finally {
+      hideLoaderWithDelay(setSubmitting);
     }
   };
 
+  const loaderOverlay = bSubmitting ? (
+    <div className="global-loader-overlay">
+      <Loader />
+    </div>
+  ) : null;
+
   return (
     <div className="bg-gray-50 min-h-screen">
+      {loaderOverlay}
       {isEditing && <ToastContainer />}
       <div className="w-full p-0 sm:p-0">
         <div className="flex items-center mb-4">
@@ -242,7 +250,6 @@ const CreateBrand = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex flex-col md:flex-row md:space-x-4">
             <div className="w-full md:w-1/2">
-              {/* Brand Name */}
               <TextInputWithIcon
                 label={t("PRODUCT_SETUP.CREATE_BRAND.NAME_LABEL")}
                 id="BrandName"
@@ -255,7 +262,6 @@ const CreateBrand = () => {
               />
             </div>
             <div className="w-full md:w-1/2">
-              {/* Category ID */}
               <SelectWithIcon
                 label={t("PRODUCT_SETUP.CREATE_CATEGORY.PARENT_LABEL")}
                 id="CategoryID"
@@ -270,7 +276,9 @@ const CreateBrand = () => {
                 error={oErrors.CategoryID || sErrorCategories}
                 placeholder={t("PRODUCT_SETUP.CREATE_CATEGORY.SELECT_PARENT")}
                 Icon={Tag}
-                onInputChange={(value) => categories.fetch({ searchText: value })}
+                onInputChange={(value) =>
+                  categories.fetch({ searchText: value })
+                }
               />
             </div>
           </div>
@@ -313,8 +321,8 @@ const CreateBrand = () => {
                 value={oFormData.IsActive}
                 onChange={handleInputChange}
                 options={[
-                  { value: true, label: t("COMMON.ACTIVE") },
-                  { value: false, label: t("COMMON.INACTIVE") },
+                  { value: "Active", label: t("COMMON.ACTIVE") },
+                  { value: "Inactive", label: t("COMMON.INACTIVE") },
                 ]}
                 Icon={Tag}
                 error={oErrors.IsActive}
