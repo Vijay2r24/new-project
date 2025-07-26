@@ -40,7 +40,7 @@ const UserRolesList = () => {
   });
   const [roles, setRoles] = useState([]);
   const [deletePopup, setDeletePopup] = useState({ open: false, roleId: null });
-  const [bFilterLoading, setFilterLoading] = useState(false); // New state for filter loading
+  const [bFilterLoading, setFilterLoading] = useState(false);
 
   useEffect(() => {
     fetchStores();

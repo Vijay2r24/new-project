@@ -44,7 +44,7 @@ const CreateCategory = () => {
 
   const [oErrors, setErrors] = useState({});
   const [sImagePreview, setImagePreview] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [bSubmitting, setSubmitting] = useState(false);
   useEffect(() => {
     if (isEditing && categoryId && !bLoadingCategories) {
       const fetchCategoryDetails = async () => {
@@ -255,7 +255,7 @@ const CreateCategory = () => {
     }
   };
 
-  const loaderOverlay = submitting ? (
+  const loaderOverlay = bSubmitting ? (
     <div className="global-loader-overlay">
       <Loader />
     </div>

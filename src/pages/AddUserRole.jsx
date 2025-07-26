@@ -12,8 +12,7 @@ import { showEmsg } from '../utils/ShowEmsg';
 import { useTitle } from '../context/TitleContext';
 import { STATUS } from '../contants/constants';
 import BackButton from '../components/BackButton';
-import { ToastContainer } from "react-toastify";
-import { hideLoaderWithDelay } from '../utils/loaderUtils';
+import { ToastContainer } from "react-toastify"; 
 const AddUserRole = () => {
   const [sRoleName, setRoleName] = useState('');
   const [sStoreId, setStoreId] = useState('0');
@@ -22,7 +21,7 @@ const AddUserRole = () => {
   const [nError, setError] = useState(null);
   const [oErrors, setErrors] = useState({});
   const [loadingPermissions, setLoadingPermissions] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const [bSubmitting, setSubmitting] = useState(false);
   const { t } = useTranslation();
   const { data: aStores = [], loading: bStoresLoading, error: sStoresError, fetch: fetchStores } = useStores();
   const { data: roles = [], loading: rolesLoading, error: rolesError, fetch: fetchRoles } = useRoles();
@@ -56,7 +55,7 @@ const AddUserRole = () => {
             permissionsArr = roleData.data.data.rows;
           } else if (roleData.data?.rows && Array.isArray(roleData.data.rows)) {
             permissionsArr = roleData.data.rows;
-          }
+          } 
         }
       } else {
         const res = await apiGet(GET_ALL_PERMISSIONS, {}, token);
@@ -104,7 +103,7 @@ const AddUserRole = () => {
       } catch (err) {
         const backendMessage = err?.response?.data?.message;
         setPermissionsByModule({});
-      setError(backendMessage || 'Failed to fetch permissions');
+      setError(backendMessage);
       } finally {
         setLoadingPermissions(false);
       }
@@ -190,7 +189,7 @@ const AddUserRole = () => {
         TenantID:localStorage.getItem('tenantID'),
         storeId: Number(sStoreId),
         ...(roleId
-          ? { UpdatedBy: userId }
+          ? { UpdatedBy: userId } 
           : { CreatedBy: userId }
         ),
       };
@@ -209,14 +208,14 @@ const AddUserRole = () => {
       } catch (err) {
         showEmsg(t('COMMON.API_ERROR'), STATUS.ERROR);
       } finally {
-        hideLoaderWithDelay(setSubmitting);
+        setSubmitting(false);
       }
     }
   };
 
   // Loader overlay for submit
-  const loaderOverlay = submitting ? (
-    <div className="global-loader-overlay">
+  const loaderOverlay = bSubmitting ? (
+    <div style={{position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(255,255,255,0.8)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
       <Loader />
     </div>
   ) : null;

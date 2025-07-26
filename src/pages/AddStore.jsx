@@ -44,7 +44,7 @@ const AddStore = () => {
     cityName: "",
   });
   const [sError, setError] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [bSubmitting, setbSubmitting] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -118,7 +118,7 @@ const AddStore = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitting(true);
+    setbSubmitting(true);
     const token = localStorage.getItem("token");
     const userId = localStorage.getItem("userId");
     const payload = {
@@ -153,10 +153,10 @@ const AddStore = () => {
         err?.response?.data?.MESSAGE || t("COMMON.API_ERROR");
       showEmsg(errorMessage, STATUS.ERROR);
     } finally {
-      hideLoaderWithDelay(setSubmitting);
+      hideLoaderWithDelay(setbSubmitting);
     }
   };
-  const loaderOverlay = submitting ? (
+  const loaderOverlay = bSubmitting ? (
     <div className="global-loader-overlay">
       <Loader />
     </div>

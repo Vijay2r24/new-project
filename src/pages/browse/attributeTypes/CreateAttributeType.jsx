@@ -32,7 +32,7 @@ const CreateAttributeType = () => {
 
   const [oErrors, setErrors] = useState({});
   const { t } = useTranslation();
-  const [submitting, setSubmitting] = useState(false);
+  const [bSubmitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (isEditing && attributeTypeId) {
@@ -167,7 +167,7 @@ const CreateAttributeType = () => {
        }
   };
 
-  const loaderOverlay = submitting ? (
+  const loaderOverlay = bSubmitting ? (
     <div className="global-loader-overlay">
       <Loader />
     </div>

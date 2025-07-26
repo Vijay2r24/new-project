@@ -6,7 +6,6 @@ import {
   MapPin,
   Lock,
   Building,
-  ArrowLeft,
   CheckCircle,
   XCircle,
 } from "lucide-react";
@@ -72,7 +71,7 @@ const AddUser = () => {
   const { setTitle, setBackButton } = useTitle();
   const [fetchUserError, setFetchUserError] = useState("");
   const navigate = useNavigate();
-  const [submitting, setSubmitting] = useState(false);
+  const [bSubmitting, setSubmitting] = useState(false);
   const { data: userDetails, fetch: fetchUserDetails } = useUserDetails();
   useEffect(() => {
     setTitle(id ? t("USERS.EDIT_USER") : t("USERS.ADD_NEW_USER"));
@@ -286,7 +285,6 @@ const AddUser = () => {
       test: (pw) => /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(pw),
     },
   ];
-
  const handleSubmit = async (e) => {
   e.preventDefault();
   const validationErrors = validate();
@@ -367,7 +365,7 @@ const AddUser = () => {
       </div>
     );
   }
-  const loaderOverlay = submitting ? (
+  const loaderOverlay = bSubmitting ? (
     <div className="global-loader-overlay">
       <Loader />
     </div>
