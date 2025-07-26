@@ -49,7 +49,7 @@ const CategoryList = ({ onCreate, onBack, setSubmitting }) => {
   };
 
   const handleStatusConfirm = async () => {
-    if (setSubmitting) setSubmitting(true); // ✅ show loader
+    if (setSubmitting) setSubmitting(true);
     const { categoryId, newStatus } = statusPopup;
 
     const result = await categories.updateStatusById(
@@ -62,7 +62,7 @@ const CategoryList = ({ onCreate, onBack, setSubmitting }) => {
     showEmsg(result.message, result.status);
     setStatusPopup({ open: false, categoryId: null, newStatus: null });
 
-    hideLoaderWithDelay(setSubmitting); // ✅ hide loader safely
+    hideLoaderWithDelay(setSubmitting);
   };
 
   const handleStatusPopupClose = () => {

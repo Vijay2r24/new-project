@@ -80,8 +80,6 @@ useEffect(() => {
   fetchData();
 }, [fetchUserDetails, userId]);
 
-
-// Transform the fetched user details
 const user = userDetails?.user
   ? {
       name: `${userDetails.user.FirstName} ${userDetails.user.LastName}`,
@@ -444,8 +442,6 @@ const user = userDetails?.user
               </div>
             </div>
           </div>
-
-          {/* Address Info */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
               <h2 className="text-lg font-semibold text-gray-900">
