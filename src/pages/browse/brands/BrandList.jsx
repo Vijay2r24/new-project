@@ -7,25 +7,32 @@ import { useBrands } from "../../../context/AllDataContext";
 import Pagination from "../../../components/Pagination";
 import { showEmsg } from "../../../utils/ShowEmsg";
 import FullscreenErrorPopup from "../../../components/FullscreenErrorPopup";
-import { UPDATE_BRAND_STATUS } from '../../../contants/apiRoutes';
-import Switch from '../../../components/Switch';
+import { UPDATE_BRAND_STATUS } from "../../../contants/apiRoutes";
+import Switch from "../../../components/Switch";
 import { ITEMS_PER_PAGE } from "../../../contants/constants";
+import { hideLoaderWithDelay } from "../../../utils/loaderUtils";
 
-const BrandList = () => {
+const BrandList = ({ onCreate, onBack, setSubmitting }) => {
   const [bShowCreate, setShowCreate] = useState(false);
   const [sSearchQuery, setSearchQuery] = useState("");
   const [bShowFilters, setShowFilters] = useState(false);
   const [oFilters, setFilters] = useState({ status: "all" });
+
   const { t } = useTranslation();
   const brands = useBrands();
   const aBrands = brands.data || [];
   const bLoading = brands.loading;
   const sError = brands.error;
   const iTotalItems = brands.total;
+
   const [nCurrentPage, setCurrentPage] = useState(1);
   const [iItemsPerPage] = useState(ITEMS_PER_PAGE);
-  const { updateStatusById } = useBrands();
-  const [statusPopup, setStatusPopup] = useState({ open: false, brandId: null, newStatus: null });
+
+  const [statusPopup, setStatusPopup] = useState({
+    open: false,
+    brandId: null,
+    newStatus: null,
+  });
 
   useEffect(() => {
     const params = {
@@ -60,10 +67,26 @@ const BrandList = () => {
   };
 
   const handleStatusConfirm = async () => {
+    if (setSubmitting) setSubmitting(true);
     const { brandId, newStatus } = statusPopup;
-    const result = await updateStatusById(brandId, newStatus, UPDATE_BRAND_STATUS, 'BrandID');
-    showEmsg(result.message, result.status);
-    setStatusPopup({ open: false, brandId: null, newStatus: null });
+
+    try {
+      const result = await brands.updateStatusById(
+        brandId,
+        newStatus,
+        UPDATE_BRAND_STATUS,
+        "BrandID"
+      );
+      showEmsg(result.message, result.status);
+    } catch (err) {
+      console.error(err);
+      const errorMessage =
+        err?.response?.data?.MESSAGE || t("COMMON.API_ERROR");
+      showEmsg(errorMessage, "error");
+    } finally {
+      setStatusPopup({ open: false, brandId: null, newStatus: null });
+      hideLoaderWithDelay(setSubmitting);
+    }
   };
 
   const handleStatusPopupClose = () => {
@@ -98,6 +121,8 @@ const BrandList = () => {
           searchPlaceholder={t("PRODUCT_SETUP.BRANDS.SEARCH_PLACEHOLDER")}
           showSearch={true}
           showViewToggle={false}
+          onCreate={onCreate}
+          createLabel={t("PRODUCT_SETUP.CREATE")}
           showFilterButton={true}
           additionalFilters={
             bShowFilters
@@ -147,24 +172,38 @@ const BrandList = () => {
               </thead>
               <tbody className="table-body">
                 {aBrands.map((brand) => (
-                  <tr key={brand.BrandID} className="table-row items-center align-middle">
+                  <tr
+                    key={brand.BrandID}
+                    className="table-row items-center align-middle"
+                  >
                     <td className="table-cell table-cell-text align-middle">
                       <div className="flex items-center gap-2">
                         <div className="h-10 w-10 flex items-center justify-center rounded-full border overflow-hidden bg-white">
                           {brand.BrandLogo ? (
                             <img
-                              src={brand.BrandLogo.startsWith('http') ? brand.BrandLogo : `${process.env.REACT_APP_IMAGE_BASE_URL || ''}${brand.BrandLogo}`}
+                              src={
+                                brand.BrandLogo.startsWith("http")
+                                  ? brand.BrandLogo
+                                  : `${
+                                      process.env.REACT_APP_IMAGE_BASE_URL || ""
+                                    }${brand.BrandLogo}`
+                              }
                               alt={brand.BrandName}
                               className="w-full h-full object-cover"
-                              onError={e => { e.target.onerror = null; e.target.src = '/no-image.png'; }}
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = "/no-image.png";
+                              }}
                             />
                           ) : (
-                            <span className="text-gray-400 text-xs">{t("COMMON.NO_IMAGE")}</span>
+                            <span className="text-gray-400 text-xs">
+                              {t("COMMON.NO_IMAGE")}
+                            </span>
                           )}
                         </div>
                         <Link
                           to={`/browse/editbrand/${brand.BrandID}`}
-                          className="text-blue-600 hover:underline"
+                          className="text-blue-600 hover:underline block truncate max-w-[200px]"
                         >
                           {brand.BrandName}
                         </Link>
@@ -182,12 +221,24 @@ const BrandList = () => {
                       </span>
                     </td>
                     <td className="table-cell table-cell-text">
-                      {new Date(brand.CreatedAt).toLocaleString(undefined, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true })}
+                      {new Date(brand.CreatedAt).toLocaleString(undefined, {
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: true,
+                      })}
                     </td>
                     <td className="table-cell table-cell-text text-blue-600 hover:underline cursor-pointer">
                       <Switch
                         checked={brand.Status === t("COMMON.ACTIVE")}
-                        onChange={() => handleStatusChange(brand.BrandID, brand.Status === t("COMMON.ACTIVE"))}
+                        onChange={() =>
+                          handleStatusChange(
+                            brand.BrandID,
+                            brand.Status === t("COMMON.ACTIVE")
+                          )
+                        }
                       />
                     </td>
                   </tr>
@@ -226,9 +277,13 @@ const BrandList = () => {
 
       {statusPopup.open && (
         <FullscreenErrorPopup
-          message={statusPopup.newStatus ? t("PRODUCT_SETUP.BRANDS.CONFIRM_ACTIVATE") : t("PRODUCT_SETUP.BRANDS.CONFIRM_DEACTIVATE")}
+          message={
+            statusPopup.newStatus
+              ? t("PRODUCT_SETUP.BRANDS.CONFIRM_ACTIVATE")
+              : t("PRODUCT_SETUP.BRANDS.CONFIRM_DEACTIVATE")
+          }
           onClose={handleStatusPopupClose}
-           onConfirm={handleStatusConfirm}
+          onConfirm={handleStatusConfirm}
         />
       )}
     </div>

@@ -9,8 +9,9 @@ import FullscreenErrorPopup from "../../../components/FullscreenErrorPopup";
 import Switch from "../../../components/Switch";
 import { UPDATE_ATTRIBUTE_TYPE_STATUS } from "../../../contants/apiRoutes";
 import { ITEMS_PER_PAGE } from "../../../contants/constants";
+import { hideLoaderWithDelay } from "../../../utils/loaderUtils";
 
-const AttributeTypeList = () => {
+const AttributeTypeList = ({ onCreate, onBack, setSubmitting }) => {
   const [sSearchQuery, setSearchQuery] = useState("");
   const [bShowFilter, setShowFilter] = useState(false);
   const [oFilters, setFilters] = useState({ status: "all" });
@@ -22,12 +23,16 @@ const AttributeTypeList = () => {
     error: sError,
     total: iTotalItems,
     fetch: fetchAttributeTypes,
-    updateStatusById
+    updateStatusById,
   } = useAttributeTypes();
 
   const [iCurrentPage, setCurrentPage] = useState(1);
   const [iItemsPerPage] = useState(ITEMS_PER_PAGE);
-  const [statusPopup, setStatusPopup] = useState({ open: false, attributeTypeId: null, newStatus: null });
+  const [statusPopup, setStatusPopup] = useState({
+    open: false,
+    attributeTypeId: null,
+    newStatus: null,
+  });
 
   useEffect(() => {
     const params = {
@@ -42,15 +47,27 @@ const AttributeTypeList = () => {
   }, [iCurrentPage, iItemsPerPage, sSearchQuery, oFilters.status]);
 
   const handleStatusChange = (attributeTypeId, currentIsActive) => {
-    setStatusPopup({ open: true, attributeTypeId, newStatus: !currentIsActive });
+    setStatusPopup({
+      open: true,
+      attributeTypeId,
+      newStatus: !currentIsActive,
+    });
   };
 
   const handleStatusConfirm = async () => {
+    if (setSubmitting) setSubmitting(true);
+
     const { attributeTypeId, newStatus } = statusPopup;
-    const result = await updateStatusById(attributeTypeId, newStatus, UPDATE_ATTRIBUTE_TYPE_STATUS, 'AttributeTypeID');
+    const result = await updateStatusById(
+      attributeTypeId,
+      newStatus,
+      UPDATE_ATTRIBUTE_TYPE_STATUS,
+      "AttributeTypeID"
+    );
+
     showEmsg(result.message, result.status);
     setStatusPopup({ open: false, attributeTypeId: null, newStatus: null });
-    
+
     const params = {
       pageNumber: iCurrentPage,
       pageSize: iItemsPerPage,
@@ -60,6 +77,8 @@ const AttributeTypeList = () => {
       params.status = oFilters.status;
     }
     fetchAttributeTypes(params);
+
+    hideLoaderWithDelay(setSubmitting);
   };
 
   const handleStatusPopupClose = () => {
@@ -74,7 +93,6 @@ const AttributeTypeList = () => {
   };
 
   const iTotalPages = Math.ceil(iTotalItems / iItemsPerPage);
-  const iIndexOfLastItem = iCurrentPage * iItemsPerPage;
 
   const handlePageClick = (pageNumber) => {
     setCurrentPage(pageNumber);
@@ -105,22 +123,30 @@ const AttributeTypeList = () => {
           setSearchTerm={setSearchQuery}
           showFilterDropdown={bShowFilter}
           setShowFilterDropdown={setShowFilter}
-          searchPlaceholder={t("PRODUCT_SETUP.ATTRIBUTE_TYPE.SEARCH_PLACEHOLDER")}
+          searchPlaceholder={t(
+            "PRODUCT_SETUP.ATTRIBUTE_TYPE.SEARCH_PLACEHOLDER"
+          )}
           showSearch={true}
           showViewToggle={false}
           showFilterButton={true}
-          additionalFilters={bShowFilter ? [
-            {
-              label: t("COMMON.STATUS"),
-              name: "status",
-              value: oFilters.status,
-              options: [
-                { value: 'all', label: t('COMMON.ALL') },
-                { value: 'Active', label: t('COMMON.ACTIVE') },
-                { value: 'Inactive', label: t('COMMON.INACTIVE') },
-              ],
-            },
-          ] : []}
+          onCreate={onCreate}
+          createLabel={t("PRODUCT_SETUP.CREATE")}
+          additionalFilters={
+            bShowFilter
+              ? [
+                  {
+                    label: t("COMMON.STATUS"),
+                    name: "status",
+                    value: oFilters.status,
+                    options: [
+                      { value: "all", label: t("COMMON.ALL") },
+                      { value: "Active", label: t("COMMON.ACTIVE") },
+                      { value: "Inactive", label: t("COMMON.INACTIVE") },
+                    ],
+                  },
+                ]
+              : []
+          }
           handleFilterChange={bShowFilter ? handleFilterChange : undefined}
         />
       </div>
@@ -135,6 +161,7 @@ const AttributeTypeList = () => {
           {t("COMMON.ERROR")}: {sError}
         </div>
       )}
+
       {!bLoading && !sError && (
         <div className="table-container">
           <div className="table-wrapper">
@@ -161,11 +188,12 @@ const AttributeTypeList = () => {
               </thead>
               <tbody className="table-body">
                 {aAttributeTypes.map((type) => (
-                  <tr key={type.attributeTypeID} className="table-row">
+                  <tr key={type.attributeTypeID} className="table-row text-left">
                     <td className="table-cell table-cell-text">
                       <Link
                         to={`/browse/editattributetype/${type.attributeTypeID}`}
-                        className="text-sm font-medium text-blue-600 hover:underline"
+                        className="text-sm font-medium text-blue-600 hover:underline block truncate max-w-[180px]"
+                        title={type.name}
                       >
                         {type.name}
                       </Link>
@@ -173,33 +201,43 @@ const AttributeTypeList = () => {
                     <td className="table-cell">
                       <div className="text-secondary">{type.code}</div>
                     </td>
-
                     <td className="table-cell">
-                      <div className="text-sm text-gray-500">
+                      <div
+                        className="table-cell-subtext truncate max-w-[220px]"
+                        title={type.attributeTypeDescription}
+                      >
                         {type.attributeTypeDescription}
                       </div>
                     </td>
-
                     <td className="table-cell table-cell-text text-center">
                       <div className="text-sm text-gray-900 text-center">
                         {type.count}
                       </div>
                     </td>
-
                     <td className="table-cell">
                       <span
                         className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          type.status === t("COMMON.ACTIVE") ? 'status-active' : 'status-inactive'
+                          type.status === t("COMMON.ACTIVE")
+                            ? "status-active"
+                            : "status-inactive"
                         }`}
                       >
-                        {t(`COMMON.${type.status === 'Active' ? 'ACTIVE' : 'INACTIVE'}`)}
+                        {t(
+                          `COMMON.${
+                            type.status === "Active" ? "ACTIVE" : "INACTIVE"
+                          }`
+                        )}
                       </span>
                     </td>
-
                     <td className="table-cell table-cell-text">
                       <Switch
                         checked={type.status === t("COMMON.ACTIVE")}
-                        onChange={() => handleStatusChange(type.attributeTypeID, type.status === t("COMMON.ACTIVE"))}
+                        onChange={() =>
+                          handleStatusChange(
+                            type.attributeTypeID,
+                            type.status === t("COMMON.ACTIVE")
+                          )
+                        }
                       />
                     </td>
                   </tr>
@@ -225,6 +263,7 @@ const AttributeTypeList = () => {
           )}
         </div>
       )}
+
       {iTotalItems > 0 && !bLoading && (
         <Pagination
           currentPage={iCurrentPage}
@@ -239,9 +278,13 @@ const AttributeTypeList = () => {
 
       {statusPopup.open && (
         <FullscreenErrorPopup
-          message={statusPopup.newStatus ? t("PRODUCT_SETUP.ATTRIBUTE_TYPE.CONFIRM_ACTIVATE") : t("PRODUCT_SETUP.ATTRIBUTE_TYPE.CONFIRM_DEACTIVATE")}
+          message={
+            statusPopup.newStatus
+              ? t("PRODUCT_SETUP.ATTRIBUTE_TYPE.CONFIRM_ACTIVATE")
+              : t("PRODUCT_SETUP.ATTRIBUTE_TYPE.CONFIRM_DEACTIVATE")
+          }
           onClose={handleStatusPopupClose}
-           onConfirm={handleStatusConfirm}
+          onConfirm={handleStatusConfirm}
         />
       )}
     </div>

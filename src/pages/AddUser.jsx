@@ -25,7 +25,10 @@ import { STATUS } from "../contants/constants";
 import md5 from "md5";
 import BackButton from "../components/BackButton";
 import { ToastContainer } from "react-toastify";
-import userProfile from '../../assets/images/userProfile.svg';
+import userProfile from "../../assets/images/userProfile.svg";
+import Loader from "../components/Loader";
+import { hideLoaderWithDelay } from "../utils/loaderUtils";
+import { useUserDetails } from "../../src/context/AllDataContext";
 const getArray = (data) =>
   Array.isArray(data)
     ? data
@@ -56,8 +59,7 @@ const AddUser = () => {
   const [nProfileImagePreview, setProfileImagePreview] = useState(null);
   const { t } = useTranslation();
   const { id } = useParams();
-  const { aCountriesData, aStatesData, aCitiesData } =
-    useContext(LocationDataContext);
+  const { aCountriesData, aStatesData, aCitiesData } =useContext(LocationDataContext);
   const [bImgLoading, setImgLoading] = useState(true);
   const [bImgError, setImgError] = useState(false);
   const {
@@ -70,6 +72,8 @@ const AddUser = () => {
   const { setTitle, setBackButton } = useTitle();
   const [fetchUserError, setFetchUserError] = useState("");
   const navigate = useNavigate();
+  const [submitting, setSubmitting] = useState(false);
+  const { data: userDetails, fetch: fetchUserDetails } = useUserDetails();
   useEffect(() => {
     setTitle(id ? t("USERS.EDIT_USER") : t("USERS.ADD_NEW_USER"));
     setBackButton(<BackButton onClick={() => navigate("/users")} />);
@@ -123,7 +127,7 @@ const AddUser = () => {
               city: foundCity?.CityID || "",
               state: foundState?.StateID || "",
               pincode: user.Pincode || "",
-              status: user.Status || "Active",
+              status: user.Status || "",
               country: foundCountry?.CountryID || "",
               countryName: user.CountryName || "",
               stateName: user.StateName || "",
@@ -155,10 +159,12 @@ const AddUser = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: name === "phone" ? value.replace(/\D/g, "") : value,
     }));
+
     setErrors((prevErrors) => {
       if (!prevErrors[name]) return prevErrors;
       const newErrors = { ...prevErrors };
@@ -171,12 +177,12 @@ const AddUser = () => {
     const file = e.target.files[0];
     if (file) {
       setProfileImage(file);
-      setImgError(false); // Reset error state on new upload
+      setImgError(false);
       setImgLoading(true);
       const reader = new FileReader();
       reader.onloadend = () => {
         setProfileImagePreview(reader.result);
-        setImgLoading(false); // Set loading false after preview is ready
+        setImgLoading(false);
       };
       reader.readAsDataURL(file);
     } else {
@@ -187,47 +193,65 @@ const AddUser = () => {
     }
   };
 
-  const validate = () => {
-    const newErrors = {};
-    if (!oFormData.firstName)
-      newErrors.firstName = t("ADD_USER.VALIDATION.FIRST_NAME");
-    if (!oFormData.lastName)
-      newErrors.lastName = t("ADD_USER.VALIDATION.LAST_NAME");
-    if (!oFormData.email) newErrors.email = t("ADD_USER.VALIDATION.EMAIL");
-    if (!oFormData.phone) newErrors.phone = t("ADD_USER.VALIDATION.PHONE");
-    if (oFormData.phone && oFormData.phone.replace(/\D/g, "").length !== 10)
-      newErrors.phone = t("ADD_USER.VALIDATION.PHONE_LENGTH");
-    if (!oFormData.password)
+ const validate = () => {
+  const newErrors = {};
+  if (!oFormData.firstName)
+    newErrors.firstName = t("ADD_USER.VALIDATION.FIRST_NAME");
+
+  if (!oFormData.lastName)
+    newErrors.lastName = t("ADD_USER.VALIDATION.LAST_NAME");
+
+  if (!oFormData.email)
+    newErrors.email = t("ADD_USER.VALIDATION.EMAIL");
+
+  if (!oFormData.phone)
+    newErrors.phone = t("ADD_USER.VALIDATION.PHONE");
+  else if (oFormData.phone.replace(/\D/g, "").length !== 10)
+    newErrors.phone = t("ADD_USER.VALIDATION.PHONE_LENGTH");
+
+  const isCreating = !id;
+  const hasPassword = !!oFormData.password;
+  const hasConfirmPassword = !!oFormData.confirmPassword;
+
+  if (isCreating) {
+    if (!hasPassword)
       newErrors.password = t("ADD_USER.VALIDATION.PASSWORD");
-    if (!oFormData.confirmPassword)
+
+    if (!hasConfirmPassword)
       newErrors.confirmPassword = t("ADD_USER.VALIDATION.CONFIRM_PASSWORD");
-    if (id && (oFormData.password || oFormData.confirmPassword)) {
-      if (!oFormData.password)
-        newErrors.password = t("ADD_USER.VALIDATION.PASSWORD");
-      if (!oFormData.confirmPassword)
-        newErrors.confirmPassword = t("ADD_USER.VALIDATION.CONFIRM_PASSWORD");
-      if (oFormData.password !== oFormData.confirmPassword)
-        newErrors.confirmPassword = t("ADD_USER.VALIDATION.PASSWORD_MATCH");
-    }
-    if (
-      oFormData.password &&
-      oFormData.confirmPassword &&
-      oFormData.password !== oFormData.confirmPassword
-    )
+  }
+
+  // Only validate matching when both are entered
+  if (hasPassword && hasConfirmPassword) {
+    if (oFormData.password !== oFormData.confirmPassword) {
       newErrors.confirmPassword = t("ADD_USER.VALIDATION.PASSWORD_MATCH");
-    if (!oFormData.role) newErrors.role = t("ADD_USER.VALIDATION.ROLE");
-    if (!oFormData.streetAddress)
-      newErrors.streetAddress = t("ADD_USER.VALIDATION.STREET_ADDRESS");
-    if (!oFormData.country)
-      newErrors.country = t("ADD_USER.VALIDATION.COUNTRY");
-    if (!oFormData.state) newErrors.state = t("ADD_USER.VALIDATION.STATE");
-    if (!oFormData.city) newErrors.city = t("ADD_USER.VALIDATION.CITY");
-    const passwordStrength = getPasswordStrength(oFormData.password);
-    if (oFormData.password && passwordStrength !== "strong") {
-      newErrors.password = t("ADD_USER.VALIDATION.STRONG_PASSWORD");
+    } else {
+      // If match, check strength
+      const strength = getPasswordStrength(oFormData.password);
+      if (strength !== "strong") {
+        newErrors.password = t("ADD_USER.VALIDATION.STRONG_PASSWORD");
+      }
     }
-    return newErrors;
-  };
+  }
+
+  // Address & role validations
+  if (!oFormData.role)
+    newErrors.role = t("ADD_USER.VALIDATION.ROLE");
+
+  if (!oFormData.streetAddress)
+    newErrors.streetAddress = t("ADD_USER.VALIDATION.STREET_ADDRESS");
+
+  if (!oFormData.country)
+    newErrors.country = t("ADD_USER.VALIDATION.COUNTRY");
+
+  if (!oFormData.state)
+    newErrors.state = t("ADD_USER.VALIDATION.STATE");
+
+  if (!oFormData.city)
+    newErrors.city = t("ADD_USER.VALIDATION.CITY");
+
+  return newErrors;
+};
 
   const getPasswordStrength = (password) => {
     const strongRegex =
@@ -263,76 +287,78 @@ const AddUser = () => {
     },
   ];
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const validationErrors = validate();
-    setErrors(validationErrors);
-    if (Object.keys(validationErrors).length > 0) return;
-    const token = localStorage.getItem("token");
-    const userId = localStorage.getItem('userId');
-    const formData = new FormData();
-    if (id) formData.append("UserID", parseInt(id, 10));
-    formData.append("TenantID", localStorage.getItem('tenantID'));
-    formData.append("FirstName", oFormData.firstName || "");
-    formData.append("LastName", oFormData.lastName || "");
-    formData.append("Email", oFormData.email || "");
-    formData.append(
-      "Password",
-      oFormData.password ? md5(oFormData.password) : ""
-    );
-    formData.append("PhoneNumber", oFormData.phone || "");
-    formData.append("AddressLine", oFormData.streetAddress || "");
-    formData.append(
-      "CityID",
-      oFormData.city ? parseInt(oFormData.city, 10) : 0
-    );
-    formData.append(
-      "StateID",
-      oFormData.state ? parseInt(oFormData.state, 10) : 0
-    );
-     formData.append(
-      "CountryID",
-      oFormData.country ? parseInt(oFormData.country, 10) : 0
-    );
-    formData.append("Pincode", oFormData.pincode || "");
-    formData.append("RoleID", oFormData.role || "");
-    if (nProfileImage) {
-      formData.append("ProfileImage", nProfileImage);
-    }
-    if (id) {
-      formData.append("UpdatedBy", userId);
-    } else {
-      formData.append("CreatedBy", userId);
-    }
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  const validationErrors = validate();
+  setErrors(validationErrors);
+  if (Object.keys(validationErrors).length > 0) return;
 
-    try {
-      const oResponse = await apiPost(
+  setSubmitting(true);
+  const token = localStorage.getItem("token");
+  const userId = localStorage.getItem("userId");
+  const formData = new FormData();
+
+  if (id) formData.append("UserID", parseInt(id, 10));
+  formData.append("TenantID", localStorage.getItem("tenantID"));
+  formData.append("FirstName", oFormData.firstName || "");
+  formData.append("LastName", oFormData.lastName || "");
+  formData.append("Email", oFormData.email || "");
+  formData.append(
+    "Password",
+    oFormData.password ? md5(oFormData.password) : ""
+  );
+  formData.append("PhoneNumber", oFormData.phone || "");
+  formData.append("AddressLine", oFormData.streetAddress || "");
+  formData.append("CityID", oFormData.city ? parseInt(oFormData.city, 10) : 0);
+  formData.append("StateID", oFormData.state ? parseInt(oFormData.state, 10) : 0);
+  formData.append("CountryID", oFormData.country ? parseInt(oFormData.country, 10) : 0);
+  formData.append("Pincode", oFormData.pincode || "");
+  formData.append("RoleID", oFormData.role || "");
+
+  if (nProfileImage) {
+    formData.append("ProfileImage", nProfileImage);
+  }
+
+  if (id) {
+    formData.append("UpdatedBy", userId);
+  } else {
+    formData.append("CreatedBy", userId);
+  }
+
+  try {
+    const oResponse = await apiPost(
       USER_CREATE_OR_UPDATE,
-        formData,
-        token,
-        true
-      );
-      const resData = oResponse?.data;
+      formData,
+      token,
+      true
+    );
+    const resData = oResponse?.data;
 
-      if (resData?.STATUS === STATUS.SUCCESS.toUpperCase()) {
-        showEmsg(
-          resData?.MESSAGE || t('ADD_USER.SUCCESS'),
-          STATUS.SUCCESS, 3000,
-          async () => {
-            navigate('/users');
-          }
-        );
-      } else {
-        showEmsg(
-          resData?.MESSAGE || t("COMMON.FAILED_OPERATION"),
-          STATUS.WARNING
-        );
-      }
-    } catch (error) {
-      const backendMessage = error?.response?.data?.MESSAGE;
-      showEmsg(backendMessage || t("COMMON.ERROR_MESSAGE"), STATUS.ERROR);
+    if (resData?.STATUS === STATUS.SUCCESS.toUpperCase()) {
+      // Fetch updated user details after success
+      await fetchUserDetails(userId, token);
+
+      showEmsg(
+        resData?.MESSAGE || t("ADD_USER.SUCCESS"),
+        STATUS.SUCCESS,
+        3000,
+        async () => {
+          navigate("/users");
+        }
+      );
+    } else {
+      showEmsg(
+        resData?.MESSAGE || t("COMMON.FAILED_OPERATION"),
+        STATUS.WARNING
+      );
     }
-  };
+  } catch (error) {
+    const backendMessage = error?.response?.data?.MESSAGE;
+    showEmsg(backendMessage || t("COMMON.ERROR_MESSAGE"), STATUS.ERROR);
+  } finally {
+    hideLoaderWithDelay(setSubmitting);
+  }
+};
 
   if (fetchUserError) {
     return (
@@ -341,9 +367,15 @@ const AddUser = () => {
       </div>
     );
   }
+  const loaderOverlay = submitting ? (
+    <div className="global-loader-overlay">
+      <Loader />
+    </div>
+  ) : null;
   return (
     <div className="max-w-7xl mx-auto">
       <ToastContainer />
+      {loaderOverlay}
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-4">
           <p className="text-gray-500">
@@ -480,8 +512,10 @@ const AddUser = () => {
                   rolesLoading ? t("COMMON.LOADING") : t("ADD_USER.SELECT_ROLE")
                 }
                 searchable
-                searchPlaceholder={t('COMMON.SEARCH_ROLE') || 'Search role'}
-                onInputChange={(inputValue) => fetchRoles({ searchText: inputValue })}
+                searchPlaceholder={t("COMMON.SEARCH_ROLE") || "Search role"}
+                onInputChange={(inputValue) =>
+                  fetchRoles({ searchText: inputValue })
+                }
               />
 
               {/* Password and Confirm Password side by side */}

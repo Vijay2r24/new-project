@@ -13,6 +13,7 @@ import {
   Shield,
   AlignLeft,
   LayoutDashboard,
+  UserRound
 } from 'lucide-react';
 import { getPermissionCode } from '../utils/permissionUtils';
 
@@ -76,7 +77,7 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
       icon: Settings,
       section: 'Settings',
       subItems: [
-        { name: t('SIDEBAR.PAGES'), href: '/pages', icon: FileText },
+        { name: t('SIDEBAR.PAGES'), href: '/profile', icon: UserRound },
       ]
     },
   ], [t]);

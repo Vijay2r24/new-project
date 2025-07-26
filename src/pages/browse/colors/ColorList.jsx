@@ -9,8 +9,8 @@ import Switch from '../../../components/Switch';
 import FullscreenErrorPopup from '../../../components/FullscreenErrorPopup';
 import { UPDATE_COLOUR_STATUS } from '../../../contants/apiRoutes';
 import { ITEMS_PER_PAGE } from '../../../contants/constants';
-
-const ColorList = () => {
+import { hideLoaderWithDelay } from '../../../utils/loaderUtils';
+const ColorList = ({ onCreate, onBack, setSubmitting }) => {
   const [sSearchQuery, setSearchQuery] = useState('');
   const [oFilters, setFilters] = useState({ status: "all" });
   const [bShowFilters, setShowFilters] = useState(false);
@@ -40,10 +40,12 @@ const ColorList = () => {
   };
 
   const handleStatusConfirm = async () => {
+      if (setSubmitting) setSubmitting(true);
     const { colorId, newStatus } = statusPopup;
     const result = await updateStatusById(colorId, newStatus, UPDATE_COLOUR_STATUS, 'ColourID');
     showEmsg(result.message, result.status);
     setStatusPopup({ open: false, colorId: null, newStatus: null });
+    hideLoaderWithDelay(setSubmitting);
   };
 
   const handleStatusPopupClose = () => {
@@ -89,6 +91,8 @@ const ColorList = () => {
           showSearch={true}
           showViewToggle={false}
           showFilterButton={true}
+          onCreate={onCreate}
+          createLabel={t("PRODUCT_SETUP.CREATE")}
           additionalFilters={bShowFilters ? [
             {
               label: t("COMMON.STATUS"),

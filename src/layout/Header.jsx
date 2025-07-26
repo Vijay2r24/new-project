@@ -1,8 +1,10 @@
 import React, { useRef, useState, useEffect } from "react";
-import { Bell, Search, Menu, Dot } from "lucide-react";
+import { Bell, Menu, Dot } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useTitle } from "../context/TitleContext";
+import { useUserDetails } from "../../src/context/AllDataContext";
+import user from "../../assets/images/user.jpg"
 const aMockNotifications = [
   { id: 1, title: "Order #1234 delivered", time: "2 min ago" },
   { id: 2, title: "New user registered", time: "10 min ago" },
@@ -12,6 +14,7 @@ const aMockNotifications = [
 const Header = ({ onMenuClick }) => {
   const { t } = useTranslation();
   const { title, backButton } = useTitle();
+  const { data: contextUserDetails } = useUserDetails();
   const [bShowNotifications, setShowNotifications] = useState(false);
   const bellRef = useRef();
   const dropdownRef = useRef();
@@ -19,6 +22,19 @@ const Header = ({ onMenuClick }) => {
   const profileRef = useRef();
   const profileDropdownRef = useRef();
   const navigate = useNavigate();
+
+  const [userDetails, setUserDetails] = useState(() => {
+    return contextUserDetails || JSON.parse(localStorage.getItem("userDetails")) || null;
+  });
+
+  useEffect(() => {
+    if (contextUserDetails) {
+      setUserDetails(contextUserDetails);
+    }
+  }, [contextUserDetails]);
+
+  const oUserDetails = userDetails?.user || {};
+
   useEffect(() => {
     function handleClickOutside(event) {
       if (
@@ -39,6 +55,7 @@ const Header = ({ onMenuClick }) => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [bShowNotifications]);
+
   useEffect(() => {
     function handleClickOutside(event) {
       if (
@@ -60,59 +77,78 @@ const Header = ({ onMenuClick }) => {
     };
   }, [bShowProfileMenu]);
 
+  const handleProfileMenuAction = (action) => {
+    setbShowProfileMenu(false); 
+    setTimeout(() => {
+      switch (action) {
+        case "profile":
+          navigate("/profile");
+          break;
+        case "logout":
+          localStorage.removeItem("token");
+          localStorage.removeItem("userDetails");
+          navigate("/");
+          break;
+        default:
+          break;
+      }
+    }, 100);
+  };
+
   return (
-    <header className="sticky top-0 z-10 bg-white">
-      <div className="flex items-center justify-between h-12 px-4 lg:px-6">
+    <header className="sticky top-0 z-10 bg-white shadow-sm">
+      <div className="flex items-center justify-between h-14 px-4 lg:px-6">
         <div className="lg:hidden flex items-center">
           <button
-            className="p-2 text-caption hover:text-gray-900 focus:outline-none"
+            className="p-2 text-gray-600 hover:text-gray-900 focus:outline-none transition-colors"
             onClick={onMenuClick}
           >
             <Menu className="h-5 w-5" />
           </button>
         </div>
-        <div className="flex-1 flex items-center">
+        <div className="flex-1 flex items-center gap-2">
           {backButton}
           {title && (
-            <h1 className="text-lg font-bold text-gray-900">{title}</h1>
+            <h1 className="text-lg font-bold text-gray-900 truncate max-w-xs">
+              {title}
+            </h1>
           )}
         </div>
         <div className="relative flex items-center gap-3">
           <button
             ref={bellRef}
-            className="relative p-1.5 text-gray-500 hover:text-gray-700 rounded-lg"
+            className="relative p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
             onClick={() => setShowNotifications((v) => !v)}
+            aria-label="Notifications"
           >
-            <Bell className="h-4 w-4" />
-            <span className="absolute top-0.5 right-0.5 h-1.5 w-1.5 bg-red-500 rounded-full" />
+            <Bell className="h-5 w-5" />
+            <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full" />
           </button>
+
           {bShowNotifications && (
             <div
               ref={dropdownRef}
-              className="fixed right-4 sm:right-6 top-12 w-full max-w-xs sm:w-80 sm:max-w-md rounded-2xl shadow-2xl border border-gray-100 z-50 bg-gradient-to-br from-white via-gray-50 to-indigo-50 animate-fade-in"
-              style={{ minWidth: "0" }}
+              className="fixed right-4 sm:right-6 top-14 w-full max-w-xs sm:w-80 rounded-xl shadow-lg border border-gray-100 z-50 bg-white animate-fade-in"
             >
-              <div className="h-1 w-full bg-gradient-to-r from-indigo-400 via-indigo-300 to-indigo-200 rounded-t-2xl" />
-              <div className="p-3 sm:p-4 border-b font-semibold text-gray-800 flex items-center gap-2 text-base sm:text-lg">
-                <Bell className="h-5 w-5 text-indigo-500" />
+              <div className="h-1 w-full bg-gradient-to-r from-blue-400 via-blue-300 to-blue-200 rounded-t-xl" />
+              <div className="p-4 border-b font-semibold text-gray-800 flex items-center gap-2">
+                <Bell className="h-5 w-5 text-blue-500" />
                 {t("HEADER.NOTIFICATIONS")}
               </div>
-              <ul className="max-h-60 sm:max-h-64 overflow-y-auto divide-y divide-gray-100">
+              <ul className="max-h-64 overflow-y-auto divide-y divide-gray-100">
                 {aMockNotifications.length === 0 ? (
-                  <li className="p-3 sm:p-4 text-gray-500 text-sm">
+                  <li className="p-4 text-gray-500 text-sm">
                     {t("HEADER.NO_NOTIFICATIONS")}
                   </li>
                 ) : (
                   aMockNotifications.map((n) => (
                     <li
                       key={n.id}
-                      className="flex items-start gap-2 sm:gap-3 p-3 sm:p-4 hover:bg-indigo-50/60 transition-colors cursor-pointer group"
+                      className="flex items-start gap-3 p-4 hover:bg-blue-50/60 transition-colors cursor-pointer"
                     >
-                      <span className="mt-1">
-                        <Dot className="h-5 w-5 text-indigo-400 group-hover:text-indigo-600" />
-                      </span>
+                      <Dot className="h-5 w-5 text-blue-400 mt-0.5" />
                       <div className="flex-1">
-                        <div className="text-sm sm:text-base text-gray-900 font-medium">
+                        <div className="text-sm font-medium text-gray-900">
                           {n.title}
                         </div>
                         <div className="text-xs text-gray-400 mt-1">
@@ -123,60 +159,74 @@ const Header = ({ onMenuClick }) => {
                   ))
                 )}
               </ul>
-              <div className="p-2 sm:p-3 text-center border-t bg-gradient-to-r from-white via-gray-50 to-indigo-50 rounded-b-2xl">
+              <div className="p-3 text-center border-t bg-gray-50 rounded-b-xl">
                 <a
                   href="/notifications"
-                  className="text-indigo-600 text-sm font-medium hover:underline"
+                  className="text-blue-600 text-sm font-medium hover:underline"
                 >
-                  {t("COMMON.VIEW_ALL", "View all")}
+                  {t("COMMON.VIEW_ALL")}
                 </a>
               </div>
             </div>
           )}
+
           <div className="relative flex items-center gap-2 pl-2 sm:pl-3 border-l border-gray-200 ml-2 sm:ml-3">
             <button
               ref={profileRef}
-              className="flex items-center focus:outline-none"
+              className="flex items-center focus:outline-none group"
               onClick={() => setbShowProfileMenu((v) => !v)}
+              aria-label="Profile menu"
             >
-              <img
-                className="h-7 w-7 sm:h-8 sm:w-8 rounded-full border-2 border-gray-200"
-                src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                alt="Profile"
-              />
+              <div className="relative">
+                <img
+                  className="h-8 w-8 rounded-full border-2 border-gray-200 group-hover:border-blue-200 transition-colors"
+                  src={oUserDetails?.ProfileImageUrl}
+                  alt="Profile"
+                  onError={(e) => {
+                    e.target.src = {user};
+                  }}
+                />
+                <div className="absolute bottom-0 right-0 h-2.5 w-2.5 bg-green-500 rounded-full border border-white"></div>
+              </div>
               <div className="hidden sm:block text-left ml-2">
-                <div className="text-sm font-medium text-gray-900">
-                  John Doe
+                <div className="text-sm font-medium text-gray-900 truncate max-w-[120px]">
+                  {oUserDetails?.FirstName} {oUserDetails?.LastName}
                 </div>
-                <div className="text-xs text-gray-500">admin</div>
+                <div className="text-xs text-gray-500 truncate max-w-[120px]">
+                  {oUserDetails?.RoleName}
+                </div>
               </div>
             </button>
+
             {bShowProfileMenu && (
               <div
                 ref={profileDropdownRef}
-                className="absolute right-0 top-10 w-56 rounded-xl shadow-lg border border-gray-100 z-50 bg-white animate-fade-in overflow-hidden"
+                className="absolute right-0 top-12 w-56 rounded-lg shadow-xl border border-gray-100 z-50 bg-white animate-fade-in overflow-hidden"
               >
-                <div className="absolute -top-2 right-6 w-4 h-4 bg-white border-t border-l border-gray-100 rotate-45 z-10"></div>
-                <div className="flex flex-col items-center pt-5 pb-3 px-4">
+                <div className="absolute -top-2 right-4 w-4 h-4 bg-white border-t border-l border-gray-100 rotate-45 z-10"></div>
+                <div className="flex flex-col items-center pt-5 pb-3 px-4 border-b">
                   <img
-                    className="h-12 w-12 rounded-full border border-gray-200 shadow-sm mb-2"
-                    src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                    className="h-14 w-14 rounded-full border border-gray-200 shadow-sm mb-2"
+                    src={oUserDetails?.ProfileImageUrl}
                     alt="Profile"
-                  />
-                  <div className="text-sm font-semibold text-gray-900">
-                    John Doe
-                  </div>
-                  <div className="text-xs text-gray-500 mb-1">admin</div>
-                </div>
-                <div className="border-t border-gray-100">
-                  <button
-                    className="w-full flex items-center gap-2 px-5 py-3 text-sm text-gray-700 hover:bg-gray-50 transition font-medium"
-                    onClick={() => {
-                      navigate("/profile");
+                    onError={(e) => {
+                      e.target.src = {user};
                     }}
+                  />
+                  <div className="text-sm font-semibold text-gray-900 text-center">
+                    {oUserDetails?.FirstName} {oUserDetails?.LastName}
+                  </div>
+                  <div className="text-xs text-gray-500 mb-1">
+                    {oUserDetails?.RoleName}
+                  </div>
+                </div>
+                <div className="py-1">
+                  <button
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+                    onClick={() => handleProfileMenuAction("profile")}
                   >
                     <svg
-                      className="w-4 h-4 text-indigo-500"
+                      className="w-4 h-4 text-blue-500"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
@@ -185,16 +235,14 @@ const Header = ({ onMenuClick }) => {
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                       />
                     </svg>
                     {t("HEADER.YOUR_PROFILE")}
                   </button>
                   <button
-                    className="w-full flex items-center gap-2 px-5 py-3 text-sm text-red hover:bg-red-50 transition font-medium"
-                    onClick={() => {
-                      setbShowProfileMenu(false);
-                    }}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium"
+                    onClick={() => handleProfileMenuAction("logout")}
                   >
                     <svg
                       className="w-4 h-4 text-red-500"

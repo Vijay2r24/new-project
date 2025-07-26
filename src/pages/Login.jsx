@@ -110,6 +110,9 @@ const Login = () => {
   const handleChange = (field, value) => {
     let fieldError = "";
     let updatedFormData = { ...oFormData };
+    if (field === "phone") {
+      value = value.replace(/\D/g, "");  
+    }
 
     if (sCurrentView === "login") {
       updatedFormData = { ...oFormData, [field]: value };
@@ -140,75 +143,78 @@ const Login = () => {
   };
 
   const loginUser = async () => {
-    const emailError = validateEmail(oFormData.email);
-    const passwordError = validatePassword(oFormData.password);
+  const emailError = validateEmail(oFormData.email);
+  const passwordError = validatePassword(oFormData.password);
 
-    if (emailError || passwordError) {
-      setError((prev) => ({
-        ...prev,
-        email: emailError,
-        password: passwordError,
-      }));
-      return;
-    }
+  if (emailError || passwordError) {
+    setError((prev) => ({
+      ...prev,
+      email: emailError,
+      password: passwordError,
+    }));
+    return;
+  }
 
-    setError((prev) => ({ ...prev, email: "", password: "" }));
+  setError((prev) => ({ ...prev, email: "", password: "" }));
 
-    try {
-      const hashedPassword = md5(oFormData.password);
+  try {
+    const hashedPassword = md5(oFormData.password);
 
-      const oResponse = await apiPost(
-        LOGIN,
-        {
-          Email: oFormData.email,
-          Password: hashedPassword,
-        },
-        null,
-        false
-      );
+    const oResponse = await apiPost(
+      LOGIN,
+      {
+        Email: oFormData.email,
+        Password: hashedPassword,
+      },
+      null,
+      false
+    );
 
-      const data = oResponse?.data?.data;
-      const message = oResponse?.data?.MESSAGE;
-      const status = oResponse?.data?.STATUS;
+    const data = oResponse?.data?.data;
+    const message = oResponse?.data?.MESSAGE;
+    const status = oResponse?.data?.STATUS;
 
-      if (
-        data?.token &&
-        data?.UserID &&
-        status === STATUS.SUCCESS.toUpperCase()
-      ) {
-        showEmsg(
-          message,
-          STATUS.SUCCESS, 
-          3000,
-          async () => {
-            localStorage.setItem("token", data.token);
-            localStorage.setItem("userId", data.UserID);
-            localStorage.setItem("tenantID", data.TenantID);
-            localStorage.setItem("PermissionIDs", JSON.stringify(data.PermissionIDs || []));
-            try {
-              const token = data.token;
-              const permResponse = await apiGet(GET_ALL_PERMISSIONS, {}, token);
-              if (permResponse?.data?.STATUS === STATUS.SUCCESS.toUpperCase()) {
-                localStorage.setItem("AllPermissions", JSON.stringify(permResponse.data.data));
-              }
-            } catch (e) {
-            }
-            fetchApiData();
-            navigate("/dashboard");
-          }
+    if (
+      data?.token &&
+      data?.UserID &&
+      status === STATUS.SUCCESS.toUpperCase()
+    ) {
+      showEmsg(message, STATUS.SUCCESS, 3000, async () => {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("userId", data.UserID);
+        localStorage.setItem("tenantID", data.TenantID);
+        localStorage.setItem(
+          "PermissionIDs",
+          JSON.stringify(data.PermissionIDs || [])
         );
-      } else {
-        const fallbackMessage = t("LOGIN.ERRORS.INVALID_CREDENTIALS");
-        setError((prev) => ({ ...prev, submit: fallbackMessage }));
-        showEmsg(message || fallbackMessage, STATUS.WARNING);
-      }
-    } catch (error) {
-      const errorMessage =
-        error?.response?.data?.MESSAGE || t("LOGIN.ERRORS.INVALID_CREDENTIALS");
-      setError((prev) => ({ ...prev, submit: errorMessage }));
-      showEmsg(errorMessage, STATUS.ERROR);
+
+        try {
+          const token = data.token;
+          const permResponse = await apiGet(GET_ALL_PERMISSIONS, {}, token);
+          if (permResponse?.data?.STATUS === STATUS.SUCCESS.toUpperCase()) {
+            localStorage.setItem(
+              "AllPermissions",
+              JSON.stringify(permResponse.data.data)
+            );
+          }
+        } catch (e) {}
+
+        fetchApiData();
+        navigate("/dashboard");
+      });
+    } else {
+      const fallbackMessage = t("LOGIN.ERRORS.INVALID_CREDENTIALS");
+      setError((prev) => ({ ...prev, submit: fallbackMessage }));
+      showEmsg(message || fallbackMessage, STATUS.WARNING);
     }
-  };
+  } catch (error) {
+    const errorMessage =
+      error?.response?.data?.MESSAGE || t("LOGIN.ERRORS.INVALID_CREDENTIALS");
+    setError((prev) => ({ ...prev, submit: errorMessage }));
+    showEmsg(errorMessage, STATUS.ERROR);
+  }
+};
+
 
   const handleForgotPasswordClick = () => {
     setCurrentView("forgotPassword");
@@ -653,158 +659,158 @@ const Login = () => {
 
   return (
     <>
-     <ToastContainer />
-    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-gradient-to-br from-custom-bg to-blue-100">
-      <div className="hidden lg:flex flex-col justify-center items-center px-12 bg-custom-bg/50 text-white relative overflow-hidden">
-        <div
-          className="absolute inset-0 bg-repeat opacity-20"
-          style={{ backgroundImage: 'url("/path/to/subtle-pattern.png")' }}
-        ></div>
-        <div className="text-center max-w-md animate-fade-in z-10 relative">
-          <Settings className="w-14 h-14 text-white mb-6 mx-auto drop-shadow-md" />
-          <h1
-            className="text-4xl font-bold mb-5 leading-tight drop-shadow-md"
-            dangerouslySetInnerHTML={{ __html: t("ADMIN.TITLE") }}
-          />
-          <p className="text-white/90 text-lg mb-10 drop-shadow-sm">
-            {t("ADMIN.DESCRIPTION")}
-          </p>
-          <div className="grid grid-cols-1 gap-4 text-left text-sm mt-8">
-            <div className="flex items-center space-x-3 drop-shadow-sm">
-              <Package className="h-5 w-5 text-white" />
-              <span>{t("ADMIN.FEATURES.PRODUCT")}</span>
-            </div>
-            <div className="flex items-center space-x-3 drop-shadow-sm">
-              <ShoppingCart className="h-5 w-5 text-white" />
-              <span>{t("ADMIN.FEATURES.ORDER")}</span>
-            </div>
-            <div className="flex items-center space-x-3 drop-shadow-sm">
-              <Users className="h-5 w-5 text-white" />
-              <span>{t("ADMIN.FEATURES.USER_ROLE")}</span>
-            </div>
-            <div className="flex items-center space-x-3 drop-shadow-sm">
-              <BarChart2 className="h-5 w-5 text-white" />
-              <span>{t("ADMIN.FEATURES.ANALYTICS")}</span>
-            </div>
-            <div className="flex items-center space-x-3 drop-shadow-sm">
-              <Shield className="h-5 w-5 text-white" />
-              <span>{t("ADMIN.FEATURES.SECURITY")}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="flex items-center justify-center p-6 lg:p-12">
-        <div className="w-full max-w-md bg-white/30 backdrop-blur-2xl border border-custom-bg/30 rounded-3xl p-10 shadow-[0_8px_32px_0_rgba(255,90,95,0.35)] transition-all hover:scale-[1.02]">
-          {sCurrentView === "login" && renderLogin()}
-          {sCurrentView === "forgotPassword" && renderForgotPassword()}
-          {sCurrentView === "resetPassword" && renderResetPassword()}
-        </div>
-      </div>
-      {bShowOtpDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md">
-            <div className="text-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-800">
-                {t("OTP_DIALOG.TITLE")}
-              </h3>
-              <h4 className="text-lg font-medium text-gray-700 mb-1">
-                {t("OTP_DIALOG.SUBTITLE")}
-              </h4>
-              <p className="text-secondary">{t("OTP_DIALOG.INSTRUCTION")}</p>
-              <div className="flex items-center justify-center gap-2 mt-2">
-                <Mail className="w-4 h-4 text-custom-bg" />
-                <span className="text-gray-700 text-sm font-medium">
-                  {sForgotPasswordEmail}
-                </span>
-                <button
-                  type="button"
-                  className="ml-2 p-1 rounded hover:bg-gray-100"
-                  title={t("COMMON.EDIT")}
-                  onClick={() => {
-                    setbShowOtpDialog(false);
-                    setCurrentView("forgotPassword");
-                  }}
-                >
-                  <Pencil className="w-4 h-4 text-gray-500" />
-                </button>
+      <ToastContainer />
+      <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-gradient-to-br from-custom-bg to-blue-100">
+        <div className="hidden lg:flex flex-col justify-center items-center px-12 bg-custom-bg/50 text-white relative overflow-hidden">
+          <div
+            className="absolute inset-0 bg-repeat opacity-20"
+            style={{ backgroundImage: 'url("/path/to/subtle-pattern.png")' }}
+          ></div>
+          <div className="text-center max-w-md animate-fade-in z-10 relative">
+            <Settings className="w-14 h-14 text-white mb-6 mx-auto drop-shadow-md" />
+            <h1
+              className="text-4xl font-bold mb-5 leading-tight drop-shadow-md"
+              dangerouslySetInnerHTML={{ __html: t("ADMIN.TITLE") }}
+            />
+            <p className="text-white/90 text-lg mb-10 drop-shadow-sm">
+              {t("ADMIN.DESCRIPTION")}
+            </p>
+            <div className="grid grid-cols-1 gap-4 text-left text-sm mt-8">
+              <div className="flex items-center space-x-3 drop-shadow-sm">
+                <Package className="h-5 w-5 text-white" />
+                <span>{t("ADMIN.FEATURES.PRODUCT")}</span>
+              </div>
+              <div className="flex items-center space-x-3 drop-shadow-sm">
+                <ShoppingCart className="h-5 w-5 text-white" />
+                <span>{t("ADMIN.FEATURES.ORDER")}</span>
+              </div>
+              <div className="flex items-center space-x-3 drop-shadow-sm">
+                <Users className="h-5 w-5 text-white" />
+                <span>{t("ADMIN.FEATURES.USER_ROLE")}</span>
+              </div>
+              <div className="flex items-center space-x-3 drop-shadow-sm">
+                <BarChart2 className="h-5 w-5 text-white" />
+                <span>{t("ADMIN.FEATURES.ANALYTICS")}</span>
+              </div>
+              <div className="flex items-center space-x-3 drop-shadow-sm">
+                <Shield className="h-5 w-5 text-white" />
+                <span>{t("ADMIN.FEATURES.SECURITY")}</span>
               </div>
             </div>
-
-            <div className="flex justify-center gap-3 mb-6">
-              {Array(6)
-                .fill(0)
-                .map((_, index) => (
-                  <input
-                    key={index}
-                    id={`otp-input-${index}`}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength="1"
-                    className="w-12 h-12 text-center text-xl font-semibold border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-300 outline-none transition-all duration-150"
-                    value={sOtp[index] || ""}
-                    onChange={(e) =>
-                      handleOtpInputChange(index, e.target.value)
-                    }
-                    onKeyDown={(e) => handleOtpInputKeyDown(index, e)}
-                  />
-                ))}
-            </div>
-
-            {sError.otp && (
-              <p className="text-sm text-red-500 text-center mb-4">
-                {sError.otp}
-              </p>
-            )}
-
-            <div className="flex justify-between gap-4">
-              <button
-                type="button"
-                onClick={handleVerifyOtp}
-                className={`w-1/2 bg-custom-bg text-white py-2 rounded-md transition-colors duration-200 ${
-                  !sOtp || sOtp.length !== 6
-                    ? "opacity-50 cursor-not-allowed"
-                    : "hover:bg-custom-bg-dark"
-                }`}
-                disabled={!sOtp || sOtp.length !== 6}
-              >
-                {t("OTP_DIALOG.VERIFY_BUTTON")}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setbShowOtpDialog(false);
-                  setOtp("");
-                  setTimerActive(false);
-                  setResendEnabled(false);
-                  setError({ ...sError, otp: "" });
-                }}
-                className="w-1/2 border border-gray-400 text-gray-700 py-2 rounded-md hover:bg-gray-100 transition-colors duration-200"
-              >
-                {t("OTP_DIALOG.CANCEL_BUTTON")}
-              </button>
-            </div>
-            <div className="text-center mt-4 text-sm text-muted">
-              {bTimerActive ? (
-                <p>
-                  {t("OTP_DIALOG.TIMER")} {nTimerCount}
-                </p>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleSendOtp}
-                  disabled={!bResendEnabled}
-                  className={`text-custom-bg hover:underline ${
-                    !bResendEnabled ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                >
-                  {t("OTP_DIALOG.RESEND")}
-                </button>
-              )}
-            </div>
           </div>
         </div>
-      )}
-    </div>
+        <div className="flex items-center justify-center p-6 lg:p-12">
+          <div className="w-full max-w-md bg-white/30 backdrop-blur-2xl border border-custom-bg/30 rounded-3xl p-10 shadow-[0_8px_32px_0_rgba(255,90,95,0.35)] transition-all hover:scale-[1.02]">
+            {sCurrentView === "login" && renderLogin()}
+            {sCurrentView === "forgotPassword" && renderForgotPassword()}
+            {sCurrentView === "resetPassword" && renderResetPassword()}
+          </div>
+        </div>
+        {bShowOtpDialog && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md">
+              <div className="text-center mb-6">
+                <h3 className="text-2xl font-bold text-gray-800">
+                  {t("OTP_DIALOG.TITLE")}
+                </h3>
+                <h4 className="text-lg font-medium text-gray-700 mb-1">
+                  {t("OTP_DIALOG.SUBTITLE")}
+                </h4>
+                <p className="text-secondary">{t("OTP_DIALOG.INSTRUCTION")}</p>
+                <div className="flex items-center justify-center gap-2 mt-2">
+                  <Mail className="w-4 h-4 text-custom-bg" />
+                  <span className="text-gray-700 text-sm font-medium">
+                    {sForgotPasswordEmail}
+                  </span>
+                  <button
+                    type="button"
+                    className="ml-2 p-1 rounded hover:bg-gray-100"
+                    title={t("COMMON.EDIT")}
+                    onClick={() => {
+                      setbShowOtpDialog(false);
+                      setCurrentView("forgotPassword");
+                    }}
+                  >
+                    <Pencil className="w-4 h-4 text-gray-500" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex justify-center gap-3 mb-6">
+                {Array(6)
+                  .fill(0)
+                  .map((_, index) => (
+                    <input
+                      key={index}
+                      id={`otp-input-${index}`}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength="1"
+                      className="w-12 h-12 text-center text-xl font-semibold border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-300 outline-none transition-all duration-150"
+                      value={sOtp[index] || ""}
+                      onChange={(e) =>
+                        handleOtpInputChange(index, e.target.value)
+                      }
+                      onKeyDown={(e) => handleOtpInputKeyDown(index, e)}
+                    />
+                  ))}
+              </div>
+
+              {sError.otp && (
+                <p className="text-sm text-red-500 text-center mb-4">
+                  {sError.otp}
+                </p>
+              )}
+
+              <div className="flex justify-between gap-4">
+                <button
+                  type="button"
+                  onClick={handleVerifyOtp}
+                  className={`w-1/2 bg-custom-bg text-white py-2 rounded-md transition-colors duration-200 ${
+                    !sOtp || sOtp.length !== 6
+                      ? "opacity-50 cursor-not-allowed"
+                      : "hover:bg-custom-bg-dark"
+                  }`}
+                  disabled={!sOtp || sOtp.length !== 6}
+                >
+                  {t("OTP_DIALOG.VERIFY_BUTTON")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setbShowOtpDialog(false);
+                    setOtp("");
+                    setTimerActive(false);
+                    setResendEnabled(false);
+                    setError({ ...sError, otp: "" });
+                  }}
+                  className="w-1/2 border border-gray-400 text-gray-700 py-2 rounded-md hover:bg-gray-100 transition-colors duration-200"
+                >
+                  {t("OTP_DIALOG.CANCEL_BUTTON")}
+                </button>
+              </div>
+              <div className="text-center mt-4 text-sm text-muted">
+                {bTimerActive ? (
+                  <p>
+                    {t("OTP_DIALOG.TIMER")} {nTimerCount}
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleSendOtp}
+                    disabled={!bResendEnabled}
+                    className={`text-custom-bg hover:underline ${
+                      !bResendEnabled ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    {t("OTP_DIALOG.RESEND")}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </>
   );
 };

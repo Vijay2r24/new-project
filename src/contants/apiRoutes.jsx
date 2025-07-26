@@ -91,3 +91,4 @@ export const GET_COLOUR_BY_ID = `/getColourById`;
 export const UPDATE_COLOUR = `/updateColour`;
 export const GET_ATTRIBUTE_BY_ID = `/getAttributeById`;
 export const CREATE_OR_UPDATE_ATTRIBUTE = `/createOrUpdateAttribute`;
+export const UPDATEUSERPASSWORD=`/updateUserPassword`;

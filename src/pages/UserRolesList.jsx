@@ -15,6 +15,8 @@ import { showEmsg } from '../utils/ShowEmsg';
 import { ToastContainer } from "react-toastify";
 import { apiDelete } from '../utils/ApiUtils';
 import { ITEMS_PER_PAGE, STATUS } from '../contants/constants.jsx';
+import Loader from "../components/Loader";
+import { hideLoaderWithDelay } from "../utils/loaderUtils";
 
 const UserRolesList = () => {
   const { t } = useTranslation();
@@ -30,6 +32,7 @@ const UserRolesList = () => {
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const itemsPerPage = ITEMS_PER_PAGE;
   const nTotalPages = Math.ceil(total / itemsPerPage);
+  const [bSubmitting, setSubmitting] = useState(false);
   const [statusPopup, setStatusPopup] = useState({
     open: false,
     roleId: null,
@@ -37,13 +40,12 @@ const UserRolesList = () => {
   });
   const [roles, setRoles] = useState([]);
   const [deletePopup, setDeletePopup] = useState({ open: false, roleId: null });
+  const [bFilterLoading, setFilterLoading] = useState(false); // New state for filter loading
 
-  // Add useEffect to fetch all stores on mount
   useEffect(() => {
     fetchStores();
   }, []);
 
-  // Add useEffect to fetch stores when filter dropdown is opened
   useEffect(() => {
     if (showFilterDropdown) {
       fetchStores();
@@ -65,6 +67,7 @@ const UserRolesList = () => {
   ];
 
   const handleFilterChange = (e, filterName) => {
+    setFilterLoading(true); // Start loading when filter changes
     if (filterName === 'store') {
       setSelectedStore(e.target.value);
       setCurrentPage(1);
@@ -111,7 +114,16 @@ const UserRolesList = () => {
     if (selectedStatus !== 'all') {
       filterParams.status = selectedStatus;
     }
-    fetch(filterParams);
+    
+    const fetchData = async () => {
+      try {
+        await fetch(filterParams);
+      } finally {
+        setFilterLoading(false); // Stop loading when data is fetched
+      }
+    };
+    
+    fetchData();
   }, [nCurrentPage, sSearchTerm, selectedStore, selectedStatus]);
 
   useEffect(() => {
@@ -152,10 +164,12 @@ const UserRolesList = () => {
   };
 
   const handleStatusConfirm = async () => {
+    setSubmitting(true);
     const { roleId, newStatus } = statusPopup;
     const result = await updateStatusById(roleId, newStatus, UPDATE_ROLE_STATUS, 'RoleID');
     showEmsg(result.message, result.status);
     setStatusPopup({ open: false, roleId: null, newStatus: null });
+    hideLoaderWithDelay(setSubmitting);
   };
 
   const handleStatusPopupClose = () => {
@@ -163,6 +177,7 @@ const UserRolesList = () => {
   };
 
   const handleDeleteConfirm = async () => {
+    setSubmitting(true);
     const { roleId } = deletePopup;
     try {
       const token = localStorage.getItem('token');
@@ -176,6 +191,7 @@ const UserRolesList = () => {
       showEmsg(errorMessage || t('COMMON.API_ERROR'), 'error');
       setDeletePopup({ open: false, roleId: null });
     }
+    hideLoaderWithDelay(setSubmitting);
   };
   const handleDeletePopupClose = () => {
     setDeletePopup({ open: false, roleId: null });
@@ -183,30 +199,24 @@ const UserRolesList = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen bg-gray-50">
-      <ToastContainer />
-      <div className="mb-8">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <div className="flex-1 min-w-0">
-            <p className="mt-1 text-secondary">{t('USER_ROLES_LIST.DESCRIPTION')}</p>
-          </div>
-          <button
-            onClick={() => navigate("/addUserRole")}
-            className='btn-primary'>
-            <UserPlus className="h-5 w-5 mr-2" />
-            {t('USER_ROLES_LIST.ADD_ROLE')}
-          </button>
+      {bSubmitting && (
+        <div className="global-loader-overlay">
+          <Loader />
         </div>
-      </div>
+      )}
+      <ToastContainer />
       <Toolbar
         searchTerm={sSearchTerm}
         setSearchTerm={setSearchTerm}
-        searchPlaceholder={t('USER_ROLES_LIST.SEARCH_PLACEHOLDER')}
         viewMode={sViewMode}
         setViewMode={setViewMode}
-        additionalFilters={additionalFilters}
-        handleFilterChange={handleFilterChange}
         showFilterDropdown={showFilterDropdown}
         setShowFilterDropdown={setShowFilterDropdown}
+        additionalFilters={additionalFilters}
+        handleFilterChange={handleFilterChange}
+        searchPlaceholder={t('USER_ROLES_LIST.SEARCH_PLACEHOLDER')}
+        onCreate={() => navigate('/addUserRole')}
+        createLabel={t('USER_ROLES_LIST.ADD_ROLE')}
       />
       {sViewMode === 'table' ? (
         <div className="table-container">
@@ -214,9 +224,6 @@ const UserRolesList = () => {
             <table className="table-base">
               <thead className="table-head">
                 <tr>
-                  <th scope="col" className="table-head-cell">
-                    {t('USER_ROLES_LIST.TABLE.ROLE_ID')}
-                  </th>
                   <th scope="col" className="table-head-cell">
                     {t('USER_ROLES_LIST.TABLE.ROLE_NAME')}
                   </th>
@@ -232,10 +239,12 @@ const UserRolesList = () => {
                 </tr>
               </thead>
               <tbody className="table-body">
-                {bLoading ? (
+                {bLoading || bFilterLoading ? ( // Show loader when either initial loading or filter loading
                   <tr>
                     <td colSpan={5} className="text-center py-4">
-                      {t('COMMON.LOADING')}
+                      <div className="flex justify-center">
+                        <Loader size="small" />
+                      </div>
                     </td>
                   </tr>
                 ) : nError ? (
@@ -252,37 +261,34 @@ const UserRolesList = () => {
                   </tr>
                 ) : (
                   paginatedRoles.map((role) => (
-                  <tr key={role.roleid || role.RoleID} className="table-row">
-                    <td className="table-cell">
-                      {role.roleid || role.RoleID}
-                    </td>
-                    <td className="table-cell">
-                      <div className="flex items-center">
-                        <Shield className="h-4 w-4 mr-2 text-gray-400" />
-                        <span className="status-badge bg-blue-100 text-blue-800">
-                          {role.rolename || role.RoleName}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="table-cell hidden sm:table-cell">
-                      {role.storename || role.StoreName}
-                    </td>
-                    <td className="table-cell">
-                        <Switch
-                          checked={(role.status || role.Status) ===  t('COMMON.ACTIVE')}
-                          onChange={() => handleStatusChange(role.roleid || role.RoleID, (role.status || role.Status) ===  t('COMMON.ACTIVE'))}
-                        />
-                    </td>
-                    <td className="table-cell text-center font-medium align-middle">
-                      <div className="flex justify-center items-center">
-                        <ActionButtons
-                          id={role.roleid || role.RoleID}
-                          onEdit={handleEdit}
-                          onDelete={() => handleDelete(role.roleid || role.RoleID)}
-                        />
-                      </div>
-                    </td>
-                  </tr>
+                    <tr key={role.roleid || role.RoleID} className="table-row">
+                      <td className="table-cell">
+                        <div className="flex items-center">
+                          <Shield className="h-4 w-4 mr-2 text-gray-400" />
+                          <span className="status-badge bg-blue-100 text-blue-800">
+                            <span className="ellipsis-text"> {role.rolename || role.RoleName}</span>
+                          </span>
+                        </div>
+                      </td>
+                      <td className="table-cell hidden sm:table-cell">
+                        {role.storename || role.StoreName}
+                      </td>
+                      <td className="table-cell">
+                          <Switch
+                            checked={(role.status || role.Status) ===  t('COMMON.ACTIVE')}
+                            onChange={() => handleStatusChange(role.roleid || role.RoleID, (role.status || role.Status) ===  t('COMMON.ACTIVE'))}
+                          />
+                      </td>
+                      <td className="table-cell text-center font-medium align-middle">
+                        <div className="flex justify-right items-right">
+                          <ActionButtons
+                            id={role.roleid || role.RoleID}
+                            onEdit={handleEdit}
+                            onDelete={() => handleDelete(role.roleid || role.RoleID)}
+                          />
+                        </div>
+                      </td>
+                    </tr>
                   ))
                 )}
               </tbody>

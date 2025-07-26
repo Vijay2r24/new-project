@@ -156,6 +156,10 @@ code {
 .table-cell-subtext {
   @apply text-sm text-gray-500;
 }
+.ellipsis-text {
+  @apply block truncate whitespace-nowrap overflow-hidden text-ellipsis;
+  max-width: 180px;
+}
 
 .status-badge {
   @apply px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border;
@@ -203,4 +207,17 @@ code {
 /* Lower z-index for carousel arrows so popup menus appear above */
 .react-multiple-carousel__arrow {
   z-index: 10 !important;
+}
+
+.global-loader-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(255,255,255,0.8);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }

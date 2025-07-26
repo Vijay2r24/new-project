@@ -7,10 +7,11 @@ import Pagination from "../../../components/Pagination";
 import { showEmsg } from "../../../utils/ShowEmsg";
 import FullscreenErrorPopup from "../../../components/FullscreenErrorPopup";
 import { UPDATE_CATEGORY_STATUS } from "../../../contants/apiRoutes";
-import Switch from '../../../components/Switch';
+import Switch from "../../../components/Switch";
 import { ITEMS_PER_PAGE } from "../../../contants/constants";
+import { hideLoaderWithDelay } from "../../../utils/loaderUtils"; // ✅ make sure you have this
 
-const CategoryList = () => {
+const CategoryList = ({ onCreate, onBack, setSubmitting }) => {
   const { t } = useTranslation();
   const [sSearchQuery, setSearchQuery] = useState("");
   const [bShowFilters, setShowFilters] = useState(false);
@@ -22,12 +23,14 @@ const CategoryList = () => {
   const sError = categories.error;
   const iTotalItems = categories.total;
 
-
   const [nCurrentPage, setCurrentPage] = useState(1);
   const [iItemsPerPage] = useState(ITEMS_PER_PAGE);
 
- 
-  const [statusPopup, setStatusPopup] = useState({ open: false, categoryId: null, newStatus: null });
+  const [statusPopup, setStatusPopup] = useState({
+    open: false,
+    categoryId: null,
+    newStatus: null,
+  });
 
   useEffect(() => {
     const params = {
@@ -46,10 +49,20 @@ const CategoryList = () => {
   };
 
   const handleStatusConfirm = async () => {
+    if (setSubmitting) setSubmitting(true); // ✅ show loader
     const { categoryId, newStatus } = statusPopup;
-    const result = await categories.updateStatusById(categoryId, newStatus, UPDATE_CATEGORY_STATUS, 'CategoryID');
+
+    const result = await categories.updateStatusById(
+      categoryId,
+      newStatus,
+      UPDATE_CATEGORY_STATUS,
+      "CategoryID"
+    );
+
     showEmsg(result.message, result.status);
     setStatusPopup({ open: false, categoryId: null, newStatus: null });
+
+    hideLoaderWithDelay(setSubmitting); // ✅ hide loader safely
   };
 
   const handleStatusPopupClose = () => {
@@ -96,18 +109,24 @@ const CategoryList = () => {
           showSearch={true}
           showViewToggle={false}
           showFilterButton={true}
-          additionalFilters={bShowFilters ? [
-            {
-              label: t("COMMON.STATUS"),
-              name: "status",
-              value: oFilters.status,
-              options: [
-                { value: 'all', label: t('COMMON.ALL') },
-                { value: 'Active', label: t('COMMON.ACTIVE') },
-                { value: 'Inactive', label: t('COMMON.INACTIVE') },
-              ],
-            },
-          ] : []}
+          onCreate={onCreate}
+          createLabel={t("PRODUCT_SETUP.CREATE")}
+          additionalFilters={
+            bShowFilters
+              ? [
+                  {
+                    label: t("COMMON.STATUS"),
+                    name: "status",
+                    value: oFilters.status,
+                    options: [
+                      { value: "all", label: t("COMMON.ALL") },
+                      { value: "Active", label: t("COMMON.ACTIVE") },
+                      { value: "Inactive", label: t("COMMON.INACTIVE") },
+                    ],
+                  },
+                ]
+              : []
+          }
           handleFilterChange={bShowFilters ? handleFilterChange : undefined}
         />
       </div>
@@ -150,33 +169,55 @@ const CategoryList = () => {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <span className="text-gray-400 text-xs">No Image</span>
+                            <span className="text-gray-400 text-xs">
+                              No Image
+                            </span>
                           )}
                         </div>
                         <Link
                           to={`/browse/editcatagiry/${category.CategoryID}`}
-                          className="text-blue-600 hover:underline"
+                          className="text-blue-600 hover:underline block truncate max-w-[180px]"
+                          title={category.CategoryName}
                         >
                           {category.CategoryName}
                         </Link>
                       </div>
                     </td>
-                    <td className="table-cell table-cell-wrap max-w-[120px] overflow-hidden">
-                      <div className="table-cell-text truncate">
+                    <td className="table-cell text-left align-middle max-w-[200px] overflow-hidden">
+                      <div
+                        className="truncate table-cell-subtext"
+                        title={category.CategoryDescription}
+                      >
                         {category.CategoryDescription}
                       </div>
                     </td>
+
                     <td className="table-cell">
                       <span
                         className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          category.Status === 'Active' ? 'status-active' : 'status-inactive'
+                          category.Status === "Active"
+                            ? "status-active"
+                            : "status-inactive"
                         }`}
                       >
-                        {t(`COMMON.${category.Status === 'Active' ? 'ACTIVE' : 'INACTIVE'}`)}
+                        {t(
+                          `COMMON.${
+                            category.Status === "Active"
+                              ? "ACTIVE"
+                              : "INACTIVE"
+                          }`
+                        )}
                       </span>
                     </td>
                     <td className="table-cell table-cell-text">
-                      {new Date(category.CreatedAt).toLocaleString(undefined, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true })}
+                      {new Date(category.CreatedAt).toLocaleString(undefined, {
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: true,
+                      })}
                     </td>
                     <td
                       className="table-cell"
@@ -184,7 +225,12 @@ const CategoryList = () => {
                     >
                       <Switch
                         checked={category.Status === t("COMMON.ACTIVE")}
-                        onChange={() => handleStatusChange(category.CategoryID, category.Status === t("COMMON.ACTIVE"))}
+                        onChange={() =>
+                          handleStatusChange(
+                            category.CategoryID,
+                            category.Status === t("COMMON.ACTIVE")
+                          )
+                        }
                       />
                     </td>
                   </tr>
@@ -223,7 +269,11 @@ const CategoryList = () => {
       )}
       {statusPopup.open && (
         <FullscreenErrorPopup
-          message={statusPopup.newStatus ? t("PRODUCT_SETUP.CATEGORIES.CONFIRM_ACTIVATE") : t("PRODUCT_SETUP.CATEGORIES.CONFIRM_DEACTIVATE")}
+          message={
+            statusPopup.newStatus
+              ? t("PRODUCT_SETUP.CATEGORIES.CONFIRM_ACTIVATE")
+              : t("PRODUCT_SETUP.CATEGORIES.CONFIRM_DEACTIVATE")
+          }
           onClose={handleStatusPopupClose}
           onConfirm={handleStatusConfirm}
         />

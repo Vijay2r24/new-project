@@ -1,39 +1,37 @@
 import { useTranslation } from 'react-i18next';
 import ReactDOM from 'react-dom';
 
-const FullscreenErrorPopup = ({ message, onClose, onConfirm, children, title }) => {
+const FullscreenConfirmationPopup = ({ message, onClose, onConfirm, title }) => {
   const { t } = useTranslation();
+
   return ReactDOM.createPortal(
-    <div className="fixed inset-0 z-[9999] bg-black bg-opacity-70 flex items-center justify-center">
-      <div className="bg-white w-[90%] max-w-md p-6 rounded-lg shadow-lg">
-        <h3 className="text-lg font-semibold text-yellow-600 mb-2">{title || t('FULLSCREEN_ERROR_POPUP.TITLE')}</h3>
-        <p className="text-sm text-gray-700 mb-4">{message}</p>
-        <div className="flex justify-end gap-2">
-          {children ? children : (
-            onConfirm ? (
-              <>
-                <button
-                  onClick={onConfirm}
-                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
-                >
-                  {t('COMMON.CONFIRM')}
-                </button>
-                <button
-                  onClick={onClose}
-                  className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 text-sm"
-                >
-                  {t('COMMON.CANCEL')}
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={onClose}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
-              >
-                {t('COMMON.CLOSE')}
-              </button>
-            )
-          )}
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+      <div className="relative w-80 bg-white rounded-2xl overflow-hidden text-center shadow-xl">
+        <div className="relative h-24 bg-custom-bg rounded-t-2xl flex items-end justify-center">
+          <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:18px_18px]"></div>
+          <div className="w-12 h-12 bg-white border-[3px] border-custom-bg rounded-full flex items-center justify-center translate-y-1/2 shadow-md">
+            <span className="text-blue-500 font-bold text-2xl leading-none">?</span>
+          </div>
+        </div>
+        <div className="px-6 pt-8 pb-6">
+          <h2 className="text-xl font-semibold mb-2">{title}</h2>
+          <p className="text-gray-700 mb-6">
+            {message}
+          </p>
+          <div className="flex justify-center gap-4">
+            <button
+              className="px-6 py-2 border border-custom-bg rounded-full text-custom-bg hover:text-white hover:bg-custom-bg transition"
+              onClick={onClose}
+            >
+              {t('COMMON.NO')}
+            </button>
+            <button
+              className="px-6 py-2 bg-custom-bg text-white rounded-full hover:bg-custom-bg  transition"
+              onClick={onConfirm}
+            >
+              {t('COMMON.YES')}
+            </button>
+          </div>
         </div>
       </div>
     </div>,
@@ -41,4 +39,4 @@ const FullscreenErrorPopup = ({ message, onClose, onConfirm, children, title }) 
   );
 };
 
-export default FullscreenErrorPopup;
+export default FullscreenConfirmationPopup;

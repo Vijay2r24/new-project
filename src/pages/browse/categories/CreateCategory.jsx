@@ -16,6 +16,8 @@ import { showEmsg } from "../../../utils/ShowEmsg";
 import { STATUS } from "../../../contants/constants";
 import BackButton from "../../../components/BackButton";
 import { ToastContainer } from "react-toastify";
+import Loader from "../../../components/Loader";
+import { hideLoaderWithDelay } from "../../../utils/loaderUtils";
 
 const CreateCategory = () => {
   const { id: categoryId } = useParams();
@@ -32,16 +34,17 @@ const CreateCategory = () => {
     TenantID: localStorage.getItem("tenantID"),
     CategoryName: "",
     CategoryImage: null,
-    Status: "Active",
+    Status: "",
     CategoryDescription: "",
     ParentCategoryId: "",
-    CreatedBy: "Admin",
-    UpdatedBy: "Admin",
+    CreatedBy: "",
+    UpdatedBy: "",
     Heading: "",
   });
 
   const [oErrors, setErrors] = useState({});
   const [sImagePreview, setImagePreview] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   useEffect(() => {
     if (isEditing && categoryId && !bLoadingCategories) {
       const fetchCategoryDetails = async () => {
@@ -65,11 +68,11 @@ const CreateCategory = () => {
                 TenantID: categoryData.TenantID,
                 CategoryName: categoryData.CategoryName || "",
                 CategoryImage: categoryData.CategoryImage || null,
-                Status: categoryData.Status || "Active",
+                Status: categoryData.Status || "",
                 CategoryDescription: categoryData.CategoryDescription || "",
                 ParentCategoryId: categoryData.ParentCategoryId || "",
-                CreatedBy: categoryData.CreatedBy || "Admin",
-                UpdatedBy: "Admin",
+                CreatedBy: categoryData.CreatedBy || "",
+                UpdatedBy: "",
                 Heading: categoryData.Heading || "",
               }));
               if (categoryData.CategoryImage) {
@@ -190,6 +193,7 @@ const CreateCategory = () => {
       setErrors(newErrors);
       return;
     }
+    setSubmitting(true);
 
     const dataToSend = new FormData();
     dataToSend.append("TenantID", oFormData.TenantID);
@@ -197,8 +201,6 @@ const CreateCategory = () => {
     dataToSend.append("Status", oFormData.Status);
     dataToSend.append("CategoryDescription", oFormData.CategoryDescription);
     dataToSend.append("Heading", oFormData.Heading);
-
-    // ✅ Always send ParentCategoryId, even if empty
     dataToSend.append("ParentCategoryId", oFormData.ParentCategoryId || "");
 
     const userId = localStorage.getItem('userId');
@@ -248,11 +250,20 @@ const CreateCategory = () => {
       const errorMessage =
         err?.response?.data?.MESSAGE || t("COMMON.API_ERROR");
       showEmsg(errorMessage, STATUS.ERROR);
+    } finally {
+      hideLoaderWithDelay(setSubmitting);
     }
   };
 
+  const loaderOverlay = submitting ? (
+    <div className="global-loader-overlay">
+      <Loader />
+    </div>
+  ) : null;
+
   return (
     <div className="w-full min-h-screen">
+      {loaderOverlay}
       {isEditing && <ToastContainer />}
       <div className="flex items-center mb-6">
         <BackButton

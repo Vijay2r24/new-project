@@ -1,4 +1,4 @@
-import { Routes, Route} from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import Layout from "./layout/Layout";
 import Browse from "./pages/browse/Browse";
 import Dashboard from "./pages/dashboard/Dashboard";
@@ -28,6 +28,8 @@ import { AllDataProvider } from "./context/AllDataContext";
 import ProtectedRoute from './components/ProtectedRoute';
 import NotAuthorized from './pages/NotAuthorized';
 import { getPermissionCode } from './utils/permissionUtils';
+import { useState, useEffect } from 'react';
+import Loader from './components/Loader';
 
 
 const dashboardPermission = getPermissionCode('Menu Management', 'Dashboard');
@@ -51,10 +53,23 @@ const orderDetailPermission = getPermissionCode('Menu Management', 'Orders');
 
 
 const App = () => {
+  const location = useLocation();
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    const timer = setTimeout(() => setLoading(false), 600); // 600ms for smoothness
+    return () => clearTimeout(timer);
+  }, [location]);
   return (
     <AllDataProvider>
       <TitleProvider>
         <LocationDataProvider>
+          {loading && (
+            <div className="global-loader-overlay">
+                 <Loader />
+            </div>
+          )}
           <Routes>
             <Route path="/" element={<Login />} />
             <Route

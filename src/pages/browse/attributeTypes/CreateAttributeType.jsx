@@ -14,6 +14,8 @@ import { STATUS } from "../../../contants/constants";
 import BackButton from "../../../components/BackButton";
 import SelectWithIcon from "../../../components/SelectWithIcon";
 import { ToastContainer } from "react-toastify";
+import Loader from "../../../components/Loader";
+import { hideLoaderWithDelay } from "../../../utils/loaderUtils";
 
 const CreateAttributeType = () => {
   const { id: attributeTypeId } = useParams();
@@ -30,6 +32,7 @@ const CreateAttributeType = () => {
 
   const [oErrors, setErrors] = useState({});
   const { t } = useTranslation();
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (isEditing && attributeTypeId) {
@@ -108,6 +111,7 @@ const CreateAttributeType = () => {
       setErrors(newErrors);
       return;
     }
+    setSubmitting(true);
 
     try {
       const token = localStorage.getItem("token");
@@ -158,11 +162,20 @@ const CreateAttributeType = () => {
          const errorMessage =
            err?.response?.data?.MESSAGE || t("COMMON.API_ERROR");
          showEmsg(errorMessage, STATUS.ERROR);
+       } finally {
+         hideLoaderWithDelay(setSubmitting);
        }
   };
 
+  const loaderOverlay = submitting ? (
+    <div className="global-loader-overlay">
+      <Loader />
+    </div>
+  ) : null;
+
   return (
     <div>
+      {loaderOverlay}
       {isEditing && <ToastContainer />}
       <div className="flex items-center mb-6">
         <BackButton
