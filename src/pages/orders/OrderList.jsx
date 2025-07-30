@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Toolbar from "../../components/Toolbar";
@@ -31,11 +31,6 @@ const OrderList = () => {
     endDate: "",
   };
 
-  const handleClearFilters = () => {
-    setFilters(defaultFilters);
-    setCurrentPage(1);
-  };
-
   const [oFilters, setFilters] = useState({
     ...defaultFilters,
   });
@@ -45,16 +40,21 @@ const OrderList = () => {
   const [sError, setError] = useState(null);
   const [bLoading, setLoading] = useState(true);
 
-  const handleFilterChange = (e, filterName) => {
+  const handleClearFilters = useCallback(() => {
+    setFilters(defaultFilters);
+    setCurrentPage(1);
+  }, []);
+
+  const handleFilterChange = useCallback((e, filterName) => {
     if (initialLoadComplete) {
       setFilterLoading(true);
     }
-    setFilters({
-      ...oFilters,
+    setFilters(prevFilters => ({
+      ...prevFilters,
       [filterName]: e.target.value,
-    });
+    }));
     setCurrentPage(1);
-  };
+  }, [initialLoadComplete]);
 
   const additionalFilters = [
     {
@@ -96,99 +96,100 @@ const OrderList = () => {
     },
   ];
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        if (initialLoadComplete) {
-          setFilterLoading(true);
-        } else {
-          setLoading(true);
-        }
+  const fetchData = useCallback(async () => {
+    try {
+      if (initialLoadComplete) {
+        setFilterLoading(true);
+      } else {
+        setLoading(true);
+      }
 
-        const token = localStorage.getItem("token");
-        const params = {
-          searchText: sSearchTerm,
-          pageNumber: nCurrentPage,
-          pageSize: nProductsPerPage,
-          orderStatus:
-            oFilters.orderStatus !== "all" ? oFilters.orderStatus : undefined,
-          paymentStatus:
-            oFilters.paymentStatus !== "all"
-              ? oFilters.paymentStatus
-              : undefined,
-          startDate: oFilters.startDate || undefined,
-          endDate: oFilters.endDate || undefined,
-        };
+      const token = localStorage.getItem("token");
+      const params = {
+        searchText: sSearchTerm,
+        pageNumber: nCurrentPage,
+        pageSize: nProductsPerPage,
+        orderStatus:
+          oFilters.orderStatus !== "all" ? oFilters.orderStatus : undefined,
+        paymentStatus:
+          oFilters.paymentStatus !== "all" ? oFilters.paymentStatus : undefined,
+        startDate: oFilters.startDate || undefined,
+        endDate: oFilters.endDate || undefined,
+      };
 
-        const oResponse = await apiGet(GETALLORDERS_API, params, token);
-        if (oResponse.data.STATUS === STATUS.FAILURE.toUpperCase()) {
-          setProductRows([]);
-          setTotalPages(0);
-          setTotalRecords(0);
-          setError(oResponse.data.MESSAGE || t("ORDERS.NO_ORDERS_FOUND"));
-        } else {
-          const orders = oResponse.data.data.data || [];
-          const allProductItems = orders.flatMap((order) => {
-            if (Array.isArray(order.orderItems)) {
-              return order.orderItems.map((item) => ({
-                ...item,
+      const oResponse = await apiGet(GETALLORDERS_API, params, token);
+      if (oResponse.data.STATUS === STATUS.FAILURE.toUpperCase()) {
+        setProductRows([]);
+        setTotalPages(0);
+        setTotalRecords(0);
+        setError(oResponse.data.MESSAGE || t("ORDERS.NO_ORDERS_FOUND"));
+      } else {
+        const orders = oResponse.data.data.data || [];
+        const allProductItems = orders.flatMap((order) => {
+          if (Array.isArray(order.orderItems)) {
+            return order.orderItems.map((item) => ({
+              ...item,
+              orderId: order.orderId,
+              orderStatus: order.orderStatus,
+              paymentStatus: order.paymentStatus,
+              customer: order.customer,
+              orderDate: order.orderDate,
+              // Include the entire order object
+              order: order
+            }));
+          } else if (order.orderItem) {
+            return [
+              {
+                ...order.orderItem,
                 orderId: order.orderId,
                 orderStatus: order.orderStatus,
                 paymentStatus: order.paymentStatus,
                 customer: order.customer,
                 orderDate: order.orderDate,
-              }));
-            } else if (order.orderItem) {
-              return [
-                {
-                  ...order.orderItem,
-                  orderId: order.orderId,
-                  orderStatus: order.orderStatus,
-                  paymentStatus: order.paymentStatus,
-                  customer: order.customer,
-                  orderDate: order.orderDate,
-                },
-              ];
-            } else {
-              return [];
-            }
-          });
-          setProductRows(allProductItems);
-          setTotalPages(
-            Math.ceil(
-              (oResponse.data.data.totalRecords || 0) / nProductsPerPage
-            )
-          );
-          setTotalRecords(oResponse.data.data.totalRecords || 0);
-          setError(null);
-        }
-      } catch (error) {
-        setError(error?.response?.data?.MESSAGE);
-        setTotalPages(0);
-        setTotalRecords(0);
-      } finally {
-        setLoading(false);
-        setFilterLoading(false);
-        if (!initialLoadComplete) {
-          setInitialLoadComplete(true);
-        }
+                // Include the entire order object
+                order: order
+              },
+            ];
+          } else {
+            return [];
+          }
+        });
+        setProductRows(allProductItems);
+        setTotalPages(
+          Math.ceil((oResponse.data.data.totalRecords || 0) / nProductsPerPage)
+        );
+        setTotalRecords(oResponse.data.data.totalRecords || 0);
+        setError(null);
       }
-    };
-
-    fetchData();
+    } catch (error) {
+      setError(error?.response?.data?.MESSAGE);
+      setTotalPages(0);
+      setTotalRecords(0);
+    } finally {
+      setLoading(false);
+      setFilterLoading(false);
+      if (!initialLoadComplete) {
+        setInitialLoadComplete(true);
+      }
+    }
   }, [
     nCurrentPage,
     nProductsPerPage,
     sSearchTerm,
     oFilters,
     initialLoadComplete,
+    t,
   ]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   useEffect(() => {
     setTitle(t("ORDERS.TITLE"));
   }, [setTitle, t]);
 
-  const getStatusColor = (status) => {
+  const getStatusColor = useCallback((status) => {
     const statusClasses = {
       Pending: "status-pending",
       Processing: "status-processing",
@@ -197,31 +198,37 @@ const OrderList = () => {
       Cancelled: "status-cancelled",
     };
     return statusClasses[status] || "status-default";
-  };
+  }, []);
 
-  const handleViewOrder = (order) => {
-    navigate(`/orders/${order.orderId}`);
-  };
+  const handleViewOrder = useCallback((orderItem) => {
+    // Pass the entire order item as state when navigating
+    navigate(`/orders/${orderItem.orderId}`, { 
+      state: { 
+        orderItem: orderItem,
+        order: orderItem.order // This contains the full order data
+      } 
+    });
+  }, [navigate]);
 
-  const handlePrevPage = () => {
+  const handlePrevPage = useCallback(() => {
     setCurrentPage((prev) => Math.max(prev - 1, 1));
-  };
+  }, []);
 
-  const handleNextPage = () => {
+  const handleNextPage = useCallback(() => {
     setCurrentPage((prev) => Math.min(prev + 1, sTotalPages));
-  };
+  }, [sTotalPages]);
 
-  const handlePageClick = (page) => {
+  const handlePageClick = useCallback((page) => {
     setCurrentPage(page);
-  };
+  }, []);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [sSearchTerm, sFilterStatus]);
 
-  const handleExportOrders = () => {
-    alert("Export All Orders functionality coming soon!");
-  };
+  const handleExportOrders = useCallback(() => {
+    alert("");
+  }, []);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2">

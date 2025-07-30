@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   X,
   Package,
@@ -12,8 +12,9 @@ import {
   Mail,
   Edit,
   Building,
+  Check,
 } from "lucide-react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import NotFoundMessage from "../../components/NotFoundMessage";
 import { useTranslation } from "react-i18next";
 import { apiGet, apiPut } from "../../utils/ApiUtils";
@@ -30,10 +31,12 @@ import { ToastContainer } from "react-toastify";
 import { useTitle } from "../../context/TitleContext";
 import { STATUS } from "../../contants/constants";
 import Loader from "../../components/Loader";
-import { hideLoaderWithDelay } from "../../utils/loaderUtils"; 
+import { hideLoaderWithDelay } from "../../utils/loaderUtils";
 import BackButton from "../../components/BackButton";
+
 const OrderView = () => {
   const { orderId } = useParams();
+  const location = useLocation();
   const [nOrder, setOrder] = useState(null);
   const [bLoading, setLoading] = useState(true);
   const [nError, setError] = useState(null);
@@ -45,6 +48,16 @@ const OrderView = () => {
   const [sEditedStatus, setEditedStatus] = useState("");
   const [sEditedRemarks, setEditedRemarks] = useState("");
   const [sEditedStatusId, setEditedStatusId] = useState(null);
+  const [highlightedItemId, setHighlightedItemId] = useState(null);
+
+  // Get the order item from navigation state if available
+  useEffect(() => {
+    if (location.state?.orderItem) {
+      setHighlightedItemId(
+        location.state.orderItem.orderItemId || location.state.orderItem.id
+      );
+    }
+  }, [location.state]);
 
   const {
     data: orderStatusData,
@@ -53,7 +66,7 @@ const OrderView = () => {
     fetch: fetchOrderStatuses,
   } = useOrderStatuses();
 
-  const orderStatusArray = (() => {
+  const getOrderStatusArray = useCallback(() => {
     if (!orderStatusData) return [];
     if (Array.isArray(orderStatusData)) return orderStatusData;
     if (
@@ -72,7 +85,12 @@ const OrderView = () => {
     if (orderStatusData && typeof orderStatusData === "object")
       return [orderStatusData];
     return [];
-  })();
+  }, [orderStatusData]);
+
+  const orderStatusArray = useMemo(
+    () => getOrderStatusArray(),
+    [getOrderStatusArray]
+  );
 
   useEffect(() => {
     fetchOrderStatuses();
@@ -96,9 +114,10 @@ const OrderView = () => {
     setEditedStatusId(null);
     setEditedRemarks("");
   };
+
   const fetchDataRef = useRef();
-  useEffect(() => {
-    fetchDataRef.current = async () => {
+  const fetchOrderDetails = useCallback(
+    async (orderId, setOrder, setLoading, t) => {
       const token = localStorage.getItem("token");
       try {
         const oResponse = await apiGet(
@@ -107,6 +126,7 @@ const OrderView = () => {
           token
         );
         const data = oResponse.data.data.data;
+
         const mappedOrder = {
           orderId: data.orderId,
           orderDate: data.orderDate,
@@ -135,23 +155,34 @@ const OrderView = () => {
             paymentDate: item.product?.payments?.[0]?.paymentDate || "N/A",
           })),
         };
+
         setOrder(mappedOrder);
       } catch (error) {
         console.error("Failed to fetch data:", error);
       } finally {
         setLoading(false);
       }
-    };
+    },
+    []
+  );
+
+  useEffect(() => {
+    fetchDataRef.current = () =>
+      fetchOrderDetails(orderId, setOrder, setLoading, t);
     fetchDataRef.current();
+
     setTitle(t("VIEW_ORDER.ORDER_DETAILS"));
     setBackButton(<BackButton onClick={() => window.history.back()} />);
+
     return () => {
       setBackButton(null);
       setTitle("");
     };
-  }, [orderId, setTitle, setBackButton, t]);
-  const handleSaveChanges = async () => {
+  }, [orderId, setTitle, setBackButton, t, fetchOrderDetails]);
+
+  const handleSaveChanges = useCallback(async () => {
     setbSubmitting(true);
+
     const payload = {
       orderItemId: oEditingItem?.id,
       statusId: sEditedStatusId,
@@ -178,8 +209,21 @@ const OrderView = () => {
     } catch (error) {
       showEmsg(error?.response?.data?.MESSAGE || t("API_ERROR"), STATUS.ERROR);
     }
+
     hideLoaderWithDelay(setbSubmitting);
-  };
+  }, [
+    oEditingItem?.id,
+    sEditedStatusId,
+    sEditedRemarks,
+    orderId,
+    t,
+    showEmsg,
+    closeEditDialog,
+    fetchDataRef,
+    hideLoaderWithDelay,
+    setbSubmitting,
+  ]);
+
   if (bLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -205,7 +249,6 @@ const OrderView = () => {
     return <NotFoundMessage message={t("VIEW_ORDER.ORDER_NOT_FOUND")} />;
   }
 
-  // Safely map order status options with null checks
   const orderStatusOptions = orderStatusArray
     .filter(
       (status) =>
@@ -217,13 +260,15 @@ const OrderView = () => {
       value: status.StatusID.toString(),
       label: status.OrderStatus,
     }));
+
   const loaderOverlay = bSubmitting ? (
     <div className="global-loader-overlay">
       <Loader />
     </div>
   ) : null;
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2  print:bg-white">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2 print:bg-white">
       {loaderOverlay}
       <ToastContainer />
       <div>
@@ -455,7 +500,24 @@ const OrderView = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200 print:divide-gray-300">
                     {nOrder.orderItems.map((item) => (
-                      <tr key={item?.id || item?.sku || item?.name}>
+                      <tr
+                        key={item?.id || item?.sku || item?.name}
+                        className={
+                          highlightedItemId === item.id
+                            ? "bg-blue-50 transition-colors duration-200 relative"
+                            : "hover:bg-gray-50 transition-colors duration-200"
+                        }
+                        ref={(el) => {
+                          if (highlightedItemId === item.id && el) {
+                            setTimeout(() => {
+                              el.scrollIntoView({
+                                behavior: "smooth",
+                                block: "center",
+                              });
+                            }, 500);
+                          }
+                        }}
+                      >
                         <td className="px-6 py-4 whitespace-nowrap print:px-3 print:py-2">
                           <div className="flex items-center print:block">
                             <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100 print:hidden">
@@ -479,6 +541,14 @@ const OrderView = () => {
                                     ? "..."
                                     : "")}
                               </div>
+                              {highlightedItemId === item.id && (
+                                <div className="mt-1">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                    <Check className="h-3 w-3 mr-1" />
+                                    {t("COMMON.SELECTED")}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </td>
@@ -614,12 +684,21 @@ const OrderView = () => {
           </div>
         </div>
       </div>
+
       {bShowEditDialog && oEditingItem && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">
-              {t("VIEW_ORDER.EDIT_ORDER_ITEM")}
-            </h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">
+                {t("VIEW_ORDER.EDIT_ORDER_ITEM")}
+              </h3>
+              <button
+                onClick={closeEditDialog}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
             <div className="space-y-4">
               <div>
                 <SelectWithIcon
@@ -655,14 +734,14 @@ const OrderView = () => {
             <div className="mt-6 flex justify-end space-x-4">
               <button
                 type="button"
-                className="btn-cancel"
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 onClick={closeEditDialog}
               >
                 {t("COMMON.CANCEL")}
               </button>
               <button
                 type="button"
-                className="btn-primary"
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 onClick={handleSaveChanges}
               >
                 {t("COMMON.SAVE")}
