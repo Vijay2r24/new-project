@@ -1,9 +1,10 @@
-
 import { useOrderStatuses } from "../../context/AllDataContext";
+import { useMemo } from "react";
+
 const StatusBadge = ({ status }) => {
   const { data: orderStatusData } = useOrderStatuses();
-  // Normalize to array, handle nested API response
-  const orderStatusArray = (() => {
+
+  const orderStatusArray = useMemo(() => {
     if (!orderStatusData) return [];
     if (Array.isArray(orderStatusData)) return orderStatusData;
     if (orderStatusData.data && orderStatusData.data.data && Array.isArray(orderStatusData.data.data.rows)) {
@@ -13,11 +14,14 @@ const StatusBadge = ({ status }) => {
     if (orderStatusData.rows && Array.isArray(orderStatusData.rows)) return orderStatusData.rows;
     if (orderStatusData && typeof orderStatusData === 'object') return [orderStatusData];
     return [];
-  })();
+  }, [orderStatusData]);
+
   const statusColor = orderStatusArray.find(
     (statusItem) => statusItem.OrderStatus === status
   )?.HexColorCode;
+
   const badgeColor = statusColor || "#000";
+
   return (
     <span
       className="px-2 py-1 rounded-full text-white text-xs"
@@ -30,6 +34,5 @@ const StatusBadge = ({ status }) => {
     </span>
   );
 };
-
 
 export default StatusBadge;

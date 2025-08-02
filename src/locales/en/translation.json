@@ -703,6 +703,7 @@
     "CREATED_AT": "Created At",
     "STREET_ADDRESS": "Street Address",
     "HEADING_LABEL": "Heading",
+    "SELECTED":"Selected",
     "CITY": "City",
     "STATE": "State",
     "COUNTRY": "Country",
