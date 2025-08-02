@@ -16,6 +16,7 @@ import { ITEMS_PER_PAGE, STATUS } from "../contants/constants";
 import { apiDelete } from "../utils/ApiUtils";
 import Loader from "../components/Loader";
 import { hideLoaderWithDelay } from "../utils/loaderUtils";
+import { getPermissionCode, hasPermissionId } from "../utils/permissionUtils";
 
 const Stores = () => {
   const { t } = useTranslation();
@@ -29,7 +30,8 @@ const Stores = () => {
   const [bSubmitting, setSubmitting] = useState(false);
   const [bFilterLoading, setFilterLoading] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-
+  const permissionIdForDelete = getPermissionCode("Store Management", "Delete User");
+  const hasDeletePermission = hasPermissionId(permissionIdForDelete);
   const statusOptions = [
     { value: "", label: t("COMMON.ALL") },
     { value: "Active", label: t("COMMON.ACTIVE") },
@@ -74,8 +76,12 @@ const Stores = () => {
   };
 
   const handleDelete = (storeId) => {
-    setDeletePopup({ open: true, storeId });
-  };
+      if (!hasDeletePermission) {
+          showEmsg(t("COMMON.NO_DELETE_PERMISSION"), STATUS.ERROR);
+          return;
+        }
+       setDeletePopup({ open: true, storeId });
+    };
 
   const handleClearFilters = () => {
     setFilters(defaultFilters);
@@ -200,7 +206,7 @@ const Stores = () => {
   }, [sSearchTerm, oFilters]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen bg-gray-50">
+    <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen bg-gray-50">
       <ToastContainer />
       {bSubmitting && (
         <div className="global-loader-overlay">
