@@ -268,7 +268,7 @@ const OrderView = () => {
   ) : null;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2 print:bg-white">
+    <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-2 print:bg-white">
       {loaderOverlay}
       <ToastContainer />
       <div>
@@ -545,7 +545,6 @@ const OrderView = () => {
                                 <div className="mt-1">
                                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
                                     <Check className="h-3 w-3 mr-1" />
-                                    {t("COMMON.SELECTED")}
                                   </span>
                                 </div>
                               )}
