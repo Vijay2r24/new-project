@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useTitle } from "../context/TitleContext";
 import { useUserDetails } from "../../src/context/AllDataContext";
-import user from "../../assets/images/user.jpg"
+import user from "../../assets/images/user.jpg";
 const aMockNotifications = [
   { id: 1, title: "Order #1234 delivered", time: "2 min ago" },
   { id: 2, title: "New user registered", time: "10 min ago" },
@@ -24,7 +24,11 @@ const Header = ({ onMenuClick }) => {
   const navigate = useNavigate();
 
   const [userDetails, setUserDetails] = useState(() => {
-    return contextUserDetails || JSON.parse(localStorage.getItem("userDetails")) || null;
+    return (
+      contextUserDetails ||
+      JSON.parse(localStorage.getItem("userDetails")) ||
+      null
+    );
   });
 
   useEffect(() => {
@@ -78,7 +82,7 @@ const Header = ({ onMenuClick }) => {
   }, [bShowProfileMenu]);
 
   const handleProfileMenuAction = (action) => {
-    setbShowProfileMenu(false); 
+    setbShowProfileMenu(false);
     setTimeout(() => {
       switch (action) {
         case "profile":
@@ -183,16 +187,16 @@ const Header = ({ onMenuClick }) => {
                   src={oUserDetails?.ProfileImageUrl}
                   alt="Profile"
                   onError={(e) => {
-                    e.target.src = {user};
+                    e.target.src = { user };
                   }}
                 />
                 <div className="absolute bottom-0 right-0 h-2.5 w-2.5 bg-green-500 rounded-full border border-white"></div>
               </div>
               <div className="hidden sm:block text-left ml-2">
-                <div className="text-sm font-medium text-gray-900 truncate max-w-[120px]">
+                <div className="text-sm font-medium text-gray-900 truncate max-w-[120px] whitespace-nowrap overflow-hidden text-ellipsis">
                   {oUserDetails?.FirstName} {oUserDetails?.LastName}
                 </div>
-                <div className="text-xs text-gray-500 truncate max-w-[120px]">
+                <div className="text-xs text-gray-500 truncate max-w-[120px] whitespace-nowrap overflow-hidden text-ellipsis">
                   {oUserDetails?.RoleName}
                 </div>
               </div>
@@ -210,7 +214,7 @@ const Header = ({ onMenuClick }) => {
                     src={oUserDetails?.ProfileImageUrl}
                     alt="Profile"
                     onError={(e) => {
-                      e.target.src = {user};
+                      e.target.src = { user };
                     }}
                   />
                   <div className="text-sm font-semibold text-gray-900 text-center">

@@ -5,13 +5,12 @@ import { useTranslation } from "react-i18next";
 import { apiGet, apiPatch } from "../utils/ApiUtils";
 import { GET_ALL_BANNERS, UPDATE_BANNER_STATUS } from "../contants/apiRoutes";
 import { showEmsg } from "../utils/ShowEmsg";
-import Carousel from "react-multi-carousel";
-import "react-multi-carousel/lib/styles.css";
 import { useTitle } from "../context/TitleContext";
 import { ITEMS_PER_PAGE, STATUS } from "../contants/constants";
 import FullscreenErrorPopup from "../components/FullscreenErrorPopup";
 import { ToastContainer } from "react-toastify";
 import noImage from "../../assets/images/missing-pictur.jpg";
+
 const Banners = () => {
   const [aBanners, setBanners] = useState([]);
   const [nPage, setPage] = useState(1);
@@ -28,25 +27,6 @@ const Banners = () => {
     id: null,
     currentStatus: null,
   });
-
-  const responsive = {
-    superLargeDesktop: {
-      breakpoint: { max: 4000, min: 1024 },
-      items: 1,
-    },
-    desktop: {
-      breakpoint: { max: 1024, min: 768 },
-      items: 1,
-    },
-    tablet: {
-      breakpoint: { max: 768, min: 464 },
-      items: 1,
-    },
-    mobile: {
-      breakpoint: { max: 464, min: 0 },
-      items: 1,
-    },
-  };
 
   useEffect(() => {
     setTitle("Banners");
@@ -123,7 +103,7 @@ const Banners = () => {
         showEmsg(oResponse.data?.MESSAGE, STATUS.ERROR);
       }
     } catch (err) {
-       const errorMessage =
+      const errorMessage =
         err?.response?.data?.data?.error ||
         err?.response?.data?.MESSAGE ||
         err?.message;
@@ -135,11 +115,24 @@ const Banners = () => {
     setStatusPopup({ open: false, id: null, currentStatus: null });
   };
 
+  const handleViewActiveBanners = () => {
+    navigate("/activeBanners");
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen">
+    <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen">
       <ToastContainer />
       <div className="flex items-center gap-4 mb-8">
         <div className="flex-1" />
+        <button
+          type="button"
+          className="flex items-center gap-2 mr-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 active:bg-blue-800 transition-colors duration-200"
+          onClick={handleViewActiveBanners}
+        >
+          <ImageIcon className="h-5 w-5" />
+          {t("BANNER_FORM.VIEW_ACTIVE_BANNERS")}
+        </button>
+
         <button
           type="button"
           className="btn-primary flex items-center gap-2"
@@ -161,21 +154,13 @@ const Banners = () => {
             >
               <div className="relative w-full">
                 {project.BannerImages && project.BannerImages.length > 0 ? (
-                  <Carousel
-                    responsive={responsive}
-                    infinite={true}
-                    autoPlay={false}
-                    arrows={true}
-                  >
-                    {project.BannerImages.map((image) => (
-                      <img
-                        key={image.BannerImageID}
-                        src={image.BannerImage || noImage}
-                        alt={`Banner ${project.BannerName}`}
-                        className="w-full aspect-[16/9] object-cover"
-                      />
-                    ))}
-                  </Carousel>
+                  <div className="w-full">
+                    <img
+                      src={project.BannerImages[0].BannerImage || noImage}
+                      alt={`Banner ${project.BannerName}`}
+                      className="w-full aspect-[16/9] object-cover"
+                    />
+                  </div>
                 ) : (
                   <img
                     src={noImage}

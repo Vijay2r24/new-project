@@ -6,20 +6,18 @@ import Pagination from "../components/Pagination";
 import ActionButtons from "../components/ActionButtons";
 import { useTranslation } from "react-i18next";
 import { apiDelete } from "../utils/ApiUtils";
-import {
-  USER_ACTIVE_STATUS,
-  DELETE_USER,
-} from "../contants/apiRoutes";
+import { USER_ACTIVE_STATUS, DELETE_USER} from "../contants/apiRoutes";
 import { useTitle } from "../context/TitleContext";
 import { ITEMS_PER_PAGE, STATUS } from "../contants/constants";
 import { useRoles, useUsers } from "../context/AllDataContext";
 import FullscreenErrorPopup from "../components/FullscreenErrorPopup";
 import { showEmsg } from "../utils/ShowEmsg";
 import { ToastContainer } from "react-toastify";
-import Switch from '../components/Switch';
-import userProfile from '../../assets/images/userProfile.svg';
-import Loader from '../components/Loader';
-import { hideLoaderWithDelay } from '../utils/loaderUtils';
+import Switch from "../components/Switch";
+import userProfile from "../../assets/images/userProfile.svg";
+import Loader from "../components/Loader";
+import { hideLoaderWithDelay } from "../utils/loaderUtils";
+import { getPermissionCode, hasPermissionId } from "../utils/permissionUtils";
 
 const Users = () => {
   const navigate = useNavigate();
@@ -34,15 +32,27 @@ const Users = () => {
   const [bSubmitting, setSubmitting] = useState(false);
   const [bFilterLoading, setFilterLoading] = useState(false);
   const itemsPerPage = ITEMS_PER_PAGE;
-  const { data: usersData = [], updateStatusById, fetch, loading: contextLoading, error: contextError, total } = useUsers();
+  const {
+    data: usersData = [],
+    updateStatusById,
+    fetch,
+    loading: contextLoading,
+    error: contextError,
+    total,
+  } = useUsers();
   const nTotalPages = Math.ceil((total || 0) / itemsPerPage);
 
   const { data: aRoles, fetch: fetchRoles } = useRoles();
 
   const defaultFilters = {
-    role: 'all',
-    status: 'all',
+    role: "all",
+    status: "all",
   };
+ const permissionIdForDelete = getPermissionCode("User Management", "Delete User");
+const hasDeletePermission = hasPermissionId(permissionIdForDelete);
+
+  console.log("Delete Permission Code:", permissionIdForDelete);
+console.log("Has Delete Permission?", hasDeletePermission);
 
   const [oFilters, setFilters] = useState(defaultFilters);
 
@@ -62,7 +72,7 @@ const Users = () => {
   };
 
   const roleOptions = [
-    { value: 'all', label: t('COMMON.ALL') },
+    { value: "all", label: t("COMMON.ALL") },
     ...(Array.isArray(aRoles)
       ? aRoles.map((role) => ({
           value: role.RoleName,
@@ -72,31 +82,32 @@ const Users = () => {
   ];
 
   const statusOptions = [
-    { value: 'all', label: t('COMMON.ALL') },
-    { value: 'Active', label: t('COMMON.ACTIVE') },
-    { value: 'Inactive', label: t('COMMON.INACTIVE') },
+    { value: "all", label: t("COMMON.ALL") },
+    { value: "Active", label: t("COMMON.ACTIVE") },
+    { value: "Inactive", label: t("COMMON.INACTIVE") },
   ];
 
   const handleDropdownInputChange = (inputValue, filterName) => {
-    if (filterName === 'role') {
+    if (filterName === "role") {
       fetchRoles({ searchText: inputValue });
     }
   };
 
   const additionalFilters = [
     {
-      label: t('USERS.FILTERS.USER_ROLE'),
-      name: 'role',
+      label: t("USERS.FILTERS.USER_ROLE"),
+      name: "role",
       value: oFilters.role,
       options: roleOptions,
-      placeholder: t('USERS.FILTERS.USER_ROLE'),
+      placeholder: t("USERS.FILTERS.USER_ROLE"),
       searchable: true,
-      searchPlaceholder: t('COMMON.SEARCH_ROLE') || 'Search role',
-      onInputChange: (inputValue) => handleDropdownInputChange(inputValue, 'role'),
+      searchPlaceholder: t("COMMON.SEARCH_ROLE") || "Search role",
+      onInputChange: (inputValue) =>
+        handleDropdownInputChange(inputValue, "role"),
     },
     {
-      label: t('USERS.FILTERS.STATUS'),
-      name: 'status',
+      label: t("USERS.FILTERS.STATUS"),
+      name: "status",
       value: oFilters.status,
       options: statusOptions,
     },
@@ -120,6 +131,10 @@ const Users = () => {
 
   const [deletePopup, setDeletePopup] = useState({ open: false, userId: null });
   const handleDelete = (userId) => {
+    if (!hasDeletePermission) {
+      showEmsg(t("COMMON.NO_DELETE_PERMISSION"), STATUS.ERROR);
+      return;
+    }
     setDeletePopup({ open: true, userId });
   };
 
@@ -131,11 +146,15 @@ const Users = () => {
       const response = await apiDelete(`${DELETE_USER}/${userId}`, token);
       const backendMessage = response.data.MESSAGE;
       showEmsg(backendMessage, STATUS.SUCCESS);
-      fetch({ pageNumber: nCurrentPage, pageSize: itemsPerPage, searchText: sSearchTerm });
+      fetch({
+        pageNumber: nCurrentPage,
+        pageSize: itemsPerPage,
+        searchText: sSearchTerm,
+      });
       setDeletePopup({ open: false, userId: null });
     } catch (err) {
       const errorMessage = error?.response?.data?.MESSAGE;
-      showEmsg(errorMessage || t('COMMON.API_ERROR'), STATUS.ERROR);
+      showEmsg(errorMessage || t("COMMON.API_ERROR"), STATUS.ERROR);
       setDeletePopup({ open: false, userId: null });
     }
     hideLoaderWithDelay(setSubmitting);
@@ -159,7 +178,12 @@ const Users = () => {
     setSubmitting(true);
     const { userId, newStatus } = statusPopup;
     if (!updateStatusById) return;
-    const result = await updateStatusById(userId, newStatus, USER_ACTIVE_STATUS, 'UserID');
+    const result = await updateStatusById(
+      userId,
+      newStatus,
+      USER_ACTIVE_STATUS,
+      "UserID"
+    );
     showEmsg(result.message, result.status);
     setStatusPopup({ open: false, userId: null, newStatus: null });
     hideLoaderWithDelay(setSubmitting);
@@ -174,7 +198,7 @@ const Users = () => {
       if (!bFilterLoading) {
         setLoading(true);
       }
-      
+
       try {
         await fetch({
           pageNumber: nCurrentPage,
@@ -210,7 +234,7 @@ const Users = () => {
   }, [sShowFilterDropdown]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen bg-gray-50">
+    <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen bg-gray-50">
       {bSubmitting && (
         <div className="global-loader-overlay">
           <Loader />
@@ -228,8 +252,8 @@ const Users = () => {
         handleFilterChange={handleFilterChange}
         searchPlaceholder={t("USERS.SEARCH_PLACEHOLDER")}
         onClearFilters={handleClearFilters}
-        onCreate={() => navigate('/add-user')}
-        createLabel={t('USERS.ADD_USER')}
+        onCreate={() => navigate("/add-user")}
+        createLabel={t("USERS.ADD_USER")}
       />
       {sViewMode === "table" ? (
         <div className="table-container">
@@ -284,13 +308,18 @@ const Users = () => {
                             <img
                               className="h-10 w-10 rounded-full"
                               src={user.ProfileImageUrl || userProfile}
-                              onError={(e) => { e.target.onerror = null; e.target.src = userProfile; }}
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = userProfile;
+                              }}
                               alt=""
                             />
                           </div>
                           <div className="ml-4">
                             <div className="table-cell-text">
-                              <span className="ellipsis-text">{user.FirstName} {user.LastName}</span>
+                              <span className="ellipsis-text">
+                                {user.FirstName} {user.LastName}
+                              </span>
                             </div>
                             <div className="table-cell-subtext sm:hidden">
                               {user.Email}
@@ -314,12 +343,22 @@ const Users = () => {
                         <div className="flex items-center">
                           <Shield className="h-4 w-4 mr-2 text-gray-400" />
                           <span className="status-badge bg-blue-100 text-blue-800">
-                            <span className="ellipsis-text">{user.RoleName}</span>
+                            <span className="ellipsis-text">
+                              {user.RoleName}
+                            </span>
                           </span>
                         </div>
                       </td>
                       <td className="table-cell">
-                        <Switch checked={user.Status === "Active"} onChange={() => handleStatusChange(user.UserID, user.Status === "Active")} />
+                        <Switch
+                          checked={user.Status === "Active"}
+                          onChange={() =>
+                            handleStatusChange(
+                              user.UserID,
+                              user.Status === "Active"
+                            )
+                          }
+                        />
                       </td>
                       <td className="table-cell text-left font-medium align-middle">
                         <div className="flex justify-left items-left">
@@ -368,7 +407,10 @@ const Users = () => {
                     <img
                       className="h-full w-full object-cover"
                       src={user.ProfileImageUrl || userProfile}
-                      onError={(e) => { e.target.onerror = null; e.target.src = userProfile; }}
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = userProfile;
+                      }}
                       alt=""
                     />
                   </div>
@@ -396,7 +438,12 @@ const Users = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-xs text-gray-500 border-t border-gray-100 pt-2">
                   <div className="flex items-center gap-1">
                     <Mail className="h-4 w-4" />
-                    <span className="truncate max-w-[120px] block" title={user.Email}>{user.Email}</span>
+                    <span
+                      className="truncate max-w-[120px] block"
+                      title={user.Email}
+                    >
+                      {user.Email}
+                    </span>
                   </div>
                   <div className="flex items-center gap-1 sm:ml-4">
                     <Phone className="h-4 w-4" />
@@ -427,7 +474,7 @@ const Users = () => {
       {statusPopup.open && (
         <FullscreenErrorPopup
           message={`Are you sure you want to set this user as ${
-            statusPopup.newStatus ? t('COMMON.ACTIVE') : t('COMMON.INACTIVE')
+            statusPopup.newStatus ? t("COMMON.ACTIVE") : t("COMMON.INACTIVE")
           }?`}
           onClose={handleStatusPopupClose}
           onConfirm={handleStatusConfirm}
@@ -435,7 +482,7 @@ const Users = () => {
       )}
       {deletePopup.open && (
         <FullscreenErrorPopup
-          message={t('USERS.DELETE_CONFIRM_MESSAGE')}
+          message={t("USERS.DELETE_CONFIRM_MESSAGE")}
           onClose={handleDeletePopupClose}
           onConfirm={handleDeleteConfirm}
         />

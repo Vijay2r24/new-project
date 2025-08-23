@@ -172,9 +172,6 @@ const AttributeTypeList = ({ onCreate, onBack, setSubmitting }) => {
                     {t("PRODUCT_SETUP.ATTRIBUTE_TYPE.NAME")}
                   </th>
                   <th className="table-head-cell">
-                    {t("PRODUCT_SETUP.ATTRIBUTE_TYPE.CODE")}
-                  </th>
-                  <th className="table-head-cell">
                     {t("PRODUCT_SETUP.ATTRIBUTE_TYPE.DESCRIPTION_LABEL")}
                   </th>
                   <th className="table-head-cell">
@@ -197,9 +194,6 @@ const AttributeTypeList = ({ onCreate, onBack, setSubmitting }) => {
                       >
                         {type.name}
                       </Link>
-                    </td>
-                    <td className="table-cell">
-                      <div className="text-secondary">{type.code}</div>
                     </td>
                     <td className="table-cell">
                       <div

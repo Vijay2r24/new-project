@@ -151,7 +151,7 @@ const Dashboard = () => {
   }, [setTitle, t]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2">
+    <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-2">
       {bShowProductModal && nSelectedProduct && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 animate-fade-in">
           <div className="bg-white rounded-xl shadow-2xl max-w-xs w-full p-0 relative animate-fade-in-up overflow-hidden">

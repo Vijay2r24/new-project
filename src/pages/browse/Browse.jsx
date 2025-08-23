@@ -10,6 +10,8 @@ import ColorList from "./colors/ColorList";
 import ColorCreate from "./colors/CreateColor";
 import AttributeList from "./attributes/AttributeList";
 import AttributeCreate from "./attributes/CreateAttribute";
+import ProductGroupList from "./productGroups/ProductGroupList";
+import CreateProductGroup from "./productGroups/CreateProductGroup";
 import Loader from "../../components/Loader";
 import { hideLoaderWithDelay } from "../../utils/loaderUtils";
 import {
@@ -18,6 +20,7 @@ import {
   Palette,
   Layers,
   Settings,
+  Boxes,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
@@ -68,9 +71,15 @@ const Browse = () => {
       create: AttributeCreate,
       icon: Layers,
     },
+      {
+      name: t("PRODUCT_SETUP.TABS.PRODUCT_GROUPS"),
+      list: ProductGroupList,
+      create: CreateProductGroup,
+      icon: Boxes,
+    },
   ];
 
-  useEffect(() => {
+ useEffect(() => {
     if (location.state && location.state.fromCategoryEdit) {
       const categoryTabIndex = aTabs.findIndex(
         (tab) => tab.name === t("PRODUCT_SETUP.TABS.CATEGORIES")
@@ -116,6 +125,15 @@ const Browse = () => {
       }
       setViewMode("list");
       window.history.replaceState({}, document.title);
+    } else if (location.state && location.state.fromProductGroupEdit) {
+      const productGroupTabIndex = aTabs.findIndex(
+        (tab) => tab.name === t("PRODUCT_SETUP.TABS.PRODUCT_GROUPS")
+      );
+      if (productGroupTabIndex !== -1) {
+        setSelectedTab(productGroupTabIndex);
+      }
+      setViewMode("list");
+      window.history.replaceState({}, document.title);
     }
   }, [location.state, t]);
 
@@ -130,16 +148,16 @@ const Browse = () => {
   ) : null;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2">
+    <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-2">
       {/* Tabs Section */}
       <div className="overflow-visible">
         <Tab.Group
           selectedIndex={nSelectedTab}
           onChange={(index) => {
-            setSubmitting(true); // ✅ Show loader
+            setSubmitting(true);
             setSelectedTab(index);
             setViewMode("list");
-            hideLoaderWithDelay(setSubmitting, 500); // ✅ Hide loader after 0.5s
+            hideLoaderWithDelay(setSubmitting, 500);
           }}
         >
           <div className="overflow-x-auto">

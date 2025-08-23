@@ -50,54 +50,54 @@ const ProfileDetails = () => {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
 
-  const userId = 1;
- const { data: userDetails, fetch: fetchUserDetails } = useUserDetails();
-const [state, setState] = useState({
-  userDetails: null,
-  userDetailsError: null,
-});
+  const userId = localStorage.getItem("userId");
 
-useEffect(() => {
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("token");
-      const storedUser = localStorage.getItem("userDetails");
-      if (!state.userDetails && storedUser) {
-        setState((prev) => ({
-          ...prev,
-          userDetails: JSON.parse(storedUser),
-        }));
+  const { data: userDetails, fetch: fetchUserDetails } = useUserDetails();
+  const [state, setState] = useState({
+    userDetails: null,
+    userDetailsError: null,
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem("token");
+        const storedUser = localStorage.getItem("userDetails");
+        if (!state.userDetails && storedUser) {
+          setState((prev) => ({
+            ...prev,
+            userDetails: JSON.parse(storedUser),
+          }));
+        }
+        await fetchUserDetails(userId, token);
+      } catch (err) {
+        setFetchError(err.message || "Failed to fetch user details");
+      } finally {
+        setLoading(false);
       }
-      await fetchUserDetails(userId, token);
-    } catch (err) {
-      setFetchError(err.message || "Failed to fetch user details");
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  fetchData();
-}, [fetchUserDetails, userId]);
+    fetchData();
+  }, [fetchUserDetails, userId]);
 
-const user = userDetails?.user
-  ? {
-      name: `${userDetails.user.FirstName} ${userDetails.user.LastName}`,
-      email: userDetails.user.Email,
-      phone: userDetails.user.PhoneNumber,
-      address: userDetails.user.AddressLine || "",
-      city: userDetails.user.CityName || "",
-      state: userDetails.user.StateName || "",
-      zipCode: userDetails.user.Pincode || "",
-      joinDate: userDetails.user.CreatedDate || new Date().toISOString(),
-      avatar: userDetails.user.ProfileImageUrl || cheGuevaraImg,
-      role: userDetails.user.RoleName || "",
-      gender: userDetails.user.Gender,
-      country: userDetails.user.CountryName,
-      employeeId: userDetails.user.UserEmployeeID,
-    }
-  : null;
-
+  const user = userDetails?.user
+    ? {
+        name: `${userDetails.user.FirstName} ${userDetails.user.LastName}`,
+        email: userDetails.user.Email,
+        phone: userDetails.user.PhoneNumber,
+        address: userDetails.user.AddressLine || "",
+        city: userDetails.user.CityName || "",
+        state: userDetails.user.StateName || "",
+        zipCode: userDetails.user.Pincode || "",
+        joinDate: userDetails.user.CreatedDate || new Date().toISOString(),
+        avatar: userDetails.user.ProfileImageUrl || cheGuevaraImg,
+        role: userDetails.user.RoleName || "",
+        gender: userDetails.user.Gender,
+        country: userDetails.user.CountryName,
+        employeeId: userDetails.user.UserEmployeeID,
+      }
+    : null;
 
   useEffect(() => {
     setTitle(t("HEADER.YOUR_PROFILE"));
@@ -312,17 +312,10 @@ const user = userDetails?.user
   if (!user) return <div>No user data found</div>;
 
   return (
-    <div className="max-w-7xl mx-auto mt-5">
+    <div className="max-w-8xl mx-auto mt-2">
       <ToastContainer />
       {loaderOverlay}
-      <div className="relative rounded-2xl overflow-hidden mb-8 border border-custom-bg/30">
-        <div className="absolute inset-0 bg-gradient-to-br from-custom-bg/40 via-white to-custom-bg/20" />
-        <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] opacity-30" />
-        <div className="absolute inset-0 bg-gradient-to-br from-custom-bg/30 via-transparent to-custom-bg/10" />
-
-        <div className="absolute top-0 right-0 w-72 h-72 bg-custom-bg/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-custom-bg/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
-
+      <div className="relative rounded-2xl overflow-hidden mb-8 border border-gray-200 bg-white">
         <div className="relative px-8 py-12">
           <div className="flex flex-col md:flex-row items-center md:items-end space-y-4 md:space-y-0 md:space-x-6 w-full">
             <div className="relative group">
@@ -339,11 +332,11 @@ const user = userDetails?.user
             </div>
             <div className="flex flex-col md:flex-row md:items-end md:justify-between w-full">
               <div className="text-center md:text-left flex-1">
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-custom-bg to-custom-bg/80 bg-clip-text text-gray-900">
+                <h1 className="text-3xl font-bold text-gray-900">
                   {user?.name}
                 </h1>
                 <p className="mt-1 text-gray-900 font-medium">{user?.role}</p>
-                <p className="mt-2 text-sm text-text-gray-900/80 flex items-center justify-center md:justify-start">
+                <p className="mt-2 text-sm text-gray-600 flex items-center justify-center md:justify-start">
                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-custom-bg/60 mr-2"></span>
                   {t("PROFILE.MEMBER_SINCE")}{" "}
                   {new Date(user?.joinDate).toLocaleDateString()}

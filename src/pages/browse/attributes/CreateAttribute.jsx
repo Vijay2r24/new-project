@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Tag, Info } from "lucide-react";
 import TextInputWithIcon from "../../../components/TextInputWithIcon";
 import SelectWithIcon from "../../../components/SelectWithIcon";
@@ -19,16 +19,20 @@ import Loader from "../../../components/Loader";
 import { hideLoaderWithDelay } from "../../../utils/loaderUtils";
 
 const CreateAttribute = () => {
+  const { t } = useTranslation();
   const { id: attributeId } = useParams();
   const navigate = useNavigate();
-  const isEditing = !!attributeId;
-  const { t } = useTranslation();
+  const isEditing = Boolean(attributeId);
+
+  const tenantID = localStorage.getItem("tenantID");
+  const token = localStorage.getItem("token");
+  const userId = localStorage.getItem("userId");
 
   const [oFormData, setFormData] = useState({
     name: "",
     type: "",
     description: "",
-    TenantID: localStorage.getItem("tenantID"),
+    TenantID: tenantID,
     status: "Active",
   });
 
@@ -36,52 +40,60 @@ const CreateAttribute = () => {
   const [bSubmitting, setSubmitting] = useState(false);
 
   const {
-    data: aAttributeTypes = [],
+    data: aAttributeTypes,
     loading: attributeTypesLoading,
     error: attributeTypesError,
     fetch: fetchAttributeTypes,
   } = useAttributeTypes();
+  useEffect(() => {
+    console.log("aAttributeTypes:", aAttributeTypes);
+    console.log("attributeTypesLoading:", attributeTypesLoading);
+    console.log("attributeTypesError:", attributeTypesError);
+  }, [aAttributeTypes, attributeTypesLoading, attributeTypesError]);
+  const goBackToBrowse = () => {
+    navigate("/browse", { state: { fromAttributeEdit: true } });
+  };
+
+  const fetchAttributeDetails = useCallback(async () => {
+    setSubmitting(true);
+    try {
+      const response = await apiGet(
+        `${GET_ATTRIBUTE_BY_ID}/${attributeId}`,
+        {},
+        token
+      );
+      if (
+        response.data.STATUS === STATUS.SUCCESS.toUpperCase() &&
+        response.data.data?.data
+      ) {
+        const attributeData = response.data.data.data;
+        setFormData((prev) => ({
+          ...prev,
+          name: attributeData.AttributeName || "",
+          type: attributeData.AttributeTypeID || "",
+          description: attributeData.AttributeDescription || "",
+          TenantID: attributeData.TenantID?.toString(),
+          status: attributeData.Status,
+        }));
+      } else {
+        showEmsg(response.data.MESSAGE, STATUS.WARNING);
+      }
+    } catch (err) {
+      console.error(err);
+      showEmsg(
+        err?.response?.data?.MESSAGE || t("COMMON.API_ERROR"),
+        STATUS.ERROR
+      );
+    } finally {
+      hideLoaderWithDelay(setSubmitting);
+    }
+  }, [attributeId, token, t]);
 
   useEffect(() => {
     if (isEditing && attributeId) {
-      const fetchAttributeDetails = async () => {
-        setSubmitting(true);
-        try {
-          const token = localStorage.getItem("token");
-          const response = await apiGet(
-            `${GET_ATTRIBUTE_BY_ID}/${attributeId}`,
-            {},
-            token
-          );
-          if (
-            response.data.STATUS === STATUS.SUCCESS.toUpperCase() &&
-            response.data.data?.data
-          ) {
-            const attributeData = response.data.data.data;
-            setFormData((prev) => ({
-              ...prev,
-              name: attributeData.AttributeName || "",
-              type: attributeData.AttributeTypeID || "",
-              description: attributeData.AttributeDescription || "",
-              TenantID: attributeData.TenantID?.toString(),
-              status: attributeData.Status,
-            }));
-          } else {
-            showEmsg(response.data.MESSAGE, STATUS.WARNING);
-          }
-        } catch (err) {
-          console.error(err);
-          showEmsg(
-            err?.response?.data?.MESSAGE || t("COMMON.API_ERROR"),
-            STATUS.ERROR
-          );
-        } finally {
-          hideLoaderWithDelay(setSubmitting);
-        }
-      };
       fetchAttributeDetails();
     }
-  }, [attributeId, isEditing, t]);
+  }, [isEditing, attributeId, fetchAttributeDetails]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -98,40 +110,48 @@ const CreateAttribute = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const newErrors = {};
+  const validateForm = () => {
+    const errors = {};
+    const { name, type, description } = oFormData;
 
-    if (!oFormData.name.trim()) {
-      newErrors.name = t("PRODUCT_SETUP.CREATE_ATTRIBUTES.NAME_REQUIRED");
-    } else if (oFormData.name.trim().length < 2) {
-      newErrors.name = t("PRODUCT_SETUP.CREATE_ATTRIBUTES.NAME_MIN_LENGTH");
-    } else if (oFormData.name.trim().length > 50) {
-      newErrors.name = t("PRODUCT_SETUP.CREATE_ATTRIBUTES.NAME_MAX_LENGTH");
+    if (!name.trim()) {
+      errors.name = t("PRODUCT_SETUP.CREATE_ATTRIBUTES.NAME_REQUIRED");
+    } else if (name.trim().length < 2) {
+      errors.name = t("PRODUCT_SETUP.CREATE_ATTRIBUTES.NAME_MIN_LENGTH");
+    } else if (name.trim().length > 50) {
+      errors.name = t("PRODUCT_SETUP.CREATE_ATTRIBUTES.NAME_MAX_LENGTH");
     }
 
-    if (!oFormData.type) {
-      newErrors.type = t("PRODUCT_SETUP.CREATE_ATTRIBUTES.TYPE_REQUIRED");
+    if (!type) {
+      errors.type = t("PRODUCT_SETUP.CREATE_ATTRIBUTES.TYPE_REQUIRED");
     } else if (
       !aAttributeTypes.some(
-        (type) => String(type.attributeTypeID) === String(oFormData.type)
+        (attr) =>
+          String(attr.attributeTypeID) === String(type) &&
+          attr.status === "Active"
       )
     ) {
-      newErrors.type = t("PRODUCT_SETUP.CREATE_ATTRIBUTES.TYPE_INVALID");
+      errors.type = t("PRODUCT_SETUP.CREATE_ATTRIBUTES.TYPE_INVALID");
     }
 
-    if (!oFormData.description.trim()) {
-      newErrors.description = t(
+    if (!description.trim()) {
+      errors.description = t(
         "PRODUCT_SETUP.CREATE_ATTRIBUTES.DESCRIPTION_REQUIRED"
       );
-    } else if (oFormData.description.trim().length > 250) {
-      newErrors.description = t(
+    } else if (description.trim().length > 250) {
+      errors.description = t(
         "PRODUCT_SETUP.CREATE_ATTRIBUTES.DESCRIPTION_MAX_LENGTH"
       );
     }
 
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    return errors;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setErrors(errors);
       return;
     }
 
@@ -140,30 +160,22 @@ const CreateAttribute = () => {
     const payload = {
       TenantID: oFormData.TenantID,
       AttributeName: oFormData.name,
-      Status: oFormData.status,
       AttributeTypeID: oFormData.type,
       AttributeDescription: oFormData.description,
+      Status: oFormData.status,
+      ...(isEditing
+        ? { AttributeID: attributeId, UpdatedBy: userId }
+        : { CreatedBy: userId }),
     };
-    const userId = localStorage.getItem("userId");
-    if (isEditing) {
-      payload.AttributeID = attributeId;
-      payload.UpdatedBy = userId;
-    } else {
-      payload.CreatedBy = userId;
-    }
 
     try {
-      const token = localStorage.getItem("token");
       const response = await apiPost(
         CREATE_OR_UPDATE_ATTRIBUTE,
         payload,
         token
       );
-
       if (response.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
-        showEmsg(response.data.MESSAGE, STATUS.SUCCESS, 3000, () => {
-          navigate("/browse", { state: { fromAttributeEdit: true } });
-        });
+        showEmsg(response.data.MESSAGE, STATUS.SUCCESS, 3000, goBackToBrowse);
       } else {
         showEmsg(response.data.MESSAGE, STATUS.ERROR);
       }
@@ -188,11 +200,7 @@ const CreateAttribute = () => {
       <ToastContainer />
 
       <div className="flex items-center mb-6">
-        <BackButton
-          onClick={() =>
-            navigate("/browse", { state: { fromAttributeEdit: true } })
-          }
-        />
+        <BackButton onClick={goBackToBrowse} />
         <h2 className="text-xl font-bold text-gray-900">
           {isEditing
             ? t("PRODUCT_SETUP.ATTRIBUTES.EDIT_TITLE")
@@ -262,29 +270,10 @@ const CreateAttribute = () => {
               Icon={Tag}
             />
           </div>
-          <div className="w-full md:w-1/2">
-            <TextAreaWithIcon
-              label={t("COMMON.DESCRIPTION")}
-              id="description"
-              name="description"
-              value={oFormData.description}
-              onChange={handleInputChange}
-              placeholder={t(
-                "PRODUCT_SETUP.CREATE_ATTRIBUTES.DESCRIPTION_PLACEHOLDER"
-              )}
-              error={oErrors.description}
-              icon={Info}
-            />
-          </div>
         </div>
 
         <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
-          <BackButton
-            onClick={() =>
-              navigate("/browse", { state: { fromAttributeEdit: true } })
-            }
-            className="btn-cancel"
-          >
+          <BackButton onClick={goBackToBrowse} className="btn-cancel">
             {t("COMMON.CANCEL")}
           </BackButton>
           <button type="submit" className="btn-primary" disabled={bSubmitting}>

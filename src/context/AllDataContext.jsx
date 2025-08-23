@@ -20,6 +20,7 @@ import {
   GET_ALL_USERS,
   ORDER_STATUS_API,
   GET_USER_BY_ID,
+  GET_ALL_PRODUCT_GROUPS,
 } from "../contants/apiRoutes";
 
 const AllDataContext = createContext();
@@ -77,6 +78,12 @@ const aResourceConfigsStatic = [
     totalKey: null,
     idField: null,
   },
+  {
+    key:"productGroups",
+    api:GET_ALL_PRODUCT_GROUPS,
+    totalKey:"totalRecords",
+    idField:"ProductGroupID",
+  }
 ];
 
 const updateStatusById = async (
@@ -356,3 +363,4 @@ export const useProducts = () => useContext(AllDataContext).products;
 export const useUsers = () => useContext(AllDataContext).users;
 export const useOrderStatuses = () => useContext(AllDataContext).orderStatuses;
 export const useUserDetails = () => useContext(AllDataContext).userDetails;
+export const useProductGroups = () => useContext(AllDataContext).productGroups;

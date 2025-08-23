@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useCallback } from "react";
 import {
   User,
   Mail,
@@ -28,6 +28,7 @@ import userProfile from "../../assets/images/userProfile.svg";
 import Loader from "../components/Loader";
 import { hideLoaderWithDelay } from "../utils/loaderUtils";
 import { useUserDetails } from "../../src/context/AllDataContext";
+
 const getArray = (data) =>
   Array.isArray(data)
     ? data
@@ -58,7 +59,7 @@ const AddUser = () => {
   const [nProfileImagePreview, setProfileImagePreview] = useState(null);
   const { t } = useTranslation();
   const { id } = useParams();
-  const { aCountriesData, aStatesData, aCitiesData } =useContext(LocationDataContext);
+  const { aCountriesData, aStatesData, aCitiesData } = useContext(LocationDataContext);
   const [bImgLoading, setImgLoading] = useState(true);
   const [bImgError, setImgError] = useState(false);
   const {
@@ -81,6 +82,61 @@ const AddUser = () => {
       setTitle("");
     };
   }, [setTitle, setBackButton, t, id, navigate]);
+  const fetchUser = useCallback(async () => {
+    const token = localStorage.getItem("token");
+    try {
+      const oResponse = await apiGet(`${GET_USER_BY_ID}/${id}`, {}, token);
+      const resData = oResponse.data;
+
+      if (resData?.STATUS === STATUS.SUCCESS.toUpperCase() && resData.data?.user) {
+        const user = resData.data.user;
+  
+        const foundCountry = getArray(aCountriesData).find(
+          (c) => c.CountryName === user.CountryName
+        );
+        const foundState = getArray(aStatesData).find(
+          (s) =>
+            s.StateName === user.StateName &&
+            String(s.CountryID) === String(foundCountry?.CountryID)
+        );
+        const foundCity = getArray(aCitiesData).find(
+          (c) =>
+            c.CityName === user.CityName &&
+            String(c.StateID) === String(foundState?.StateID)
+        );
+
+        setFormData((prevFormData) => ({
+          ...prevFormData,
+          firstName: user.FirstName || "",
+          lastName: user.LastName || "",
+          email: user.Email || "",
+          phone: user.PhoneNumber || "",
+          role: user.RoleID || "",
+          streetAddress: user.AddressLine || "",
+          city: foundCity?.CityID || "",
+          state: foundState?.StateID || "",
+          pincode: user.Pincode || "",
+          status: user.Status || "",
+          country: foundCountry?.CountryID || "",
+          countryName: user.CountryName || "",
+          stateName: user.StateName || "",
+          cityName: user.CityName || "",
+        }));
+
+        if (user.ProfileImageUrl) {
+          setImgLoading(true);
+          setProfileImagePreview(user.ProfileImageUrl);
+        }
+        setFetchUserError("");
+      } else {
+        setFetchUserError(resData?.MESSAGE || t("COMMON.FAILED_OPERATION"));
+      }
+    } catch (error) {
+      const backendMessage = error?.response?.data?.MESSAGE;
+      setFetchUserError(backendMessage || t("COMMON.ERROR_MESSAGE"));
+    }
+  }, [id, t, aCountriesData, aStatesData, aCitiesData]);
+
   useEffect(() => {
     if (
       id &&
@@ -88,75 +144,16 @@ const AddUser = () => {
       getArray(aStatesData).length > 0 &&
       getArray(aCitiesData).length > 0
     ) {
-      const fetchUser = async () => {
-        const token = localStorage.getItem("token");
-        try {
-          const oResponse = await apiGet(`${GET_USER_BY_ID}/${id}`, {}, token);
-          const resData = oResponse.data;
-
-          if (
-            resData &&
-            resData.STATUS === STATUS.SUCCESS.toUpperCase() &&
-            resData.data?.user
-          ) {
-            const user = resData.data.user;
-
-            const foundCountry = getArray(aCountriesData).find(
-              (c) => c.CountryName === user.CountryName
-            );
-            const foundState = getArray(aStatesData).find(
-              (s) =>
-                s.StateName === user.StateName &&
-                String(s.CountryID) === String(foundCountry?.CountryID)
-            );
-            const foundCity = getArray(aCitiesData).find(
-              (c) =>
-                c.CityName === user.CityName &&
-                String(c.StateID) === String(foundState?.StateID)
-            );
-
-            setFormData((prevFormData) => ({
-              ...prevFormData,
-              firstName: user.FirstName || "",
-              lastName: user.LastName || "",
-              email: user.Email || "",
-              phone: user.PhoneNumber || "",
-              role: user.RoleID || "",
-              streetAddress: user.AddressLine || "",
-              city: foundCity?.CityID || "",
-              state: foundState?.StateID || "",
-              pincode: user.Pincode || "",
-              status: user.Status || "",
-              country: foundCountry?.CountryID || "",
-              countryName: user.CountryName || "",
-              stateName: user.StateName || "",
-              cityName: user.CityName || "",
-            }));
-
-            if (user.ProfileImageUrl) {
-              setImgLoading(true);
-              setProfileImagePreview(user.ProfileImageUrl);
-            }
-            setFetchUserError("");
-          } else {
-            setFetchUserError(resData?.MESSAGE || t("COMMON.FAILED_OPERATION"));
-          }
-        } catch (error) {
-          const backendMessage = error?.response?.data?.MESSAGE;
-          setFetchUserError(backendMessage || t("COMMON.ERROR_MESSAGE"));
-        }
-      };
       fetchUser();
     }
-  }, [id, t, aCountriesData, aStatesData, aCitiesData]);
+  }, [id, fetchUser, aCountriesData, aStatesData, aCitiesData]);
 
   useEffect(() => {
     if ((!roles || roles.length === 0) && !rolesLoading) {
       fetchRoles({ pageNumber: 1, pageSize: 10 });
     }
   }, [fetchRoles, roles, rolesLoading]);
-
-  const handleChange = (e) => {
+  const handleChange = useCallback((e) => {
     const { name, value } = e.target;
 
     setFormData((prev) => ({
@@ -170,9 +167,8 @@ const AddUser = () => {
       delete newErrors[name];
       return newErrors;
     });
-  };
-
-  const handleImageChange = (e) => {
+  }, []);
+  const handleImageChange = useCallback((e) => {
     const file = e.target.files[0];
     if (file) {
       setProfileImage(file);
@@ -190,76 +186,66 @@ const AddUser = () => {
       setImgError(false);
       setImgLoading(false);
     }
-  };
+  }, []);
+  const validate = useCallback(() => {
+    const newErrors = {};
+    if (!oFormData.firstName)
+      newErrors.firstName = t("ADD_USER.VALIDATION.FIRST_NAME");
 
- const validate = () => {
-  const newErrors = {};
-  if (!oFormData.firstName)
-    newErrors.firstName = t("ADD_USER.VALIDATION.FIRST_NAME");
+    if (!oFormData.lastName)
+      newErrors.lastName = t("ADD_USER.VALIDATION.LAST_NAME");
 
-  if (!oFormData.lastName)
-    newErrors.lastName = t("ADD_USER.VALIDATION.LAST_NAME");
+    if (!oFormData.email)
+      newErrors.email = t("ADD_USER.VALIDATION.EMAIL");
 
-  if (!oFormData.email)
-    newErrors.email = t("ADD_USER.VALIDATION.EMAIL");
+    if (!oFormData.phone)
+      newErrors.phone = t("Com.PHONE");
+    else if (oFormData.phone.replace(/\D/g, "").length !== 10)
+      newErrors.phone = t("ADD_USER.VALIDATION.PHONE_LENGTH");
 
-  if (!oFormData.phone)
-    newErrors.phone = t("ADD_USER.VALIDATION.PHONE");
-  else if (oFormData.phone.replace(/\D/g, "").length !== 10)
-    newErrors.phone = t("ADD_USER.VALIDATION.PHONE_LENGTH");
+    const isCreating = !id;
+    const hasPassword = !!oFormData.password;
+    const hasConfirmPassword = !!oFormData.confirmPassword;
 
-  const isCreating = !id;
-  const hasPassword = !!oFormData.password;
-  const hasConfirmPassword = !!oFormData.confirmPassword;
+    if (isCreating) {
+      if (!hasPassword)
+        newErrors.password = t("ADD_USER.VALIDATION.PASSWORD");
 
-  if (isCreating) {
-    if (!hasPassword)
-      newErrors.password = t("ADD_USER.VALIDATION.PASSWORD");
+      if (!hasConfirmPassword)
+        newErrors.confirmPassword = t("ADD_USER.VALIDATION.CONFIRM_PASSWORD");
+    }
 
-    if (!hasConfirmPassword)
-      newErrors.confirmPassword = t("ADD_USER.VALIDATION.CONFIRM_PASSWORD");
-  }
-
-  // Only validate matching when both are entered
-  if (hasPassword && hasConfirmPassword) {
-    if (oFormData.password !== oFormData.confirmPassword) {
-      newErrors.confirmPassword = t("ADD_USER.VALIDATION.PASSWORD_MATCH");
-    } else {
-      // If match, check strength
-      const strength = getPasswordStrength(oFormData.password);
-      if (strength !== "strong") {
-        newErrors.password = t("ADD_USER.VALIDATION.STRONG_PASSWORD");
+    if (hasPassword && hasConfirmPassword) {
+      if (oFormData.password !== oFormData.confirmPassword) {
+        newErrors.confirmPassword = t("ADD_USER.VALIDATION.PASSWORD_MATCH");
+      } else {
+        const strength = getPasswordStrength(oFormData.password);
+        if (strength !== "strong") {
+          newErrors.password = t("ADD_USER.VALIDATION.STRONG_PASSWORD");
+        }
       }
     }
-  }
 
-  // Address & role validations
-  if (!oFormData.role)
-    newErrors.role = t("ADD_USER.VALIDATION.ROLE");
-
-  if (!oFormData.streetAddress)
-    newErrors.streetAddress = t("ADD_USER.VALIDATION.STREET_ADDRESS");
-
-  if (!oFormData.country)
-    newErrors.country = t("ADD_USER.VALIDATION.COUNTRY");
-
-  if (!oFormData.state)
-    newErrors.state = t("ADD_USER.VALIDATION.STATE");
-
-  if (!oFormData.city)
-    newErrors.city = t("ADD_USER.VALIDATION.CITY");
-
-  return newErrors;
-};
-
-  const getPasswordStrength = (password) => {
+    if (!oFormData.role)
+      newErrors.role = t("ADD_USER.VALIDATION.ROLE");
+    if (!oFormData.streetAddress)
+      newErrors.streetAddress = t("ADD_USER.VALIDATION.STREET_ADDRESS");
+    if (!oFormData.country)
+      newErrors.country = t("ADD_USER.VALIDATION.COUNTRY");
+    if (!oFormData.state)
+      newErrors.state = t("ADD_USER.VALIDATION.STATE");
+    if (!oFormData.city)
+      newErrors.city = t("ADD_USER.VALIDATION.CITY");
+    return newErrors;
+  }, [oFormData, t, id]);
+  const getPasswordStrength = useCallback((password) => {
     const strongRegex =
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
     if (!password) return null;
     if (strongRegex.test(password)) return "strong";
     if (password.length >= 6) return "medium";
     return "weak";
-  };
+  }, []);
 
   const passwordStrength = getPasswordStrength(oFormData.password);
 
@@ -285,78 +271,77 @@ const AddUser = () => {
       test: (pw) => /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(pw),
     },
   ];
- const handleSubmit = async (e) => {
-  e.preventDefault();
-  const validationErrors = validate();
-  setErrors(validationErrors);
-  if (Object.keys(validationErrors).length > 0) return;
+  const handleSubmit = useCallback(async (e) => {
+    e.preventDefault();
+    const validationErrors = validate();
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
 
-  setSubmitting(true);
-  const token = localStorage.getItem("token");
-  const userId = localStorage.getItem("userId");
-  const formData = new FormData();
+    setSubmitting(true);
+    const token = localStorage.getItem("token");
+    const userId = localStorage.getItem("userId");
+    const formData = new FormData();
 
-  if (id) formData.append("UserID", parseInt(id, 10));
-  formData.append("TenantID", localStorage.getItem("tenantID"));
-  formData.append("FirstName", oFormData.firstName || "");
-  formData.append("LastName", oFormData.lastName || "");
-  formData.append("Email", oFormData.email || "");
-  formData.append(
-    "Password",
-    oFormData.password ? md5(oFormData.password) : ""
-  );
-  formData.append("PhoneNumber", oFormData.phone || "");
-  formData.append("AddressLine", oFormData.streetAddress || "");
-  formData.append("CityID", oFormData.city ? parseInt(oFormData.city, 10) : 0);
-  formData.append("StateID", oFormData.state ? parseInt(oFormData.state, 10) : 0);
-  formData.append("CountryID", oFormData.country ? parseInt(oFormData.country, 10) : 0);
-  formData.append("Pincode", oFormData.pincode || "");
-  formData.append("RoleID", oFormData.role || "");
-
-  if (nProfileImage) {
-    formData.append("ProfileImage", nProfileImage);
-  }
-
-  if (id) {
-    formData.append("UpdatedBy", userId);
-  } else {
-    formData.append("CreatedBy", userId);
-  }
-
-  try {
-    const oResponse = await apiPost(
-      USER_CREATE_OR_UPDATE,
-      formData,
-      token,
-      true
+    if (id) formData.append("UserID", parseInt(id, 10));
+    formData.append("TenantID", localStorage.getItem("tenantID"));
+    formData.append("FirstName", oFormData.firstName || "");
+    formData.append("LastName", oFormData.lastName || "");
+    formData.append("Email", oFormData.email || "");
+    formData.append(
+      "Password",
+      oFormData.password ? md5(oFormData.password) : ""
     );
-    const resData = oResponse?.data;
+    formData.append("PhoneNumber", oFormData.phone || "");
+    formData.append("AddressLine", oFormData.streetAddress || "");
+    formData.append("CityID", oFormData.city ? parseInt(oFormData.city, 10) : 0);
+    formData.append("StateID", oFormData.state ? parseInt(oFormData.state, 10) : 0);
+    formData.append("CountryID", oFormData.country ? parseInt(oFormData.country, 10) : 0);
+    formData.append("Pincode", oFormData.pincode || "");
+    formData.append("RoleID", oFormData.role || "");
 
-    if (resData?.STATUS === STATUS.SUCCESS.toUpperCase()) {
-      // Fetch updated user details after success
-      await fetchUserDetails(userId, token);
-
-      showEmsg(
-        resData?.MESSAGE || t("ADD_USER.SUCCESS"),
-        STATUS.SUCCESS,
-        3000,
-        async () => {
-          navigate("/users");
-        }
-      );
-    } else {
-      showEmsg(
-        resData?.MESSAGE || t("COMMON.FAILED_OPERATION"),
-        STATUS.WARNING
-      );
+    if (nProfileImage) {
+      formData.append("ProfileImage", nProfileImage);
     }
-  } catch (error) {
-    const backendMessage = error?.response?.data?.MESSAGE;
-    showEmsg(backendMessage || t("COMMON.ERROR_MESSAGE"), STATUS.ERROR);
-  } finally {
-    hideLoaderWithDelay(setSubmitting);
-  }
-};
+
+    if (id) {
+      formData.append("UpdatedBy", userId);
+    } else {
+      formData.append("CreatedBy", userId);
+    }
+
+    try {
+      const oResponse = await apiPost(
+        USER_CREATE_OR_UPDATE,
+        formData,
+        token,
+        true
+      );
+      const resData = oResponse?.data;
+
+      if (resData?.STATUS === STATUS.SUCCESS.toUpperCase()) {
+        await fetchUserDetails(userId, token);
+
+        showEmsg(
+          resData?.MESSAGE || t("ADD_USER.SUCCESS"),
+          STATUS.SUCCESS,
+          3000,
+          async () => {
+            navigate("/users");
+          }
+        );
+      } else {
+        showEmsg(
+          resData?.MESSAGE || t("COMMON.FAILED_OPERATION"),
+          STATUS.WARNING
+        );
+      }
+    } catch (error) {
+      const backendMessage = error?.response?.data?.MESSAGE;
+      showEmsg(backendMessage || t("COMMON.ERROR_MESSAGE"), STATUS.ERROR);
+    } finally {
+      hideLoaderWithDelay(setSubmitting);
+    }
+  }, [validate, id, oFormData, nProfileImage, fetchUserDetails, t, navigate]);
 
   if (fetchUserError) {
     return (
@@ -365,13 +350,15 @@ const AddUser = () => {
       </div>
     );
   }
+
   const loaderOverlay = bSubmitting ? (
     <div className="global-loader-overlay">
       <Loader />
     </div>
   ) : null;
+
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-8xl mx-auto">
       <ToastContainer />
       {loaderOverlay}
       <div className="mb-8">
@@ -516,7 +503,6 @@ const AddUser = () => {
                 }
               />
 
-              {/* Password and Confirm Password side by side */}
               <div className="col-span-1 md:col-span-2">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <TextInputWithIcon
@@ -544,7 +530,6 @@ const AddUser = () => {
                 </div>
               </div>
 
-              {/* Password strength & requirements stay full width */}
               {typeof oFormData.password === "string" &&
                 oFormData.password.length > 0 && (
                   <div

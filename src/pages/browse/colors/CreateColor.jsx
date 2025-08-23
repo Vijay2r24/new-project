@@ -1,28 +1,35 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, Tag, Info, Palette } from "lucide-react";
 import TextInputWithIcon from "../../../components/TextInputWithIcon";
 import SelectWithIcon from "../../../components/SelectWithIcon";
-import { useTranslation } from "react-i18next";
-import { useParams, useNavigate } from "react-router-dom";
-import { apiPost, apiGet, apiPut } from "../../../utils/ApiUtils";
+import BackButton from "../../../components/BackButton";
+import Loader from "../../../components/Loader";
+import { ToastContainer } from "react-toastify";
+
 import {
   CREATE_COLOUR,
   GET_COLOUR_BY_ID,
   UPDATE_COLOUR,
 } from "../../../contants/apiRoutes";
-import { showEmsg } from "../../../utils/ShowEmsg";
 import { STATUS } from "../../../contants/constants";
-import BackButton from "../../../components/BackButton";
-import { ToastContainer } from "react-toastify";
-import Loader from "../../../components/Loader";
+import { apiPost, apiGet, apiPut } from "../../../utils/ApiUtils";
+import { showEmsg } from "../../../utils/ShowEmsg";
 import { hideLoaderWithDelay } from "../../../utils/loaderUtils";
 
 const CreateColor = () => {
   const { id: colorId } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
+
   const isEditing = !!colorId;
+  const token = localStorage.getItem("token");
+  const tenantID = localStorage.getItem("tenantID");
+  const userId = localStorage.getItem("userId");
+
   const [oFormData, setFormData] = useState({
-    TenantID: localStorage.getItem('tenantID'),
+    TenantID: tenantID,
     Name: "",
     HexCode: "#000000",
     IsActive: true,
@@ -32,40 +39,7 @@ const CreateColor = () => {
   });
 
   const [oErrors, setErrors] = useState({});
-  const { t } = useTranslation();
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (isEditing && colorId) {
-      const fetchColorDetails = async () => {
-        try {
-          const token = localStorage.getItem("token");
-          const oResponse = await apiGet(
-            `${GET_COLOUR_BY_ID}/${colorId}`,
-            {},
-            token
-          );
-          if (
-            oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase() &&
-            oResponse.data.data &&
-            oResponse.data.data.data
-          ) {
-            const colorData = oResponse.data.data.data;
-            setFormData((prev) => ({
-              ...prev,
-              Name: colorData.Name || "",
-              HexCode: colorData.HexCode || "#000000",
-              IsActive: colorData.Status === "Active",
-              RgbCode: colorData.RgbCode || "",
-              UpdatedBy: "Admin",
-            }));
-          } else {
-          }
-        } catch (err) {}
-      };
-      fetchColorDetails();
-    }
-  }, [colorId, isEditing]);
 
   const hexToRgb = (hex) => {
     if (!hex || typeof hex !== "string") return "";
@@ -76,114 +50,114 @@ const CreateColor = () => {
     return `rgb(${r}, ${g}, ${b})`;
   };
 
-  const handleInputChange = (e) => {
+  useEffect(() => {
+    const fetchColorDetails = async () => {
+      try {
+        const response = await apiGet(`${GET_COLOUR_BY_ID}/${colorId}`, {}, token);
+        const colorData = response?.data?.data?.data;
+
+        if (response.data.STATUS === STATUS.SUCCESS.toUpperCase() && colorData) {
+          setFormData((prev) => ({
+            ...prev,
+            Name: colorData.Name || "",
+            HexCode: colorData.HexCode || "#000000",
+            IsActive: colorData.Status === "Active",
+            RgbCode: colorData.RgbCode || "",
+            UpdatedBy: "Admin",
+          }));
+        }
+      } catch (err) {
+        console.error("Failed to fetch color details", err);
+      }
+    };
+
+    if (isEditing && colorId) fetchColorDetails();
+  }, [colorId, isEditing, token]);
+
+  const handleInputChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
+    const newValue = type === "checkbox" ? checked : value;
+
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: newValue,
+      ...(name === "HexCode" && { RgbCode: hexToRgb(value) }),
     }));
-    if (name === "HexCode") {
-      setFormData((prev) => ({
-        ...prev,
-        RgbCode: hexToRgb(value),
-      }));
-    }
+
     if (oErrors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: "",
-      }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
+  }, [oErrors]);
+
+  const validateForm = () => {
+    const errors = {};
+    if (!oFormData.Name.trim()) {
+      errors.Name = t("PRODUCT_SETUP.CREATE_COLOR.ERRORS.NAME_REQUIRED");
+    }
+    if (!oFormData.HexCode.trim()) {
+      errors.HexCode = t("PRODUCT_SETUP.CREATE_COLOR.ERRORS.HEX_CODE_REQUIRED");
+    }
+    return errors;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const newErrors = {};
+    const errors = validateForm();
 
-    if (!oFormData.Name.trim()) {
-      newErrors.Name = t("PRODUCT_SETUP.CREATE_COLOR.ERRORS.NAME_REQUIRED");
-    }
-    if (!oFormData.HexCode.trim()) {
-      newErrors.HexCode = t(
-        "PRODUCT_SETUP.CREATE_COLOR.ERRORS.HEX_CODE_REQUIRED"
-      );
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    if (Object.keys(errors).length > 0) {
+      setErrors(errors);
       return;
     }
+
     setSubmitting(true);
+    const payload = {
+      Name: oFormData.Name,
+      HexCode: oFormData.HexCode,
+      RgbCode: oFormData.RgbCode,
+      TenantID: oFormData.TenantID,
+      ...(isEditing
+        ? { Status: oFormData.IsActive ? "Active" : "Inactive", UpdatedBy: userId }
+        : { IsActive: oFormData.IsActive, CreatedBy: userId }),
+    };
 
     try {
-      const token = localStorage.getItem("token");
-      let oResponse;
-      let payload;
-      const userId = localStorage.getItem('userId');
+      const apiCall = isEditing
+        ? apiPut(`${UPDATE_COLOUR}/${colorId}`, payload, token)
+        : apiPost(CREATE_COLOUR, payload, token);
 
-      if (isEditing) {
-        payload = {
-          Name: oFormData.Name,
-          HexCode: oFormData.HexCode,
-          RgbCode: oFormData.RgbCode,
-          Status: oFormData.IsActive ? "Active" : "Inactive",
-          TenantID: oFormData.TenantID,
-          UpdatedBy: userId,
-        };
-        oResponse = await apiPut(`${UPDATE_COLOUR}/${colorId}`, payload, token);
-      } else {
-        payload = {
-          TenantID: oFormData.TenantID,
-          Name: oFormData.Name,
-          HexCode: oFormData.HexCode,
-          IsActive: oFormData.IsActive,
-          RgbCode: oFormData.RgbCode,
-          CreatedBy: userId,
-        };
-        oResponse = await apiPost(CREATE_COLOUR, payload, token);
-      }
+      const response = await apiCall;
 
-      if (oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
-        showEmsg(oResponse.data.MESSAGE, STATUS.SUCCESS, 3000, async () => {
-          navigate('/browse', { state: { fromColorEdit: true } });
+      if (response.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
+        showEmsg(response.data.MESSAGE, STATUS.SUCCESS, 3000, () => {
+          navigate("/browse", { state: { fromColorEdit: true } });
         });
       } else {
-        showEmsg(
-          oResponse.data.MESSAGE,
-          STATUS.WARNING
-        );
+        showEmsg(response.data.MESSAGE, STATUS.WARNING);
       }
     } catch (err) {
-      const errorMessage =
-        err?.response?.data?.MESSAGE || t("COMMON.API_ERROR");
-      showEmsg(errorMessage, STATUS.ERROR);
+      showEmsg(err?.response?.data?.MESSAGE || t("COMMON.API_ERROR"), STATUS.ERROR);
     } finally {
       hideLoaderWithDelay(setSubmitting);
     }
   };
 
-  const loaderOverlay = submitting ? (
-    <div className="global-loader-overlay">
-      <Loader />
-    </div>
-  ) : null;
+  const handleCancel = () =>
+    navigate("/browse", { state: { fromColorEdit: true } });
 
   return (
     <div>
-      {loaderOverlay}
+      {submitting && <div className="global-loader-overlay"><Loader /></div>}
       {isEditing && <ToastContainer />}
+
       <div className="flex items-center mb-6">
-        <BackButton
-          onClick={() =>
-            navigate("/browse", { state: { fromColorEdit: true } })
-          }
-        />
+        <BackButton onClick={handleCancel} />
         <h2 className="text-xl font-bold text-gray-900">
           {isEditing
             ? t("PRODUCT_SETUP.CREATE_COLOR.EDIT_TITLE")
             : t("PRODUCT_SETUP.CREATE_COLOR.CREATE_TITLE")}
         </h2>
       </div>
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex flex-col md:flex-row md:space-x-4">
           <div className="w-full md:w-1/2">
@@ -194,10 +168,7 @@ const CreateColor = () => {
               value={oFormData.Name}
               onChange={handleInputChange}
               placeholder={t("PRODUCT_SETUP.CREATE_COLOR.NAME_PLACEHOLDER")}
-              error={
-                oErrors.Name &&
-                t("PRODUCT_SETUP.CREATE_COLOR.ERRORS.NAME_REQUIRED")
-              }
+              error={oErrors.Name}
               Icon={Tag}
             />
           </div>
@@ -214,7 +185,6 @@ const CreateColor = () => {
               inputSlot={
                 <input
                   type="color"
-                  id="colorPicker"
                   name="HexCode"
                   value={oFormData.HexCode}
                   onChange={handleInputChange}
@@ -225,6 +195,7 @@ const CreateColor = () => {
             />
           </div>
         </div>
+
         <div className="flex flex-col md:flex-row md:space-x-4">
           <div className="w-full md:w-1/2">
             <SelectWithIcon
@@ -254,14 +225,9 @@ const CreateColor = () => {
             />
           </div>
         </div>
+
         <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
-          <button
-            type="button"
-            onClick={() =>
-              navigate("/browse", { state: { fromColorEdit: true } })
-            }
-            className="btn-cancel"
-          >
+          <button type="button" onClick={handleCancel} className="btn-cancel">
             {t("COMMON.CANCEL")}
           </button>
           <button type="submit" className="btn-primary">

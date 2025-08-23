@@ -42,7 +42,7 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
       section: 'Product Management',
       subItems: [
         { name: t('SIDEBAR.PRODUCT_SETUP'), href: '/browse', icon: Settings },
-        { name: t('SIDEBAR.PRODUCTS'), href: '/productList', icon: Package, relatedPaths: ['/Addproduct'] },
+        { name: t('SIDEBAR.PRODUCTS'), href: '/productList', icon: Package, relatedPaths: ['/Addproduct','/edit-product'] },
       ]
     },
     { 
@@ -67,7 +67,7 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
       icon: FileText,
       section: 'Content Management',
       subItems: [
-        { name: t('SIDEBAR.BANNERS'), href: '/banners', icon: Image, relatedPaths: ['/banners-create'] },
+        { name: t('SIDEBAR.BANNERS'), href: '/banners', icon: Image, relatedPaths: ['/banners-create','/activeBanners'] },
         { name: t('SIDEBAR.NOTIFICATIONS'), href: '/notifications', icon: Bell },
       ]
     },
@@ -102,7 +102,6 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
       .map(perm => perm.Code);
   }, [allPermissions, userPermissionIDs]);
 
-  // Dynamic permission code lookup for each menu item
   const menuPermissionCode = useMemo(() => ({
     '/dashboard': getPermissionCode('Menu Management', 'Dashboard'),
     '/orders': getPermissionCode('Menu Management', 'Orders'),

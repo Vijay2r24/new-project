@@ -148,7 +148,7 @@ const ColorList = ({ onCreate, onBack, setSubmitting }) => {
                           ? 'status-active'
                           : 'status-inactive'
                       }`}>
-                        {color.IsActive ? t('COMMON.ACTIVE') : t('COMMON.INACTIVE')}
+                        {color.Status}
                       </span>
                     </td>
                     <td className="table-cell table-cell-text">

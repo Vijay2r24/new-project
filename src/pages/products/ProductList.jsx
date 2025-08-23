@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from "react";
-import { Plus } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Toolbar from "../../components/Toolbar";
 import Pagination from "../../components/Pagination";
@@ -289,7 +288,7 @@ const ProductList = () => {
   }, [sSearchTerm, oFilters]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen bg-gray-50">
+    <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen bg-gray-50">
       <ToastContainer />
       <Toolbar
         searchTerm={sSearchTerm}

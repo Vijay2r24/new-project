@@ -4,7 +4,7 @@ import Toolbar from "../../../components/Toolbar";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { useAttributes } from "../../../context/AllDataContext";
-import Pagination from "../../../components/Pagination";
+import Pagination from "../../../components/Pagination"; 
 import FullscreenErrorPopup from "../../../components/FullscreenErrorPopup";
 import Switch from "../../../components/Switch";
 import { showEmsg } from "../../../utils/ShowEmsg";
@@ -156,7 +156,7 @@ const AttributeList = ({ onCreate, onBack,setSubmitting }) => {
                       {t("PRODUCT_SETUP.ATTRIBUTES.TABLE.NAME")}
                     </th>
                     <th className="table-head-cell">
-                      {t("COMMON.DESCRIPTION")}
+                      {t("COMMON.UNIT")}
                     </th>
                     <th className="table-head-cell">{t("COMMON.STATUS")}</th>
                     <th className="table-head-cell">
@@ -167,24 +167,24 @@ const AttributeList = ({ onCreate, onBack,setSubmitting }) => {
                 <tbody className="table-body">
                   {aAttributes.map((attribute) => (
                     <tr
-                      key={attribute.AttributeID}
+                      key={attribute.AttributeValueID}
                       className="table-row text-left"
                     >
                       <td className="table-cell table-cell-text">
                         <Link
-                          to={`/browse/editattribute/${attribute.AttributeID}`}
+                          to={`/browse/editattribute/${attribute.AttributeValueID}`}
                           className="text-blue-600 hover:underline block truncate max-w-[180px]"
-                          title={attribute.AttributeName}
+                          title={attribute.Value}
                         >
-                          {attribute.AttributeName}
+                          {attribute.Value}
                         </Link>
                       </td>
                       <td className="table-cell table-cell-text">
                         <div
                           className="truncate max-w-[220px]"
-                          title={attribute.AttributeDescription}
+                          title={attribute.Unit}
                         >
-                          {attribute.AttributeDescription}
+                          {attribute.Unit}
                         </div>
                       </td>
                       <td className="table-cell">
