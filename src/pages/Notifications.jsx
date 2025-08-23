@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Upload,
   X,
@@ -19,11 +19,13 @@ import { SEND_NOTIFICATIONS } from "../contants/apiRoutes";
 import { STATUS } from "../contants/constants";
 import { showEmsg } from "../utils/ShowEmsg";
 import { ToastContainer } from "react-toastify";
+import { useTitle } from "../context/TitleContext";
 
 const Notifications = () => {
   const [sActiveTab, setActiveTab] = useState("push");
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { setTitle, setBackButton } = useTitle();
   const [oPushFormData, setPushFormData] = useState({
     title: "",
     message: "",
@@ -62,6 +64,15 @@ const Notifications = () => {
       status: "Inactive",
     },
   ]);
+
+  useEffect(() => {
+    setTitle(t("NOTIFICATIONS.TITLE"));
+    setBackButton(<BackButton onClick={() => navigate("/dashboard")} />);
+    return () => {
+      setBackButton(null);
+      setTitle("");
+    };
+  }, [setTitle, setBackButton, t, navigate]);
 
   const handlePushChange = (e) => {
     const { name, value } = e.target;
@@ -157,32 +168,8 @@ const Notifications = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen">
+    <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen">
       <ToastContainer />
-      <div className="relative rounded-2xl overflow-hidden mb-8 border border-sky-100/50">
-        <div className="absolute inset-0 bg-gradient-to-br from-sky-100 via-white to-indigo-100" />
-        <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] opacity-30" />
-        <div className="absolute inset-0 bg-gradient-to-br from-sky-200/40 via-transparent to-indigo-200/40" />
-
-        <div className="absolute top-0 right-0 w-72 h-72 bg-sky-300/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-indigo-300/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
-
-        <div className="relative px-8 py-12">
-          <div className="flex items-center gap-4 mb-4">
-            <BackButton onClick={() => navigate("/dashboard")} />
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/80 rounded-lg">
-                <Bell className="h-6 w-6 text-custom-bg" />
-              </div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                {t("NOTIFICATIONS.TITLE")}
-              </h1>
-            </div>
-          </div>
-          <p className="text-caption ml-14">{t("NOTIFICATIONS.DESCRIPTION")}</p>
-        </div>
-      </div>
-
       <div className="mb-8">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">

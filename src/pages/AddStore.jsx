@@ -1,5 +1,5 @@
 import { useState, useContext, useEffect, useCallback } from "react";
-import { Building, MapPin, Phone, Mail, ArrowLeft } from "lucide-react";
+import { Building, MapPin, Phone, Mail } from "lucide-react";
 import TextInputWithIcon from "../components/TextInputWithIcon";
 import SelectWithIcon from "../components/SelectWithIcon";
 import { useTranslation } from "react-i18next";
@@ -30,6 +30,7 @@ const AddStore = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { setTitle, setBackButton } = useTitle();
+
   const [oFormData, setFormData] = useState({
     name: "",
     address: "",
@@ -44,6 +45,7 @@ const AddStore = () => {
     stateName: "",
     cityName: "",
   });
+
   const [oErrors, setErrors] = useState({});
   const [bSubmitting, setbSubmitting] = useState(false);
 
@@ -66,8 +68,8 @@ const AddStore = () => {
             c.CityName === store.CityName &&
             String(c.StateID) === String(foundState?.StateID)
         );
-        setFormData((prevFormData) => ({
-          ...prevFormData,
+
+        setFormData({
           name: store.StoreName || "",
           address: store.AddressLine1 || "",
           country: foundCountry?.CountryID || "",
@@ -78,12 +80,11 @@ const AddStore = () => {
           email: store.Email || "",
           status: store.Status || "",
           countryName:
-            store.CountryName ||
-            (foundCountry ? foundCountry.CountryName : ""),
+            store.CountryName || (foundCountry ? foundCountry.CountryName : ""),
           stateName:
             store.StateName || (foundState ? foundState.StateName : ""),
           cityName: store.CityName || (foundCity ? foundCity.CityName : ""),
-        }));
+        });
         setErrors({});
       } else {
         showEmsg(
@@ -92,15 +93,15 @@ const AddStore = () => {
         );
       }
     } catch (error) {
-      const backendMessage = error?.response?.data?.MESSAGE;
-      showEmsg(backendMessage || t("COMMON.ERROR_MESSAGE"), STATUS.ERROR);
+      showEmsg(
+        error?.response?.data?.MESSAGE || t("COMMON.ERROR_MESSAGE"),
+        STATUS.ERROR
+      );
     }
   }, [id, aCountriesData, aStatesData, aCitiesData, t]);
-
+  
   useEffect(() => {
-    if (id) {
-      fetchStore();
-    }
+    if (id) fetchStore();
   }, [id, fetchStore]);
 
   useEffect(() => {
@@ -112,25 +113,28 @@ const AddStore = () => {
     };
   }, [setTitle, setBackButton, t, id]);
 
-  const handleChange = useCallback((e) => {
-    const { name, value } = e.target;
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === "phone" ? value.replace(/\D/g, "") : value,
-    }));
-    if (oErrors[name]) {
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[name];
-        return newErrors;
-      });
-    }
-  }, [oErrors]);
+  const handleChange = useCallback(
+    (e) => {
+      const { name, value } = e.target;
+      setFormData((prev) => ({
+        ...prev,
+        [name]: name === "phone" ? value.replace(/\D/g, "") : value,
+      }));
+      if (oErrors[name]) {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[name];
+          return newErrors;
+        });
+      }
+    },
+    [oErrors]
+  );
 
   const validateForm = useCallback(() => {
     const newErrors = {};
     let isValid = true;
+
     if (!oFormData.name.trim()) {
       newErrors.name = t("STORES.VALIDATION.STORE_NAME");
       isValid = false;
@@ -143,12 +147,10 @@ const AddStore = () => {
       newErrors.country = t("STORES.VALIDATION.COUNTRY");
       isValid = false;
     }
-
     if (!oFormData.state) {
       newErrors.state = t("STORES.VALIDATION.STATE");
       isValid = false;
     }
-
     if (!oFormData.city) {
       newErrors.city = t("STORES.VALIDATION.CITY");
       isValid = false;
@@ -179,14 +181,12 @@ const AddStore = () => {
   const handleSubmit = useCallback(
     async (e) => {
       e.preventDefault();
-
-      if (!validateForm()) {
-        return;
-      }
+      if (!validateForm()) return;
 
       setbSubmitting(true);
       const token = localStorage.getItem("token");
       const userId = localStorage.getItem("userId");
+
       const payload = {
         StoreID: id ? parseInt(id, 10) : 0,
         TenantID: localStorage.getItem("tenantID"),
@@ -205,6 +205,7 @@ const AddStore = () => {
         CityName: oFormData.cityName,
         ...(id ? { UpdatedBy: userId } : { CreatedBy: userId }),
       };
+
       try {
         const oResponse = await apiPost(CREATE_OR_UPDATE_STORE, payload, token);
         if (oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
@@ -215,9 +216,10 @@ const AddStore = () => {
           showEmsg(oResponse.data?.MESSAGE, STATUS.WARNING);
         }
       } catch (err) {
-        const errorMessage =
-          err?.response?.data?.MESSAGE || t("COMMON.API_ERROR");
-        showEmsg(errorMessage, STATUS.ERROR);
+        showEmsg(
+          err?.response?.data?.MESSAGE || t("COMMON.API_ERROR"),
+          STATUS.ERROR
+        );
       } finally {
         hideLoaderWithDelay(setbSubmitting);
       }
@@ -235,151 +237,162 @@ const AddStore = () => {
     <div className="max-w-8xl mx-auto">
       <ToastContainer />
       {loaderOverlay}
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900">
-              {t("CREATE_STORE.STORE_INFORMATION")}
-            </h2>
-          </div>
-          <div className="p-6 space-y-6">
-            <div className="flex flex-col md:flex-row md:space-x-4">
-              <div className="w-full md:w-1/2">
-                <TextInputWithIcon
-                  label={t("CREATE_STORE.STORE_NAME")}
-                  id="name"
-                  name="name"
-                  value={oFormData.name}
-                  onChange={handleChange}
-                  placeholder={t("CREATE_STORE.ENTER_STORE_NAME")}
-                  Icon={Building}
-                  error={oErrors.name}
-                />
-              </div>
-              <div className="w-full md:w-1/2 mt-4 md:mt-0">
-                <TextInputWithIcon
-                  label={t("COMMON.STREET_ADDRESS")}
-                  id="address"
-                  name="address"
-                  value={oFormData.address}
-                  onChange={handleChange}
-                  placeholder={t("COMMON.ENTER_STREET_ADDRESS")}
-                  Icon={MapPin}
-                  error={oErrors.address}
-                />
-              </div>
+
+      <form onSubmit={handleSubmit}>
+        <div className="space-y-8">
+          {/* Store Info */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
+              <h2 className="text-lg font-semibold text-gray-900">
+                {t("CREATE_STORE.STORE_INFORMATION")}
+              </h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <SelectWithIcon
-                  label={t("COMMON.COUNTRY")}
-                  id="country"
-                  name="country"
-                  value={oFormData.country}
-                  onChange={handleChange}
-                  options={getArray(aCountriesData).map((c) => ({
-                    value: c.CountryID,
-                    label: c.CountryName,
-                  }))}
-                  Icon={Building}
-                  error={oErrors.country}
-                />
+            <div className="p-6 space-y-6">
+              <div className="flex flex-col md:flex-row md:space-x-4">
+                <div className="w-full md:w-1/2">
+                  <TextInputWithIcon
+                    label={t("CREATE_STORE.STORE_NAME")}
+                    id="name"
+                    name="name"
+                    value={oFormData.name}
+                    onChange={handleChange}
+                    placeholder={t("CREATE_STORE.ENTER_STORE_NAME")}
+                    Icon={Building}
+                    error={oErrors.name}
+                  />
+                </div>
+                <div className="w-full md:w-1/2 mt-4 md:mt-0">
+                  <TextInputWithIcon
+                    label={t("COMMON.STREET_ADDRESS")}
+                    id="address"
+                    name="address"
+                    value={oFormData.address}
+                    onChange={handleChange}
+                    placeholder={t("COMMON.ENTER_STREET_ADDRESS")}
+                    Icon={MapPin}
+                    error={oErrors.address}
+                  />
+                </div>
               </div>
-              <div>
-                <SelectWithIcon
-                  label={t("COMMON.STATE")}
-                  id="state"
-                  name="state"
-                  value={oFormData.state}
-                  onChange={handleChange}
-                  options={getArray(aStatesData)
-                    .filter(
-                      (s) => String(s.CountryID) === String(oFormData.country)
-                    )
-                    .map((s) => ({ value: s.StateID, label: s.StateName }))}
-                  Icon={Building}
-                  error={oErrors.state}
-                />
-              </div>
-              <div>
-                <SelectWithIcon
-                  label={t("COMMON.CITY")}
-                  id="city"
-                  name="city"
-                  value={oFormData.city}
-                  onChange={handleChange}
-                  options={getArray(aCitiesData)
-                    .filter(
-                      (c) => String(c.StateID) === String(oFormData.state)
-                    )
-                    .map((c) => ({ value: c.CityID, label: c.CityName }))}
-                  Icon={Building}
-                  error={oErrors.city}
-                />
-              </div>
-              <div>
-                <TextInputWithIcon
-                  label={t("COMMON.ZIP_CODE")}
-                  id="zipCode"
-                  name="zipCode"
-                  value={oFormData.zipCode}
-                  onChange={handleChange}
-                  placeholder={t("COMMON.ENTER_ZIP_CODE")}
-                  Icon={MapPin}
-                  error={oErrors.zipCode}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900">
-              {t("CREATE_STORE.CONTACT_INFORMATION")}
-            </h2>
-          </div>
-          <div className="p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <TextInputWithIcon
-                  label={t("COMMON.PHONE_NUMBER")}
-                  id="phone"
-                  name="phone"
-                  value={oFormData.phone}
-                  onChange={handleChange}
-                  placeholder={t("COMMON.ENTER_PHONE_NUMBER")}
-                  Icon={Phone}
-                  type="tel"
-                  error={oErrors.phone}
-                />
-              </div>
-              <div>
-                <TextInputWithIcon
-                  label={t("COMMON.EMAIL_ADDRESS")}
-                  id="email"
-                  name="email"
-                  value={oFormData.email}
-                  onChange={handleChange}
-                  placeholder={t("COMMON.ENTER_EMAIL_ADDRESS")}
-                  Icon={Mail}
-                  type="email"
-                  error={oErrors.email}
-                />
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <SelectWithIcon
+                    label={t("COMMON.COUNTRY")}
+                    id="country"
+                    name="country"
+                    value={oFormData.country}
+                    onChange={handleChange}
+                    options={getArray(aCountriesData).map((c) => ({
+                      value: c.CountryID,
+                      label: c.CountryName,
+                    }))}
+                    Icon={Building}
+                    error={oErrors.country}
+                  />
+                </div>
+                <div>
+                  <SelectWithIcon
+                    label={t("COMMON.STATE")}
+                    id="state"
+                    name="state"
+                    value={oFormData.state}
+                    onChange={handleChange}
+                    options={getArray(aStatesData)
+                      .filter(
+                        (s) => String(s.CountryID) === String(oFormData.country)
+                      )
+                      .map((s) => ({ value: s.StateID, label: s.StateName }))}
+                    Icon={Building}
+                    error={oErrors.state}
+                  />
+                </div>
+                <div>
+                  <SelectWithIcon
+                    label={t("COMMON.CITY")}
+                    id="city"
+                    name="city"
+                    value={oFormData.city}
+                    onChange={handleChange}
+                    options={getArray(aCitiesData)
+                      .filter(
+                        (c) => String(c.StateID) === String(oFormData.state)
+                      )
+                      .map((c) => ({ value: c.CityID, label: c.CityName }))}
+                    Icon={Building}
+                    error={oErrors.city}
+                  />
+                </div>
+                <div>
+                  <TextInputWithIcon
+                    label={t("COMMON.ZIP_CODE")}
+                    id="zipCode"
+                    name="zipCode"
+                    value={oFormData.zipCode}
+                    onChange={handleChange}
+                    placeholder={t("COMMON.ENTER_ZIP_CODE")}
+                    Icon={MapPin}
+                    error={oErrors.zipCode}
+                  />
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        <div className="flex justify-end space-x-4">
-          <button
-            type="button"
-            onClick={() => window.history.back()}
-            className="btn-cancel"
-          >
-            {t("COMMON.CANCEL")}
-          </button>
-          <button type="submit" className="btn-primary" disabled={bSubmitting}>
-            {id ? t("COMMON.UPDATE") : t("COMMON.CREATE")}
-          </button>
+
+          {/* Contact Info */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
+              <h2 className="text-lg font-semibold text-gray-900">
+                {t("CREATE_STORE.CONTACT_INFORMATION")}
+              </h2>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <TextInputWithIcon
+                    label={t("COMMON.PHONE_NUMBER")}
+                    id="phone"
+                    name="phone"
+                    value={oFormData.phone}
+                    onChange={handleChange}
+                    placeholder={t("COMMON.ENTER_PHONE_NUMBER")}
+                    Icon={Phone}
+                    type="tel"
+                    error={oErrors.phone}
+                  />
+                </div>
+                <div>
+                  <TextInputWithIcon
+                    label={t("COMMON.EMAIL_ADDRESS")}
+                    id="email"
+                    name="email"
+                    value={oFormData.email}
+                    onChange={handleChange}
+                    placeholder={t("COMMON.ENTER_EMAIL_ADDRESS")}
+                    Icon={Mail}
+                    type="email"
+                    error={oErrors.email}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end space-x-4">
+            <button
+              type="button"
+              onClick={() => window.history.back()}
+              className="btn-cancel"
+            >
+              {t("COMMON.CANCEL")}
+            </button>
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={bSubmitting}
+            >
+              {id ? t("COMMON.UPDATE") : t("COMMON.CREATE")}
+            </button>
+          </div>
         </div>
       </form>
     </div>

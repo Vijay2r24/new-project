@@ -9,7 +9,7 @@ import FullscreenErrorPopup from "../../../components/FullscreenErrorPopup";
 import { UPDATE_CATEGORY_STATUS } from "../../../contants/apiRoutes";
 import Switch from "../../../components/Switch";
 import { ITEMS_PER_PAGE } from "../../../contants/constants";
-import { hideLoaderWithDelay } from "../../../utils/loaderUtils"; // ✅ make sure you have this
+import { hideLoaderWithDelay } from "../../../utils/loaderUtils"; 
 
 const CategoryList = ({ onCreate, onBack, setSubmitting }) => {
   const { t } = useTranslation();
