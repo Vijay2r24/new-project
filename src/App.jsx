@@ -7,6 +7,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import NotAuthorized from './pages/NotAuthorized';
 import { getPermissionCode } from './utils/permissionUtils';
 import Loader from './components/Loader';
+import { Provider } from "react-redux";            // glue to connect Redux store to React
+import { store } from "./store/index";             // the store we made
 
 // 🔹 Lazy-loaded pages
 const Layout = lazy(() => import("./layout/Layout"));
@@ -79,6 +81,7 @@ const App = () => {
   }, [location]);
 
   return (
+    <Provider store={store}>
     <AllDataProvider>
       <TitleProvider>
         <LocationDataProvider>
@@ -344,6 +347,7 @@ const App = () => {
         </LocationDataProvider>
       </TitleProvider>
     </AllDataProvider>
+    </Provider>
   );
 };
 

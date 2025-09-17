@@ -15,6 +15,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Loader from "../components/Loader";
 import { hideLoaderWithDelay } from "../utils/loaderUtils";
+import TextAreaWithIcon from "../components/TextAreaWithIcon";
 
 const getArray = (data) =>
   Array.isArray(data)
@@ -30,7 +31,7 @@ const AddStore = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { setTitle, setBackButton } = useTitle();
-
+  const [status, setStatus] = useState(false);
   const [oFormData, setFormData] = useState({
     name: "",
     address: "",
@@ -40,10 +41,11 @@ const AddStore = () => {
     zipCode: "",
     phone: "",
     email: "",
-    status: "Active",
+    status: "",
     countryName: "",
     stateName: "",
     cityName: "",
+    StoreID: "",
   });
 
   const [oErrors, setErrors] = useState({});
@@ -53,8 +55,9 @@ const AddStore = () => {
     try {
       const token = localStorage.getItem("token");
       const oResponse = await apiGet(`${GET_STORE_BY_ID}/${id}`, {}, token);
-      if (oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
-        const store = oResponse.data.data.store;
+      if (oResponse.data.status === STATUS.SUCCESS.toUpperCase()) {
+        const store = oResponse.data.data;
+
         const foundCountry = getArray(aCountriesData).find(
           (c) => c.CountryName === store.CountryName
         );
@@ -68,23 +71,24 @@ const AddStore = () => {
             c.CityName === store.CityName &&
             String(c.StateID) === String(foundState?.StateID)
         );
-
         setFormData({
           name: store.StoreName || "",
           address: store.AddressLine1 || "",
           country: foundCountry?.CountryID || "",
           state: foundState?.StateID || "",
           city: foundCity?.CityID || "",
-          zipCode: store.ZipCode || "",
-          phone: store.Phone || "",
+          zipCode: store.Zipcode || "",
+          phone: store.PhoneNumber || "",
+          StoreID: store.StoreID || "",
           email: store.Email || "",
-          status: store.Status || "",
           countryName:
             store.CountryName || (foundCountry ? foundCountry.CountryName : ""),
           stateName:
             store.StateName || (foundState ? foundState.StateName : ""),
           cityName: store.CityName || (foundCity ? foundCity.CityName : ""),
         });
+        setStatus(store.IsActive);
+
         setErrors({});
       } else {
         showEmsg(
@@ -99,7 +103,7 @@ const AddStore = () => {
       );
     }
   }, [id, aCountriesData, aStatesData, aCitiesData, t]);
-  
+
   useEffect(() => {
     if (id) fetchStore();
   }, [id, fetchStore]);
@@ -116,10 +120,36 @@ const AddStore = () => {
   const handleChange = useCallback(
     (e) => {
       const { name, value } = e.target;
-      setFormData((prev) => ({
-        ...prev,
-        [name]: name === "phone" ? value.replace(/\D/g, "") : value,
-      }));
+
+      // When country changes, reset state and city
+      if (name === "country") {
+        setFormData((prev) => ({
+          ...prev,
+          [name]: value,
+          state: "",
+          city: "",
+          stateName: "",
+          cityName: "",
+        }));
+      }
+      // When state changes, reset city
+      else if (name === "state") {
+        setFormData((prev) => ({
+          ...prev,
+          [name]: value,
+          city: "",
+          cityName: "",
+        }));
+      }
+      // For all other fields
+      else {
+        setFormData((prev) => ({
+          ...prev,
+          [name]: name === "phone" ? value.replace(/\D/g, "") : value,
+        }));
+      }
+
+      // Clear error for the changed field
       if (oErrors[name]) {
         setErrors((prev) => {
           const newErrors = { ...prev };
@@ -187,44 +217,69 @@ const AddStore = () => {
       const token = localStorage.getItem("token");
       const userId = localStorage.getItem("userId");
 
+      // Get selected country, state, and city names
+      const selectedCountry = getArray(aCountriesData).find(
+        (c) => String(c.CountryID) === String(oFormData.country)
+      );
+      const selectedState = getArray(aStatesData).find(
+        (s) => String(s.StateID) === String(oFormData.state)
+      );
+      const selectedCity = getArray(aCitiesData).find(
+        (c) => String(c.CityID) === String(oFormData.city)
+      );
+      console.log(
+        "Form status value:",
+        oFormData.status,
+        "Type:",
+        oFormData.status
+      );
       const payload = {
-        StoreID: id ? parseInt(id, 10) : 0,
+        StoreID: oFormData.StoreID,
         TenantID: localStorage.getItem("tenantID"),
         StoreName: oFormData.name,
         Email: oFormData.email,
-        Phone: oFormData.phone,
+        PhoneNumber: oFormData.phone,
         AddressLine1: oFormData.address,
-        AddressLine2: "",
+        AddressLine2: oFormData.address2 || "",
         CityID: parseInt(oFormData.city, 10),
         StateID: parseInt(oFormData.state, 10),
         CountryID: parseInt(oFormData.country, 10),
-        ZipCode: oFormData.zipCode,
-        Status: oFormData.status,
-        CountryName: oFormData.countryName,
-        StateName: oFormData.stateName,
-        CityName: oFormData.cityName,
+        Zipcode: oFormData.zipCode,
+        IsActive: status,
+        CountryName: selectedCountry ? selectedCountry.CountryName : "",
+        StateName: selectedState ? selectedState.StateName : "",
+        CityName: selectedCity ? selectedCity.CityName : "",
         ...(id ? { UpdatedBy: userId } : { CreatedBy: userId }),
       };
 
       try {
         const oResponse = await apiPost(CREATE_OR_UPDATE_STORE, payload, token);
-        if (oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
-          showEmsg(oResponse.data?.MESSAGE, STATUS.SUCCESS, 3000, async () => {
+        if (oResponse.data.status === STATUS.SUCCESS.toUpperCase()) {
+          showEmsg(oResponse.data?.message, STATUS.SUCCESS, 3000, async () => {
             navigate("/stores");
           });
         } else {
-          showEmsg(oResponse.data?.MESSAGE, STATUS.WARNING);
+          showEmsg(oResponse.data?.message, STATUS.WARNING);
         }
       } catch (err) {
         showEmsg(
-          err?.response?.data?.MESSAGE || t("COMMON.API_ERROR"),
+          err?.response?.data?.message || t("COMMON.API_ERROR"),
           STATUS.ERROR
         );
       } finally {
         hideLoaderWithDelay(setbSubmitting);
       }
     },
-    [validateForm, oFormData, id, navigate, t]
+    [
+      validateForm,
+      oFormData,
+      id,
+      navigate,
+      t,
+      aCountriesData,
+      aStatesData,
+      aCitiesData,
+    ]
   );
 
   const loaderOverlay = bSubmitting ? (
@@ -249,7 +304,7 @@ const AddStore = () => {
             </div>
             <div className="p-6 space-y-6">
               <div className="flex flex-col md:flex-row md:space-x-4">
-                <div className="w-full md:w-1/2">
+                <div className="w-full">
                   <TextInputWithIcon
                     label={t("CREATE_STORE.STORE_NAME")}
                     id="name"
@@ -261,20 +316,18 @@ const AddStore = () => {
                     error={oErrors.name}
                   />
                 </div>
-                <div className="w-full md:w-1/2 mt-4 md:mt-0">
-                  <TextInputWithIcon
-                    label={t("COMMON.STREET_ADDRESS")}
-                    id="address"
-                    name="address"
-                    value={oFormData.address}
-                    onChange={handleChange}
-                    placeholder={t("COMMON.ENTER_STREET_ADDRESS")}
-                    Icon={MapPin}
-                    error={oErrors.address}
-                  />
-                </div>
               </div>
-
+              <div className="w-full mt-4 md:mt-0">
+                <TextAreaWithIcon
+                  label="Street Address"
+                  name="address"
+                  value={oFormData.address}
+                  onChange={handleChange}
+                  placeholder="Enter your street address"
+                  icon={MapPin}
+                  error={oErrors.address}
+                />
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <SelectWithIcon
@@ -305,6 +358,7 @@ const AddStore = () => {
                       .map((s) => ({ value: s.StateID, label: s.StateName }))}
                     Icon={Building}
                     error={oErrors.state}
+                    disabled={!oFormData.country}
                   />
                 </div>
                 <div>
@@ -321,6 +375,7 @@ const AddStore = () => {
                       .map((c) => ({ value: c.CityID, label: c.CityName }))}
                     Icon={Building}
                     error={oErrors.city}
+                    disabled={!oFormData.state}
                   />
                 </div>
                 <div>

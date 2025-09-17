@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { MapPin, Phone, Mail, Building } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import Toolbar from "../components/Toolbar";
 import Pagination from "../components/Pagination";
 import ActionButtons from "../components/ActionButtons";
 import { useTranslation } from "react-i18next";
-import { useStores } from "../context/AllDataContext";
 import { useTitle } from "../context/TitleContext";
 import Switch from "../components/Switch";
 import { UPDATE_STORE_STATUS, DELETE_STORE } from "../contants/apiRoutes";
@@ -17,10 +17,23 @@ import { apiDelete } from "../utils/ApiUtils";
 import Loader from "../components/Loader";
 import { hideLoaderWithDelay } from "../utils/loaderUtils";
 import { getPermissionCode, hasPermissionId } from "../utils/permissionUtils";
+import { fetchResource, updateStatusById } from "../store/slices/allDataSlice";
 
 const Stores = () => {
   const { t } = useTranslation();
   const { setBackButton, setTitle } = useTitle();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  
+
+  const storesData = useSelector(
+    (state) => state.allData.resources.stores || { data: [], total: 0, loading: false }
+  );
+
+  const aStores = storesData.data || [];
+  const totalItems = storesData.pagination?.totalRecords || 0;
+  const storesLoading = storesData.loading;
+
   const [sSearchTerm, setSearchTerm] = useState("");
   const [bShowFilterDropdown, setShowFilterDropdown] = useState(false);
   const defaultFilters = {
@@ -34,8 +47,8 @@ const Stores = () => {
   const hasDeletePermission = hasPermissionId(permissionIdForDelete);
   const statusOptions = [
     { value: "", label: t("COMMON.ALL") },
-    { value: "Active", label: t("COMMON.ACTIVE") },
-    { value: "Inactive", label: t("COMMON.INACTIVE") },
+    { value: true, label: t("COMMON.ACTIVE") },
+    { value: false, label: t("COMMON.INACTIVE") },
   ];
 
   const aAdditionalFilters = [
@@ -58,30 +71,22 @@ const Stores = () => {
     storeId: null,
   });
 
-  const {
-    data: aStores,
-    total: totalItems,
-    fetch: fetchStores,
-    updateStatusById,
-  } = useStores();
-
   const itemsPerPage = ITEMS_PER_PAGE;
   const [totalPages, setTotalPages] = useState(1);
   const [viewMode, setViewMode] = useState("table");
   const [currentPage, setCurrentPage] = useState(1);
-  const navigate = useNavigate();
 
   const handleEdit = (StoreID) => {
     navigate(`/editStore/${StoreID}`);
   };
 
   const handleDelete = (storeId) => {
-      if (!hasDeletePermission) {
-          showEmsg(t("COMMON.NO_DELETE_PERMISSION"), STATUS.ERROR);
-          return;
-        }
-       setDeletePopup({ open: true, storeId });
-    };
+    if (!hasDeletePermission) {
+      showEmsg(t("COMMON.NO_DELETE_PERMISSION"), STATUS.ERROR);
+      return;
+    }
+    setDeletePopup({ open: true, storeId });
+  };
 
   const handleClearFilters = () => {
     setFilters(defaultFilters);
@@ -93,16 +98,19 @@ const Stores = () => {
       setFilterLoading(true);
     }
     const { name, value } = e.target;
+    
+    // Convert string "true"/"false" to actual boolean if needed
+    let processedValue = value;
+    if ((filterName || name) === "status" && value !== "") {
+      processedValue = value === "true";
+    }
+    
     setFilters((prev) => ({
       ...prev,
-      [filterName || name]: value,
+      [filterName || name]: processedValue,
     }));
     setCurrentPage(1);
   };
-
-  const hasActiveFilters = Object.values(oFilters).some(
-    (value) => value !== ""
-  );
 
   const handlePrevPage = () => {
     setCurrentPage((prev) => Math.max(prev - 1, 1));
@@ -123,16 +131,40 @@ const Stores = () => {
   const handleStatusConfirm = async () => {
     setSubmitting(true);
     const { storeId, newStatus } = statusPopup;
-    if (!updateStatusById) return;
-    const result = await updateStatusById(
-      storeId,
-      newStatus,
-      UPDATE_STORE_STATUS,
-      "StoreID"
-    );
-    showEmsg(result.message, result.status);
-    setStatusPopup({ open: false, storeId: null, newStatus: null });
-    hideLoaderWithDelay(setSubmitting);
+    
+    try {
+      const result = await dispatch(
+        updateStatusById({
+          key: "stores",
+          id: storeId,
+          newStatus,
+          apiRoute: UPDATE_STORE_STATUS,
+          idField: "StoreID"
+        })
+      ).unwrap();
+      
+      showEmsg(result.message, STATUS.SUCCESS);
+      setStatusPopup({ open: false, storeId: null, newStatus: null });
+      
+      // Convert empty string to undefined, otherwise use the boolean value
+      const isActiveFilter = oFilters.status === "" ? undefined : oFilters.status;
+      
+      // Refresh the stores list after status update
+      dispatch(fetchResource({
+        key: "stores",
+        params: {
+          pageNumber: currentPage,
+          pageSize: itemsPerPage,
+          searchText: sSearchTerm,
+          IsActive: isActiveFilter,
+        }
+      }));
+      
+    } catch (err) {
+      showEmsg(err.error || t("COMMON.API_ERROR"), STATUS.ERROR);
+    } finally {
+      hideLoaderWithDelay(setSubmitting);
+    }
   };
 
   const handleStatusPopupClose = () => {
@@ -147,12 +179,21 @@ const Stores = () => {
       const oResponse = await apiDelete(`${DELETE_STORE}/${storeId}`, token);
       const backendMessage = oResponse.data.MESSAGE;
       showEmsg(backendMessage, STATUS.SUCCESS);
-      fetchStores({
-        pageNumber: currentPage,
-        pageSize: itemsPerPage,
-        searchText: sSearchTerm,
-        status: oFilters.status,
-      });
+      
+      // Convert empty string to undefined, otherwise use the boolean value
+      const isActiveFilter = oFilters.status === "" ? undefined : oFilters.status;
+      
+      // Refresh the stores list after deletion
+      dispatch(fetchResource({
+        key: "stores",
+        params: {
+          pageNumber: currentPage,
+          pageSize: itemsPerPage,
+          searchText: sSearchTerm,
+          IsActive: isActiveFilter,
+        }
+      }));
+      
       setDeletePopup({ open: false, storeId: null });
     } catch (err) {
       const errorMessage = err?.response?.data?.MESSAGE;
@@ -167,14 +208,22 @@ const Stores = () => {
   };
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchStoresData = async () => {
       try {
-        await fetchStores({
-          pageNumber: currentPage,
-          pageSize: itemsPerPage,
-          searchText: sSearchTerm,
-          status: oFilters.status,
-        });
+        // Convert empty string to undefined, otherwise use the boolean value
+        const isActiveFilter = oFilters.status === "" ? undefined : oFilters.status;
+        
+        await dispatch(fetchResource({
+          key: "stores",
+          params: {
+            pageNumber: currentPage,
+            pageSize: itemsPerPage,
+            searchText: sSearchTerm,
+            IsActive: isActiveFilter,
+          }
+        })).unwrap();
+      } catch (err) {
+        showEmsg(err.error || t("COMMON.API_ERROR"), STATUS.ERROR);
       } finally {
         setFilterLoading(false);
         if (!initialLoadComplete) {
@@ -183,9 +232,10 @@ const Stores = () => {
       }
     };
 
-    fetchData();
+    fetchStoresData();
     setTotalPages(Math.ceil((totalItems || 0) / itemsPerPage));
     setTitle(t("STORES.HEADING"));
+    
     return () => {
       setBackButton(null);
       setTitle("");
@@ -194,16 +244,22 @@ const Stores = () => {
     currentPage,
     itemsPerPage,
     sSearchTerm,
-    oFilters,
+    oFilters.status,
     totalItems,
     setBackButton,
     setTitle,
     t,
+    dispatch
   ]);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [sSearchTerm, oFilters]);
+
+  // Helper function to get status text
+  const getStatusText = (isActive) => {
+    return isActive ? "Active" : "Inactive";
+  };
 
   return (
     <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen bg-gray-50">
@@ -249,7 +305,7 @@ const Stores = () => {
                 </tr>
               </thead>
               <tbody className="table-body">
-                {bFilterLoading ? (
+                {bFilterLoading || storesLoading ? (
                   <tr>
                     <td colSpan={4} className="py-8 text-center">
                       <div className="flex justify-center">
@@ -265,7 +321,7 @@ const Stores = () => {
                   </tr>
                 ) : (
                   aStores.map((store) => (
-                    <tr key={store.id} className="table-row">
+                    <tr key={store.StoreID} className="table-row">
                       <td className="table-cell">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10 bg-custom-bg/10 rounded-lg flex items-center justify-center">
@@ -277,7 +333,11 @@ const Stores = () => {
                             </div>
                             <div className="table-cell-subtext flex items-center">
                               <MapPin className="h-4 w-4 mr-1" />
-                              <span className="ellipsis-text">{store.AddressLine1}</span>
+                              <span className="ellipsis-text">
+                                {store.AddressLine1}
+                                {store.AddressLine2 && `, ${store.AddressLine2}`}
+                                {store.City?.CityName && `, ${store.City.CityName}`}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -285,7 +345,7 @@ const Stores = () => {
                       <td className="table-cell">
                         <div className="table-cell-text flex items-center">
                           <Phone className="h-4 w-4 mr-1 text-gray-400" />
-                          {store.Phone}
+                          {store.PhoneNumber}
                         </div>
                         <div className="table-cell-subtext flex items-center ">
                           <Mail className="h-4 w-4 mr-1 text-gray-400" />
@@ -294,21 +354,17 @@ const Stores = () => {
                       </td>
                       <td className="table-cell">
                         <Switch
-                          checked={store.Status === "Active"}
+                          checked={store.IsActive}
                           onChange={() =>
-                            handleStatusChange(
-                              store.StoreID,
-                              store.Status === "Active"
-                            )
+                            handleStatusChange(store.StoreID, store.IsActive)
                           }
                         />
                       </td>
                       <td className="table-cell text-left font-medium align-middle">
-                        <div className="flex justify-left items-left">
+                        <div className="flex justify-center items-center">
                           <ActionButtons
                             id={store.StoreID}
                             onEdit={handleEdit}
-                            onDelete={handleDelete}
                           />
                         </div>
                       </td>
@@ -321,7 +377,7 @@ const Stores = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {bFilterLoading ? (
+          {bFilterLoading || storesLoading ? (
             <div className="col-span-full flex justify-center py-8">
               <Loader size="medium" />
             </div>
@@ -332,7 +388,7 @@ const Stores = () => {
           ) : (
             aStores.map((store) => (
               <div
-                key={store.id}
+                key={store.StoreID}
                 className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col gap-4 hover:shadow-xl transition-shadow duration-200"
               >
                 <div className="flex items-center gap-4 pb-2 border-b border-gray-100">
@@ -346,7 +402,10 @@ const Stores = () => {
                     <div className="text-xs text-gray-500 flex items-center mt-1">
                       <MapPin className="h-4 w-4 mr-1 shrink-0" />
                       <span className="ellipsis-text">
-                        {store.AddressLine1}, {store.city}, {store.state}
+                        {store.AddressLine1}
+                        {store.AddressLine2 && `, ${store.AddressLine2}`}
+                        {store.City?.CityName && `, ${store.City.CityName}`}
+                        {store.Zipcode && `, ${store.Zipcode}`}
                       </span>
                     </div>
                   </div>
@@ -355,7 +414,7 @@ const Stores = () => {
                 <div className="flex flex-col gap-3 text-sm text-caption">
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-gray-400" />
-                    <span className="ellipsis-text">{store.Phone}</span>
+                    <span className="ellipsis-text">{store.PhoneNumber}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Mail className="h-4 w-4 text-gray-400" />
@@ -363,23 +422,20 @@ const Stores = () => {
                   </div>
                 </div>
 
-                <div className="mt-auto pt-4 border-t border-gray-100 flex justify-left items-left">
+                <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
                   <span
                     className={`status-badge ${
-                      store.Status === "Active"
+                      store.IsActive
                         ? "status-active"
                         : "status-inactive"
                     }`}
                   >
-                    {store.Status}
+                    {getStatusText(store.IsActive)}
                   </span>
                   <Switch
-                    checked={store.Status === "Active"}
+                    checked={store.IsActive}
                     onChange={() =>
-                      handleStatusChange(
-                        store.StoreID,
-                        store.Status === "Active"
-                      )
+                      handleStatusChange(store.StoreID, store.IsActive)
                     }
                   />
                 </div>
