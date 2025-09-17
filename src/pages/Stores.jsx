@@ -12,7 +12,7 @@ import { UPDATE_STORE_STATUS, DELETE_STORE } from "../contants/apiRoutes";
 import { showEmsg } from "../utils/ShowEmsg";
 import FullscreenErrorPopup from "../components/FullscreenErrorPopup";
 import { ToastContainer } from "react-toastify";
-import { ITEMS_PER_PAGE, STATUS } from "../contants/constants";
+import { ITEMS_PER_PAGE, STATUS, STATUS_OPTIONS } from "../contants/constants";
 import { apiDelete } from "../utils/ApiUtils";
 import Loader from "../components/Loader";
 import { hideLoaderWithDelay } from "../utils/loaderUtils";
@@ -45,11 +45,11 @@ const Stores = () => {
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const permissionIdForDelete = getPermissionCode("Store Management", "Delete User");
   const hasDeletePermission = hasPermissionId(permissionIdForDelete);
-  const statusOptions = [
-    { value: "", label: t("COMMON.ALL") },
-    { value: true, label: t("COMMON.ACTIVE") },
-    { value: false, label: t("COMMON.INACTIVE") },
-  ];
+ 
+const statusOptions = STATUS_OPTIONS.map((opt) => ({
+  value: opt.value,
+  label: t(opt.labelKey),
+}));
 
   const aAdditionalFilters = [
     {

@@ -227,12 +227,6 @@ const AddStore = () => {
       const selectedCity = getArray(aCitiesData).find(
         (c) => String(c.CityID) === String(oFormData.city)
       );
-      console.log(
-        "Form status value:",
-        oFormData.status,
-        "Type:",
-        oFormData.status
-      );
       const payload = {
         StoreID: oFormData.StoreID,
         TenantID: localStorage.getItem("tenantID"),
