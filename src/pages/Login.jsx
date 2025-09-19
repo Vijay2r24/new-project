@@ -173,8 +173,8 @@ const Login = () => {
     );
 
     const data = oResponse?.data?.data;
-    const message = oResponse?.data?.MESSAGE;
-    const status = oResponse?.data?.STATUS;
+    const message = oResponse?.data?.message;
+    const status = oResponse?.data?.status;
 
     if (
       data?.token &&
