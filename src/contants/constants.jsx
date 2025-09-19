@@ -12,4 +12,14 @@ export const COLORS = {
   SECONDARY: "#2ecc71",
   ERROR: "#e74c3c",
 };
+export const STATUS_VALUES = {
+  ALL: "",
+  BOOLEAN_ACTIVE: true,
+  BOOLEAN_INACTIVE: false,
+};
+export const STATUS_OPTIONS = [
+  { value: STATUS_VALUES.ALL, labelKey: "COMMON.ALL" },
+  { value: STATUS_VALUES.BOOLEAN_ACTIVE, labelKey: "COMMON.ACTIVE" },
+  { value: STATUS_VALUES.BOOLEAN_INACTIVE, labelKey: "COMMON.INACTIVE" },
+];
 export const ITEMS_PER_PAGE = 10;
