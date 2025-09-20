@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import Toolbar from "../../components/Toolbar";
 import Pagination from "../../components/Pagination";
 import { useTranslation } from "react-i18next";
@@ -9,6 +10,7 @@ import { GETALLORDERS_API } from "../../contants/apiRoutes";
 import { useTitle } from "../../context/TitleContext";
 import { STATUS } from "../../contants/constants";
 import Loader from "../../components/Loader";
+import { fetchResource } from "../../store/slices/allDataSlice";
 
 const OrderList = () => {
   const [sSearchTerm, setSearchTerm] = useState("");
@@ -24,8 +26,14 @@ const OrderList = () => {
   const [bFilterLoading, setFilterLoading] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
+  // Redux hooks
+  const dispatch = useDispatch();
+  const { paymentStatus, loadingPaymentStatus } = useSelector((state) => ({
+    paymentStatus: state.allData.resources.paymentStatus?.data || [],
+    loadingPaymentStatus: state.allData.resources.paymentStatus?.loading || false,
+  }));
+
   const defaultFilters = {
-    orderStatus: "all",
     paymentStatus: "all",
     startDate: "",
     endDate: "",
@@ -40,47 +48,59 @@ const OrderList = () => {
   const [sError, setError] = useState(null);
   const [bLoading, setLoading] = useState(true);
 
+  // Fetch filter options from Redux on component mount
+  useEffect(() => {
+    dispatch(fetchResource({ key: "paymentStatus" }));
+  }, [dispatch]);
+
   const handleClearFilters = useCallback(() => {
     setFilters(defaultFilters);
     setCurrentPage(1);
   }, []);
 
-  const handleFilterChange = useCallback((e, filterName) => {
-    if (initialLoadComplete) {
-      setFilterLoading(true);
+  const handleFilterChange = useCallback(
+    (e, filterName) => {
+      if (initialLoadComplete) {
+        setFilterLoading(true);
+      }
+      setFilters((prevFilters) => ({
+        ...prevFilters,
+        [filterName]: e.target.value,
+      }));
+      setCurrentPage(1);
+    },
+    [initialLoadComplete]
+  );
+
+  const getPaymentStatusOptions = () => {
+    // Show loading state while fetching
+    if (loadingPaymentStatus) {
+      return [{ value: "loading", label: t("COMMON.LOADING"), disabled: true }];
     }
-    setFilters(prevFilters => ({
-      ...prevFilters,
-      [filterName]: e.target.value,
-    }));
-    setCurrentPage(1);
-  }, [initialLoadComplete]);
+
+    // Use Redux data when available
+    if (paymentStatus && paymentStatus.length > 0) {
+      const options = paymentStatus.map(status => ({
+        value: status.PaymentStatusName,
+        label: status.PaymentStatusName
+      }));
+      
+      return [
+        { value: "all", label: t("COMMON.ALL") },
+        ...options
+      ];
+    }
+
+    // Empty state if no data available
+    return [{ value: "no-data", label: t("COMMON.NO_DATA_AVAILABLE"), disabled: true }];
+  };
 
   const additionalFilters = [
-    {
-      label: t("ORDERS.FILTERS.ORDER_STATUS"),
-      name: "orderStatus",
-      value: oFilters.orderStatus,
-      options: [
-        { value: "all", label: t("COMMON.ALL") },
-        { value: "Pending", label: t("ORDERS.FILTERS.PENDING") },
-        { value: "Processing", label: t("ORDERS.FILTERS.PROCESSING") },
-        { value: "Shipped", label: t("ORDERS.FILTERS.SHIPPED") },
-        { value: "Delivered", label: t("ORDERS.FILTERS.DELIVERED") },
-        { value: "Cancelled", label: t("ORDERS.FILTERS.CANCELLED") },
-      ],
-    },
     {
       label: t("ORDERS.FILTERS.PAYMENT_STATUS"),
       name: "paymentStatus",
       value: oFilters.paymentStatus,
-      options: [
-        { value: "all", label: t("COMMON.ALL") },
-        { value: "PAID", label: t("ORDERS.FILTERS.PAID") },
-        { value: "FAILED", label: t("ORDERS.FILTERS.FAILED") },
-        { value: "PENDING", label: t("ORDERS.FILTERS.PENDING") },
-        { value: "REFUNDED", label: t("ORDERS.FILTERS.REFUNDED") },
-      ],
+      options: getPaymentStatusOptions(),
     },
     {
       label: t("ORDERS.FILTERS.START_DATE"),
@@ -109,8 +129,6 @@ const OrderList = () => {
         searchText: sSearchTerm,
         pageNumber: nCurrentPage,
         pageSize: nProductsPerPage,
-        orderStatus:
-          oFilters.orderStatus !== "all" ? oFilters.orderStatus : undefined,
         paymentStatus:
           oFilters.paymentStatus !== "all" ? oFilters.paymentStatus : undefined,
         startDate: oFilters.startDate || undefined,
@@ -118,51 +136,41 @@ const OrderList = () => {
       };
 
       const oResponse = await apiGet(GETALLORDERS_API, params, token);
-      if (oResponse.data.STATUS === STATUS.FAILURE.toUpperCase()) {
+
+      if (oResponse.data.status !== STATUS.SUCCESS.toLocaleUpperCase()) {
         setProductRows([]);
         setTotalPages(0);
         setTotalRecords(0);
-        setError(oResponse.data.MESSAGE || t("ORDERS.NO_ORDERS_FOUND"));
+        setError(oResponse.data.message || t("ORDERS.NO_ORDERS_FOUND"));
       } else {
-        const orders = oResponse.data.data.data || [];
+        const orders = oResponse.data.data || [];
         const allProductItems = orders.flatMap((order) => {
           if (Array.isArray(order.orderItems)) {
             return order.orderItems.map((item) => ({
-              ...item,
-              orderId: order.orderId,
-              orderStatus: order.orderStatus,
-              paymentStatus: order.paymentStatus,
-              customer: order.customer,
-              orderDate: order.orderDate,
-              // Include the entire order object
-              order: order
+              orderItemId: item.OrderItemID,
+              quantity: item.Quantity,
+              orderStatus: item.OrderStatus,
+              productName: item.ProductName,
+              orderId: order.OrderID,
+              orderDate: order.OrderDate,
+              totalAmount: order.TotalAmount,
+              totalQuantity: order.totalQuantity,
+              paymentStatus: order.payment?.[0]?.PaymentStatusName || "N/A",
+              order: order,
             }));
-          } else if (order.orderItem) {
-            return [
-              {
-                ...order.orderItem,
-                orderId: order.orderId,
-                orderStatus: order.orderStatus,
-                paymentStatus: order.paymentStatus,
-                customer: order.customer,
-                orderDate: order.orderDate,
-                // Include the entire order object
-                order: order
-              },
-            ];
-          } else {
-            return [];
           }
+          return [];
         });
+
         setProductRows(allProductItems);
-        setTotalPages(
-          Math.ceil((oResponse.data.data.totalRecords || 0) / nProductsPerPage)
-        );
-        setTotalRecords(oResponse.data.data.totalRecords || 0);
+        setTotalPages(oResponse.data.pagination?.totalPages || 0);
+        setTotalRecords(oResponse.data.pagination?.totalRecords || 0);
         setError(null);
       }
     } catch (error) {
-      setError(error?.response?.data?.MESSAGE);
+      setError(
+        error?.response?.data?.message || t("COMMON.ERROR_FETCHING_DATA")
+      );
       setTotalPages(0);
       setTotalRecords(0);
     } finally {
@@ -196,19 +204,23 @@ const OrderList = () => {
       Shipped: "status-shipped",
       Delivered: "status-delivered",
       Cancelled: "status-cancelled",
+      Returned: "status-cancelled",
     };
     return statusClasses[status] || "status-default";
   }, []);
 
-  const handleViewOrder = useCallback((orderItem) => {
-    // Pass the entire order item as state when navigating
-    navigate(`/orders/${orderItem.orderId}`, { 
-      state: { 
-        orderItem: orderItem,
-        order: orderItem.order // This contains the full order data
-      } 
-    });
-  }, [navigate]);
+  const handleViewOrder = useCallback(
+    (orderItem) => {
+      // Pass the entire order item as state when navigating
+      navigate(`/orders/${orderItem.orderId}`, {
+        state: {
+          orderItem: orderItem,
+          order: orderItem.order, // This contains the full order data
+        },
+      });
+    },
+    [navigate]
+  );
 
   const handlePrevPage = useCallback(() => {
     setCurrentPage((prev) => Math.max(prev - 1, 1));
@@ -259,14 +271,13 @@ const OrderList = () => {
                     {t("ORDERS.TABLE.PRODUCT_NAME")}
                   </th>
                   <th className="table-head-cell">{t("COMMON.QUANTITY")}</th>
-                  <th className="table-head-cell">{t("COMMON.STATUS")}</th>
                   <th className="table-head-cell">{t("COMMON.ACTIONS")}</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {bFilterLoading ? (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center">
+                    <td colSpan={4} className="py-8 text-center">
                       <div className="flex justify-center">
                         <Loader size="small" />
                       </div>
@@ -274,18 +285,20 @@ const OrderList = () => {
                   </tr>
                 ) : sError ? (
                   <tr>
-                    <td colSpan="5" className="text-center py-8 text-gray-600">
+                    <td colSpan="4" className="text-center py-8 text-gray-600">
                       {sError}
+                    </td>
+                  </tr>
+                ) : aProductRows.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" className="text-center py-8 text-gray-600">
+                      {t("ORDERS.NO_ORDERS_FOUND")}
                     </td>
                   </tr>
                 ) : (
                   aProductRows.map((productRow) => (
                     <tr
-                      key={
-                        productRow.orderItemId ||
-                        productRow.id ||
-                        productRow.orderId
-                      }
+                      key={productRow.orderItemId}
                       className="hover:bg-gray-50 transition-colors duration-150"
                     >
                       <td className="table-cell">
@@ -295,22 +308,13 @@ const OrderList = () => {
                       </td>
                       <td className="table-cell">
                         <div className="text-sm text-gray-700 truncate max-w-[200px]">
-                          {productRow.product?.productName || "Unnamed Product"}
+                          {productRow.productName || "Unnamed Product"}
                         </div>
                       </td>
                       <td className="table-cell">
                         <div className="text-sm text-gray-900 text-center">
                           {productRow.quantity}
                         </div>
-                      </td>
-                      <td className="table-cell">
-                        <span
-                          className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${getStatusColor(
-                            productRow.orderStatus
-                          )}`}
-                        >
-                          {productRow.orderStatus}
-                        </span>
                       </td>
                       <td className="table-cell">
                         <button
@@ -341,12 +345,14 @@ const OrderList = () => {
             <div className="col-span-full text-center py-8 text-gray-600">
               {sError}
             </div>
+          ) : aProductRows.length === 0 ? (
+            <div className="col-span-full text-center py-8 text-gray-600">
+              {t("ORDERS.NO_ORDERS_FOUND")}
+            </div>
           ) : (
             aProductRows.map((productRow) => (
               <div
-                key={
-                  productRow.orderItemId || productRow.id || productRow.orderId
-                }
+                key={productRow.orderItemId}
                 className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col gap-4 hover:shadow-lg transition-shadow duration-200"
               >
                 <div className="flex items-center justify-between">
@@ -363,7 +369,7 @@ const OrderList = () => {
                 </div>
                 <div className="mt-4">
                   <div className="text-base font-bold text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis">
-                    {productRow.product?.productName}
+                    {productRow.productName}
                   </div>
                   <div className="text-sm text-caption mt-1">
                     {t("COMMON.QUANTITY")} : {productRow.quantity}
@@ -382,15 +388,17 @@ const OrderList = () => {
         </div>
       )}
 
-      <Pagination
-        currentPage={nCurrentPage}
-        totalPages={sTotalPages}
-        totalItems={nTotalRecords}
-        itemsPerPage={nProductsPerPage}
-        handlePrevPage={handlePrevPage}
-        handleNextPage={handleNextPage}
-        handlePageClick={handlePageClick}
-      />
+      {aProductRows.length > 0 && (
+        <Pagination
+          currentPage={nCurrentPage}
+          totalPages={sTotalPages}
+          totalItems={nTotalRecords}
+          itemsPerPage={nProductsPerPage}
+          handlePrevPage={handlePrevPage}
+          handleNextPage={handleNextPage}
+          handlePageClick={handlePageClick}
+        />
+      )}
     </div>
   );
 };

@@ -15,24 +15,28 @@ import {
   Check,
 } from "lucide-react";
 import { useParams, useLocation } from "react-router-dom";
-import NotFoundMessage from "../../components/NotFoundMessage";
 import { useTranslation } from "react-i18next";
-import { apiGet, apiPut } from "../../utils/ApiUtils";
+import { ToastContainer } from "react-toastify";
+import { useDispatch, useSelector } from "react-redux";
+import NotFoundMessage from "../../components/NotFoundMessage";
+import { apiGet, apiPatch, apiPut } from "../../utils/ApiUtils";
 import {
   GETORDER_BYID_API,
-  UPDATE_ORDER_ITEM_STATUS,
+  UPDATE_ORDER_ITEM_HISTORY,
 } from "../../contants/apiRoutes";
 import SelectWithIcon from "../../components/SelectWithIcon";
 import TextAreaWithIcon from "../../components/TextAreaWithIcon";
 import StatusBadge from "./StatusBadge";
-import { useOrderStatuses } from "../../context/AllDataContext";
 import { showEmsg } from "../../utils/ShowEmsg";
-import { ToastContainer } from "react-toastify";
 import { useTitle } from "../../context/TitleContext";
 import { STATUS } from "../../contants/constants";
 import Loader from "../../components/Loader";
 import { hideLoaderWithDelay } from "../../utils/loaderUtils";
 import BackButton from "../../components/BackButton";
+import { fetchResource } from "../../store/slices/allDataSlice";
+import OrderItemHistoryDialog from "./OrderItemHistoryDialog";
+import { FaHistory } from "react-icons/fa";
+import { GET_ORDER_ITEM_HISTORY_BY_ID } from "../../contants/apiRoutes";
 
 const OrderView = () => {
   const { orderId } = useParams();
@@ -49,8 +53,24 @@ const OrderView = () => {
   const [sEditedRemarks, setEditedRemarks] = useState("");
   const [sEditedStatusId, setEditedStatusId] = useState(null);
   const [highlightedItemId, setHighlightedItemId] = useState(null);
+  const [historyData, setHistoryData] = useState([]);
+  const [open, setOpen] = useState(false);
+  const dispatch = useDispatch();
 
-  // Get the order item from navigation state if available
+  // Get order statuses from Redux store
+  const {
+    data: orderStatusData,
+    loading: orderStatusLoading,
+    error: orderStatusError,
+  } = useSelector((state) => state.allData.resources.orderStatuses || {});
+
+  useEffect(() => {
+    // Fetch order statuses if not already loaded
+    if (!orderStatusData) {
+      dispatch(fetchResource({ key: "orderStatuses" }));
+    }
+  }, [dispatch, orderStatusData]);
+
   useEffect(() => {
     if (location.state?.orderItem) {
       setHighlightedItemId(
@@ -58,13 +78,6 @@ const OrderView = () => {
       );
     }
   }, [location.state]);
-
-  const {
-    data: orderStatusData,
-    loading: orderStatusLoading,
-    error: orderStatusError,
-    fetch: fetchOrderStatuses,
-  } = useOrderStatuses();
 
   const getOrderStatusArray = useCallback(() => {
     if (!orderStatusData) return [];
@@ -92,20 +105,42 @@ const OrderView = () => {
     [getOrderStatusArray]
   );
 
-  useEffect(() => {
-    fetchOrderStatuses();
-  }, []);
-
-  const openEditDialog = (item) => {
-    setEditingItem(item);
-    const currentStatus = orderStatusArray.find(
-      (status) => status.OrderStatus === item.status
+  // Function to get next available statuses based on current status
+  const getNextStatusOptions = useCallback((currentStatus) => {
+    // If we don't have order status data, return empty array
+    if (!orderStatusArray.length) return [];
+    
+    // Find the current status in the order status array
+    const currentStatusObj = orderStatusArray.find(
+      status => status.OrderStatus.toLowerCase() === currentStatus.toLowerCase()
     );
-    setEditedStatus(item.status || "");
-    setEditedStatusId(currentStatus?.StatusID || null);
-    setEditedRemarks("");
-    setShowEditDialog(true);
-  };
+    
+    if (!currentStatusObj) return [];
+    
+    // This is a simplified approach - return all statuses except the current one
+    return orderStatusArray
+      .filter(status => status.OrderStatus.toLowerCase() !== currentStatus.toLowerCase())
+      .map(status => status.OrderStatus);
+  }, [orderStatusArray]);
+
+const openEditDialog = (orderItemId) => {
+  // find item by OrderItemID
+  const item = nOrder.orderItems.find((i) => i.OrderItemID === orderItemId);
+
+  if (!item) return; // safety check
+
+  setEditingItem(item);
+
+  const currentStatus = orderStatusArray.find(
+    (status) => status.OrderStatus === item.status
+  );
+
+  setEditedStatus(item.status || "");
+  setEditedStatusId(currentStatus?.StatusID || null);
+  setEditedRemarks("");
+  setShowEditDialog(true);
+};
+
 
   const closeEditDialog = () => {
     setShowEditDialog(false);
@@ -125,40 +160,90 @@ const OrderView = () => {
           {},
           token
         );
-        const data = oResponse.data.data.data;
+        const data = oResponse.data.data;
 
+        // Take first payment if exists
+        const payment = data.payment?.[0] || {};
+
+        // Map API response
         const mappedOrder = {
-          orderId: data.orderId,
-          orderDate: data.orderDate,
-          totalAmount: data.totalAmount,
+          orderId: data.OrderID,
+          orderRefId: data.OrderRefID,
+          orderDate: data.OrderDate,
+          totalAmount: parseFloat(payment.Amount || 0),
           customer: {
-            name: data.customerDetails?.name,
-            email: data.customerDetails?.email,
-            phone: data.customerDetails?.phoneNumber,
+            name: `${data.CustomerDetails?.FirstName || ""} ${
+              data.CustomerDetails?.LastName || ""
+            }`.trim(),
+            email: data.CustomerDetails?.Email,
+            phone: data.CustomerDetails?.PhoneNumber,
           },
           delivery: {
-            address: `${data.address?.addressLine1}, ${data.address?.addressLine2}`,
-            city: data.address?.city,
-            state: data.address?.state,
-            country: data.address?.country,
+            address: data.address
+              ? `${data.address.AddressLine1 || ""} ${
+                  data.address.AddressLine2 || ""
+                }`.trim() || "N/A"
+              : "N/A",
+            city: data.address?.CityName,
+            state: data.address?.StateName,
+            country: data.address?.CountryName,
+            zipCode: data.address?.ZipCode || "",
           },
-          orderItems: data.orderItems.map((item) => ({
-            id: item.orderItemId,
-            name: item.product?.productName,
-            sku: item.product?.productId,
-            image: item.product?.images?.[0] || null,
-            price: parseFloat(item.price),
-            quantity: item.quantity,
-            status: item.product?.orderHistory?.status || null,
-            paymentMethod: item.product?.payments?.[0]?.paymentMethod || "N/A",
-            paymentStatus: item.product?.payments?.[0]?.paymentStatus || "N/A",
-            paymentDate: item.product?.payments?.[0]?.paymentDate || "N/A",
+          orderItems: data.orderItems.map((item, index) => ({
+            id: item.OrderItemID || `item-${index}`,
+            name: item.ProductName,
+            sku: item.SKU,
+            image: item.orderItemImage?.[0]?.documentUrl || null,
+            price: parseFloat(item.SellingPrice || item.MRP || 0),
+            quantity: item.Quantity,
+            status: item.OrderStatus || "Pending",
+            paymentMethod: payment.PaymentTypeName || "N/A",
+            paymentStatus: payment.PaymentStatusName || "Pending",
+            paymentDate: payment.PaymentDate || data.OrderDate,
           })),
+          total: data.orderItems.reduce((sum, item) => {
+            return (
+              sum +
+              parseFloat(item.SellingPrice || item.MRP || 0) *
+                parseInt(item.Quantity || 1)
+            );
+          }, 0),
         };
 
         setOrder(mappedOrder);
       } catch (error) {
         console.error("Failed to fetch data:", error);
+        setError(error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+  const fetchOrderItemHistory = useCallback(
+    async (orderItemId, setHistory, setLoading, setError) => {
+      const token = localStorage.getItem("token");
+      try {
+        const oResponse = await apiGet(
+          `${GET_ORDER_ITEM_HISTORY_BY_ID}/${orderItemId}`,
+          {},
+          token
+        );
+
+        const data = oResponse.data.data;
+
+        const mappedHistory = data.map((item) => ({
+          orderItemHistoryId: item.OrderItemHistoryID,
+          orderStatus: item.OrderStatus,
+          remarks: item.Remarks,
+          changedOn: item.ChangedOn,
+          hexCode: item.HexCode,
+        }));
+
+        setHistory(mappedHistory);
+      } catch (error) {
+        console.error("Failed to fetch order item history:", error);
+        setError(error);
       } finally {
         setLoading(false);
       }
@@ -166,9 +251,16 @@ const OrderView = () => {
     []
   );
 
+  const handleOpenHistory = (id) => {
+    fetchOrderItemHistory(id, setHistoryData, setLoading, setError);
+    setOpen(true);
+  };
+
   useEffect(() => {
-    fetchDataRef.current = () =>
+    fetchDataRef.current = () => {
       fetchOrderDetails(orderId, setOrder, setLoading, t);
+    };
+
     fetchDataRef.current();
 
     setTitle(t("VIEW_ORDER.ORDER_DETAILS"));
@@ -178,51 +270,75 @@ const OrderView = () => {
       setBackButton(null);
       setTitle("");
     };
-  }, [orderId, setTitle, setBackButton, t, fetchOrderDetails]);
+  }, [
+    orderId,
+    setTitle,
+    setBackButton,
+    t,
+    fetchOrderDetails
+  ]);
 
   const handleSaveChanges = useCallback(async () => {
     setbSubmitting(true);
 
     const payload = {
-      orderItemId: oEditingItem?.id,
-      statusId: sEditedStatusId,
-      remarks: sEditedRemarks,
+      // orderItemId: oEditingItem?.id,
+      OrderStatusID: sEditedStatusId,
+      Remarks: sEditedRemarks,
     };
 
     const token = localStorage.getItem("token");
 
     try {
-      const oResponse = await apiPut(
-        `${UPDATE_ORDER_ITEM_STATUS}/${orderId}`,
+      const oResponse = await apiPatch(
+        `${UPDATE_ORDER_ITEM_HISTORY}/${oEditingItem?.id}`,
         payload,
         token,
         false
       );
 
-      if (oResponse?.data?.STATUS === STATUS.SUCCESS.toUpperCase()) {
-        showEmsg(oResponse.data.MESSAGE, STATUS.SUCCESS);
+      if (oResponse?.data?.status === STATUS.SUCCESS.toUpperCase()) {
+        showEmsg(oResponse.data.message, STATUS.SUCCESS);
         if (fetchDataRef.current) await fetchDataRef.current();
         closeEditDialog();
       } else {
-        showEmsg(oResponse.data.MESSAGE, STATUS.ERROR);
+        showEmsg(oResponse.data.message, STATUS.ERROR);
       }
     } catch (error) {
-      showEmsg(error?.response?.data?.MESSAGE || t("API_ERROR"), STATUS.ERROR);
+      showEmsg(error?.response?.data?.message || t("API_ERROR"), STATUS.ERROR);
     }
 
     hideLoaderWithDelay(setbSubmitting);
-  }, [
-    oEditingItem?.id,
-    sEditedStatusId,
-    sEditedRemarks,
-    orderId,
-    t,
-    showEmsg,
-    closeEditDialog,
-    fetchDataRef,
-    hideLoaderWithDelay,
-    setbSubmitting,
-  ]);
+  }, [oEditingItem?.id, sEditedStatusId, sEditedRemarks, orderId, t]);
+
+  // Get next status options for the editing item
+  const getNextStatusOptionsForItem = useCallback(() => {
+  if (!oEditingItem || !orderStatusArray.length) return [];
+  
+  const currentStatus = oEditingItem.status;
+  const currentStatusObj = orderStatusArray.find(status => 
+    status.OrderStatus === currentStatus
+  );
+  
+  if (!currentStatusObj) return [];
+  
+  const currentSortOrder = currentStatusObj.SortOrder;
+  
+  return orderStatusArray
+    .filter(status => 
+      status &&
+      typeof status.OrderStatusID !== 'undefined' &&
+      typeof status.OrderStatus !== 'undefined' &&
+      status.SortOrder > currentSortOrder // Only show statuses with higher sort order
+    )
+    .map(status => ({
+      value: status.OrderStatusID.toString(),
+      label: status.OrderStatus,
+      color: status.Colour?.HexCode || '#000000',
+    }));
+}, [oEditingItem, orderStatusArray]);
+
+  const orderStatusOptions = getNextStatusOptionsForItem();
 
   if (bLoading) {
     return (
@@ -248,18 +364,6 @@ const OrderView = () => {
   if (!nOrder) {
     return <NotFoundMessage message={t("VIEW_ORDER.ORDER_NOT_FOUND")} />;
   }
-
-  const orderStatusOptions = orderStatusArray
-    .filter(
-      (status) =>
-        status &&
-        typeof status.StatusID !== "undefined" &&
-        typeof status.OrderStatus !== "undefined"
-    )
-    .map((status) => ({
-      value: status.StatusID.toString(),
-      label: status.OrderStatus,
-    }));
 
   const loaderOverlay = bSubmitting ? (
     <div className="global-loader-overlay">
@@ -301,6 +405,8 @@ const OrderView = () => {
                               .split(" ")
                               .map((n) => n[0])
                               .join("")
+                              .toUpperCase()
+                              .slice(0, 2)
                           : "?"}
                       </span>
                     </div>
@@ -343,13 +449,15 @@ const OrderView = () => {
                   <div className="flex items-start space-x-3">
                     <Building className="h-4 w-4 text-gray-500 mt-1 print:hidden" />
                     <div>
-                      <p className="text-sm print:text-xs">
-                        {nOrder.delivery?.address || "N/A"}
-                      </p>
                       <p className="text-caption print:text-[10px]">
                         {nOrder.delivery
-                          ? `${nOrder.delivery.city}, ${nOrder.delivery.state} ${nOrder.delivery.zipCode}`
+                          ? `${nOrder.delivery.city || ""}, ${
+                              nOrder.delivery.state || ""
+                            } ${nOrder.delivery.zipCode || ""}`
                           : "N/A"}
+                      </p>
+                      <p className="text-caption print:text-[10px]">
+                        {nOrder.delivery?.country || ""}
                       </p>
                     </div>
                   </div>
@@ -380,14 +488,6 @@ const OrderView = () => {
               <div className="space-y-3 text-gray-700 print:space-y-2 print:text-gray-800">
                 <div className="flex items-center justify-between">
                   <span className="text-sm print:text-xs">
-                    {t("VIEW_ORDER.PAYMENT_METHOD")}
-                  </span>
-                  <span className="text-sm font-medium print:text-xs">
-                    {nOrder?.orderItems?.[0]?.paymentMethod}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm print:text-xs">
                     {t("VIEW_ORDER.PAYMENT_STATUS")}
                   </span>
                   <span className="text-sm font-medium print:text-xs">
@@ -399,9 +499,11 @@ const OrderView = () => {
                     {t("VIEW_ORDER.PAYMENT_DATE")}
                   </span>
                   <span className="text-sm font-medium print:text-xs">
-                    {new Date(
-                      nOrder?.orderItems?.[0]?.paymentDate
-                    ).toLocaleDateString()}
+                    {nOrder?.orderItems?.[0]?.paymentDate
+                      ? new Date(
+                          nOrder.orderItems[0].paymentDate
+                        ).toLocaleDateString()
+                      : "N/A"}
                   </span>
                 </div>
               </div>
@@ -482,12 +584,6 @@ const OrderView = () => {
                         scope="col"
                         className="px-6 py-3 text-left text-xs font-medium text-caption uppercase tracking-wider print:px-3 print:py-2 print:text-xs"
                       >
-                        {t("COMMON.QUANTITY")}
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-caption uppercase tracking-wider print:px-3 print:py-2 print:text-xs"
-                      >
                         {t("COMMON.STATUS")}
                       </th>
                       <th
@@ -541,10 +637,15 @@ const OrderView = () => {
                                     ? "..."
                                     : "")}
                               </div>
+                              <div className="text-xs text-gray-500 print:text-[10px] truncate max-w-[100px]">
+                                {t("COMMON.QUANTITY")}: {item.quantity}
+                              </div>
+
                               {highlightedItemId === item.id && (
                                 <div className="mt-1">
                                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
                                     <Check className="h-3 w-3 mr-1" />
+                                    {t("VIEW_ORDER.HIGHLIGHTED")}
                                   </span>
                                 </div>
                               )}
@@ -554,20 +655,29 @@ const OrderView = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 print:px-3 print:py-2 print:text-xs">
                           ₹{item.price?.toFixed(2)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-800 print:px-3 print:py-2 print:text-xs">
-                          {item.quantity}
-                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 print:px-3 print:py-2 print:text-xs">
                           <StatusBadge status={item.status} />
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3 print:px-3 print:py-2 print:text-xs print:space-x-1">
-                          <button
-                            className="text-blue-600 hover:text-blue-800 print:hidden"
-                            title="Edit"
-                            onClick={() => openEditDialog(item)}
-                          >
-                            <Edit className="w-4 h-4 inline" />
-                          </button>
+                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-3 print:px-3 print:py-2 print:text-xs print:space-x-1">
+                          <div className="flex items-center justify-center gap-3 print:gap-1">
+                            <button
+                              className="text-blue-600 hover:text-blue-800 print:hidden"
+                              title="Edit"
+                              onClick={() => openEditDialog(item.OrderItemID)} // pass only ID
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                console.log("Clicked item:", item);
+                                console.log("Item ID:", item.OrderItemID);
+                                handleOpenHistory(item.id);
+                              }}
+                              className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg shadow-sm transition"
+                            >
+                              <FaHistory className="text-gray-600 text-lg" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -657,7 +767,7 @@ const OrderView = () => {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm print:text-xs">
-                      {t("VIEW_ORDER.ORDER_ITEMS")}
+                      {t("VIEW_ORDER.ORDER_TIME")}
                     </span>
                     <div className="flex items-center text-sm text-gray-900 font-medium print:text-xs">
                       <Clock className="h-4 w-4 mr-1.5 text-gray-500 print:hidden" />
@@ -674,7 +784,7 @@ const OrderView = () => {
                       {t("VIEW_ORDER.TOTAL_AMOUNT")}
                     </span>
                     <span className="text-lg font-bold text-[#5B45E0] print:text-base">
-                      ₹{nOrder.total?.toFixed(2)}
+                      ₹{nOrder.totalAmount}
                     </span>
                   </div>
                 </div>
@@ -700,8 +810,16 @@ const OrderView = () => {
             </div>
             <div className="space-y-4">
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t("COMMON.CURRENT_STATUS")}
+                </label>
+                <div className="p-2 bg-gray-100 rounded-md">
+                  <StatusBadge status={oEditingItem.status} />
+                </div>
+              </div>
+              <div>
                 <SelectWithIcon
-                  label={t("COMMON.STATUS")}
+                  label={t("COMMON.NEXT_STATUS")}
                   id="orderStatus"
                   name="orderStatus"
                   value={
@@ -740,8 +858,9 @@ const OrderView = () => {
               </button>
               <button
                 type="button"
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                className="btn-primary"
                 onClick={handleSaveChanges}
+                disabled={!sEditedStatusId}
               >
                 {t("COMMON.SAVE")}
               </button>
@@ -749,6 +868,11 @@ const OrderView = () => {
           </div>
         </div>
       )}
+      <OrderItemHistoryDialog
+        open={open}
+        onClose={() => setOpen(false)}
+        historyData={historyData}
+      />
     </div>
   );
 };

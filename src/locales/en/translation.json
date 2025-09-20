@@ -344,6 +344,7 @@
   "ORDERS": {
     "TITLE": "Orders",
     "SUBTITLE": "View and manage all orders",
+    "NO_ORDERS_FOUND": "No Orders Found",
     "EXPORT_BUTTON": "Export All Orders",
     "VIEW_DETAILS": "View Details",
     "DELIVERY": "Delivery",
@@ -385,6 +386,7 @@
     "PAYMENT_STATUS": "Status",
     "PAYMENT_DATE": "Date",
     "ORDER_SUMMARY": "Order Summary",
+     "HIGHLIGHTED": "Selected",
     "ORDER_ITEMS": "Order Items",
     "ORDER_DATE": "Order Date",
     "ORDER_TIME": "Order Time",
@@ -768,7 +770,7 @@
     "SEARCH_PLACEHOLDER": "Search...",
     "CLEAR": "Clear",
     "DESCRIPTION": "Description",
-    "UNIT":"Unit",
+    "UNIT": "Unit",
     "PRODUCTS": "Products",
     "NAME": "Name",
     "CROP_IMAGE": "Crop Image",
@@ -795,6 +797,8 @@
     "ROLE": "Role",
     "USER": "User",
     "ADMIN": "Admin",
+    "CURRENT_STATUS": "Current Status",
+    "NEXT_STATUS": "Next Status",
     "MANAGER": "Manager",
     "GENDER": "Gender",
     "MALE": "Male",
@@ -834,6 +838,14 @@
     "ENTER_EMAIL_ADDRESS": "Enter email address",
     "ENTER_PASSWORD": "Enter password",
     "REQUIRED": "is required"
+  },
+  "ORDER_HISTORY": {
+    "TITLE": "Order History",
+    "SUBTITLE": "Latest updates first",
+    "NO_HISTORY": "No history available",
+    "LATEST": "Latest",
+    "AT": "at",
+    "TOTAL_UPDATES": "Total updates"
   },
   "USER_ROLES_LIST": {
     "TITLE": "User Roles",

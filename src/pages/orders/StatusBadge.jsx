@@ -1,8 +1,8 @@
-import { useOrderStatuses } from "../../context/AllDataContext";
 import { useMemo } from "react";
+import { useSelector } from "react-redux";
 
 const StatusBadge = ({ status }) => {
-  const { data: orderStatusData } = useOrderStatuses();
+  const { data: orderStatusData } = useSelector((state) => state.allData.resources.orderStatuses || {});
 
   const orderStatusArray = useMemo(() => {
     if (!orderStatusData) return [];
@@ -18,16 +18,14 @@ const StatusBadge = ({ status }) => {
 
   const statusColor = orderStatusArray.find(
     (statusItem) => statusItem.OrderStatus === status
-  )?.HexColorCode;
-
-  const badgeColor = statusColor || "#000";
+  )?.Colour?.HexCode || "#6b7280";
 
   return (
     <span
-      className="px-2 py-1 rounded-full text-white text-xs"
+      className="px-3 py-1.5 rounded-full text-white text-xs font-medium flex items-center justify-center min-w-[80px]"
       style={{
-        backgroundColor: badgeColor,
-        boxShadow: `0 0 0 1px ${badgeColor}30`,
+        backgroundColor: statusColor,
+        boxShadow: `0 2px 4px ${statusColor}40`,
       }}
     >
       {status}
