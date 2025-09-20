@@ -80,9 +80,6 @@ const ActiveBannersWithSequence = () => {
         {},
         token
       );
-
-      console.log("API Response:", response); // Debug the response structure
-
       // Check different possible response structures
       const success = response?.data?.status === STATUS.SUCCESS.toUpperCase()|| response?.status === STATUS.SUCCESS.toUpperCase();
 
