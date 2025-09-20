@@ -27,7 +27,8 @@ import { X } from "lucide-react";
 import { useTitle } from "../context/TitleContext";
 import Loader from "../components/Loader";
 import { hideLoaderWithDelay } from "../utils/loaderUtils";
-import { useUserDetails } from "../../src/context/AllDataContext";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchUserDetails, clearUserDetailsError } from "../store/slices/allDataSlice";
 
 const ProfileDetails = () => {
   const { t } = useTranslation();
@@ -48,54 +49,52 @@ const ProfileDetails = () => {
   const [Ssuccess, setSuccess] = useState("");
   const { setBackButton, setTitle } = useTitle();
   const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState(null);
+
+  const dispatch = useDispatch();
+  const { userDetails, userDetailsLoading, userDetailsError } = useSelector(
+    (state) => state.allData
+  );
 
   const userId = localStorage.getItem("userId");
-
-  const { data: userDetails, fetch: fetchUserDetails } = useUserDetails();
-  const [state, setState] = useState({
-    userDetails: null,
-    userDetailsError: null,
-  });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem("token");
-        const storedUser = localStorage.getItem("userDetails");
-        if (!state.userDetails && storedUser) {
-          setState((prev) => ({
-            ...prev,
-            userDetails: JSON.parse(storedUser),
-          }));
-        }
-        await fetchUserDetails(userId, token);
+        // Clear any previous errors
+        dispatch(clearUserDetailsError());
+        
+        // Fetch user details using Redux thunk
+        await dispatch(fetchUserDetails(userId)).unwrap();
       } catch (err) {
-        setFetchError(err.message || "Failed to fetch user details");
+        console.error("Failed to fetch user details:", err);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [fetchUserDetails, userId]);
+  }, [dispatch, userId]);
 
-  const user = userDetails?.user
+  // Map the user data to match your component's expected structure
+  const user = userDetails
     ? {
-        name: `${userDetails.user.FirstName} ${userDetails.user.LastName}`,
-        email: userDetails.user.Email,
-        phone: userDetails.user.PhoneNumber,
-        address: userDetails.user.AddressLine || "",
-        city: userDetails.user.CityName || "",
-        state: userDetails.user.StateName || "",
-        zipCode: userDetails.user.Pincode || "",
-        joinDate: userDetails.user.CreatedDate || new Date().toISOString(),
-        avatar: userDetails.user.ProfileImageUrl || cheGuevaraImg,
-        role: userDetails.user.RoleName || "",
-        gender: userDetails.user.Gender,
-        country: userDetails.user.CountryName,
-        employeeId: userDetails.user.UserEmployeeID,
+        name: `${userDetails.FirstName} ${userDetails.LastName}`,
+        email: userDetails.Email,
+        phone: userDetails.PhoneNumber,
+        address: userDetails.AddressLine || "",
+        city: userDetails.CityName || "",
+        state: userDetails.StateName || "",
+        zipCode: userDetails.Zipcode || "",
+        joinDate: userDetails.CreatedDate || new Date().toISOString(),
+        avatar: userDetails.ProfileImageUrl && userDetails.ProfileImageUrl.length > 0 
+          ? userDetails.ProfileImageUrl[0].documentUrl 
+          : cheGuevaraImg,
+        role: userDetails.RoleName || "",
+        gender: userDetails.Gender,
+        country: userDetails.CountryName,
+        employeeId: userDetails.EmployeeID,
+        stores: userDetails.Stores || [],
       }
     : null;
 
@@ -303,12 +302,14 @@ const ProfileDetails = () => {
 
   const handleOpenModal = (type) => setModalType(type);
   const handleCloseModal = () => setModalType(null);
-  const loaderOverlay = submitting ? (
+  
+  const loaderOverlay = submitting || userDetailsLoading ? (
     <div className="global-loader-overlay">
       <Loader />
     </div>
   ) : null;
-  if (fetchError) return <div>Error: {fetchError}</div>;
+
+  if (userDetailsError) return <div>Error: {userDetailsError}</div>;
   if (!user) return <div>No user data found</div>;
 
   return (
@@ -341,6 +342,11 @@ const ProfileDetails = () => {
                   {t("PROFILE.MEMBER_SINCE")}{" "}
                   {new Date(user?.joinDate).toLocaleDateString()}
                 </p>
+                {user?.stores && user.stores.length > 0 && (
+                  <p className="mt-2 text-sm text-gray-600">
+                    {t("PROFILE.ASSIGNED_STORES")}: {user.stores.map(store => store.StoreName).join(", ")}
+                  </p>
+                )}
               </div>
               <div className="mt-4 md:mt-0 md:ml-auto">
                 <button
@@ -421,6 +427,17 @@ const ProfileDetails = () => {
                 </div>
                 <div className="flex items-start space-x-4">
                   <div className="p-2.5 bg-custom-bg/10 rounded-lg">
+                    <User className="h-5 w-5 text-custom-bg" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">
+                      {t("PROFILE.GENDER")}
+                    </p>
+                    <p className="mt-1 text-base text-gray-900">{user?.gender}</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-4">
+                  <div className="p-2.5 bg-custom-bg/10 rounded-lg">
                     <Calendar className="h-5 w-5 text-custom-bg" />
                   </div>
                   <div>
@@ -430,6 +447,17 @@ const ProfileDetails = () => {
                     <p className="mt-1 text-base text-gray-900">
                       {new Date(user?.joinDate).toLocaleDateString()}
                     </p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-4">
+                  <div className="p-2.5 bg-custom-bg/10 rounded-lg">
+                    <User className="h-5 w-5 text-custom-bg" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">
+                      {t("PROFILE.EMPLOYEE_ID")}
+                    </p>
+                    <p className="mt-1 text-base text-gray-900">{user?.employeeId}</p>
                   </div>
                 </div>
               </div>
@@ -471,6 +499,12 @@ const ProfileDetails = () => {
                     {t("PROFILE.ZIP_CODE")}
                   </p>
                   <p className="mt-1 text-base text-gray-900">{user?.zipCode}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">
+                    {t("PROFILE.COUNTRY")}
+                  </p>
+                  <p className="mt-1 text-base text-gray-900">{user?.country}</p>
                 </div>
               </div>
             </div>
