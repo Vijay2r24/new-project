@@ -12,6 +12,9 @@ import {
   GET_ALL_USERS,
   ORDER_STATUS_API,
   GET_ALL_PRODUCT_GROUPS,
+  GET_All_PAYMENT_STATUS,
+  GET_ALL_PAYMENT_METHODS,
+  GET_ALL_PAYMENT_TYPES,
 } from "../../contants/apiRoutes"; // API endpoints (centralized constants)
 import { STATUS } from "../../contants/constants"; // Shared constants like SUCCESS/ERROR
 
@@ -34,9 +37,24 @@ const aResourceConfigs = [
   { key: "users", api: GET_ALL_USERS, idField: "UserID" },
   { key: "orderStatuses", api: ORDER_STATUS_API },
   {
+    key: "paymentStatus",
+    api: GET_All_PAYMENT_STATUS,
+    idField: "PaymentStatusID",
+  },
+  {
     key: "productGroups",
     api: GET_ALL_PRODUCT_GROUPS,
     idField: "ProductGroupID",
+  },
+  {
+    key: "paymentMethods",
+    api: GET_ALL_PAYMENT_METHODS,
+    idField: "PaymentMethodID", // Adjust this if needed based on your API response
+  },
+  {
+    key: "paymentTypes",
+    api: GET_ALL_PAYMENT_TYPES,
+    idField: "PaymentTypeID", // Adjust this if needed based on your API response
   },
 ];
 
@@ -172,12 +190,9 @@ const allDataSlice = createSlice({
           error: error || "Failed to fetch",
         };
       })
-
-      // UPDATE STATUS lifecycle
       .addCase(updateStatusById.fulfilled, (state, action) => {
         const { key, id, idField, payload } = action.payload;
         if (state.resources[key]?.data) {
-          // Update status in place
           state.resources[key].data = state.resources[key].data.map((item) =>
             item[idField] === id ? { ...item, Status: payload.Status } : item
           );
@@ -185,7 +200,5 @@ const allDataSlice = createSlice({
       });
   },
 });
-
-// Export actions & reducer
 export const { clearResourceError } = allDataSlice.actions;
 export default allDataSlice.reducer;
