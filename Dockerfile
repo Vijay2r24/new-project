@@ -58,18 +58,19 @@ RUN npm install -g serve@14 \
 && npm cache clean --force
  
 WORKDIR /app
- 
+
+# Accept dynamic port
+
+ARG SERVICE_PORT=3020
+
+ENV SERVICE_PORT=$SERVICE_PORT
 # Copy only the built application
 
 COPY --from=builder /app/dist ./build
  
  
-# Expose port
+EXPOSE ${SERVICE_PORT}
+ 
+# Use shell form to allow ENV variable substitution
 
-EXPOSE 3020
- 
- 
-# Start the application with optimized serve options
-
-CMD ["serve", "-s", "build", "-l", "3020", "--no-clipboard", "--no-compression"]
- 
+CMD sh -c "serve -s build -l ${SERVICE_PORT} --no-clipboard --no-compression"
