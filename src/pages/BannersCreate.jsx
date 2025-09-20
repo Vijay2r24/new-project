@@ -3,74 +3,83 @@ import { FiUpload } from "react-icons/fi";
 import { MdOutlineCancel } from "react-icons/md";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
-import { Tag, Layers, Users, Percent } from "lucide-react";
+import { Tag, Layers, Percent } from "lucide-react";
 import { toast } from "react-toastify";
 import TextInputWithIcon from "../components/TextInputWithIcon";
 import SelectWithIcon from "../components/SelectWithIcon";
 import BackButton from "../components/BackButton";
 import ImageCropperModal from "../components/ImageCropperModal";
 import { useTitle } from "../context/TitleContext";
-import { useBrands, useCategories } from "../context/AllDataContext";
-import { apiPost, apiPut, apiGet } from "../utils/ApiUtils";
-import { POST_BANNERS, UPDATE_BANNER, GET_BANNERS_BY_ID } from "../contants/apiRoutes";
-import { STATUS } from "../contants/constants";
-
-const BANNER_WIDTH = 1200;
-const BANNER_HEIGHT = 600;
+import { useDispatch, useSelector } from "react-redux";
+import { fetchResource } from "../store/slices/allDataSlice";
+import { apiPost, apiGet } from "../utils/ApiUtils";
+import { CREATE_UPDATE_BANNERS, GET_BANNERS_BY_ID } from "../contants/apiRoutes";
+import { STATUS,DEFAULT_PAGE,BANNER_WIDTH,BANNER_HEIGHT } from "../contants/constants";
+import { ToastContainer } from "react-toastify";
+import Loader from "../components/Loader";
 
 const BannerForm = () => {
   const { t } = useTranslation();
   const { setTitle, setBackButton } = useTitle();
   const navigate = useNavigate();
   const { bannerId } = useParams();
+  const dispatch = useDispatch();
+
+  // Redux selectors for categories and brands
+  const categories = useSelector(
+    (state) => state.allData.resources.categories?.data || []
+  );
+  const brands = useSelector(
+    (state) => state.allData.resources.brands?.data || []
+  );
 
   const [formData, setFormData] = useState({
     BannerName: "",
     preview: "",
     file: null,
-    sequence: "",
-    category: "",
-    brand: "",
-    gender: "",
+    category: [],
+    brand: [],
     discount: "",
     price: "",
+    isActive: true,
   });
   const [error, setError] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
   const [croppingImage, setCroppingImage] = useState(null);
-
-  const { data: categories, fetch: fetchCategories } = useCategories();
-  const { data: brands, fetch: fetchBrands } = useBrands();
   const [isLoading, setIsLoading] = useState(false);
+  const [existingImageData, setExistingImageData] = useState(null);
 
   const fetchBanner = useCallback(async () => {
+    if (!bannerId) return;
+
     try {
       const token = localStorage.getItem("token");
       const response = await apiGet(`${GET_BANNERS_BY_ID}/${bannerId}`, {}, token);
 
-      if (response?.data?.STATUS === STATUS.SUCCESS.toUpperCase()) {
-        const bannerData = response.data.data?.data;
-        const firstImage = bannerData.BannerImages?.[0] || {};
+      if (response?.data?.status === STATUS.SUCCESS.toUpperCase()) {
+        const bannerData = response.data.data;
+        const firstImage = bannerData.BannerImage?.[0] || {};
 
         setFormData({
           BannerName: bannerData.BannerName || "",
-          preview: firstImage.BannerImage || "",
-          sequence: firstImage.Sequence?.toString() || "",
-          category: firstImage.CategoryIDs?.[0] || "",
-          brand: firstImage.BrandIDs?.[0] || "",
-          gender: firstImage.Gender || "",
-          discount: firstImage.Discount || "",
-          price: firstImage.Price?.toString() || "",
+          preview: firstImage.documentUrl || "",
+          category: bannerData.CategoryIDs || [],
+          brand: bannerData.BrandIDs || [],
+          discount: bannerData.Discount || "",
+          price: bannerData.Price?.toString() || "",
           file: null,
+          isActive: bannerData.IsActive !== undefined ? bannerData.IsActive : true,
         });
+
+        setExistingImageData(firstImage);
         setError(null);
       } else {
-        setError(response?.data?.MESSAGE);
+        setError(response?.data?.message || t("COMMON.API_ERROR"));
       }
     } catch (error) {
-      setError(error?.response?.data?.MESSAGE);
+      setError(error?.response?.data?.message || t("COMMON.API_ERROR"));
     }
-  }, [bannerId]);
+  }, [bannerId, t]);
 
   useEffect(() => {
     setTitle(
@@ -81,17 +90,16 @@ const BannerForm = () => {
     if (bannerId) {
       fetchBanner();
     }
-    
+
+    // Fetch categories and brands
+    dispatch(fetchResource({ key: "categories" }));
+    dispatch(fetchResource({ key: "brands" }));
+
     return () => {
       setBackButton(null);
       setTitle("");
     };
-  }, [setTitle, setBackButton, t, navigate, bannerId, fetchBanner]);
-
-  useEffect(() => {
-    fetchCategories();
-    fetchBrands();
-  }, [fetchCategories, fetchBrands]);
+  }, [setTitle, setBackButton, t, navigate, bannerId, fetchBanner, dispatch]);
 
   const handleBannerUpload = (e) => {
     const file = e.target.files[0];
@@ -123,7 +131,7 @@ const BannerForm = () => {
   };
 
   const handleCropComplete = (blob) => {
-    const croppedFile = new File([blob], "cropped-image.jpg", {
+    const croppedFile = new File([blob], `cropped-image-${Date.now()}.jpg`, {
       type: "image/jpeg",
     });
 
@@ -153,26 +161,16 @@ const BannerForm = () => {
       isValid = false;
     }
 
-    if (!formData.sequence) {
-      errors.sequence = t("BANNER_FORM.SEQUENCE_NUMBER") + " " + t("COMMON.REQUIRED");
-      isValid = false;
-    }
 
-    if (!formData.category) {
+    if (!formData.category || formData.category.length === 0) {
       errors.category = t("COMMON.CATEGORY") + " " + t("COMMON.REQUIRED");
       isValid = false;
     }
 
-    if (!formData.brand) {
+    if (!formData.brand || formData.brand.length === 0) {
       errors.brand = t("COMMON.BRAND") + " " + t("COMMON.REQUIRED");
       isValid = false;
     }
-
-    if (!formData.gender) {
-      errors.gender = t("COMMON.GENDER") + " " + t("COMMON.REQUIRED");
-      isValid = false;
-    }
-
     if (!formData.discount) {
       errors.discount = t("BANNER_FORM.DISCOUNT_PERCENTAGE") + " " + t("COMMON.REQUIRED");
       isValid = false;
@@ -196,46 +194,57 @@ const BannerForm = () => {
     const data = new FormData();
 
     const mainData = {
-      TenantID: 1,
+      TenantID: localStorage.getItem("tenantID") || "1",
       BannerName: formData.BannerName,
-      Status: "",
-      CreatedBy: "admin",
-      BannerDetails: [{
-        CategoryIDs: formData.category ? [formData.category] : [],
-        BrandIDs: formData.brand ? [formData.brand] : [],
-        Discount: formData.discount,
-        Price: formData.price,
-        Gender: formData.gender,
-        BannerImages: [{ Sequence: formData.sequence }],
-      }],
+      IsActive: formData.isActive,
+      CategoryIDs: formData.category || [],
+      BrandIDs: formData.brand || [],
+      Discount: formData.discount,
+      SortOrder: DEFAULT_PAGE,
+      Price: parseFloat(formData.price) || 0,
+      CreatedBy: localStorage.getItem("userId") || "admin",
     };
 
     if (bannerId) {
       mainData.BannerID = bannerId;
+      mainData.UpdatedBy = localStorage.getItem("userId") || "admin";
     }
-
-    data.append("Data", JSON.stringify(mainData));
-
+  
+    //  Add document metadata only if new image is uploaded
+    if (formData.file) {
+      mainData.documentMetadata = [
+        {
+          image: "image_0",
+          sortOrder: parseInt(formData.sequence) || 1,
+          ...(bannerId && existingImageData?.documentId
+            ? { DocumentID: existingImageData.documentId } // keep DocumentID if updating existing image
+            : {}),
+        },
+      ];
+    }
+  
+    data.append("data", JSON.stringify(mainData));
+  
+    //  Append file only if user selected a new one
     if (formData.file) {
       data.append("image_0", formData.file);
     }
 
     try {
-      const response = bannerId
-        ? await apiPut(`${UPDATE_BANNER}/${bannerId}`, data, token, true)
-        : await apiPost(POST_BANNERS, data, token, true);
-
-      if (response?.data?.STATUS === STATUS.SUCCESS.toUpperCase()) {
-        toast.success(response?.data?.MESSAGE);
+      const response = await apiPost(CREATE_UPDATE_BANNERS, data, token, true);
+  
+      if (response?.data?.status === STATUS.SUCCESS.toUpperCase()) {
+        toast.success(response?.data?.message || t("BANNER_FORM.SAVE_SUCCESS"));
         setTimeout(() => navigate("/banners"), 2000);
       } else {
-        toast.error(response?.data?.MESSAGE);
+        toast.error(response?.data?.message || t("COMMON.API_ERROR"));
       }
     } catch (error) {
       const errorMessage =
         error?.response?.data?.data?.error ||
-        error?.response?.data?.MESSAGE ||
-        error?.message;
+        error?.response?.data?.message ||
+        error?.message ||
+        t("COMMON.API_ERROR");
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -244,7 +253,7 @@ const BannerForm = () => {
 
   return (
     <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen">
-      {error && <div className="text-red-500 mb-4">{error}</div>}
+      <ToastContainer />
 
       {croppingImage && (
         <ImageCropperModal
@@ -302,7 +311,7 @@ const BannerForm = () => {
                       setFormData((prev) => ({
                         ...prev,
                         file: null,
-                        preview: null,
+                        preview: "",
                       }));
                     }}
                   >
@@ -345,35 +354,18 @@ const BannerForm = () => {
 
             {formData.preview && (
               <div className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-4">
-                <TextInputWithIcon
-                  label={t("BANNER_FORM.SEQUENCE_NUMBER")}
-                  id="sequence"
-                  name="sequence"
-                  value={formData.sequence}
-                  onChange={(e) => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      sequence: e.target.value,
-                    }));
-                    setValidationErrors((prev) => ({
-                      ...prev,
-                      sequence: undefined,
-                    }));
-                  }}
-                  placeholder={t("BANNER_FORM.ENTER_SEQUENCE_NUMBER")}
-                  Icon={Layers}
-                  error={validationErrors.sequence}
-                />
-
                 <SelectWithIcon
-                  label={t("COMMON.CATEGORY")}
+                  label={t("PRODUCT_CREATION.CATEGORY_ID")}
                   id="category"
                   name="category"
-                  value={formData.category || ""}
+                  value={formData.category || []}
                   onChange={(e) => {
+                    const selectedValues = Array.isArray(e.target.value)
+                      ? e.target.value
+                      : [e.target.value].filter(Boolean);
                     setFormData((prev) => ({
                       ...prev,
-                      category: e.target.value,
+                      category: selectedValues,
                     }));
                     setValidationErrors((prev) => ({
                       ...prev,
@@ -385,19 +377,31 @@ const BannerForm = () => {
                     label: cat.CategoryName,
                   }))}
                   Icon={Layers}
-                  onInputChange={(value) => fetchCategories({ searchText: value })}
+                  onInputChange={(value) =>
+                    dispatch(
+                      fetchResource({
+                        key: "categories",
+                        params: value && value.trim() !== "" ? { searchText: value } : {},
+                      })
+                    )
+                  }
                   error={validationErrors.category}
+                  multiple
+                  placeholder={t("PRODUCT_CREATION.CATEGORY_ID_PLACEHOLDER")}
                 />
 
                 <SelectWithIcon
                   label={t("COMMON.BRAND")}
                   id="brand"
                   name="brand"
-                  value={formData.brand || ""}
+                  value={formData.brand || []}
                   onChange={(e) => {
+                    const selectedValues = Array.isArray(e.target.value)
+                      ? e.target.value
+                      : [e.target.value].filter(Boolean);
                     setFormData((prev) => ({
                       ...prev,
-                      brand: e.target.value,
+                      brand: selectedValues,
                     }));
                     setValidationErrors((prev) => ({
                       ...prev,
@@ -408,34 +412,18 @@ const BannerForm = () => {
                     value: b.BrandID,
                     label: b.BrandName,
                   }))}
-                  Icon={Users}
-                  onInputChange={(value) => fetchBrands({ searchText: value })}
+                  Icon={Tag}
+                  onInputChange={(value) =>
+                    dispatch(
+                      fetchResource({
+                        key: "brands",
+                        params: value && value.trim() !== "" ? { searchText: value } : {},
+                      })
+                    )
+                  }
                   error={validationErrors.brand}
-                />
-
-                <SelectWithIcon
-                  label={t("COMMON.GENDER")}
-                  id="gender"
-                  name="gender"
-                  value={formData.gender || ""}
-                  onChange={(e) => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      gender: e.target.value,
-                    }));
-                    setValidationErrors((prev) => ({
-                      ...prev,
-                      gender: undefined,
-                    }));
-                  }}
-                  options={[
-                    { value: "Male", label: t("PRODUCT_CREATION.MALE") },
-                    { value: "Female", label: t("PRODUCT_CREATION.FEMALE") },
-                    { value: "Unisex", label: t("PRODUCT_CREATION.UNISEX") },
-                    { value: "Other", label: t("PRODUCT_CREATION.OTHER") },
-                  ]}
-                  Icon={Users}
-                  error={validationErrors.gender}
+                  multiple
+                  placeholder={t("PRODUCT_CREATION.BRAND_ID_PLACEHOLDER")}
                 />
 
                 <TextInputWithIcon
@@ -481,6 +469,29 @@ const BannerForm = () => {
                   )}
                   error={validationErrors.price}
                 />
+
+                <SelectWithIcon
+                  label={t("COMMON.STATUS")}
+                  id="isActive"
+                  name="isActive"
+                  value={formData.isActive.toString()}
+                  onChange={(e) => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      isActive: e.target.value === "true",
+                    }));
+                    setValidationErrors((prev) => ({
+                      ...prev,
+                      isActive: undefined,
+                    }));
+                  }}
+                  options={[
+                    { value: "true", label: t("COMMON.ACTIVE") },
+                    { value: "false", label: t("COMMON.INACTIVE") },
+                  ]}
+                  Icon={Tag}
+                  error={validationErrors.isActive}
+                />
               </div>
             )}
           </div>
@@ -492,7 +503,7 @@ const BannerForm = () => {
             className="btn-primary"
             disabled={isLoading}
           >
-            {isLoading ? t("COMMON.SAVING") : t("COMMON.SUBMIT")}
+            {t("COMMON.SUBMIT")}
           </button>
           <button
             type="button"

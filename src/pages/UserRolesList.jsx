@@ -7,35 +7,32 @@ import ActionButtons from "../components/ActionButtons";
 import NotFoundMessage from "../components/NotFoundMessage";
 import { useTranslation } from "react-i18next";
 import { useTitle } from "../context/TitleContext";
-import { useRoles, useStores } from "../context/AllDataContext.jsx";
 import Switch from "../components/Switch";
 import FullscreenErrorPopup from "../components/FullscreenErrorPopup";
-import { UPDATE_ROLE_STATUS, DELETEROLESBYID_API } from "../contants/apiRoutes";
+import { UPDATE_ROLE_STATUS } from "../contants/apiRoutes";
 import { showEmsg } from "../utils/ShowEmsg";
 import { ToastContainer } from "react-toastify";
-import { apiDelete } from "../utils/ApiUtils";
-import { ITEMS_PER_PAGE, STATUS } from "../contants/constants.jsx";
+import { ITEMS_PER_PAGE, STATUS,STATUS_OPTIONS } from "../contants/constants.jsx";
 import Loader from "../components/Loader";
 import { hideLoaderWithDelay } from "../utils/loaderUtils";
 import { getPermissionCode, hasPermissionId } from "../utils/permissionUtils";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchResource, updateStatusById } from "../store/slices/allDataSlice.jsx";
 
 const UserRolesList = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { setTitle } = useTitle();
-  const {
-    data: contextRoles = [],
-    loading: bLoading,
-    error: nError,
-    total,
-    fetch,
-    updateStatusById,
-  } = useRoles();
-  const { data: aStores = [], fetch: fetchStores } = useStores();
+  
+  // Redux selectors
+  const { data: contextRoles = [], loading: bLoading, error: nError, total } = useSelector(
+    (state) => state.allData.resources.roles || { data: [], loading: false, error: null, total: 0 }
+  );
+  
   const [sSearchTerm, setSearchTerm] = useState("");
   const [sViewMode, setViewMode] = useState("table");
   const [nCurrentPage, setCurrentPage] = useState(1);
-  const [selectedStore, setSelectedStore] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const itemsPerPage = ITEMS_PER_PAGE;
@@ -54,58 +51,21 @@ const UserRolesList = () => {
     "Delete Role"
   );
   const hasDeletePermission = hasPermissionId(permissionIdForDelete);
-  useEffect(() => {
-    fetchStores();
-  }, []);
 
-  useEffect(() => {
-    if (showFilterDropdown) {
-      fetchStores();
-    }
-  }, [showFilterDropdown]);
-
-  const storeOptions = [
-    { value: "all", label: t("COMMON.ALL") },
-    ...aStores.map((store) => ({
-      value: store.StoreID || store.id,
-      label: store.StoreName,
-    })),
-  ];
-
-  const statusOptions = [
-    { value: "all", label: t("COMMON.ALL") },
-    { value: "Active", label: t("COMMON.ACTIVE") },
-    { value: "Inactive", label: t("COMMON.INACTIVE") },
-  ];
+  const statusOptions = STATUS_OPTIONS.map((opt) => ({
+    value: opt.value,
+    label: t(opt.labelKey),
+  }));
 
   const handleFilterChange = (e, filterName) => {
     setFilterLoading(true);
-    if (filterName === "store") {
-      setSelectedStore(e.target.value);
-      setCurrentPage(1);
-    } else if (filterName === "status") {
+    if (filterName === "status") {
       setSelectedStatus(e.target.value);
       setCurrentPage(1);
     }
   };
 
   const additionalFilters = [
-    {
-      label: t("COMMON.STORE"),
-      name: "store",
-      value: selectedStore,
-      options: storeOptions,
-      searchable: true,
-      searchPlaceholder: t("COMMON.SEARCH_STORE") || "Search store",
-      onInputChange: (inputValue) => {
-        console.log("Store search input:", inputValue);
-        if (inputValue && inputValue.trim() !== "") {
-          fetchStores({ searchText: inputValue });
-        } else {
-          fetchStores({});
-        }
-      },
-    },
     {
       label: t("COMMON.STATUS"),
       name: "status",
@@ -120,23 +80,20 @@ const UserRolesList = () => {
       pageSize: itemsPerPage,
       searchText: sSearchTerm,
     };
-    if (selectedStore !== "all") {
-      filterParams.StoreIDs = selectedStore;
-    }
     if (selectedStatus !== "all") {
-      filterParams.status = selectedStatus;
+      filterParams.IsActive = selectedStatus;
     }
 
     const fetchData = async () => {
       try {
-        await fetch(filterParams);
+        await dispatch(fetchResource({ key: "roles", params: filterParams }));
       } finally {
         setFilterLoading(false);
       }
     };
 
     fetchData();
-  }, [nCurrentPage, sSearchTerm, selectedStore, selectedStatus]);
+  }, [nCurrentPage, sSearchTerm, selectedStatus, dispatch]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -164,15 +121,16 @@ const UserRolesList = () => {
   const handlePageClick = (page) => {
     setCurrentPage(page);
   };
-  const handleEdit = (id) => {
-    navigate(`/edit-UserRole/${id}`);
-  };
-  const handleDelete = (roleId) => {
-    if (!hasDeletePermission) {
-      showEmsg(t("COMMON.NO_DELETE_PERMISSION"), STATUS.ERROR);
-      return;
-    }
-    setDeletePopup({ open: true, roleId });
+  
+  const handleEdit = (roleId, roleName, status) => {
+   
+    navigate(`/edit-UserRole/${roleId}`, {
+      state: {
+        roleId,
+        roleName,
+        status, 
+      },
+    });
   };
 
   const handleStatusChange = (roleId, isActive) => {
@@ -182,45 +140,39 @@ const UserRolesList = () => {
   const handleStatusConfirm = async () => {
     setSubmitting(true);
     const { roleId, newStatus } = statusPopup;
-    const result = await updateStatusById(
-      roleId,
-      newStatus,
-      UPDATE_ROLE_STATUS,
-      "RoleID"
-    );
-    showEmsg(result.message, result.status);
-    setStatusPopup({ open: false, roleId: null, newStatus: null });
-    hideLoaderWithDelay(setSubmitting);
+    
+    try {
+      // Update status using Redux thunk
+      const result = await dispatch(updateStatusById({
+        key: "roles",
+        id: roleId,
+        newStatus,
+        apiRoute: UPDATE_ROLE_STATUS,
+        idField: "RoleID"
+      })).unwrap();
+      
+      showEmsg(result.message, STATUS.SUCCESS);
+      
+      // Refresh roles data after status update
+      const filterParams = {
+        pageNumber: nCurrentPage,
+        pageSize: itemsPerPage,
+        searchText: sSearchTerm,
+      };
+      if (selectedStatus !== "all") filterParams.status = selectedStatus;
+      
+      await dispatch(fetchResource({ key: "roles", params: filterParams }));
+      
+    } catch (err) {
+      showEmsg(err.error || t("COMMON.API_ERROR"), STATUS.ERROR);
+    } finally {
+      setStatusPopup({ open: false, roleId: null, newStatus: null });
+      hideLoaderWithDelay(setSubmitting);
+    }
   };
 
   const handleStatusPopupClose = () => {
     setStatusPopup({ open: false, roleId: null, newStatus: null });
-  };
-
-  const handleDeleteConfirm = async () => {
-    setSubmitting(true);
-    const { roleId } = deletePopup;
-    try {
-      const token = localStorage.getItem("token");
-      const response = await apiDelete(
-        `${DELETEROLESBYID_API}/${roleId}`,
-        token
-      );
-      const backendMessage = response.data.MESSAGE;
-      showEmsg(backendMessage, STATUS.SUCCESS);
-      setRoles((prev) =>
-        prev.filter((role) => (role.roleid || role.RoleID) !== roleId)
-      );
-      setDeletePopup({ open: false, roleId: null });
-    } catch (err) {
-      const errorMessage = err?.response?.data?.MESSAGE;
-      showEmsg(errorMessage || t("COMMON.API_ERROR"), "error");
-      setDeletePopup({ open: false, roleId: null });
-    }
-    hideLoaderWithDelay(setSubmitting);
-  };
-  const handleDeletePopupClose = () => {
-    setDeletePopup({ open: false, roleId: null });
   };
 
   return (
@@ -257,10 +209,7 @@ const UserRolesList = () => {
                     scope="col"
                     className="table-head-cell hidden sm:table-cell"
                   >
-                    {t("USER_ROLES_LIST.TABLE.STORE_NAME")}
-                  </th>
-                  <th scope="col" className="table-head-cell">
-                    {t("COMMON.STATUS")}
+                   {t("COMMON.STATUS")}
                   </th>
                   <th scope="col" className="table-head-cell text-center">
                     {t("COMMON.ACTIONS")}
@@ -278,13 +227,13 @@ const UserRolesList = () => {
                   </tr>
                 ) : nError ? (
                   <tr>
-                    <td colSpan={5} className="text-center py-4 text-muted">
+                    <td colSpan={3} className="text-center py-4 text-muted">
                       {t("USER_ROLES_LIST.NO_ROLES_FOUND")}
                     </td>
                   </tr>
                 ) : paginatedRoles.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="text-center py-4 text-muted">
+                    <td colSpan={3} className="text-center py-4 text-muted">
                       {t("USER_ROLES_LIST.NO_ROLES_FOUND")}
                     </td>
                   </tr>
@@ -296,25 +245,18 @@ const UserRolesList = () => {
                           <Shield className="h-4 w-4 mr-2 text-gray-400" />
                           <span className="status-badge bg-blue-100 text-blue-800">
                             <span className="ellipsis-text">
-                              {" "}
                               {role.rolename || role.RoleName}
                             </span>
                           </span>
                         </div>
                       </td>
-                      <td className="table-cell hidden sm:table-cell">
-                        {role.storename || role.StoreName}
-                      </td>
                       <td className="table-cell">
                         <Switch
-                          checked={
-                            (role.status || role.Status) === t("COMMON.ACTIVE")
-                          }
+                         checked={role.IsActive === true}
                           onChange={() =>
                             handleStatusChange(
                               role.roleid || role.RoleID,
-                              (role.status || role.Status) ===
-                                t("COMMON.ACTIVE")
+                              role.IsActive === true
                             )
                           }
                         />
@@ -322,11 +264,8 @@ const UserRolesList = () => {
                       <td className="table-cell text-center font-medium align-middle">
                         <div className="flex justify-right items-right">
                           <ActionButtons
-                            id={role.roleid || role.RoleID}
-                            onEdit={handleEdit}
-                            onDelete={() =>
-                              handleDelete(role.roleid || role.RoleID)
-                            }
+                            id={role.roleid || role.RoleID}                  
+                            onEdit={() => handleEdit(role.RoleID, role.RoleName, role.IsActive)}
                           />
                         </div>
                       </td>
@@ -359,24 +298,17 @@ const UserRolesList = () => {
                 </div>
                 <span
                   className={`px-3 py-1 text-sm font-medium rounded-full ${
-                    (role.status || role.Status) === t("COMMON.ACTIVE")
+                    role.IsActive === true
                       ? "bg-green-100 text-green-800"
                       : "bg-red-100 text-red-800"
                   }`}
                 >
-                  {role.status || role.Status}
+                  {role.IsActive === true ? t("COMMON.ACTIVE") : t("COMMON.INACTIVE")}
                 </span>
-              </div>
-              <div className="flex-grow text-base text-gray-700 mb-4">
-                <p>
-                  <strong>{t("USER_ROLES_LIST.TABLE.STORE_NAME")}:</strong>{" "}
-                  {role.storename || role.StoreName}
-                </p>
               </div>
               <ActionButtons
                 id={role.roleid || role.RoleID}
-                onEdit={handleEdit}
-                onDelete={() => handleDelete(role.roleid || role.RoleID)}
+                onEdit={() => handleEdit(role.RoleID, role.RoleName, role.IsActive)}         
               />
             </div>
           ))}
@@ -403,13 +335,6 @@ const UserRolesList = () => {
           })}
           onClose={handleStatusPopupClose}
           onConfirm={handleStatusConfirm}
-        />
-      )}
-      {deletePopup.open && (
-        <FullscreenErrorPopup
-          message={t("USER_ROLES_LIST.DELETE_CONFIRM_MESSAGE")}
-          onClose={handleDeletePopupClose}
-          onConfirm={handleDeleteConfirm}
         />
       )}
     </div>
