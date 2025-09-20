@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { Plus, MoreVertical, Image as ImageIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { apiGet, apiPatch } from "../utils/ApiUtils";
-import { GET_ALL_BANNERS, UPDATE_BANNER_STATUS } from "../contants/apiRoutes";
+import { apiGet, apiPatch, apiDelete } from "../utils/ApiUtils";
+import { GET_ALL_BANNERS, UPDATE_BANNER_STATUS, DELETE_BANNER } from "../contants/apiRoutes";
 import { showEmsg } from "../utils/ShowEmsg";
 import { useTitle } from "../context/TitleContext";
 import { ITEMS_PER_PAGE, STATUS } from "../contants/constants";
@@ -29,9 +29,9 @@ const Banners = () => {
   });
 
   useEffect(() => {
-    setTitle("Banners");
+    setTitle(t("BANNER_FORM.TITLE"));
     return () => setTitle("");
-  }, [setTitle]);
+  }, [setTitle, t]);
 
   const fetchBanners = async () => {
     try {
@@ -43,12 +43,27 @@ const Banners = () => {
       );
       if (
         oResponse.data &&
-        oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase()
+        oResponse.data.status === STATUS.SUCCESS.toUpperCase()
       ) {
-        const bannerData = oResponse.data.data?.data || [];
+        // Map API response to expected structure
+        const bannerData = oResponse.data.data.map((banner) => ({
+          BannerID: banner.BannerId,
+          BannerName: banner.BannerName,
+          Status: banner.IsActive ? "Active" : "Inactive",
+          BannerImages: banner.BannerImage?.map((img) => ({
+            BannerImage: img.documentUrl,
+            sortOrder: img.sortOrder,
+            documentId: img.documentId,
+          })) || [],
+          CategoryIDs: banner.CategoryIDs,
+          Discount: banner.Discount,
+          Price: banner.Price,
+          SortOrder: banner.SortOrder,
+        }));
+
         setBanners(bannerData);
-        setTotalPages(oResponse.data.data?.totalPages || 1);
-        setTotalRecords(oResponse.data.data?.totalRecords || 0);
+        setTotalPages(oResponse.data.pagination?.totalPages || 1);
+        setTotalRecords(oResponse.data.pagination?.totalRecords || 0);
         setError(null);
       } else {
         setBanners([]);
@@ -73,9 +88,33 @@ const Banners = () => {
 
   const toggleMenu = (id) => setActiveMenu(nActiveMenu === id ? null : id);
   const handleEditBanner = (id) => navigate(`/banners-edit/${id}`);
-  const handleDeleteBanner = (id) => {
-    setBanners((prev) => prev.filter((b) => b.BannerID !== id));
-    setActiveMenu(null);
+
+  const handleDeleteBanner = async (id) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error(t("COMMON.AUTH_ERROR"));
+
+      // API call
+      const response = await apiDelete(`${DELETE_BANNER}/${id}`, token);
+
+      const success = response?.data?.status === STATUS.SUCCESS.toUpperCase() || response?.status === STATUS.SUCCESS.toUpperCase();
+
+      if (success) {
+        // Update UI
+        setBanners((prev) => prev.filter((b) => b.BannerID !== id));
+        setActiveMenu(null);
+
+        toast.success(response?.data?.message || t("BANNERS.DELETE_SUCCESS"));
+      } else {
+        throw new Error(response?.data?.message || t("COMMON.API_ERROR"));
+      }
+    } catch (error) {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        t("COMMON.API_ERROR");
+      toast.error(errorMessage);
+    }
   };
 
   const handleToggleStatus = (id, currentStatus) => {
@@ -87,26 +126,27 @@ const Banners = () => {
     setStatusPopup({ open: false, id: null, currentStatus: null });
     try {
       const token = localStorage.getItem("token");
-      const newStatus = currentStatus === "Active" ? "Inactive" : "Active";
+      const newStatus = currentStatus === "Active" ? false : true; // Convert to boolean for API
       const oResponse = await apiPatch(
         `${UPDATE_BANNER_STATUS}/${id}`,
-        { Status: newStatus },
+        { IsActive: newStatus }, // Use IsActive to match API expectation
         token
       );
       if (
         oResponse.data &&
-        oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase()
+        oResponse.data.status === STATUS.SUCCESS.toUpperCase()
       ) {
-        showEmsg(oResponse.data.MESSAGE, STATUS.SUCCESS);
+        showEmsg(oResponse.data.message || t("BANNER_FORM.STATUS_UPDATED"), STATUS.SUCCESS);
         fetchBanners();
       } else {
-        showEmsg(oResponse.data?.MESSAGE, STATUS.ERROR);
+        showEmsg(oResponse.data?.message || t("COMMON.API_ERROR"), STATUS.ERROR);
       }
     } catch (err) {
       const errorMessage =
         err?.response?.data?.data?.error ||
-        err?.response?.data?.MESSAGE ||
-        err?.message;
+        err?.response?.data?.message ||
+        err?.message ||
+        t("COMMON.API_ERROR");
       showEmsg(errorMessage, STATUS.ERROR);
     }
   };
@@ -126,7 +166,7 @@ const Banners = () => {
         <div className="flex-1" />
         <button
           type="button"
-          className="flex items-center gap-2 mr-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 active:bg-blue-800 transition-colors duration-200"
+          className="btn-secondry h-9 w-30 flex items-center gap-2"
           onClick={handleViewActiveBanners}
         >
           <ImageIcon className="h-5 w-5" />
@@ -146,101 +186,118 @@ const Banners = () => {
         {sError && (
           <div className="mb-4 text-red-500 text-center">{sError}</div>
         )}
-        <div className="grid grid-cols-1 mt-4 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {paginatedBanners.map((project) => (
-            <div
-              key={project.BannerID}
-              className="bg-white shadow-xl rounded-2xl overflow-hidden flex flex-col transition-transform transform hover:scale-[1.03] border border-gray-100"
-            >
-              <div className="relative w-full">
-                {project.BannerImages && project.BannerImages.length > 0 ? (
-                  <div className="w-full">
-                    <img
-                      src={project.BannerImages[0].BannerImage || noImage}
-                      alt={`Banner ${project.BannerName}`}
-                      className="w-full aspect-[16/9] object-cover"
-                    />
-                  </div>
-                ) : (
-                  <img
-                    src={noImage}
-                    alt="No image"
-                    className="w-full aspect-[16/9] object-contain"
-                  />
-                )}
-                <span
-                  className={`absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-semibold shadow ${
-                    project.Status === "Active"
-                      ? "status-active"
-                      : "status-inactive"
-                  }`}
-                >
-                  {project.Status}
-                </span>
-                <div className="absolute top-3 right-3 z-20">
-                  <button
-                    className="text-custom-bg hover:text-custom-bg p-1 rounded-full focus:outline-none"
-                    onClick={() => toggleMenu(project.BannerID)}
-                  >
-                    <MoreVertical className="h-5 w-5" />
-                  </button>
-                  {nActiveMenu === project.BannerID && (
-                    <div className="absolute right-0 mt-2 bg-white shadow-lg rounded-xl z-[2000] min-w-[120px] border border-gray-100">
-                      <ul className="text-sm text-gray-700">
-                        <li
-                          className="px-4 py-2 hover:bg-gray-50 cursor-pointer rounded-t-xl"
-                          onClick={() => handleEditBanner(project.BannerID)}
-                        >
-                          {t("COMMON.EDIT")}
-                        </li>
-                        <li
-                          className="px-4 py-2 hover:bg-gray-50 cursor-pointer rounded-b-xl text-red"
-                          onClick={() => handleDeleteBanner(project.BannerID)}
-                        >
-                          {t("COMMON.DELETE")}
-                        </li>
-                      </ul>
+        {paginatedBanners.length === 0 && !sError ? (
+          <div className="text-center py-8 text-gray-500">
+            {t("BANNER_FORM.NO_BANNERS_FOUND")}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 mt-4 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {paginatedBanners.map((project) => (
+              <div
+                key={project.BannerID}
+                className="bg-white shadow-xl rounded-2xl overflow-hidden flex flex-col transition-transform transform hover:scale-[1.03] border border-gray-100"
+              >
+                <div className="relative w-full">
+                  {project.BannerImages && project.BannerImages.length > 0 ? (
+                    <div className="w-full">
+                      <img
+                        src={project.BannerImages[0].BannerImage || noImage}
+                        alt={`Banner ${project.BannerName}`}
+                        className="w-full aspect-[16/9] object-cover"
+                      />
                     </div>
+                  ) : (
+                    <img
+                      src={noImage}
+                      alt="No image"
+                      className="w-full aspect-[16/9] object-contain"
+                    />
                   )}
-                </div>
-              </div>
-              <div className="p-5 flex flex-col flex-grow">
-                <h3 className="text-base font-semibold text-gray-900 truncate mb-2">
-                  {project.BannerName || "Unnamed Banner"}
-                </h3>
-                <div className="flex items-center justify-between mt-auto">
-                  <div
-                    onClick={() =>
-                      handleToggleStatus(project.BannerID, project.Status)
-                    }
-                    className={`relative w-10 h-5 rounded-full cursor-pointer transition-all duration-200 ${
-                      project.Status === "Active"
-                        ? "bg-green-400"
-                        : "bg-red-400"
-                    }`}
-                  >
-                    <div
-                      className={`absolute top-1/2 left-0.5 transform -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-200 ${
-                        project.Status === "Active"
-                          ? "translate-x-5"
-                          : "translate-x-0"
-                      }`}
-                    ></div>
-                  </div>
                   <span
-                    className={`text-sm font-medium ml-3 ${
-                      project.Status === "Active"
-                        ? "text-green-600"
-                        : "text-red"
-                    }`}
+                    className={`absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-semibold shadow ${project.Status === "Active"
+                        ? "status-active bg-green-100 text-green-800"
+                        : "status-inactive bg-red-100 text-red-800"
+                      }`}
                   >
                     {project.Status}
                   </span>
+                  <div className="absolute top-3 right-3 z-20">
+                    <button
+                      className="text-custom-bg hover:text-custom-bg p-1 rounded-full focus:outline-none"
+                      onClick={() => toggleMenu(project.BannerID)}
+                    >
+                      <MoreVertical className="h-5 w-5" />
+                    </button>
+                    {nActiveMenu === project.BannerID && (
+                      <div className="absolute right-0 mt-2 bg-white shadow-lg rounded-xl z-[2000] min-w-[120px] border border-gray-100">
+                        <ul className="text-sm text-gray-700">
+                          <li
+                            className="px-4 py-2 hover:bg-gray-50 cursor-pointer rounded-t-xl"
+                            onClick={() => handleEditBanner(project.BannerID)}
+                          >
+                            {t("COMMON.EDIT")}
+                          </li>
+                          <li
+                            className="px-4 py-2 hover:bg-gray-50 cursor-pointer rounded-b-xl text-red-600"
+                            onClick={() => handleDeleteBanner(project.BannerID)}
+                          >
+                            {t("COMMON.DELETE")}
+                          </li>
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="p-5 flex flex-col flex-grow">
+                  <h3 className="text-base font-semibold text-gray-900 truncate mb-2">
+                    {project.BannerName || t("BANNER_FORM.UNNAMED_BANNER")}
+                  </h3>
+                  {project.Discount && (
+                    <p className="text-sm text-gray-600 truncate">
+                      {t("BANNER_FORM.DISCOUNT_PERCENTAGE")}: {project.Discount}
+                    </p>
+                  )}
+                  {project.Price && (
+                    <p className="text-sm text-gray-600 truncate">
+                      {t("BANNER_FORM.PRICE")}: ₹{project.Price.toLocaleString()}
+                    </p>
+                  )}
+                  {/* {project.SortOrder && (
+                    <p className="text-sm text-gray-600 truncate">
+                      {t("BANNER_FORM.SEQUENCE")}: {project.SortOrder}
+                    </p>
+                  )} */}
+                  <div className="flex items-center justify-between mt-2">
+                    <div
+                      onClick={() =>
+                        handleToggleStatus(project.BannerID, project.Status)
+                      }
+                      className={`relative w-10 h-5 rounded-full cursor-pointer transition-all duration-200 ${project.Status === "Active"
+                          ? "bg-green-400"
+                          : "bg-red-400"
+                        }`}
+                    >
+                      <div
+                        className={`absolute top-1/2 left-0.5 transform -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-200 ${project.Status === "Active"
+                            ? "translate-x-5"
+                            : "translate-x-0"
+                          }`}
+                      ></div>
+                    </div>
+                    <span
+                      className={`text-sm font-medium ml-3 ${project.Status === "Active"
+                          ? "text-green-600"
+                          : "text-red-600"
+                        }`}
+                    >
+                      {project.Status}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
         <div className="flex justify-between mt-8">
           <button
             disabled={nPage === 1}
@@ -250,7 +307,8 @@ const Banners = () => {
             {t("COMMON.PREVIOUS")}
           </button>
           <span className="text-caption flex items-center">
-            Page {nPage} of {totalPages} ({totalRecords} total)
+            {t("BANNER_FORM.PAGE")} {nPage} {t("BANNER_FORM.OF")} {totalPages} (
+            {totalRecords} {t("VIEW_ORDER.TABLE.TOTAL")})
           </span>
           <button
             disabled={nPage === totalPages}
@@ -264,9 +322,9 @@ const Banners = () => {
       {statusPopup.open && (
         <FullscreenErrorPopup
           title={t("FULLSCREEN_ERROR_POPUP.TITLE")}
-          message={t(
-            "Are you sure you want to change the status of this banner?"
-          )}
+          message={t("BANNER_FORM.STATUS_CONFIRM_MESSAGE", {
+            status: statusPopup.currentStatus === "Active" ? t("COMMON.INACTIVE") : t("COMMON.ACTIVE"),
+          })}
           onClose={handleStatusPopupClose}
           onConfirm={handleStatusConfirm}
         />

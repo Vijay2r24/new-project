@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import Loader from "../components/Loader";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams,useLocation } from "react-router-dom";
 import TextwithIcone from "../components/TextInputWithIcon";
-import SelectwithIcone from "../components/SelectWithIcon";
-import { Store, Shield } from "lucide-react";
+import { Shield } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { apiGet, apiPost } from "../utils/ApiUtils";
 import {
@@ -11,35 +10,25 @@ import {
   CREATE_OR_UPDATE_ROLE,
   GET_ALL_PERMISSIONS_BY_ROLE_ID,
 } from "../contants/apiRoutes";
-import { useStores, useRoles } from "../context/AllDataContext";
 import { showEmsg } from "../utils/ShowEmsg";
 import { useTitle } from "../context/TitleContext";
-import { STATUS } from "../contants/constants";
+import { STATUS,STATUS_DROPDOWN_OPTIONS } from "../contants/constants";
 import BackButton from "../components/BackButton";
 import { ToastContainer } from "react-toastify";
-
+import SelectWithIcon from "../components/SelectWithIcon";
+import { Tag } from "lucide-react";
 const AddUserRole = () => {
   const [sRoleName, setRoleName] = useState("");
-  const [sStoreId, setStoreId] = useState("0");
   const [oPermissionsByModule, setPermissionsByModule] = useState({});
   const [nError, setError] = useState(null);
   const [oErrors, setErrors] = useState({});
   const [loadingPermissions, setLoadingPermissions] = useState(true);
   const [bSubmitting, setSubmitting] = useState(false);
+  const [bIsActive, setIsActive] = useState(true);
   const { t } = useTranslation();
-  const {
-    data: aStores = [],
-    loading: bStoresLoading,
-    error: sStoresError,
-    fetch: fetchStores,
-  } = useStores();
-  const {
-    data: roles = [],
-    loading: rolesLoading,
-    error: rolesError,
-    fetch: fetchRoles,
-  } = useRoles();
+  const location = useLocation();
   const { roleId } = useParams();
+  const { roleName, status } = location.state || {};
   const { setTitle, setBackButton } = useTitle();
   const navigate = useNavigate();
 
@@ -55,6 +44,15 @@ const AddUserRole = () => {
       setTitle("");
     };
   }, [setTitle, setBackButton, t, roleId]);
+  useEffect(() => {
+    if (roleName) {
+      setRoleName(roleName);
+    }
+    if (status !== undefined) {
+      setIsActive(status === true); 
+    }
+  }, [roleName, status]);
+  
 
   const fetchPermissions = useCallback(async () => {
     setLoadingPermissions(true);
@@ -69,7 +67,7 @@ const AddUserRole = () => {
           token
         );
         const roleData = rolePermRes?.data;
-        if (roleData?.STATUS === STATUS.SUCCESS.toUpperCase()) {
+        if (roleData?.status === STATUS.SUCCESS.toUpperCase()) {
           if (Array.isArray(roleData.data?.result)) {
             permissionsArr = roleData.data.result;
           } else if (
@@ -79,13 +77,24 @@ const AddUserRole = () => {
             permissionsArr = roleData.data.data.rows;
           } else if (roleData.data?.rows && Array.isArray(roleData.data.rows)) {
             permissionsArr = roleData.data.rows;
+          } else if (Array.isArray(roleData.data)) {
+            permissionsArr = roleData.data;
+          }
+        
+          else if (Array.isArray(roleData.data?.permissions)) {
+            permissionsArr = roleData.data.permissions;
+            setRoleName(roleData.data.roleName || "");
+            setIsActive(roleData.data.isActive !== undefined ? roleData.data.isActive : true);
           }
         }
       } else {
         const res = await apiGet(GET_ALL_PERMISSIONS, {}, token);
         const resData = res?.data;
-        if (resData?.STATUS === STATUS.SUCCESS.toUpperCase()) {
-          if (Array.isArray(resData.data?.result)) {
+        
+        if (resData?.status === STATUS.SUCCESS.toUpperCase()) {
+          if (Array.isArray(resData.data)) {
+            permissionsArr = resData.data;
+          } else if (Array.isArray(resData.data?.result)) {
             permissionsArr = resData.data.result;
           } else if (
             resData.data?.data?.rows &&
@@ -103,10 +112,11 @@ const AddUserRole = () => {
       if (permissionsArr.length > 0) {
         const categorizedPermissions = {};
         permissionsArr.forEach((permission) => {
-          const module = permission.PermissionModule || permission.Module;
-          const id = permission.PermissionId || permission.ID;
-          const name = permission.PermissionName || permission.Name;
-          const isChecked = permission.IsChecked;
+          const module = permission.Module || permission.PermissionModule||permission.module;
+          const id = permission.PermissionID|| permission.ID||permission.permissionId;
+          const name = permission.PermissionName || permission.Name||permission.permissionName;
+          const isChecked = permission.IsChecked || false;
+          
           if (!categorizedPermissions[module]) {
             categorizedPermissions[module] = [];
           }
@@ -117,17 +127,9 @@ const AddUserRole = () => {
           });
         });
         setPermissionsByModule(categorizedPermissions);
-        if (roleId && permissionsArr.length > 0) {
-          const roleInfo =
-            permissionsArr.find((p) => p.RoleName && p.StoreID) ||
-            permissionsArr[0];
-          setRoleName(roleInfo.RoleName || "");
-          setStoreId(roleInfo.StoreID ? String(roleInfo.StoreID) : "0");
-          setStoreName(roleInfo.StoreName || "");
-        }
       } else {
         setPermissionsByModule({});
-        setError("No permissions found");
+        setError(t("CREATE_USER_ROLE.NO_PERMISSIONS_FOUND"));
       }
     } catch (err) {
       const backendMessage = err?.response?.data?.message;
@@ -173,20 +175,16 @@ const AddUserRole = () => {
   }, [navigate]);
   const validateRoleDataSubmit = useCallback(() => {
     const newErrors = {};
-    if (sStoreId === "0") {
-      newErrors.StoreIdError = t("CREATE_USER_ROLE.STORE_ISREQUID");
-    }
     if (!sRoleName) {
       newErrors.RoleNameError = t("CREATE_USER_ROLE.ROLE_ISREQUID");
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length > 0;
-  }, [sStoreId, sRoleName, t]);
+  }, [sRoleName, t]);
 
-  const handleStoreChange = useCallback((event) => {
-    setStoreId(event.target.value);
-    setErrors((prev) => ({ ...prev, StoreIdError: undefined }));
-  }, []);
+  const handleStatusChange = (e) => {
+    setIsActive(e.target.value === "true");
+  };
 
   const handleSave = useCallback(
     async (event) => {
@@ -195,40 +193,54 @@ const AddUserRole = () => {
         setSubmitting(true);
         const permissions = Object.values(oPermissionsByModule)
           .flat()
+          .filter(permission => permission.IsChecked)
           .map((permission) => ({
-            permissionId:
-              permission.ID || permission.PermissionId || permission.id,
-            isChecked: !!permission.IsChecked,
+          
+            permissionId: permission.ID, 
+            isChecked: true
           }));
 
         const userId = localStorage.getItem("userId");
+        const tenantID = localStorage.getItem("tenantID");
+      
         const roleData = {
-          roleId: roleId ? Number(roleId) : 0,
-          roleName: sRoleName,
-          permissions,
-          TenantID: localStorage.getItem("tenantID"),
-          storeId: Number(sStoreId),
-          ...(roleId ? { UpdatedBy: userId } : { CreatedBy: userId }),
+          RoleName: sRoleName,
+          IsActive: bIsActive,
+          Permissions: permissions
         };
-
+  
+        // Add additional fields based on create vs update
+        if (roleId) {
+          // For update - include RoleID and UpdatedBy
+          roleData.RoleID = roleId;
+          roleData.UpdatedBy = userId;
+        } else {
+          // For create - include CreatedBy and TenantID
+          roleData.CreatedBy = userId;
+          roleData.TenantID = tenantID;
+        }
+  
         try {
           const token = localStorage.getItem("token");
           const res = await apiPost(CREATE_OR_UPDATE_ROLE, roleData, token);
           const resData = res?.data;
-          if (resData?.STATUS === STATUS.SUCCESS.toUpperCase()) {
+          if (resData?.status === STATUS.SUCCESS.toUpperCase()) {
             showEmsg(
-              resData.MESSAGE || t("CREATE_USER_ROLE.SAVE_SUCCESS"),
+              resData.message|| t("CREATE_USER_ROLE.SAVE_SUCCESS"),
               STATUS.SUCCESS,
               3000,
-              async () => {
+              () => {
                 navigate("/userRoles");
               }
             );
           } else {
-            showEmsg(resData?.MESSAGE || t("COMMON.API_ERROR"), STATUS.ERROR);
+            showEmsg(resData?.message || t("COMMON.API_ERROR"), STATUS.ERROR);
           }
         } catch (err) {
-          showEmsg(t("COMMON.API_ERROR"), STATUS.ERROR);
+          showEmsg(
+            err.response?.data?.message || t("COMMON.API_ERROR"), 
+            STATUS.ERROR
+          );
         } finally {
           setSubmitting(false);
         }
@@ -239,19 +251,16 @@ const AddUserRole = () => {
       oPermissionsByModule,
       roleId,
       sRoleName,
-      sStoreId,
+      bIsActive,
       t,
-      navigate,
+      navigate
     ]
   );
 
-  if (nError)
+  if (nError) {
     return <div>{t("CREATE_USER_ROLE.FAILED_TO_FETCH_PERMISSIONS")}</div>;
+  }
 
-  const storeOptions = aStores.map((store) => ({
-    value: String(store.StoreID),
-    label: store.StoreName,
-  }));
   const loaderOverlay = bSubmitting ? (
     <div className="global-loader-overlay">
       <Loader />
@@ -270,47 +279,39 @@ const AddUserRole = () => {
           </div>
         </div>
         <form onSubmit={handleSave}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div className="flex flex-col items-center justify-center">
-              <div className="flex flex-col sm:flex-row justify-center items-center w-full">
-                <label className="block font-semibold mr-[14px]">
-                  {t("CREATE_USER_ROLE.SELECT_STORE")}
-                </label>
-                <SelectwithIcone
-                  options={storeOptions}
-                  value={sStoreId}
-                  onChange={handleStoreChange}
-                  placeholder={t("CREATE_USER_ROLE.SELECT_STORE")}
-                  error={oErrors.StoreIdError}
-                  Icon={Store}
-                  searchable
-                  searchPlaceholder={t("COMMON.SEARCH_STORE") || "Search store"}
-                  onInputChange={(inputValue) =>
-                    fetchStores({ searchText: inputValue })
-                  }
-                />
-              </div>
+          <div className="flex flex-col md:flex-row md:space-x-4 mb-6">
+            <div className="w-full md:w-1/2">
+              <TextwithIcone
+                label={t("COMMON.ROLE")}
+                type="text"
+                value={sRoleName}
+                onChange={(e) => {
+                  setRoleName(e.target.value);
+                  setErrors((prev) => ({
+                    ...prev,
+                    RoleNameError: undefined,
+                  }));
+                }}
+                placeholder={t("CREATE_USER_ROLE.ENTER_ROLE_NAME")}
+                error={oErrors.RoleNameError}
+                Icon={Shield}
+              />
             </div>
-            <div className="flex flex-col items-center justify-center">
-              <div className="flex flex-col sm:flex-row justify-center items-center w-full">
-                <label className="block font-semibold mr-[14px]">
-                  {t("COMMON.ROLE")}
-                </label>
-                <TextwithIcone
-                  type="text"
-                  value={sRoleName}
-                  onChange={(e) => {
-                    setRoleName(e.target.value);
-                    setErrors((prev) => ({
-                      ...prev,
-                      RoleNameError: undefined,
-                    }));
-                  }}
-                  placeholder={t("CREATE_USER_ROLE.ENTER_ROLE_NAME")}
-                  error={oErrors.RoleNameError}
-                  Icon={Shield}
-                />
-              </div>
+            
+            <div className="w-full md:w-1/2">
+              <SelectWithIcon
+                label={t("PRODUCT_SETUP.CREATE_BRAND.STATUS_LABEL")}
+                id="IsActive"
+                name="IsActive"
+                value={bIsActive.toString()}
+                onChange={handleStatusChange}
+                options={STATUS_DROPDOWN_OPTIONS.map(opt => ({
+                  value: opt.value,
+                  label: t(opt.labelKey),
+                }))}
+                Icon={Tag}
+                error={oErrors.IsActive}
+              />
             </div>
           </div>
           <hr className="border-gray-300 my-4 mb-6" />
@@ -379,7 +380,7 @@ const AddUserRole = () => {
               {t("COMMON.CANCEL")}
             </button>
             <button className="btn-primary truncate" type="submit">
-              {t("CREATE_USER_ROLE.SAVE_ROLE")}
+              {roleId ? t("COMMON.UPDATE") : t("CREATE_USER_ROLE.SAVE_ROLE")}
             </button>
           </div>
         </form>

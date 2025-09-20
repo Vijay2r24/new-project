@@ -609,9 +609,11 @@
     "SAVE_ROLE": "Save Role",
     "UPDATE_ROLE": "Update Role",
     "FAILED_TO_FETCH_PERMISSIONS": "Failed to fetch permissions.",
-    "FAILED_TO_SAVE_ROLE": "Failed to save user role."
+    "FAILED_TO_SAVE_ROLE": "Failed to save user role.",
+    "NO_PERMISSIONS_FOUND":"No permissions found"
   },
   "BANNER_FORM": {
+   "TITLE":"Banners",
    "VIEW_ACTIVE_BANNERS": "Active Banners Sequence",
     "CREATE_BANNER": "Create banner",
     "UPLOAD_BANNER": "Upload Banner",
@@ -631,7 +633,16 @@
     "CREATE_BANNER_DESCRIPTION": "Create and upload banners for your store. Add images, set categories, brands, and more.",
     "BANNER_STATUS_UPDATE_SUCCESS": "Banner status updated successfully.",
     "BANNER_STATUS_UPDATE_ERROR": "Failed to update banner status.",
-    "NO_BANNERS_FOUND": "No banners found."
+    "NO_BANNERS_FOUND": "No banners found.",
+    "PAGE": "Page",
+    "OF": "of",
+    "UNNAMED_BANNER": "Unnamed Banner",
+    "PRICE": "Price",
+    "SEQUENCE": "Sequence",
+    "STATUS_ACTIVE": "Active",
+    "STATUS_INACTIVE": "Inactive",
+    "IMAGE_DIMENSIONS_TOO_SMALL": "Image dimensions are too small. Minimum size required is {{width}}x{{height}} pixels.",
+    "INVALID_IMAGE_TYPE": "Only image files are allowed. Please upload a valid image."
   },
   "NOTIFICATIONS": {
     "TITLE": "Notifications",
@@ -722,7 +733,13 @@
     "OF": "of",
     "INVALID_POSITION": "Must be between 1 and {count}",
     "NO_IMAGE": "No image available",
-    "SAVE_SUCCESS": "Banner sequence saved successfully"
+    "SAVE_SUCCESS": "Banner sequence saved successfully",
+    "PREVIEW": "Preview",
+    "PREVIEW_TITLE": "Banner Sequence Preview",
+    "PAUSE": "Pause auto-play",
+    "PLAY": "Start auto-play",
+    "DELETE_SUCCESS": "Banner deleted successfully.",
+    "STATUS_UPDATED": "Banner status updated successfully."
   },
   "COMMON": {
     "UPDATE_STATUS": "Active",
@@ -768,6 +785,7 @@
     "EMAIL_ADDRESS": "Email Address",
     "PHONE_NUMBER": "Phone Number",
     "CREATED_AT": "Created At",
+    "UPDATED_AT": "Updated At",
     "STREET_ADDRESS": "Street Address",
     "HEADING_LABEL": "Heading",
     "CITY": "City",
