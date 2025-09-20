@@ -1,4 +1,3 @@
-// src/store/allDataSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"; // Redux Toolkit helpers
 import { apiGet, apiPatch } from "../../utils/ApiUtils"; // API helpers for GET & PATCH
 import {
@@ -15,6 +14,7 @@ import {
   GET_All_PAYMENT_STATUS,
   GET_ALL_PAYMENT_METHODS,
   GET_ALL_PAYMENT_TYPES,
+  GET_USER_BY_ID // Make sure to add this import
 } from "../../contants/apiRoutes"; // API endpoints (centralized constants)
 import { STATUS } from "../../contants/constants"; // Shared constants like SUCCESS/ERROR
 
@@ -59,7 +59,6 @@ const aResourceConfigs = [
 ];
 
 /**
-
   1. FETCH RESOURCE
   Thunk to fetch any resource (brands, categories, users, etc.)
   Usage:
@@ -143,13 +142,44 @@ export const updateStatusById = createAsyncThunk(
 );
 
 /**
- * 3. SLICE
+ * 3. FETCH USER DETAILS
+ * Thunk to fetch specific user details by ID
+ * Usage: dispatch(fetchUserDetails(userId))
+ */
+export const fetchUserDetails = createAsyncThunk(
+  "allData/fetchUserDetails",
+  async (userId, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await apiGet(`${GET_USER_BY_ID}/${userId}`, {}, token);
+
+      console.log("User details response:", response);
+
+      if (response?.data?.status === STATUS.SUCCESS.toUpperCase()) {
+        const userData = response.data.data;
+        localStorage.setItem("userDetails", JSON.stringify(userData));
+        return userData;
+      } else {
+        throw new Error(response?.data?.message || "Failed to fetch user details");
+      }
+    } catch (err) {
+      localStorage.removeItem("userDetails");
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+/**
+ * 4. SLICE
  * Stores all fetched data under state.allData.resources[resourceKey]
  */
 const allDataSlice = createSlice({
   name: "allData",
   initialState: {
     resources: {}, // Example: { brands: { data: [], loading: false, error: null } }
+    userDetails: null, // Add userDetails to store individual user data
+    userDetailsError: null,
+    userDetailsLoading: false,
   },
   reducers: {
     /**
@@ -159,6 +189,19 @@ const allDataSlice = createSlice({
     clearResourceError: (state, action) => {
       const key = action.payload;
       if (state.resources[key]) state.resources[key].error = null;
+    },
+    /**
+     * Clear user details error
+     */
+    clearUserDetailsError: (state) => {
+      state.userDetailsError = null;
+    },
+    /**
+     * Clear user details data
+     */
+    clearUserDetails: (state) => {
+      state.userDetails = null;
+      localStorage.removeItem("userDetails");
     },
   },
   extraReducers: (builder) => {
@@ -190,15 +233,36 @@ const allDataSlice = createSlice({
           error: error || "Failed to fetch",
         };
       })
+
+      // UPDATE STATUS lifecycle
       .addCase(updateStatusById.fulfilled, (state, action) => {
         const { key, id, idField, payload } = action.payload;
         if (state.resources[key]?.data) {
+          // Update status in place
           state.resources[key].data = state.resources[key].data.map((item) =>
             item[idField] === id ? { ...item, Status: payload.Status } : item
           );
         }
+      })
+
+      // FETCH USER DETAILS lifecycle
+      .addCase(fetchUserDetails.pending, (state) => {
+        state.userDetailsLoading = true;
+        state.userDetailsError = null;
+      })
+      .addCase(fetchUserDetails.fulfilled, (state, action) => {
+        state.userDetailsLoading = false;
+        state.userDetails = action.payload;
+        state.userDetailsError = null;
+      })
+      .addCase(fetchUserDetails.rejected, (state, action) => {
+        state.userDetailsLoading = false;
+        state.userDetails = null;
+        state.userDetailsError = action.payload || "Failed to fetch user details";
       });
   },
 });
-export const { clearResourceError } = allDataSlice.actions;
+
+// Export actions & reducer
+export const { clearResourceError, clearUserDetailsError, clearUserDetails } = allDataSlice.actions;
 export default allDataSlice.reducer;

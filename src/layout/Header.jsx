@@ -2,9 +2,11 @@ import React, { useRef, useState, useEffect } from "react";
 import { Bell, Menu, Dot } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useSelector, useDispatch } from "react-redux";
 import { useTitle } from "../context/TitleContext";
-import { useUserDetails } from "../../src/context/AllDataContext";
+import { fetchUserDetails, clearUserDetails } from "../store/slices/allDataSlice";
 import user from "../../assets/images/user.jpg";
+
 const aMockNotifications = [
   { id: 1, title: "Order #1234 delivered", time: "2 min ago" },
   { id: 2, title: "New user registered", time: "10 min ago" },
@@ -14,7 +16,9 @@ const aMockNotifications = [
 const Header = ({ onMenuClick }) => {
   const { t } = useTranslation();
   const { title, backButton } = useTitle();
-  const { data: contextUserDetails } = useUserDetails();
+  const dispatch = useDispatch();
+  const { userDetails, userDetailsLoading, userDetailsError } = useSelector((state) => state.allData);
+  
   const [bShowNotifications, setShowNotifications] = useState(false);
   const bellRef = useRef();
   const dropdownRef = useRef();
@@ -23,21 +27,30 @@ const Header = ({ onMenuClick }) => {
   const profileDropdownRef = useRef();
   const navigate = useNavigate();
 
-  const [userDetails, setUserDetails] = useState(() => {
-    return (
-      contextUserDetails ||
-      JSON.parse(localStorage.getItem("userDetails")) ||
-      null
-    );
-  });
-
+  // Get user details from Redux store on component mount
   useEffect(() => {
-    if (contextUserDetails) {
-      setUserDetails(contextUserDetails);
+    // Directly fetch user details when component mounts
+    const storedUserDetails = localStorage.getItem("userDetails");
+    if (storedUserDetails) {
+      const parsedDetails = JSON.parse(storedUserDetails);
+      dispatch(fetchUserDetails(parsedDetails.UserID));
     }
-  }, [contextUserDetails]);
+  }, [dispatch]);
 
-  const oUserDetails = userDetails?.user || {};
+  // Get profile image URL from the response
+  const getProfileImageUrl = () => {
+    if (!userDetails || !userDetails.ProfileImageUrl) return user;
+    
+    // Check if ProfileImageUrl is an array with at least one item
+    if (Array.isArray(userDetails.ProfileImageUrl) && userDetails.ProfileImageUrl.length > 0) {
+      return userDetails.ProfileImageUrl[0].documentUrl;
+    }
+    
+    // Fallback to default image
+    return user;
+  };
+
+  const oUserDetails = userDetails || {};
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -91,6 +104,7 @@ const Header = ({ onMenuClick }) => {
         case "logout":
           localStorage.removeItem("token");
           localStorage.removeItem("userDetails");
+          dispatch(clearUserDetails());
           navigate("/");
           break;
         default:
@@ -184,10 +198,10 @@ const Header = ({ onMenuClick }) => {
               <div className="relative">
                 <img
                   className="h-8 w-8 rounded-full border-2 border-gray-200 group-hover:border-blue-200 transition-colors"
-                  src={oUserDetails?.ProfileImageUrl}
+                  src={getProfileImageUrl()}
                   alt="Profile"
                   onError={(e) => {
-                    e.target.src = { user };
+                    e.target.src = user;
                   }}
                 />
                 <div className="absolute bottom-0 right-0 h-2.5 w-2.5 bg-green-500 rounded-full border border-white"></div>
@@ -211,10 +225,10 @@ const Header = ({ onMenuClick }) => {
                 <div className="flex flex-col items-center pt-5 pb-3 px-4 border-b">
                   <img
                     className="h-14 w-14 rounded-full border border-gray-200 shadow-sm mb-2"
-                    src={oUserDetails?.ProfileImageUrl}
+                    src={getProfileImageUrl()}
                     alt="Profile"
                     onError={(e) => {
-                      e.target.src = { user };
+                      e.target.src = user;
                     }}
                   />
                   <div className="text-sm font-semibold text-gray-900 text-center">

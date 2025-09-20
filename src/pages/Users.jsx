@@ -1,15 +1,14 @@
-import { useState, useEffect } from "react";
-import { Mail, Phone, Shield, UserPlus } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Mail, Phone, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Toolbar from "../components/Toolbar";
 import Pagination from "../components/Pagination";
 import ActionButtons from "../components/ActionButtons";
 import { useTranslation } from "react-i18next";
 import { apiDelete } from "../utils/ApiUtils";
-import { USER_ACTIVE_STATUS, DELETE_USER} from "../contants/apiRoutes";
+import { USER_ACTIVE_STATUS, DELETE_USER } from "../contants/apiRoutes";
 import { useTitle } from "../context/TitleContext";
 import { ITEMS_PER_PAGE, STATUS } from "../contants/constants";
-import { useRoles, useUsers } from "../context/AllDataContext";
 import FullscreenErrorPopup from "../components/FullscreenErrorPopup";
 import { showEmsg } from "../utils/ShowEmsg";
 import { ToastContainer } from "react-toastify";
@@ -19,6 +18,9 @@ import Loader from "../components/Loader";
 import { hideLoaderWithDelay } from "../utils/loaderUtils";
 import { getPermissionCode, hasPermissionId } from "../utils/permissionUtils";
 
+import { useDispatch, useSelector } from "react-redux";
+import { fetchResource, updateStatusById } from "../store/slices/allDataSlice";
+
 const Users = () => {
   const navigate = useNavigate();
   const [sSearchTerm, setSearchTerm] = useState("");
@@ -27,43 +29,91 @@ const Users = () => {
   const [sViewMode, setViewMode] = useState("table");
   const [nCurrentPage, setCurrentPage] = useState(1);
   const [sShowFilterDropdown, setShowFilterDropdown] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [bSubmitting, setSubmitting] = useState(false);
-  const [bFilterLoading, setFilterLoading] = useState(false);
+  const [debounceTimer, setDebounceTimer] = useState(null);
   const itemsPerPage = ITEMS_PER_PAGE;
-  const {
-    data: usersData = [],
-    updateStatusById,
-    fetch,
-    loading: contextLoading,
-    error: contextError,
-    total,
-  } = useUsers();
+
+  const dispatch = useDispatch();
+
+  const usersState = useSelector(
+    (state) => state.allData.resources.users || {}
+  );
+  const { data: usersData = [], total = 0, loading, error } = usersState;
   const nTotalPages = Math.ceil((total || 0) / itemsPerPage);
 
-  const { data: aRoles, fetch: fetchRoles } = useRoles();
+  const rolesState = useSelector(
+    (state) => state.allData.resources.roles || {}
+  );
+  const { data: aRoles = [] } = rolesState;
 
-  const defaultFilters = {
-    role: "all",
+  const storesState = useSelector(
+    (state) => state.allData.resources.stores || {}
+  );
+  const { data: aStores = [] } = storesState;
+
+  const defaultFilters = { 
+    role: "all", 
     status: "all",
+    store: "all",
+    sortOrder: "DESC"
   };
- const permissionIdForDelete = getPermissionCode("User Management", "Delete User");
-const hasDeletePermission = hasPermissionId(permissionIdForDelete);
-
-  console.log("Delete Permission Code:", permissionIdForDelete);
-console.log("Has Delete Permission?", hasDeletePermission);
-
   const [oFilters, setFilters] = useState(defaultFilters);
 
+  const permissionIdForDelete = getPermissionCode(
+    "User Management",
+    "Delete User"
+  );
+  const hasDeletePermission = hasPermissionId(permissionIdForDelete);
+
+  // Helper function to get profile image URL
+  const getProfileImageUrl = (user) => {
+    if (!user.ProfileImageUrl) return userProfile;
+    
+    // Handle both string and array formats
+    if (typeof user.ProfileImageUrl === 'string') {
+      return user.ProfileImageUrl;
+    }
+    
+    if (Array.isArray(user.ProfileImageUrl) && user.ProfileImageUrl.length > 0) {
+      // Get the first image with the highest sortOrder or the first one
+      const sortedImages = [...user.ProfileImageUrl].sort((a, b) => 
+        (b.sortOrder || 0) - (a.sortOrder || 0)
+      );
+      return sortedImages[0].documentUrl || userProfile;
+    }
+    
+    return userProfile;
+  };
+
+  // Helper function to get stores as comma-separated string
+  const getStoresString = (user) => {
+    if (!user.Stores || !Array.isArray(user.Stores)) return "";
+    return user.Stores.map(store => store.StoreName).join(", ");
+  };
+
+  // Use useCallback for buildApiParams to prevent unnecessary recreations
+  const buildApiParams = useCallback(() => {
+    const params = {
+      pageNumber: nCurrentPage,
+      pageSize: itemsPerPage,
+      ...(sSearchTerm ? { searchText: sSearchTerm } : {}),
+      ...(oFilters.role !== "all" ? { roleName: oFilters.role } : {}),
+      ...(oFilters.store !== "all" ? { storeName: oFilters.store } : {}),
+      ...(oFilters.status !== "all" 
+        ? { IsActive: oFilters.status === "Active" } 
+        : {}),
+      sortOrder: oFilters.sortOrder,
+    };
+    
+    return params;
+  }, [nCurrentPage, itemsPerPage, sSearchTerm, oFilters]);
+
   const handleClearFilters = () => {
-    setFilterLoading(true);
     setFilters(defaultFilters);
     setCurrentPage(1);
   };
 
   const handleFilterChange = (e, filterName) => {
-    setFilterLoading(true);
     setFilters({
       ...oFilters,
       [filterName]: e.target.value,
@@ -87,9 +137,26 @@ console.log("Has Delete Permission?", hasDeletePermission);
     { value: "Inactive", label: t("COMMON.INACTIVE") },
   ];
 
+  const storeOptions = [
+    { value: "all", label: t("COMMON.ALL") },
+    ...(Array.isArray(aStores)
+      ? aStores.map((store) => ({
+          value: store.StoreName,
+          label: store.StoreName,
+        }))
+      : []),
+  ];
+
   const handleDropdownInputChange = (inputValue, filterName) => {
     if (filterName === "role") {
-      fetchRoles({ searchText: inputValue });
+      dispatch(
+        fetchResource({ key: "roles", params: { searchText: inputValue } })
+      );
+    }
+    if (filterName === "store") {
+      dispatch(
+        fetchResource({ key: "stores", params: { searchText: inputValue } })
+      );
     }
   };
 
@@ -111,23 +178,25 @@ console.log("Has Delete Permission?", hasDeletePermission);
       value: oFilters.status,
       options: statusOptions,
     },
+    {
+      label: t("COMMON.STORE"),
+      name: "store",
+      value: oFilters.store,
+      options: storeOptions,
+      placeholder: t("USERS.FILTERS.STORE"),
+      searchable: true,
+      searchPlaceholder: t("COMMON.SEARCH_STORE") || "Search store",
+      onInputChange: (inputValue) =>
+        handleDropdownInputChange(inputValue, "store"),
+    },
   ];
 
-  const handlePrevPage = () => {
-    setCurrentPage((prev) => Math.max(prev - 1, 1));
-  };
-
-  const handleNextPage = () => {
+  const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+  const handleNextPage = () =>
     setCurrentPage((prev) => Math.min(prev + 1, nTotalPages));
-  };
+  const handlePageClick = (page) => setCurrentPage(page);
 
-  const handlePageClick = (page) => {
-    setCurrentPage(page);
-  };
-
-  const handleEdit = (userId) => {
-    navigate(`/editUser/${userId}`);
-  };
+  const handleEdit = (userId) => navigate(`/editUser/${userId}`);
 
   const [deletePopup, setDeletePopup] = useState({ open: false, userId: null });
   const handleDelete = (userId) => {
@@ -146,23 +215,27 @@ console.log("Has Delete Permission?", hasDeletePermission);
       const response = await apiDelete(`${DELETE_USER}/${userId}`, token);
       const backendMessage = response.data.MESSAGE;
       showEmsg(backendMessage, STATUS.SUCCESS);
-      fetch({
-        pageNumber: nCurrentPage,
-        pageSize: itemsPerPage,
-        searchText: sSearchTerm,
-      });
+
+      // refetch after delete
+      const params = buildApiParams();
+      dispatch(
+        fetchResource({
+          key: "users",
+          params: params,
+        })
+      );
+
       setDeletePopup({ open: false, userId: null });
     } catch (err) {
-      const errorMessage = error?.response?.data?.MESSAGE;
+      const errorMessage = err?.response?.data?.MESSAGE;
       showEmsg(errorMessage || t("COMMON.API_ERROR"), STATUS.ERROR);
       setDeletePopup({ open: false, userId: null });
     }
     hideLoaderWithDelay(setSubmitting);
   };
 
-  const handleDeletePopupClose = () => {
+  const handleDeletePopupClose = () =>
     setDeletePopup({ open: false, userId: null });
-  };
 
   const [statusPopup, setStatusPopup] = useState({
     open: false,
@@ -170,68 +243,87 @@ console.log("Has Delete Permission?", hasDeletePermission);
     newStatus: null,
   });
 
-  const handleStatusChange = (userId, isActive) => {
-    setStatusPopup({ open: true, userId, newStatus: !isActive });
+  const handleStatusChange = (userId, newStatus) => {
+    setStatusPopup({ open: true, userId, newStatus });
   };
 
   const handleStatusConfirm = async () => {
     setSubmitting(true);
     const { userId, newStatus } = statusPopup;
-    if (!updateStatusById) return;
-    const result = await updateStatusById(
-      userId,
-      newStatus,
-      USER_ACTIVE_STATUS,
-      "UserID"
-    );
-    showEmsg(result.message, result.status);
-    setStatusPopup({ open: false, userId: null, newStatus: null });
-    hideLoaderWithDelay(setSubmitting);
+    try {
+      const result = await dispatch(
+        updateStatusById({
+          key: "users",
+          id: userId,
+          newStatus,
+          apiRoute: USER_ACTIVE_STATUS,
+          idField: "UserID",
+        })
+      ).unwrap();
+
+      showEmsg(result.message, STATUS.SUCCESS);
+
+      // Re-fetch users to update table data
+      const params = buildApiParams();
+      dispatch(
+        fetchResource({
+          key: "users",
+          params: params,
+        })
+      );
+    } catch (err) {
+      showEmsg(err.message || "Failed to update status", STATUS.ERROR);
+    } finally {
+      setStatusPopup({ open: false, userId: null, newStatus: null });
+      hideLoaderWithDelay(setSubmitting);
+    }
   };
 
-  const handleStatusPopupClose = () => {
+  const handleStatusPopupClose = () =>
     setStatusPopup({ open: false, userId: null, newStatus: null });
-  };
 
+  // Debounced API call on filter changes
   useEffect(() => {
-    const fetchData = async () => {
-      if (!bFilterLoading) {
-        setLoading(true);
-      }
-
-      try {
-        await fetch({
-          pageNumber: nCurrentPage,
-          pageSize: itemsPerPage,
-          searchText: sSearchTerm || "",
-          ...(oFilters.role !== "all" ? { roleName: oFilters.role } : {}),
-          ...(oFilters.status !== "all" ? { status: oFilters.status } : {}),
-        });
-      } finally {
-        setLoading(false);
-        setFilterLoading(false);
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+    
+    const timer = setTimeout(() => {
+      const params = buildApiParams();
+      dispatch(
+        fetchResource({
+          key: "users",
+          params: params,
+        })
+      );
+    }, 300); // 300ms debounce delay
+    
+    setDebounceTimer(timer);
+    
+    return () => {
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
       }
     };
-    fetchData();
-  }, [nCurrentPage, itemsPerPage, sSearchTerm, oFilters]);
+  }, [nCurrentPage, itemsPerPage, sSearchTerm, oFilters, dispatch, buildApiParams]);
 
   useEffect(() => {
     setTitle(t("USERS.TITLE"));
   }, [setTitle, t]);
 
+  // Initial fetch for roles and stores
   useEffect(() => {
-    setCurrentPage(1);
-  }, [sSearchTerm, oFilters]);
+    dispatch(fetchResource({ key: "roles" }));
+    dispatch(fetchResource({ key: "stores" }));
+  }, [dispatch]);
 
-  useEffect(() => {
-    fetchRoles();
-  }, []);
-
+  // Fetch roles and stores when filter dropdown is shown
   useEffect(() => {
     if (sShowFilterDropdown) {
-      fetchRoles();
+      dispatch(fetchResource({ key: "roles" }));
+      dispatch(fetchResource({ key: "stores" }));
     }
-  }, [sShowFilterDropdown]);
+  }, [sShowFilterDropdown, dispatch]);
 
   return (
     <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen bg-gray-50">
@@ -255,6 +347,8 @@ console.log("Has Delete Permission?", hasDeletePermission);
         onCreate={() => navigate("/add-user")}
         createLabel={t("USERS.ADD_USER")}
       />
+
+      {/* table view */}
       {sViewMode === "table" ? (
         <div className="table-container">
           <div className="table-wrapper">
@@ -273,29 +367,23 @@ console.log("Has Delete Permission?", hasDeletePermission);
                 </tr>
               </thead>
               <tbody className="table-body">
-                {bFilterLoading ? (
+                {loading ? (
                   <tr>
-                    <td colSpan="5" className="text-center py-8">
+                    <td colSpan="6" className="text-center py-8">
                       <div className="flex justify-center items-center h-32">
                         <Loader className="h-8 w-8" />
                       </div>
                     </td>
                   </tr>
-                ) : loading ? (
-                  <tr>
-                    <td colSpan="5" className="text-center py-4">
-                      {t("COMMON.LOADING")}
-                    </td>
-                  </tr>
                 ) : error ? (
                   <tr>
-                    <td colSpan="5" className="text-center py-4 text-muted">
+                    <td colSpan="6" className="text-center py-4 text-muted">
                       {t("USERS.FETCH_ERROR")}
                     </td>
                   </tr>
                 ) : usersData.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="text-center text-muted py-4">
+                    <td colSpan="6" className="text-center text-muted py-4">
                       {t("USERS.NO_USERS_FOUND")}
                     </td>
                   </tr>
@@ -306,8 +394,8 @@ console.log("Has Delete Permission?", hasDeletePermission);
                         <div className="flex items-center">
                           <div className="h-10 w-10 flex-shrink-0">
                             <img
-                              className="h-10 w-10 rounded-full"
-                              src={user.ProfileImageUrl || userProfile}
+                              className="h-10 w-10 rounded-full object-cover"
+                              src={getProfileImageUrl(user)}
                               onError={(e) => {
                                 e.target.onerror = null;
                                 e.target.src = userProfile;
@@ -323,6 +411,9 @@ console.log("Has Delete Permission?", hasDeletePermission);
                             </div>
                             <div className="table-cell-subtext sm:hidden">
                               {user.Email}
+                            </div>
+                            <div className="table-cell-subtext lg:hidden">
+                              {getStoresString(user)}
                             </div>
                           </div>
                         </div>
@@ -351,12 +442,9 @@ console.log("Has Delete Permission?", hasDeletePermission);
                       </td>
                       <td className="table-cell">
                         <Switch
-                          checked={user.Status === "Active"}
-                          onChange={() =>
-                            handleStatusChange(
-                              user.UserID,
-                              user.Status === "Active"
-                            )
+                          checked={user.IsActive}
+                          onChange={(e) =>
+                            handleStatusChange(user.UserID, e.target.checked)
                           }
                         />
                       </td>
@@ -378,15 +466,11 @@ console.log("Has Delete Permission?", hasDeletePermission);
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {bFilterLoading ? (
+          {loading ? (
             <div className="col-span-full text-center py-8">
               <div className="flex justify-center items-center h-32">
                 <Loader className="h-8 w-8" />
               </div>
-            </div>
-          ) : loading ? (
-            <div className="col-span-full text-center py-4">
-              {t("COMMON.LOADING")}
             </div>
           ) : error ? (
             <div className="col-span-full text-center py-4 text-red-500">
@@ -406,7 +490,7 @@ console.log("Has Delete Permission?", hasDeletePermission);
                   <div className="flex-shrink-0 h-12 w-12 bg-gray-100 rounded-full overflow-hidden">
                     <img
                       className="h-full w-full object-cover"
-                      src={user.ProfileImageUrl || userProfile}
+                      src={getProfileImageUrl(user)}
                       onError={(e) => {
                         e.target.onerror = null;
                         e.target.src = userProfile;
@@ -424,15 +508,21 @@ console.log("Has Delete Permission?", hasDeletePermission);
                     </div>
                   </div>
                 </div>
+                
+                <div className="text-sm text-gray-600">
+                  <div className="font-medium mb-1">{t("COMMON.STORE")}:</div>
+                  <div className="truncate">{getStoresString(user)}</div>
+                </div>
+                
                 <div className="flex flex-wrap items-center gap-2 pt-2">
                   <span
                     className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      user.Status === "Active"
+                      user.IsActive
                         ? "status-active"
                         : "status-inactive"
                     }`}
                   >
-                    {t(`${user.Status?.toUpperCase()}`)}
+                    {user.IsActive ? t("COMMON.ACTIVE") : t("COMMON.INACTIVE")}
                   </span>
                 </div>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-xs text-gray-500 border-t border-gray-100 pt-2">
@@ -462,6 +552,7 @@ console.log("Has Delete Permission?", hasDeletePermission);
           )}
         </div>
       )}
+
       <Pagination
         currentPage={nCurrentPage}
         totalPages={nTotalPages}
@@ -471,6 +562,7 @@ console.log("Has Delete Permission?", hasDeletePermission);
         handleNextPage={handleNextPage}
         handlePageClick={handlePageClick}
       />
+
       {statusPopup.open && (
         <FullscreenErrorPopup
           message={`Are you sure you want to set this user as ${

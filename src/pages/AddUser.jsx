@@ -1,4 +1,12 @@
-import { useState, useEffect, useContext, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useContext,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
+import { useSelector, useDispatch } from "react-redux";
 import {
   User,
   Mail,
@@ -8,18 +16,18 @@ import {
   Building,
   CheckCircle,
   XCircle,
+  Store,
 } from "lucide-react";
 import TextInputWithIcon from "../components/TextInputWithIcon";
 import SelectWithIcon from "../components/SelectWithIcon";
 import { useTranslation } from "react-i18next";
-import { FaCamera } from "react-icons/fa";
+import { FaCamera, FaTimes } from "react-icons/fa";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiGet, apiPost } from "../utils/ApiUtils";
 import { GET_USER_BY_ID, USER_CREATE_OR_UPDATE } from "../contants/apiRoutes";
 import { showEmsg } from "../utils/ShowEmsg";
 import { LocationDataContext } from "../context/LocationDataProvider";
 import { useTitle } from "../context/TitleContext";
-import { useRoles } from "../context/AllDataContext";
 import { STATUS } from "../contants/constants";
 import md5 from "md5";
 import BackButton from "../components/BackButton";
@@ -27,7 +35,7 @@ import { ToastContainer } from "react-toastify";
 import userProfile from "../../assets/images/userProfile.svg";
 import Loader from "../components/Loader";
 import { hideLoaderWithDelay } from "../utils/loaderUtils";
-import { useUserDetails } from "../../src/context/AllDataContext";
+import { fetchResource } from "../store/slices/allDataSlice";
 
 const getArray = (data) =>
   Array.isArray(data)
@@ -42,7 +50,8 @@ const AddUser = () => {
     lastName: "",
     email: "",
     phone: "",
-    role: "User",
+    role: "",
+    stores: [],
     password: "",
     confirmPassword: "",
     streetAddress: "",
@@ -54,26 +63,91 @@ const AddUser = () => {
     countryName: "",
     stateName: "",
     cityName: "",
+    documentIds: [],
   });
   const [nProfileImage, setProfileImage] = useState(null);
   const [nProfileImagePreview, setProfileImagePreview] = useState(null);
+  const [existingDocuments, setExistingDocuments] = useState([]);
+  const [removedDocumentIds, setRemovedDocumentIds] = useState([]);
   const { t } = useTranslation();
   const { id } = useParams();
-  const { aCountriesData, aStatesData, aCitiesData } = useContext(LocationDataContext);
+  const { aCountriesData, aStatesData, aCitiesData } =
+    useContext(LocationDataContext);
   const [bImgLoading, setImgLoading] = useState(true);
   const [bImgError, setImgError] = useState(false);
-  const {
-    data: roles,
-    loading: rolesLoading,
-    error: rolesError,
-    fetch: fetchRoles,
-  } = useRoles();
+
+  // Redux hooks
+  const dispatch = useDispatch();
+
+  // Get roles and stores from the allDataSlice
+  const rolesData = useSelector((state) => state.allData.resources.roles || {});
+  const storesData = useSelector(
+    (state) => state.allData.resources.stores || {}
+  );
+
+  const roles = rolesData.data || [];
+  const stores = storesData.data || [];
+  const rolesLoading = rolesData.loading || false;
+  const storesLoading = storesData.loading || false;
+  const rolesError = rolesData.error || null;
+  const storesError = storesData.error || null;
+
   const [oErrors, setErrors] = useState({});
   const { setTitle, setBackButton } = useTitle();
   const [fetchUserError, setFetchUserError] = useState("");
   const navigate = useNavigate();
   const [bSubmitting, setSubmitting] = useState(false);
-  const { data: userDetails, fetch: fetchUserDetails } = useUserDetails();
+
+  // Refs to track if data has been fetched to prevent multiple API calls
+  const hasFetchedRoles = useRef(false);
+  const hasFetchedStores = useRef(false);
+
+  // Password strength calculation
+  const passwordStrength = useMemo(() => {
+    if (!oFormData.password) return "";
+    const hasUpperCase = /[A-Z]/.test(oFormData.password);
+    const hasLowerCase = /[a-z]/.test(oFormData.password);
+    const hasNumbers = /\d/.test(oFormData.password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(oFormData.password);
+    const isLongEnough = oFormData.password.length >= 8;
+
+    const strengthScore = [
+      hasUpperCase,
+      hasLowerCase,
+      hasNumbers,
+      hasSpecialChar,
+      isLongEnough,
+    ].filter(Boolean).length;
+
+    if (strengthScore >= 4) return "strong";
+    if (strengthScore >= 3) return "medium";
+    return "weak";
+  }, [oFormData.password]);
+
+  // Password requirements
+  const passwordRequirements = [
+    {
+      test: (password) => password.length >= 8,
+      label: t("ADD_USER.VALIDATION.PASSWORD_LENGTH"),
+    },
+    {
+      test: (password) => /[A-Z]/.test(password),
+      label: t("ADD_USER.VALIDATION.PASSWORD_UPPERCASE"),
+    },
+    {
+      test: (password) => /[a-z]/.test(password),
+      label: t("ADD_USER.VALIDATION.PASSWORD_LOWERCASE"),
+    },
+    {
+      test: (password) => /\d/.test(password),
+      label: t("ADD_USER.VALIDATION.PASSWORD_NUMBER"),
+    },
+    {
+      test: (password) => /[!@#$%^&*(),.?":{}|<>]/.test(password),
+      label: t("ADD_USER.VALIDATION.PASSWORD_SPECIAL"),
+    },
+  ];
+
   useEffect(() => {
     setTitle(id ? t("USERS.EDIT_USER") : t("USERS.ADD_NEW_USER"));
     setBackButton(<BackButton onClick={() => navigate("/users")} />);
@@ -82,15 +156,86 @@ const AddUser = () => {
       setTitle("");
     };
   }, [setTitle, setBackButton, t, id, navigate]);
+
+  // Validation function
+  const validate = useCallback(() => {
+    const errors = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+
+    if (!oFormData.firstName?.trim()) {
+      errors.firstName = t("ADD_USER.VALIDATION.FIRST_NAME_REQUIRED");
+    }
+
+    if (!oFormData.lastName?.trim()) {
+      errors.lastName = t("ADD_USER.VALIDATION.LAST_NAME_REQUIRED");
+    }
+
+    if (!oFormData.email?.trim()) {
+      errors.email = t("ADD_USER.VALIDATION.EMAIL_REQUIRED");
+    } else if (!emailRegex.test(oFormData.email)) {
+      errors.email = t("ADD_USER.VALIDATION.EMAIL_INVALID");
+    }
+
+    if (!oFormData.phone?.trim()) {
+      errors.phone = t("ADD_USER.PHONE_REQUIRED");
+    } else if (!phoneRegex.test(oFormData.phone)) {
+      errors.phone = t("ADD_USER.VALIDATION.PHONE_INVALID");
+    }
+
+    if (!oFormData.role) {
+      errors.role = t("ADD_USER.VALIDATION.ROLE_REQUIRED");
+    }
+
+    // Add validation for stores
+    if (!oFormData.stores || oFormData.stores.length === 0) {
+      errors.stores = t("ADD_USER.VALIDATION.STORES_REQUIRED");
+    }
+
+    if (!id && !oFormData.password) {
+      errors.password = t("ADD_USER.VALIDATION.PASSWORD_REQUIRED");
+    } else if (oFormData.password && oFormData.password.length < 8) {
+      errors.password = t("ADD_USER.VALIDATION.PASSWORD_TOO_SHORT");
+    }
+
+    if (oFormData.password !== oFormData.confirmPassword) {
+      errors.confirmPassword = t("ADD_USER.VALIDATION.PASSWORDS_MISMATCH");
+    }
+
+    if (!oFormData.streetAddress?.trim()) {
+      errors.streetAddress = t("ADD_USER.VALIDATION.ADDRESS_REQUIRED");
+    }
+
+    if (!oFormData.country) {
+      errors.country = t("ADD_USER.VALIDATION.COUNTRY_REQUIRED");
+    }
+
+    if (!oFormData.state) {
+      errors.state = t("ADD_USER.VALIDATION.STATE_REQUIRED");
+    }
+
+    if (!oFormData.city) {
+      errors.city = t("ADD_USER.VALIDATION.CITY_REQUIRED");
+    }
+
+    if (!oFormData.pincode?.trim()) {
+      errors.pincode = t("ADD_USER.VALIDATION.PINCODE_REQUIRED");
+    }
+
+    return errors;
+  }, [oFormData, t, id]);
+
   const fetchUser = useCallback(async () => {
+    if (!id) return;
+
     const token = localStorage.getItem("token");
     try {
       const oResponse = await apiGet(`${GET_USER_BY_ID}/${id}`, {}, token);
       const resData = oResponse.data;
 
-      if (resData?.STATUS === STATUS.SUCCESS.toUpperCase() && resData.data?.user) {
-        const user = resData.data.user;
-  
+      if (resData?.status === STATUS.SUCCESS.toUpperCase() && resData.data) {
+        const user = resData.data;
+
         const foundCountry = getArray(aCountriesData).find(
           (c) => c.CountryName === user.CountryName
         );
@@ -112,21 +257,34 @@ const AddUser = () => {
           email: user.Email || "",
           phone: user.PhoneNumber || "",
           role: user.RoleID || "",
+          stores: user.Stores ? user.Stores.map((store) => store.StoreId) : [],
           streetAddress: user.AddressLine || "",
           city: foundCity?.CityID || "",
           state: foundState?.StateID || "",
-          pincode: user.Pincode || "",
-          status: user.Status || "",
+          pincode: user.Zipcode || "",
+          status: user.IsActive ? "Active" : "Inactive",
           country: foundCountry?.CountryID || "",
           countryName: user.CountryName || "",
           stateName: user.StateName || "",
           cityName: user.CityName || "",
+          documentId: user.ProfileImageUrl
+            ? user.ProfileImageUrl.map((doc) => doc.documentId)
+            : [],
         }));
 
-        if (user.ProfileImageUrl) {
+        // For the profile image: handle multiple images
+        if (user.ProfileImageUrl && user.ProfileImageUrl.length > 0) {
           setImgLoading(true);
-          setProfileImagePreview(user.ProfileImageUrl);
+          setProfileImagePreview(user.ProfileImageUrl[0].documentUrl);
+          setExistingDocuments(user.ProfileImageUrl);
+        } else {
+          setImgLoading(false);
+          setExistingDocuments([]);
         }
+
+        // Reset removed document IDs when fetching user data
+        setRemovedDocumentIds([]);
+
         setFetchUserError("");
       } else {
         setFetchUserError(resData?.MESSAGE || t("COMMON.FAILED_OPERATION"));
@@ -149,129 +307,103 @@ const AddUser = () => {
   }, [id, fetchUser, aCountriesData, aStatesData, aCitiesData]);
 
   useEffect(() => {
-    if ((!roles || roles.length === 0) && !rolesLoading) {
-      fetchRoles({ pageNumber: 1, pageSize: 10 });
+    if (
+      (!roles || roles.length === 0) &&
+      !rolesLoading &&
+      !hasFetchedRoles.current
+    ) {
+      hasFetchedRoles.current = true;
+      dispatch(
+        fetchResource({
+          key: "roles",
+          params: { pageNumber: 1, pageSize: 100 },
+        })
+      );
     }
-  }, [fetchRoles, roles, rolesLoading]);
-  const handleChange = useCallback((e) => {
-    const { name, value } = e.target;
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === "phone" ? value.replace(/\D/g, "") : value,
-    }));
+    if (
+      (!stores || stores.length === 0) &&
+      !storesLoading &&
+      !hasFetchedStores.current
+    ) {
+      hasFetchedStores.current = true;
+      dispatch(
+        fetchResource({
+          key: "stores",
+          params: { pageNumber: 1, pageSize: 100 },
+        })
+      );
+    }
+  }, [dispatch, roles, rolesLoading, stores, storesLoading]);
 
-    setErrors((prevErrors) => {
-      if (!prevErrors[name]) return prevErrors;
-      const newErrors = { ...prevErrors };
-      delete newErrors[name];
-      return newErrors;
-    });
-  }, []);
+  const handleChange = useCallback(
+    (e) => {
+      const { name, value } = e.target;
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+      // Clear error when user starts typing
+      if (oErrors[name]) {
+        setErrors((prev) => ({ ...prev, [name]: "" }));
+      }
+    },
+    [oErrors]
+  );
+
   const handleImageChange = useCallback((e) => {
     const file = e.target.files[0];
     if (file) {
       setProfileImage(file);
-      setImgError(false);
-      setImgLoading(true);
+      // ✅ REMOVED: setExistingDocuments([]); - Don't clear existing documents
+      setRemovedDocumentIds([]); // Reset removed IDs when uploading new image
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImagePreview(reader.result);
-        setImgLoading(false);
+      reader.onload = (e) => {
+        setProfileImagePreview(e.target.result);
       };
       reader.readAsDataURL(file);
-    } else {
-      setProfileImage(null);
-      setProfileImagePreview(null);
-      setImgError(false);
-      setImgLoading(false);
     }
   }, []);
-  const validate = useCallback(() => {
-    const newErrors = {};
-    if (!oFormData.firstName)
-      newErrors.firstName = t("ADD_USER.VALIDATION.FIRST_NAME");
 
-    if (!oFormData.lastName)
-      newErrors.lastName = t("ADD_USER.VALIDATION.LAST_NAME");
+  const handleRemoveImage = useCallback(
+    (documentId = null) => {
+      if (documentId) {
+        // Remove specific existing document and track the removed ID
+        setExistingDocuments((prev) => {
+          const updatedDocs = prev.filter(
+            (doc) => doc.documentId !== documentId
+          );
 
-    if (!oFormData.email)
-      newErrors.email = t("ADD_USER.VALIDATION.EMAIL");
+          // Update preview if removing the first image
+          if (prev.length > 0 && prev[0].documentId === documentId) {
+            if (updatedDocs.length > 0) {
+              setProfileImagePreview(updatedDocs[0].documentUrl);
+            } else {
+              setProfileImagePreview(null);
+            }
+          }
 
-    if (!oFormData.phone)
-      newErrors.phone = t("Com.PHONE");
-    else if (oFormData.phone.replace(/\D/g, "").length !== 10)
-      newErrors.phone = t("ADD_USER.VALIDATION.PHONE_LENGTH");
+          return updatedDocs;
+        });
 
-    const isCreating = !id;
-    const hasPassword = !!oFormData.password;
-    const hasConfirmPassword = !!oFormData.confirmPassword;
-
-    if (isCreating) {
-      if (!hasPassword)
-        newErrors.password = t("ADD_USER.VALIDATION.PASSWORD");
-
-      if (!hasConfirmPassword)
-        newErrors.confirmPassword = t("ADD_USER.VALIDATION.CONFIRM_PASSWORD");
-    }
-
-    if (hasPassword && hasConfirmPassword) {
-      if (oFormData.password !== oFormData.confirmPassword) {
-        newErrors.confirmPassword = t("ADD_USER.VALIDATION.PASSWORD_MATCH");
+        // Track the removed document ID
+        setRemovedDocumentIds((prev) => [...prev, documentId]);
       } else {
-        const strength = getPasswordStrength(oFormData.password);
-        if (strength !== "strong") {
-          newErrors.password = t("ADD_USER.VALIDATION.STRONG_PASSWORD");
+        // Remove newly uploaded image but keep existing documents
+        setProfileImage(null);
+        setProfileImagePreview(null);
+
+        // Restore existing documents preview if available
+        if (existingDocuments.length > 0) {
+          setProfileImagePreview(existingDocuments[0].documentUrl);
         }
       }
-    }
+    },
+    [existingDocuments]
+  );
 
-    if (!oFormData.role)
-      newErrors.role = t("ADD_USER.VALIDATION.ROLE");
-    if (!oFormData.streetAddress)
-      newErrors.streetAddress = t("ADD_USER.VALIDATION.STREET_ADDRESS");
-    if (!oFormData.country)
-      newErrors.country = t("ADD_USER.VALIDATION.COUNTRY");
-    if (!oFormData.state)
-      newErrors.state = t("ADD_USER.VALIDATION.STATE");
-    if (!oFormData.city)
-      newErrors.city = t("ADD_USER.VALIDATION.CITY");
-    return newErrors;
-  }, [oFormData, t, id]);
-  const getPasswordStrength = useCallback((password) => {
-    const strongRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
-    if (!password) return null;
-    if (strongRegex.test(password)) return "strong";
-    if (password.length >= 6) return "medium";
-    return "weak";
-  }, []);
-
-  const passwordStrength = getPasswordStrength(oFormData.password);
-
-  const passwordRequirements = [
-    {
-      label: t("COMMON.PASSWORD_REQ_LENGTH"),
-      test: (pw) => pw.length >= 8,
-    },
-    {
-      label: t("COMMON.PASSWORD_REQ_UPPER"),
-      test: (pw) => /[A-Z]/.test(pw),
-    },
-    {
-      label: t("COMMON.PASSWORD_REQ_LOWER"),
-      test: (pw) => /[a-z]/.test(pw),
-    },
-    {
-      label: t("COMMON.PASSWORD_REQ_NUMBER"),
-      test: (pw) => /\d/.test(pw),
-    },
-    {
-      label: t("COMMON.PASSWORD_REQ_SPECIAL"),
-      test: (pw) => /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(pw),
-    },
-  ];
-  const handleSubmit = useCallback(async (e) => {
+ const handleSubmit = useCallback(
+  async (e) => {
     e.preventDefault();
     const validationErrors = validate();
     setErrors(validationErrors);
@@ -282,32 +414,93 @@ const AddUser = () => {
     const userId = localStorage.getItem("userId");
     const formData = new FormData();
 
-    if (id) formData.append("UserID", parseInt(id, 10));
-    formData.append("TenantID", localStorage.getItem("tenantID"));
-    formData.append("FirstName", oFormData.firstName || "");
-    formData.append("LastName", oFormData.lastName || "");
-    formData.append("Email", oFormData.email || "");
-    formData.append(
-      "Password",
-      oFormData.password ? md5(oFormData.password) : ""
-    );
-    formData.append("PhoneNumber", oFormData.phone || "");
-    formData.append("AddressLine", oFormData.streetAddress || "");
-    formData.append("CityID", oFormData.city ? parseInt(oFormData.city, 10) : 0);
-    formData.append("StateID", oFormData.state ? parseInt(oFormData.state, 10) : 0);
-    formData.append("CountryID", oFormData.country ? parseInt(oFormData.country, 10) : 0);
-    formData.append("Pincode", oFormData.pincode || "");
-    formData.append("RoleID", oFormData.role || "");
+    // Initialize documentMetadata as an empty array
+    let documentMetadata = [];
 
+    console.log("=== IMAGE STATE DEBUG ===");
+    console.log("New Image:", nProfileImage);
+    console.log("Existing Documents:", existingDocuments);
+    console.log("Removed Document IDs:", removedDocumentIds);
+
+    // Only include document metadata if there are actual image changes
     if (nProfileImage) {
-      formData.append("ProfileImage", nProfileImage);
+      // New image is being uploaded
+      if (existingDocuments.length > 0 && existingDocuments[0]?.documentId) {
+        // Replacing existing image - include DocumentID
+        documentMetadata.push({
+          image: "profile-image",
+          sortOrder: 1,
+          DocumentID: existingDocuments[0].documentId
+        });
+        console.log("Replacing existing image with DocumentID:", existingDocuments[0].documentId);
+      } else {
+        // New upload - no DocumentID needed
+        documentMetadata.push({
+          image: "profile-image",
+          sortOrder: 1
+        });
+        console.log("New image upload");
+      }
+    } else if (removedDocumentIds.length > 0) {
+      // Some documents were removed, include only the remaining ones
+      const remainingDocuments = existingDocuments.filter(
+        doc => !removedDocumentIds.includes(doc.documentId)
+      );
+      documentMetadata = remainingDocuments.map((doc, index) => ({
+        image: "profile-image",
+        sortOrder: doc.sortOrder || index + 1,
+        DocumentID: doc.documentId
+      }));
+      console.log("Documents removed, keeping remaining:", remainingDocuments);
+    } else if (existingDocuments.length > 0) {
+      // No changes, but we have existing documents - include them
+      documentMetadata = existingDocuments.map((doc, index) => ({
+        image: "profile-image",
+        sortOrder: doc.sortOrder || index + 1,
+        DocumentID: doc.documentId
+      }));
+      console.log("No changes, keeping existing documents");
+    }
+    // If none of the above conditions are met, documentMetadata remains empty
+
+    console.log("Final documentMetadata:", documentMetadata);
+
+    const userData = {
+      UserID: id || "",
+      FirstName: oFormData.firstName || "",
+      LastName: oFormData.lastName || "",
+      Email: oFormData.email || "",
+      Password: oFormData.password ? md5(oFormData.password) : "",
+      PhoneNumber: oFormData.phone || "",
+      AddressLine: oFormData.streetAddress || "",
+      CityID: oFormData.city ? parseInt(oFormData.city, 10) : 0,
+      StateID: oFormData.state ? parseInt(oFormData.state, 10) : 0,
+      CountryID: oFormData.country ? parseInt(oFormData.country, 10) : 0,
+      Zipcode: oFormData.pincode || "",
+      RoleID: oFormData.role || "",
+      StoreIDs: oFormData.stores || [],
+      IsActive: oFormData.status === "Active",
+      documentMetadata: documentMetadata, // This will be empty array if no image changes
+    };
+
+    // Add CreatedBy or UpdatedBy
+    if (id) {
+      userData.UpdatedBy = userId;
+    } else {
+      userData.CreatedBy = userId;
     }
 
-    if (id) {
-      formData.append("UpdatedBy", userId);
-    } else {
-      formData.append("CreatedBy", userId);
+    formData.append("data", JSON.stringify(userData));
+
+    // Only append the file if there's a new image
+    if (nProfileImage) {
+      formData.append("profile-image", nProfileImage);
     }
+
+    // Debug: Check what's being sent
+    console.log("=== FINAL PAYLOAD ===");
+    console.log("UserData:", JSON.stringify(userData, null, 2));
+    console.log("documentMetadata length:", documentMetadata.length);
 
     try {
       const oResponse = await apiPost(
@@ -318,11 +511,10 @@ const AddUser = () => {
       );
       const resData = oResponse?.data;
 
-      if (resData?.STATUS === STATUS.SUCCESS.toUpperCase()) {
-        await fetchUserDetails(userId, token);
-
+      if (resData?.status === STATUS.SUCCESS.toUpperCase()) {
+        setRemovedDocumentIds([]);
         showEmsg(
-          resData?.MESSAGE || t("ADD_USER.SUCCESS"),
+          resData?.message,
           STATUS.SUCCESS,
           3000,
           async () => {
@@ -331,31 +523,31 @@ const AddUser = () => {
         );
       } else {
         showEmsg(
-          resData?.MESSAGE || t("COMMON.FAILED_OPERATION"),
+          resData?.message || t("COMMON.FAILED_OPERATION"),
           STATUS.WARNING
         );
       }
     } catch (error) {
-      const backendMessage = error?.response?.data?.MESSAGE;
+      console.error("API Error:", error);
+      const backendMessage = error?.response?.data?.message;
       showEmsg(backendMessage || t("COMMON.ERROR_MESSAGE"), STATUS.ERROR);
     } finally {
       hideLoaderWithDelay(setSubmitting);
     }
-  }, [validate, id, oFormData, nProfileImage, fetchUserDetails, t, navigate]);
+  },
+  [
+    validate,
+    id,
+    oFormData,
+    nProfileImage,
+    existingDocuments,
+    removedDocumentIds,
+    t,
+    navigate,
+  ]
+);
 
-  if (fetchUserError) {
-    return (
-      <div className="max-w-2xl mx-auto mt-12 p-8 bg-white rounded-xl shadow text-center text-red text-lg font-semibold">
-        {fetchUserError}
-      </div>
-    );
-  }
-
-  const loaderOverlay = bSubmitting ? (
-    <div className="global-loader-overlay">
-      <Loader />
-    </div>
-  ) : null;
+  const loaderOverlay = bSubmitting && <Loader />;
 
   return (
     <div className="max-w-8xl mx-auto">
@@ -369,8 +561,8 @@ const AddUser = () => {
         </div>
       </div>
 
-      <div className="flex items-center gap-6 mb-8">
-        <div style={{ minWidth: 80, minHeight: 80 }}>
+      <div className="flex items-center gap-6 mb-8 relative">
+        <div className="relative" style={{ minWidth: 80, minHeight: 80 }}>
           {bImgLoading && !bImgError && (
             <div className="h-20 w-20 rounded-full bg-gray-200 animate-pulse flex items-center justify-center">
               <User className="h-10 w-10 text-gray-400" />
@@ -378,8 +570,11 @@ const AddUser = () => {
           )}
           <img
             src={
-              !bImgError && nProfileImagePreview
-                ? nProfileImagePreview
+              !bImgError &&
+              (nProfileImagePreview ||
+                (existingDocuments.length > 0 &&
+                  existingDocuments[0].documentUrl))
+                ? nProfileImagePreview || existingDocuments[0].documentUrl
                 : userProfile
             }
             alt={t("ADD_USER.PROFILE_PREVIEW")}
@@ -418,6 +613,9 @@ const AddUser = () => {
           </p>
         </div>
       </div>
+
+      {/* REMOVED: Existing documents thumbnails section */}
+
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
@@ -498,9 +696,53 @@ const AddUser = () => {
                 }
                 searchable
                 searchPlaceholder={t("COMMON.SEARCH_ROLE") || "Search role"}
-                onInputChange={(inputValue) =>
-                  fetchRoles({ searchText: inputValue })
+                onInputChange={(inputValue) => {
+                  dispatch(
+                    fetchResource({
+                      key: "roles",
+                      params: {
+                        searchText: inputValue,
+                        pageNumber: 1,
+                        pageSize: 100,
+                      },
+                    })
+                  );
+                }}
+              />
+
+              <SelectWithIcon
+                label={t("ADD_USER.ASSIGNED_STORES")}
+                id="stores"
+                name="stores"
+                value={oFormData.stores}
+                onChange={handleChange}
+                options={stores.map((s) => ({
+                  value: s.StoreID,
+                  label: s.StoreName,
+                }))}
+                Icon={Store}
+                disabled={storesLoading}
+                error={oErrors.stores || storesError}
+                placeholder={
+                  storesLoading
+                    ? t("COMMON.LOADING")
+                    : t("ADD_USER.SELECT_STORES")
                 }
+                multiple={true}
+                searchable
+                searchPlaceholder={t("COMMON.SEARCH_STORES") || "Search stores"}
+                onInputChange={(inputValue) => {
+                  dispatch(
+                    fetchResource({
+                      key: "stores",
+                      params: {
+                        searchText: inputValue,
+                        pageNumber: 1,
+                        pageSize: 100,
+                      },
+                    })
+                  );
+                }}
               />
 
               <div className="col-span-1 md:col-span-2">
@@ -677,6 +919,7 @@ const AddUser = () => {
                 onChange={handleChange}
                 placeholder={t("ADD_USER.ENTER_PINCODE")}
                 Icon={MapPin}
+                error={oErrors.pincode}
               />
             </div>
           </div>
@@ -689,8 +932,12 @@ const AddUser = () => {
           >
             {t("COMMON.CANCEL")}
           </button>
-          <button type="submit" className="btn-primary">
-            {id ? t("COMMON.SAVE_BUTTON") : t("ADD_USER.CREATE_USER")}
+          <button type="submit" className="btn-primary" disabled={bSubmitting}>
+            {bSubmitting
+              ? t("COMMON.SAVING")
+              : id
+              ? t("COMMON.SAVE_BUTTON")
+              : t("ADD_USER.CREATE_USER")}
           </button>
         </div>
       </form>
