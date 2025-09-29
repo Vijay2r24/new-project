@@ -642,7 +642,8 @@
     "STATUS_ACTIVE": "Active",
     "STATUS_INACTIVE": "Inactive",
     "IMAGE_DIMENSIONS_TOO_SMALL": "Image dimensions are too small. Minimum size required is {{width}}x{{height}} pixels.",
-    "INVALID_IMAGE_TYPE": "Only image files are allowed. Please upload a valid image."
+    "INVALID_IMAGE_TYPE": "Only image files are allowed. Please upload a valid image.",
+    "STATUS_CONFIRM_MESSAGE": "Are you sure you want to change the status of this banner to {{status}}?"
   },
   "NOTIFICATIONS": {
     "TITLE": "Notifications",
@@ -852,6 +853,8 @@
     "DESCRIPTION": "Manage user roles and their permissions",
     "SEARCH_PLACEHOLDER": "Enter User Roles",
     "ADD_ROLE": "Add Role",
+    "ADMIN_EDIT_DISABLED": "Admin role cannot be edited",
+     "ADMIN_STATUS_DISABLED": "Admin role status cannot be changed",
     "TABLE": {
       "ROLE_ID": "Role ID",
       "ROLE_NAME": "Role Name",

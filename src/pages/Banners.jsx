@@ -203,7 +203,7 @@ const Banners = () => {
                       <img
                         src={project.BannerImages[0].BannerImage || noImage}
                         alt={`Banner ${project.BannerName}`}
-                        className="w-full aspect-[16/9] object-cover"
+                        className="w-full aspect-[16/9] object-contain"
                       />
                     </div>
                   ) : (
