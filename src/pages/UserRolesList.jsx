@@ -12,7 +12,7 @@ import FullscreenErrorPopup from "../components/FullscreenErrorPopup";
 import { UPDATE_ROLE_STATUS } from "../contants/apiRoutes";
 import { showEmsg } from "../utils/ShowEmsg";
 import { ToastContainer } from "react-toastify";
-import { ITEMS_PER_PAGE, STATUS, STATUS_OPTIONS } from "../contants/constants.jsx";
+import { ITEMS_PER_PAGE, STATUS, STATUS_OPTIONS,FILTERS } from "../contants/constants.jsx";
 import Loader from "../components/Loader";
 import { hideLoaderWithDelay } from "../utils/loaderUtils";
 import { getPermissionCode, hasPermissionId } from "../utils/permissionUtils";
@@ -65,7 +65,7 @@ const UserRolesList = () => {
 
   const handleFilterChange = (e, filterName) => {
     setFilterLoading(true);
-    if (filterName === "status") {
+    if (filterName === FILTERS.STATUS) {
       setSelectedStatus(e.target.value);
       setCurrentPage(1);
     }
@@ -74,7 +74,7 @@ const UserRolesList = () => {
   const additionalFilters = [
     {
       label: t("COMMON.STATUS"),
-      name: "status",
+      name: FILTERS.STATUS,
       value: selectedStatus,
       options: statusOptions,
     },
