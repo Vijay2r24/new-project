@@ -25,12 +25,12 @@ const Stores = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   
-
   const storesData = useSelector(
     (state) => state.allData.resources.stores || { data: [], total: 0, loading: false }
   );
 
   const aStores = storesData.data || [];
+  // Fix: Get totalItems from the correct path in the response
   const totalItems = storesData.pagination?.totalRecords || 0;
   const storesLoading = storesData.loading;
 
@@ -46,10 +46,10 @@ const Stores = () => {
   const permissionIdForDelete = getPermissionCode("Store Management", "Delete User");
   const hasDeletePermission = hasPermissionId(permissionIdForDelete);
  
-const statusOptions = STATUS_OPTIONS.map((opt) => ({
-  value: opt.value,
-  label: t(opt.labelKey),
-}));
+  const statusOptions = STATUS_OPTIONS.map((opt) => ({
+    value: opt.value,
+    label: t(opt.labelKey),
+  }));
 
   const aAdditionalFilters = [
     {
@@ -72,7 +72,8 @@ const statusOptions = STATUS_OPTIONS.map((opt) => ({
   });
 
   const itemsPerPage = ITEMS_PER_PAGE;
-  const [totalPages, setTotalPages] = useState(1);
+  // Fix: Calculate totalPages directly from the API response or totalItems
+  const totalPages = storesData.pagination?.totalPages || Math.ceil(totalItems / itemsPerPage) || 1;
   const [viewMode, setViewMode] = useState("table");
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -99,7 +100,6 @@ const statusOptions = STATUS_OPTIONS.map((opt) => ({
     }
     const { name, value } = e.target;
     
-    // Convert string "true"/"false" to actual boolean if needed
     let processedValue = value;
     if ((filterName || name) === "status" && value !== "") {
       processedValue = value === "true";
@@ -146,7 +146,6 @@ const statusOptions = STATUS_OPTIONS.map((opt) => ({
       showEmsg(result.message, STATUS.SUCCESS);
       setStatusPopup({ open: false, storeId: null, newStatus: null });
       
-      // Convert empty string to undefined, otherwise use the boolean value
       const isActiveFilter = oFilters.status === "" ? undefined : oFilters.status;
       
       // Refresh the stores list after status update
@@ -180,7 +179,6 @@ const statusOptions = STATUS_OPTIONS.map((opt) => ({
       const backendMessage = oResponse.data.MESSAGE;
       showEmsg(backendMessage, STATUS.SUCCESS);
       
-      // Convert empty string to undefined, otherwise use the boolean value
       const isActiveFilter = oFilters.status === "" ? undefined : oFilters.status;
       
       // Refresh the stores list after deletion
@@ -210,7 +208,6 @@ const statusOptions = STATUS_OPTIONS.map((opt) => ({
   useEffect(() => {
     const fetchStoresData = async () => {
       try {
-        // Convert empty string to undefined, otherwise use the boolean value
         const isActiveFilter = oFilters.status === "" ? undefined : oFilters.status;
         
         await dispatch(fetchResource({
@@ -233,7 +230,6 @@ const statusOptions = STATUS_OPTIONS.map((opt) => ({
     };
 
     fetchStoresData();
-    setTotalPages(Math.ceil((totalItems || 0) / itemsPerPage));
     setTitle(t("STORES.HEADING"));
     
     return () => {
@@ -245,7 +241,6 @@ const statusOptions = STATUS_OPTIONS.map((opt) => ({
     itemsPerPage,
     sSearchTerm,
     oFilters.status,
-    totalItems,
     setBackButton,
     setTitle,
     t,
@@ -365,6 +360,7 @@ const statusOptions = STATUS_OPTIONS.map((opt) => ({
                           <ActionButtons
                             id={store.StoreID}
                             onEdit={handleEdit}
+                            onDelete={hasDeletePermission ? handleDelete : null}
                           />
                         </div>
                       </td>
@@ -467,6 +463,7 @@ const statusOptions = STATUS_OPTIONS.map((opt) => ({
         />
       )}
 
+      {/* Fix: Pass the correct totalPages value */}
       <Pagination
         currentPage={currentPage}
         totalPages={totalPages}

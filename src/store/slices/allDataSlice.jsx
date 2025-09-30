@@ -1,5 +1,5 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"; // Redux Toolkit helpers
-import { apiGet, apiPatch } from "../../utils/ApiUtils"; // API helpers for GET & PATCH
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { apiGet, apiPatch } from "../../utils/ApiUtils";
 import {
   GET_ALL_ATTRIBUTES,
   GETALL_BRANDS,
@@ -14,17 +14,15 @@ import {
   GET_All_PAYMENT_STATUS,
   GET_ALL_PAYMENT_METHODS,
   GET_ALL_PAYMENT_TYPES,
-  GET_USER_BY_ID // Make sure to add this import
-} from "../../contants/apiRoutes"; // API endpoints (centralized constants)
-import { STATUS } from "../../contants/constants"; // Shared constants like SUCCESS/ERROR
+  GET_USER_BY_ID,
+  GET_COUNTRIES,
+  GET_STATES_BY_COUNTRY_ID,
+  GET_CITIES_BY_STATE_ID
+} from "../../contants/apiRoutes";
+import { STATUS } from "../../contants/constants";
 
 /**
  * Resource Configurations
- * Each object describes how to fetch/update a particular resource.
- * key        → resource name in Redux state
- * api        → API endpoint for this resource
- * idField    → primary key field (for status update, etc.)
- * rolesPagination → flag for handling custom API shape (example: roles)
  */
 const aResourceConfigs = [
   { key: "attributes", api: GET_ALL_ATTRIBUTES, idField: "AttributeID" },
@@ -49,87 +47,78 @@ const aResourceConfigs = [
   {
     key: "paymentMethods",
     api: GET_ALL_PAYMENT_METHODS,
-    idField: "PaymentMethodID", // Adjust this if needed based on your API response
+    idField: "PaymentMethodID",
   },
   {
     key: "paymentTypes",
     api: GET_ALL_PAYMENT_TYPES,
-    idField: "PaymentTypeID", // Adjust this if needed based on your API response
+    idField: "PaymentTypeID",
   },
+  // New configurations for countries, states, and cities
+  {
+    key: "countries",
+    api: GET_COUNTRIES,
+    idField: "CountryID"
+  },
+  {
+    key: "states",
+    api: GET_STATES_BY_COUNTRY_ID,
+    idField: "StateID"
+  },
+  {
+    key: "cities",
+    api: GET_CITIES_BY_STATE_ID,
+    idField: "CityID"
+  }
 ];
 
 /**
-  1. FETCH RESOURCE
-  Thunk to fetch any resource (brands, categories, users, etc.)
-  Usage:
-  dispatch(fetchResource({ key: "brands", params: { pageNumber: 1, pageSize: 5 } }))
+ * FETCH RESOURCE
  */
 export const fetchResource = createAsyncThunk(
   "allData/fetchResource",
-  async ({ key, params = {} }, { rejectWithValue }) => {
-    try {
-      // Find resource configuration by key
-      const config = aResourceConfigs.find((c) => c.key === key);
-      if (!config) throw new Error(`Unknown resource: ${key}`);
+ async ({ key, params = {} }, { rejectWithValue }) => {
+  try {
+    const config = aResourceConfigs.find((c) => c.key === key);
+    if (!config) throw new Error(`Unknown resource: ${key}`);
 
-      // Get auth token & call API
-      const token = localStorage.getItem("token");
-      const response = await apiGet(config.api, params, token);
+    const token = localStorage.getItem("token");
+    const response = await apiGet(config.api, params, token);
 
-      // Normalize API response into { data, total, pagination }
-      let data = [];
-      let total = 0;
-      let pagination = {};
+    let data = [];
+    let total = 0;
+    let pagination = {};
 
-      if (response.data.pagination) {
-        // Case 1: API returns { data: [], pagination: {} }
-        data = response.data.data || [];
-        pagination = response.data.pagination;
-        total = pagination.totalRecords || 0;
-      } else if (Array.isArray(response.data?.data?.data)) {
-        // Case 2: Nested data array → { data: { data: [], totalRecords } }
-        data = response.data.data.data;
-        total = response.data.data.totalRecords || 0;
-      } else {
-        // Case 3: Flat response { data: [] } or other shapes
-        data = response.data.data || [];
-        total = response.data.totalRecords || 0;
-      }
-
-      return { key, data, total, pagination };
-    } catch (err) {
-      return rejectWithValue({ key, error: err.message });
+    // Your specific API response structure
+    if (response.data?.status === STATUS.SUCCESS.toUpperCase()) {
+      data = response.data.data || [];
+      pagination = response.data.pagination || {};
+      total = pagination.totalRecords || data.length;
+    } else {
+      // Fallback for other formats
+      data = response.data?.data || [];
+      pagination = response.data?.pagination || {};
+      total = pagination.totalRecords || data.length;
     }
+
+    return { key, data, total, pagination };
+  } catch (err) {
+    return rejectWithValue({ key, error: err.message });
   }
+}
 );
 
 /**
-  2. UPDATE STATUS
-  Thunk to toggle/update the "Status" (Active/Inactive) of an item
-
-  Usage:
-
-  dispatch(updateStatusById({
-    key: "brands",
-    id: 123,
-    newStatus: true,
-    apiRoute: GETALL_BRANDS,
-    idField: "BrandID"
-  }))
+ * UPDATE STATUS
  */
 export const updateStatusById = createAsyncThunk(
   "allData/updateStatus",
   async ({ key, id, newStatus, apiRoute, idField }, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("token");
-
-      // Backend expects "Active"/"Inactive"
       const payload = { IsActive: newStatus ? true : false };
-
-      // Send PATCH request
       const response = await apiPatch(`${apiRoute}/${id}`, payload, token);
 
-      // If success → return info to update state
       if (response?.data?.status === STATUS.SUCCESS.toUpperCase()) {
         return { key, id, idField, payload, message: response.data.message };
       } else {
@@ -142,9 +131,7 @@ export const updateStatusById = createAsyncThunk(
 );
 
 /**
- * 3. FETCH USER DETAILS
- * Thunk to fetch specific user details by ID
- * Usage: dispatch(fetchUserDetails(userId))
+ * FETCH USER DETAILS
  */
 export const fetchUserDetails = createAsyncThunk(
   "allData/fetchUserDetails",
@@ -170,38 +157,93 @@ export const fetchUserDetails = createAsyncThunk(
 );
 
 /**
- * 4. SLICE
- * Stores all fetched data under state.allData.resources[resourceKey]
+ * FETCH STATES BY COUNTRY ID
+ */
+export const fetchStatesByCountryId = createAsyncThunk(
+  "allData/fetchStatesByCountryId",
+  async (countryId, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await apiGet(`${GET_STATES_BY_COUNTRY_ID}/${countryId}`, {}, token);
+
+      let data = [];
+      
+      // Handle the new response format: { status: "SUCCESS", data: [...] }
+      if (response.data?.status === STATUS.SUCCESS.toUpperCase()) {
+        data = Array.isArray(response.data.data) ? response.data.data : [];
+      } else if (Array.isArray(response.data)) {
+        data = response.data;
+      } else if (Array.isArray(response.data?.data)) {
+        data = response.data.data;
+      }
+
+      return { key: "states", countryId, data };
+    } catch (err) {
+      return rejectWithValue({ key: "states", error: err.message, countryId });
+    }
+  }
+);
+
+/**
+ * FETCH CITIES BY STATE ID
+ */
+export const fetchCitiesByStateId = createAsyncThunk(
+  "allData/fetchCitiesByStateId",
+  async (stateId, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await apiGet(`${GET_CITIES_BY_STATE_ID}/${stateId}`, {}, token);
+
+      let data = [];
+      
+      // Handle the new response format: { status: "SUCCESS", data: [...] }
+      if (response.data?.status === STATUS.SUCCESS.toUpperCase()) {
+        data = Array.isArray(response.data.data) ? response.data.data : [];
+      } else if (Array.isArray(response.data)) {
+        data = response.data;
+      } else if (Array.isArray(response.data?.data)) {
+        data = response.data.data;
+      }
+
+      return { key: "cities", stateId, data };
+    } catch (err) {
+      return rejectWithValue({ key: "cities", error: err.message, stateId });
+    }
+  }
+);
+
+/**
+ * SLICE
  */
 const allDataSlice = createSlice({
   name: "allData",
   initialState: {
-    resources: {}, // Example: { brands: { data: [], loading: false, error: null } }
-    userDetails: null, // Add userDetails to store individual user data
+    resources: {
+      countries: { data: [], loading: false, error: null },
+      states: { data: [], loading: false, error: null, countryId: null },
+      cities: { data: [], loading: false, error: null, stateId: null }
+    },
+    userDetails: null,
     userDetailsError: null,
     userDetailsLoading: false,
   },
   reducers: {
-    /**
-     * Clear the error for a specific resource
-     * Example: dispatch(clearResourceError("brands"))
-     */
     clearResourceError: (state, action) => {
       const key = action.payload;
       if (state.resources[key]) state.resources[key].error = null;
     },
-    /**
-     * Clear user details error
-     */
     clearUserDetailsError: (state) => {
       state.userDetailsError = null;
     },
-    /**
-     * Clear user details data
-     */
     clearUserDetails: (state) => {
       state.userDetails = null;
       localStorage.removeItem("userDetails");
+    },
+    clearStates: (state) => {
+      state.resources.states = { data: [], loading: false, error: null, countryId: null };
+    },
+    clearCities: (state) => {
+      state.resources.cities = { data: [], loading: false, error: null, stateId: null };
     },
   },
   extraReducers: (builder) => {
@@ -238,7 +280,6 @@ const allDataSlice = createSlice({
       .addCase(updateStatusById.fulfilled, (state, action) => {
         const { key, id, idField, payload } = action.payload;
         if (state.resources[key]?.data) {
-          // Update status in place
           state.resources[key].data = state.resources[key].data.map((item) =>
             item[idField] === id ? { ...item, Status: payload.Status } : item
           );
@@ -259,10 +300,66 @@ const allDataSlice = createSlice({
         state.userDetailsLoading = false;
         state.userDetails = null;
         state.userDetailsError = action.payload || "Failed to fetch user details";
+      })
+
+      // FETCH STATES BY COUNTRY ID lifecycle
+      .addCase(fetchStatesByCountryId.pending, (state) => {
+        state.resources.states = {
+          ...state.resources.states,
+          loading: true,
+          error: null,
+        };
+      })
+      .addCase(fetchStatesByCountryId.fulfilled, (state, action) => {
+        const { countryId, data } = action.payload;
+        state.resources.states = {
+          data,
+          loading: false,
+          error: null,
+          countryId,
+        };
+      })
+      .addCase(fetchStatesByCountryId.rejected, (state, action) => {
+        state.resources.states = {
+          ...state.resources.states,
+          loading: false,
+          error: action.payload?.error || "Failed to fetch states",
+        };
+      })
+
+      // FETCH CITIES BY STATE ID lifecycle
+      .addCase(fetchCitiesByStateId.pending, (state) => {
+        state.resources.cities = {
+          ...state.resources.cities,
+          loading: true,
+          error: null,
+        };
+      })
+      .addCase(fetchCitiesByStateId.fulfilled, (state, action) => {
+        const { stateId, data } = action.payload;
+        state.resources.cities = {
+          data,
+          loading: false,
+          error: null,
+          stateId,
+        };
+      })
+      .addCase(fetchCitiesByStateId.rejected, (state, action) => {
+        state.resources.cities = {
+          ...state.resources.cities,
+          loading: false,
+          error: action.payload?.error || "Failed to fetch cities",
+        };
       });
   },
 });
 
-// Export actions & reducer
-export const { clearResourceError, clearUserDetailsError, clearUserDetails } = allDataSlice.actions;
+export const { 
+  clearResourceError, 
+  clearUserDetailsError, 
+  clearUserDetails, 
+  clearStates, 
+  clearCities 
+} = allDataSlice.actions;
+
 export default allDataSlice.reducer;

@@ -29,15 +29,19 @@ import {
 import { showEmsg } from "../utils/ShowEmsg";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { fetchApiData } from "./FetchApiData";
 import { STATUS } from "../contants/constants";
 import { useUserDetails } from "../../src/context/AllDataContext";
 import { useDispatch } from "react-redux";
+import { 
+  passwordRules, 
+  validatePassword, 
+  validateNewPassword, 
+  validateConfirmPassword 
+} from "../utils/passwordUtils";
 
 const Login = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const dispatch = useDispatch();
   const [bShowPassword, setShowPassword] = useState(false);
 
   const [oFormData, setFormData] = useState({
@@ -62,59 +66,12 @@ const Login = () => {
   const [bShowNewPassword, setShowNewPassword] = useState(false);
   const [bShowConfirmPassword, setShowConfirmPassword] = useState(false);
   
-  // Use context hook properly
   const { fetchUserDetails } = useUserDetails();
-
-  const passwordRules = [
-    {
-      label: t("RESET_PASSWORD.RULES.LENGTH"),
-      test: (pw) => pw.length >= 8,
-    },
-    {
-      label: t("RESET_PASSWORD.RULES.UPPERCASE"),
-      test: (pw) => /[A-Z]/.test(pw),
-    },
-    {
-      label: t("RESET_PASSWORD.RULES.LOWERCASE"),
-      test: (pw) => /[a-z]/.test(pw),
-    },
-    {
-      label: t("RESET_PASSWORD.RULES.NUMBER"),
-      test: (pw) => /\d/.test(pw),
-    },
-    {
-      label: t("RESET_PASSWORD.RULES.SPECIAL"),
-      test: (pw) => /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(pw),
-    },
-  ];
 
   const validateEmail = (email) => {
     if (!email.trim()) return t("LOGIN.ERRORS.EMAIL_REQUIRED");
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) return t("LOGIN.ERRORS.EMAIL_INVALID");
-    return "";
-  };
-
-  const validatePassword = (password) => {
-    if (!password.trim()) return t("LOGIN.ERRORS.PASSWORD_REQUIRED");
-    return "";
-  };
-
-  const validateNewPassword = (password) => {
-    if (!password.trim()) return t("RESET_PASSWORD.ERRORS.PASSWORD_REQUIRED");
-    if (password.length < 6) return t("RESET_PASSWORD.ERRORS.PASSWORD_SHORT");
-    const strongRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
-    if (!strongRegex.test(password))
-      return t("RESET_PASSWORD.ERRORS.PASSWORD_WEAK");
-    return "";
-  };
-
-  const validateConfirmPassword = (confirmPassword, newPassword) => {
-    if (!confirmPassword.trim())
-      return t("RESET_PASSWORD.ERRORS.CONFIRM_PASSWORD_REQUIRED");
-    if (confirmPassword !== newPassword)
-      return t("RESET_PASSWORD.ERRORS.PASSWORDS_MISMATCH");
     return "";
   };
 
@@ -132,7 +89,7 @@ const Login = () => {
       if (field === "email") {
         fieldError = validateEmail(value);
       } else if (field === "password") {
-        fieldError = validatePassword(value);
+        fieldError = validatePassword(value, t);
       }
     } else if (sCurrentView === "forgotPassword" && field === "email") {
       setForgotPasswordEmail(value);
@@ -140,26 +97,24 @@ const Login = () => {
     } else if (sCurrentView === "resetPassword") {
       if (field === "newPassword") {
         setNewPassword(value);
-        fieldError = validateNewPassword(value);
+        fieldError = validateNewPassword(value, t);
         setError((prev) => ({
           ...prev,
-          confirmPassword: validateConfirmPassword(sConfirmPassword, value),
+          confirmPassword: validateConfirmPassword(sConfirmPassword, value, t),
         }));
       } else if (field === "confirmPassword") {
         setConfirmPassword(value);
-        fieldError = validateConfirmPassword(value, sNewPassword);
+        fieldError = validateConfirmPassword(value, sNewPassword, t);
       }
     }
 
     setError((prev) => ({ ...prev, [field]: fieldError, submit: "" }));
   };
 
-  // Direct API call for user details (alternative approach)
   const fetchUserDetailsDirectly = async (userId, token) => {
     try {
       const response = await apiGet(`${GET_USER_BY_ID}/${userId}`, {}, token);
-      console.log("User details response:", response);
-
+    
       if (response?.data?.status === STATUS.SUCCESS.toUpperCase()) {
         const userData = response.data.data;
         localStorage.setItem("userDetails", JSON.stringify(userData));
@@ -168,7 +123,6 @@ const Login = () => {
         throw new Error(response?.data?.message || "Failed to fetch user details");
       }
     } catch (err) {
-      console.error("Error fetching user details:", err);
       localStorage.removeItem("userDetails");
       throw err;
     }
@@ -176,7 +130,7 @@ const Login = () => {
 
   const loginUser = async () => {
     const emailError = validateEmail(oFormData.email);
-    const passwordError = validatePassword(oFormData.password);
+    const passwordError = validatePassword(oFormData.password, t);
 
     if (emailError || passwordError) {
       setError((prev) => ({
@@ -221,7 +175,6 @@ const Login = () => {
           );
 
           try {
-            // Fetch permissions
             const token = data.token;
             const permResponse = await apiGet(GET_ALL_PERMISSIONS, {}, token);
             if (permResponse?.data?.status === STATUS.SUCCESS.toUpperCase()) {
@@ -231,27 +184,16 @@ const Login = () => {
               );
             }
           } catch (e) {
-            console.error("Error fetching permissions:", e);
           }
 
           try {
-            // Option 1: Use context function if available
             if (fetchUserDetails) {
               await fetchUserDetails(data.UserID, data.token);
-            } 
-            // Option 2: Use direct API call as fallback
-            else {
+            } else {
               await fetchUserDetailsDirectly(data.UserID, data.token);
             }
           } catch (error) {
-            console.error("Error fetching user details:", error);
-            // Continue even if user details fetch fails
           }
-
-          // Fetch additional API data
-          fetchApiData();
-          
-          // Navigate to dashboard
           navigate("/dashboard");
         });
       } else {
@@ -386,10 +328,11 @@ const Login = () => {
   };
 
   const handlePasswordReset = async () => {
-    const newPasswordError = validateNewPassword(sNewPassword);
+    const newPasswordError = validateNewPassword(sNewPassword, t);
     const confirmPasswordError = validateConfirmPassword(
       sConfirmPassword,
-      sNewPassword
+      sNewPassword,
+      t
     );
     if (newPasswordError || confirmPasswordError) {
       setError((prev) => ({
@@ -646,7 +589,7 @@ const Login = () => {
               <p className="text-sm text-red-500 mt-1">{sError.newPassword}</p>
             )}
             <ul className="text-xs mt-2 space-y-1">
-              {passwordRules.map((rule, idx) => {
+              {passwordRules(t).map((rule, idx) => {
                 const passed = rule.test(sNewPassword);
                 return (
                   <li key={idx} className="flex items-center gap-2">

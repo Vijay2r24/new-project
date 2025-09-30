@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect, useCallback } from "react";
+import { useState, useContext, useEffect, useCallback, useRef } from "react";
 import { Building, MapPin, Phone, Mail } from "lucide-react";
 import TextInputWithIcon from "../components/TextInputWithIcon";
 import SelectWithIcon from "../components/SelectWithIcon";
@@ -16,6 +16,14 @@ import "react-toastify/dist/ReactToastify.css";
 import Loader from "../components/Loader";
 import { hideLoaderWithDelay } from "../utils/loaderUtils";
 import TextAreaWithIcon from "../components/TextAreaWithIcon";
+import { useDispatch, useSelector } from "react-redux";
+import { 
+  fetchResource, 
+  fetchStatesByCountryId, 
+  fetchCitiesByStateId,
+  clearStates,
+  clearCities 
+} from "../store/slices/allDataSlice";
 
 const getArray = (data) =>
   Array.isArray(data)
@@ -26,8 +34,13 @@ const getArray = (data) =>
 
 const AddStore = () => {
   const { t } = useTranslation();
-  const { aCountriesData, aStatesData, aCitiesData } =
-    useContext(LocationDataContext);
+  const dispatch = useDispatch();
+  const { 
+    countries: countriesData, 
+    states: statesData, 
+    cities: citiesData 
+  } = useSelector((state) => state.allData.resources);
+  
   const { id } = useParams();
   const navigate = useNavigate();
   const { setTitle, setBackButton } = useTitle();
@@ -50,46 +63,105 @@ const AddStore = () => {
 
   const [oErrors, setErrors] = useState({});
   const [bSubmitting, setbSubmitting] = useState(false);
+  const [isFetchingStore, setIsFetchingStore] = useState(false);
+  
+  // Refs to track what has been loaded
+  const hasFetchedStore = useRef(false);
+  const hasFetchedCountries = useRef(false);
 
+  // Fetch countries on component mount - only once
+  useEffect(() => {
+    if (!hasFetchedCountries.current && !countriesData.data.length) {
+      dispatch(fetchResource({ key: "countries" }));
+      hasFetchedCountries.current = true;
+    }
+  }, [dispatch, countriesData.data.length]);
+
+  // Fetch states when country changes - only when country is selected
+  useEffect(() => {
+    if (oFormData.country && oFormData.country !== "") {
+      dispatch(fetchStatesByCountryId(oFormData.country));
+    } else {
+      dispatch(clearStates());
+    }
+  }, [dispatch, oFormData.country]);
+
+  // Fetch cities when state changes - only when state is selected
+  useEffect(() => {
+    if (oFormData.state && oFormData.state !== "") {
+      dispatch(fetchCitiesByStateId(oFormData.state));
+    } else {
+      dispatch(clearCities());
+    }
+  }, [dispatch, oFormData.state]);
+
+  // Optimized fetchStore function without circular dependencies
   const fetchStore = useCallback(async () => {
+    if (!id || isFetchingStore || hasFetchedStore.current) return;
+    
+    setIsFetchingStore(true);
+    hasFetchedStore.current = true;
+
     try {
       const token = localStorage.getItem("token");
       const oResponse = await apiGet(`${GET_STORE_BY_ID}/${id}`, {}, token);
+      
       if (oResponse.data.status === STATUS.SUCCESS.toUpperCase()) {
         const store = oResponse.data.data;
 
-        const foundCountry = getArray(aCountriesData).find(
-          (c) => c.CountryName === store.CountryName
-        );
-        const foundState = getArray(aStatesData).find(
-          (s) =>
-            s.StateName === store.StateName &&
-            String(s.CountryID) === String(foundCountry?.CountryID)
-        );
-        const foundCity = getArray(aCitiesData).find(
-          (c) =>
-            c.CityName === store.CityName &&
-            String(c.StateID) === String(foundState?.StateID)
-        );
-        setFormData({
+        // Set basic form data immediately without waiting for location data
+        setFormData(prev => ({
+          ...prev,
           name: store.StoreName || "",
           address: store.AddressLine1 || "",
-          country: foundCountry?.CountryID || "",
-          state: foundState?.StateID || "",
-          city: foundCity?.CityID || "",
           zipCode: store.Zipcode || "",
           phone: store.PhoneNumber || "",
           StoreID: store.StoreID || "",
           email: store.Email || "",
-          countryName:
-            store.CountryName || (foundCountry ? foundCountry.CountryName : ""),
-          stateName:
-            store.StateName || (foundState ? foundState.StateName : ""),
-          cityName: store.CityName || (foundCity ? foundCity.CityName : ""),
-        });
+          countryName: store.CountryName || "",
+          stateName: store.StateName || "",
+          cityName: store.CityName || "",
+        }));
         setStatus(store.IsActive);
 
-        setErrors({});
+        // Store location names for later population
+        const locationData = {
+          countryName: store.CountryName,
+          stateName: store.StateName,
+          cityName: store.CityName
+        };
+
+        // Find and set country ID if available
+        const countriesArray = getArray(countriesData.data);
+        if (countriesArray.length > 0) {
+          const foundCountry = countriesArray.find(
+            (c) => c.CountryName === store.CountryName
+          );
+          if (foundCountry) {
+            setFormData(prev => ({
+              ...prev,
+              country: foundCountry.CountryID
+            }));
+            // Store location data in form for state/city population
+            setFormData(prev => ({
+              ...prev,
+              countryName: store.CountryName,
+              stateName: store.StateName,
+              cityName: store.CityName
+            }));
+          }
+        } else {
+          // If countries aren't loaded yet, store the names for later
+          setTimeout(() => {
+            setFormData(prev => ({
+              ...prev,
+              countryName: store.CountryName,
+              stateName: store.StateName,
+              cityName: store.CityName
+            }));
+          }, 100);
+        }
+
       } else {
         showEmsg(
           oResponse.data?.MESSAGE || t("COMMON.ERROR_MESSAGE"),
@@ -97,16 +169,81 @@ const AddStore = () => {
         );
       }
     } catch (error) {
+      console.error("Error fetching store:", error);
       showEmsg(
         error?.response?.data?.MESSAGE || t("COMMON.ERROR_MESSAGE"),
         STATUS.ERROR
       );
+    } finally {
+      setIsFetchingStore(false);
     }
-  }, [id, aCountriesData, aStatesData, aCitiesData, t]);
+  }, [id, isFetchingStore, countriesData.data, t]);
 
+  // Effect to populate state and city after country is set and states are loaded
   useEffect(() => {
-    if (id) fetchStore();
-  }, [id, fetchStore]);
+    const populateStateAndCity = async () => {
+      if (!id || !oFormData.country || !oFormData.stateName || !oFormData.countryName) return;
+
+      try {
+        // Ensure states are loaded for the current country
+        const statesArray = getArray(statesData.data);
+        const foundState = statesArray.find(
+          (s) => s.StateName === oFormData.stateName
+        );
+
+        if (foundState && !oFormData.state) {
+          setFormData(prev => ({
+            ...prev,
+            state: foundState.StateID
+          }));
+        } else if (!foundState && statesArray.length > 0) {
+          // State not found in loaded states, try to fetch it
+          console.warn("State not found in loaded states:", oFormData.stateName);
+        }
+      } catch (error) {
+        console.error("Error populating state:", error);
+      }
+    };
+
+    populateStateAndCity();
+  }, [id, oFormData.country, oFormData.stateName, oFormData.countryName, statesData.data]);
+
+  // Effect to populate city after state is set and cities are loaded
+  useEffect(() => {
+    const populateCity = async () => {
+      if (!id || !oFormData.state || !oFormData.cityName) return;
+
+      try {
+        const citiesArray = getArray(citiesData.data);
+        const foundCity = citiesArray.find(
+          (c) => c.CityName === oFormData.cityName
+        );
+
+        if (foundCity && !oFormData.city) {
+          setFormData(prev => ({
+            ...prev,
+            city: foundCity.CityID
+          }));
+        }
+      } catch (error) {
+        console.error("Error populating city:", error);
+      }
+    };
+
+    populateCity();
+  }, [id, oFormData.state, oFormData.cityName, citiesData.data]);
+
+  // Fetch store only once when component mounts with ID
+  useEffect(() => {
+    if (id && !hasFetchedStore.current) {
+      // Small delay to ensure countries are loaded first
+      const timer = setTimeout(() => {
+        fetchStore();
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [id]); // Only depend on id
 
   useEffect(() => {
     setTitle(id ? t("STORES.EDIT_STORE") : t("STORES.ADD_STORE"));
@@ -218,23 +355,24 @@ const AddStore = () => {
       const userId = localStorage.getItem("userId");
 
       // Get selected country, state, and city names
-      const selectedCountry = getArray(aCountriesData).find(
+      const selectedCountry = getArray(countriesData.data).find(
         (c) => String(c.CountryID) === String(oFormData.country)
       );
-      const selectedState = getArray(aStatesData).find(
+      const selectedState = getArray(statesData.data).find(
         (s) => String(s.StateID) === String(oFormData.state)
       );
-      const selectedCity = getArray(aCitiesData).find(
+      const selectedCity = getArray(citiesData.data).find(
         (c) => String(c.CityID) === String(oFormData.city)
       );
+
       const payload = {
-        StoreID: oFormData.StoreID,
+        StoreID: oFormData.StoreID || 0,
         TenantID: localStorage.getItem("tenantID"),
         StoreName: oFormData.name,
         Email: oFormData.email,
         PhoneNumber: oFormData.phone,
         AddressLine1: oFormData.address,
-        AddressLine2: oFormData.address2 || "",
+        AddressLine2: "",
         CityID: parseInt(oFormData.city, 10),
         StateID: parseInt(oFormData.state, 10),
         CountryID: parseInt(oFormData.country, 10),
@@ -270,9 +408,10 @@ const AddStore = () => {
       id,
       navigate,
       t,
-      aCountriesData,
-      aStatesData,
-      aCitiesData,
+      status,
+      countriesData.data,
+      statesData.data,
+      citiesData.data,
     ]
   );
 
@@ -330,12 +469,13 @@ const AddStore = () => {
                     name="country"
                     value={oFormData.country}
                     onChange={handleChange}
-                    options={getArray(aCountriesData).map((c) => ({
+                    options={getArray(countriesData.data).map((c) => ({
                       value: c.CountryID,
                       label: c.CountryName,
                     }))}
                     Icon={Building}
                     error={oErrors.country}
+                    loading={countriesData.loading}
                   />
                 </div>
                 <div>
@@ -345,14 +485,14 @@ const AddStore = () => {
                     name="state"
                     value={oFormData.state}
                     onChange={handleChange}
-                    options={getArray(aStatesData)
-                      .filter(
-                        (s) => String(s.CountryID) === String(oFormData.country)
-                      )
-                      .map((s) => ({ value: s.StateID, label: s.StateName }))}
+                    options={getArray(statesData.data).map((s) => ({ 
+                      value: s.StateID, 
+                      label: s.StateName 
+                    }))}
                     Icon={Building}
                     error={oErrors.state}
-                    disabled={!oFormData.country}
+                    disabled={!oFormData.country || statesData.loading}
+                    loading={statesData.loading}
                   />
                 </div>
                 <div>
@@ -362,14 +502,14 @@ const AddStore = () => {
                     name="city"
                     value={oFormData.city}
                     onChange={handleChange}
-                    options={getArray(aCitiesData)
-                      .filter(
-                        (c) => String(c.StateID) === String(oFormData.state)
-                      )
-                      .map((c) => ({ value: c.CityID, label: c.CityName }))}
+                    options={getArray(citiesData.data).map((c) => ({ 
+                      value: c.CityID, 
+                      label: c.CityName 
+                    }))}
                     Icon={Building}
                     error={oErrors.city}
-                    disabled={!oFormData.state}
+                    disabled={!oFormData.state || citiesData.loading}
+                    loading={citiesData.loading}
                   />
                 </div>
                 <div>

@@ -35,7 +35,21 @@ import { ToastContainer } from "react-toastify";
 import userProfile from "../../assets/images/userProfile.svg";
 import Loader from "../components/Loader";
 import { hideLoaderWithDelay } from "../utils/loaderUtils";
-import { fetchResource } from "../store/slices/allDataSlice";
+import { 
+  fetchResource, 
+  fetchStatesByCountryId, 
+  fetchCitiesByStateId,
+  clearStates,
+  clearCities 
+} from "../store/slices/allDataSlice";
+
+// Import password utilities
+import {
+  passwordRequirements,
+  calculatePasswordStrength,
+  getPasswordStrengthText,
+  validateFormPassword
+} from "../utils/passwordUtils";
 
 const getArray = (data) =>
   Array.isArray(data)
@@ -58,7 +72,6 @@ const AddUser = () => {
     city: "",
     state: "",
     pincode: "",
-    status: "Active",
     country: "",
     countryName: "",
     stateName: "",
@@ -79,18 +92,30 @@ const AddUser = () => {
   // Redux hooks
   const dispatch = useDispatch();
 
-  // Get roles and stores from the allDataSlice
+  // Get data from the allDataSlice
   const rolesData = useSelector((state) => state.allData.resources.roles || {});
-  const storesData = useSelector(
-    (state) => state.allData.resources.stores || {}
-  );
+  const storesData = useSelector((state) => state.allData.resources.stores || {});
+  const countriesData = useSelector((state) => state.allData.resources.countries || {});
+  const statesData = useSelector((state) => state.allData.resources.states || {});
+  const citiesData = useSelector((state) => state.allData.resources.cities || {});
 
   const roles = rolesData.data || [];
   const stores = storesData.data || [];
+  const countries = countriesData.data || [];
+  const states = statesData.data || [];
+  const cities = citiesData.data || [];
+  
   const rolesLoading = rolesData.loading || false;
   const storesLoading = storesData.loading || false;
+  const countriesLoading = countriesData.loading || false;
+  const statesLoading = statesData.loading || false;
+  const citiesLoading = citiesData.loading || false;
+  
   const rolesError = rolesData.error || null;
   const storesError = storesData.error || null;
+  const countriesError = countriesData.error || null;
+  const statesError = statesData.error || null;
+  const citiesError = citiesData.error || null;
 
   const [oErrors, setErrors] = useState({});
   const { setTitle, setBackButton } = useTitle();
@@ -101,52 +126,21 @@ const AddUser = () => {
   // Refs to track if data has been fetched to prevent multiple API calls
   const hasFetchedRoles = useRef(false);
   const hasFetchedStores = useRef(false);
+  const hasFetchedCountries = useRef(false);
+  const hasFetchedUser = useRef(false);
+  const hasFetchedInitialData = useRef(false);
 
-  // Password strength calculation
-  const passwordStrength = useMemo(() => {
-    if (!oFormData.password) return "";
-    const hasUpperCase = /[A-Z]/.test(oFormData.password);
-    const hasLowerCase = /[a-z]/.test(oFormData.password);
-    const hasNumbers = /\d/.test(oFormData.password);
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(oFormData.password);
-    const isLongEnough = oFormData.password.length >= 8;
+  // Password strength calculation using the imported utility
+  const passwordStrength = useMemo(() => 
+    calculatePasswordStrength(oFormData.password), 
+    [oFormData.password]
+  );
 
-    const strengthScore = [
-      hasUpperCase,
-      hasLowerCase,
-      hasNumbers,
-      hasSpecialChar,
-      isLongEnough,
-    ].filter(Boolean).length;
-
-    if (strengthScore >= 4) return "strong";
-    if (strengthScore >= 3) return "medium";
-    return "weak";
-  }, [oFormData.password]);
-
-  // Password requirements
-  const passwordRequirements = [
-    {
-      test: (password) => password.length >= 8,
-      label: t("ADD_USER.VALIDATION.PASSWORD_LENGTH"),
-    },
-    {
-      test: (password) => /[A-Z]/.test(password),
-      label: t("ADD_USER.VALIDATION.PASSWORD_UPPERCASE"),
-    },
-    {
-      test: (password) => /[a-z]/.test(password),
-      label: t("ADD_USER.VALIDATION.PASSWORD_LOWERCASE"),
-    },
-    {
-      test: (password) => /\d/.test(password),
-      label: t("ADD_USER.VALIDATION.PASSWORD_NUMBER"),
-    },
-    {
-      test: (password) => /[!@#$%^&*(),.?":{}|<>]/.test(password),
-      label: t("ADD_USER.VALIDATION.PASSWORD_SPECIAL"),
-    },
-  ];
+  // Get password strength text using the imported utility
+  const passwordStrengthText = useMemo(() => 
+    getPasswordStrengthText(passwordStrength, t), 
+    [passwordStrength, t]
+  );
 
   useEffect(() => {
     setTitle(id ? t("USERS.EDIT_USER") : t("USERS.ADD_NEW_USER"));
@@ -157,7 +151,7 @@ const AddUser = () => {
     };
   }, [setTitle, setBackButton, t, id, navigate]);
 
-  // Validation function
+  // Validation function - simplified using imported utilities
   const validate = useCallback(() => {
     const errors = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -187,20 +181,19 @@ const AddUser = () => {
       errors.role = t("ADD_USER.VALIDATION.ROLE_REQUIRED");
     }
 
-    // Add validation for stores
     if (!oFormData.stores || oFormData.stores.length === 0) {
       errors.stores = t("ADD_USER.VALIDATION.STORES_REQUIRED");
     }
 
-    if (!id && !oFormData.password) {
-      errors.password = t("ADD_USER.VALIDATION.PASSWORD_REQUIRED");
-    } else if (oFormData.password && oFormData.password.length < 8) {
-      errors.password = t("ADD_USER.VALIDATION.PASSWORD_TOO_SHORT");
-    }
-
-    if (oFormData.password !== oFormData.confirmPassword) {
-      errors.confirmPassword = t("ADD_USER.VALIDATION.PASSWORDS_MISMATCH");
-    }
+    // Use imported password validation
+    const passwordErrors = validateFormPassword(
+      oFormData.password, 
+      oFormData.confirmPassword, 
+      t, 
+      !id // isNewUser = true when creating new user
+    );
+    
+    Object.assign(errors, passwordErrors);
 
     if (!oFormData.streetAddress?.trim()) {
       errors.streetAddress = t("ADD_USER.VALIDATION.ADDRESS_REQUIRED");
@@ -225,10 +218,81 @@ const AddUser = () => {
     return errors;
   }, [oFormData, t, id]);
 
-  const fetchUser = useCallback(async () => {
-    if (!id) return;
+  // Fetch initial data when component mounts - only once
+  useEffect(() => {
+    if (!hasFetchedInitialData.current) {
+      hasFetchedInitialData.current = true;
+      
+      // Fetch countries if not loaded
+      if (!countries.length && !countriesLoading) {
+        hasFetchedCountries.current = true;
+        dispatch(fetchResource({ key: "countries" }));
+      }
 
+      // Fetch roles if not loaded
+      if (!roles.length && !rolesLoading && !hasFetchedRoles.current) {
+        hasFetchedRoles.current = true;
+        dispatch(
+          fetchResource({
+            key: "roles",
+            params: { pageNumber: 1, pageSize: 100 },
+          })
+        );
+      }
+
+      // Fetch stores if not loaded
+      if (!stores.length && !storesLoading && !hasFetchedStores.current) {
+        hasFetchedStores.current = true;
+        dispatch(
+          fetchResource({
+            key: "stores",
+            params: { pageNumber: 1, pageSize: 100 },
+          })
+        );
+      }
+    }
+  }, [dispatch, countries, countriesLoading, roles, rolesLoading, stores, storesLoading]);
+
+  useEffect(() => {
+    if (oFormData.country) {
+      dispatch(fetchStatesByCountryId(oFormData.country))
+        .unwrap()
+        .then((result) => {
+          // States loaded successfully
+        })
+        .catch((error) => {
+          console.error("Error fetching states:", error);
+        });
+    } else {
+      dispatch(clearStates());
+      setFormData(prev => ({ ...prev, state: "", city: "" }));
+    }
+  }, [dispatch, oFormData.country]);
+
+  useEffect(() => {
+    if (oFormData.state) {
+      dispatch(fetchCitiesByStateId(oFormData.state))
+        .unwrap()
+        .then((result) => {
+          // Cities loaded successfully
+        })
+        .catch((error) => {
+          console.error("Error fetching cities:", error);
+        });
+    } else {
+      // Clear cities when no state is selected
+      dispatch(clearCities());
+      setFormData(prev => ({ ...prev, city: "" }));
+    }
+  }, [dispatch, oFormData.state]);
+
+  // Optimized fetchUser function without circular dependencies
+  const fetchUser = useCallback(async () => {
+    if (!id || hasFetchedUser.current) return;
+
+    hasFetchedUser.current = true;
     const token = localStorage.getItem("token");
+    
     try {
       const oResponse = await apiGet(`${GET_USER_BY_ID}/${id}`, {}, token);
       const resData = oResponse.data;
@@ -236,34 +300,18 @@ const AddUser = () => {
       if (resData?.status === STATUS.SUCCESS.toUpperCase() && resData.data) {
         const user = resData.data;
 
-        const foundCountry = getArray(aCountriesData).find(
-          (c) => c.CountryName === user.CountryName
-        );
-        const foundState = getArray(aStatesData).find(
-          (s) =>
-            s.StateName === user.StateName &&
-            String(s.CountryID) === String(foundCountry?.CountryID)
-        );
-        const foundCity = getArray(aCitiesData).find(
-          (c) =>
-            c.CityName === user.CityName &&
-            String(c.StateID) === String(foundState?.StateID)
-        );
-
-        setFormData((prevFormData) => ({
-          ...prevFormData,
+        // Set basic form data immediately
+        setFormData(prev => ({
+          ...prev,
           firstName: user.FirstName || "",
           lastName: user.LastName || "",
           email: user.Email || "",
           phone: user.PhoneNumber || "",
           role: user.RoleID || "",
+          IsActive: true,
           stores: user.Stores ? user.Stores.map((store) => store.StoreId) : [],
           streetAddress: user.AddressLine || "",
-          city: foundCity?.CityID || "",
-          state: foundState?.StateID || "",
           pincode: user.Zipcode || "",
-          status: user.IsActive ? "Active" : "Inactive",
-          country: foundCountry?.CountryID || "",
           countryName: user.CountryName || "",
           stateName: user.StateName || "",
           cityName: user.CityName || "",
@@ -272,7 +320,7 @@ const AddUser = () => {
             : [],
         }));
 
-        // For the profile image: handle multiple images
+        // For the profile image
         if (user.ProfileImageUrl && user.ProfileImageUrl.length > 0) {
           setImgLoading(true);
           setProfileImagePreview(user.ProfileImageUrl[0].documentUrl);
@@ -282,9 +330,38 @@ const AddUser = () => {
           setExistingDocuments([]);
         }
 
-        // Reset removed document IDs when fetching user data
-        setRemovedDocumentIds([]);
+        // Store location names for later population
+        const locationData = {
+          countryName: user.CountryName,
+          stateName: user.StateName,
+          cityName: user.CityName
+        };
 
+        // Find and set country ID if available
+        const countriesArray = getArray(countries);
+        if (countriesArray.length > 0) {
+          const foundCountry = countriesArray.find(
+            (c) => c.CountryName === user.CountryName
+          );
+          if (foundCountry) {
+            setFormData(prev => ({
+              ...prev,
+              country: foundCountry.CountryID
+            }));
+          }
+        } else {
+          // If countries aren't loaded yet, store the names for later
+          setTimeout(() => {
+            setFormData(prev => ({
+              ...prev,
+              countryName: user.CountryName,
+              stateName: user.StateName,
+              cityName: user.CityName
+            }));
+          }, 100);
+        }
+
+        setRemovedDocumentIds([]);
         setFetchUserError("");
       } else {
         setFetchUserError(resData?.MESSAGE || t("COMMON.FAILED_OPERATION"));
@@ -293,56 +370,98 @@ const AddUser = () => {
       const backendMessage = error?.response?.data?.MESSAGE;
       setFetchUserError(backendMessage || t("COMMON.ERROR_MESSAGE"));
     }
-  }, [id, t, aCountriesData, aStatesData, aCitiesData]);
+  }, [id, t, countries]);
+
+  // Effect to populate state and city after country is set and states are loaded
+  useEffect(() => {
+    const populateStateAndCity = async () => {
+      if (!id || !oFormData.country || !oFormData.stateName || !oFormData.countryName) return;
+
+      try {
+        // Ensure states are loaded for the current country
+        const statesArray = getArray(states);
+        const foundState = statesArray.find(
+          (s) => s.StateName === oFormData.stateName
+        );
+
+        if (foundState && !oFormData.state) {
+          setFormData(prev => ({
+            ...prev,
+            state: foundState.StateID
+          }));
+        }
+      } catch (error) {
+        console.error("Error populating state:", error);
+      }
+    };
+
+    populateStateAndCity();
+  }, [id, oFormData.country, oFormData.stateName, oFormData.countryName, states]);
 
   useEffect(() => {
-    if (
-      id &&
-      getArray(aCountriesData).length > 0 &&
-      getArray(aStatesData).length > 0 &&
-      getArray(aCitiesData).length > 0
-    ) {
-      fetchUser();
-    }
-  }, [id, fetchUser, aCountriesData, aStatesData, aCitiesData]);
+    const populateCity = async () => {
+      if (!id || !oFormData.state || !oFormData.cityName) return;
+
+      try {
+        const citiesArray = getArray(cities);
+        const foundCity = citiesArray.find(
+          (c) => c.CityName === oFormData.cityName
+        );
+
+        if (foundCity && !oFormData.city) {
+          setFormData(prev => ({
+            ...prev,
+            city: foundCity.CityID
+          }));
+        }
+      } catch (error) {
+        console.error("Error populating city:", error);
+      }
+    };
+
+    populateCity();
+  }, [id, oFormData.state, oFormData.cityName, cities]);
 
   useEffect(() => {
-    if (
-      (!roles || roles.length === 0) &&
-      !rolesLoading &&
-      !hasFetchedRoles.current
-    ) {
-      hasFetchedRoles.current = true;
-      dispatch(
-        fetchResource({
-          key: "roles",
-          params: { pageNumber: 1, pageSize: 100 },
-        })
-      );
+    if (id && !hasFetchedUser.current && countries.length > 0) {
+      const timer = setTimeout(() => {
+        fetchUser();
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
-
-    if (
-      (!stores || stores.length === 0) &&
-      !storesLoading &&
-      !hasFetchedStores.current
-    ) {
-      hasFetchedStores.current = true;
-      dispatch(
-        fetchResource({
-          key: "stores",
-          params: { pageNumber: 1, pageSize: 100 },
-        })
-      );
-    }
-  }, [dispatch, roles, rolesLoading, stores, storesLoading]);
+  }, [id, countries.length, fetchUser]);
 
   const handleChange = useCallback(
     (e) => {
       const { name, value } = e.target;
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
+    
+      if (name === "country") {
+        setFormData((prev) => ({
+          ...prev,
+          [name]: value,
+          state: "",
+          city: "",
+          stateName: "",
+          cityName: "",
+        }));
+      }
+      else if (name === "state") {
+        setFormData((prev) => ({
+          ...prev,
+          [name]: value,
+          city: "",
+          cityName: "",
+        }));
+      }
+      // For all other fields
+      else {
+        setFormData((prev) => ({
+          ...prev,
+          [name]: value,
+        }));
+      }
+      
       // Clear error when user starts typing
       if (oErrors[name]) {
         setErrors((prev) => ({ ...prev, [name]: "" }));
@@ -355,8 +474,7 @@ const AddUser = () => {
     const file = e.target.files[0];
     if (file) {
       setProfileImage(file);
-      // ✅ REMOVED: setExistingDocuments([]); - Don't clear existing documents
-      setRemovedDocumentIds([]); // Reset removed IDs when uploading new image
+      setRemovedDocumentIds([]);
       const reader = new FileReader();
       reader.onload = (e) => {
         setProfileImagePreview(e.target.result);
@@ -365,187 +483,112 @@ const AddUser = () => {
     }
   }, []);
 
-  const handleRemoveImage = useCallback(
-    (documentId = null) => {
-      if (documentId) {
-        // Remove specific existing document and track the removed ID
-        setExistingDocuments((prev) => {
-          const updatedDocs = prev.filter(
-            (doc) => doc.documentId !== documentId
-          );
+  const handleSubmit = useCallback(
+    async (e) => {
+      e.preventDefault();
+      const validationErrors = validate();
+      setErrors(validationErrors);
+      if (Object.keys(validationErrors).length > 0) return;
 
-          // Update preview if removing the first image
-          if (prev.length > 0 && prev[0].documentId === documentId) {
-            if (updatedDocs.length > 0) {
-              setProfileImagePreview(updatedDocs[0].documentUrl);
-            } else {
-              setProfileImagePreview(null);
-            }
-          }
+      setSubmitting(true);
+      const token = localStorage.getItem("token");
+      const userId = localStorage.getItem("userId");
+      const formData = new FormData();
 
-          return updatedDocs;
-        });
-
-        // Track the removed document ID
-        setRemovedDocumentIds((prev) => [...prev, documentId]);
-      } else {
-        // Remove newly uploaded image but keep existing documents
-        setProfileImage(null);
-        setProfileImagePreview(null);
-
-        // Restore existing documents preview if available
-        if (existingDocuments.length > 0) {
-          setProfileImagePreview(existingDocuments[0].documentUrl);
+      let documentMetadata = [];
+      if (nProfileImage) {
+        if (existingDocuments.length > 0 && existingDocuments[0]?.documentId) {
+          documentMetadata.push({
+            image: "profile-image",
+            sortOrder: 1,
+            DocumentID: existingDocuments[0].documentId,
+          });
+        } else {
+          documentMetadata.push({
+            image: "profile-image",
+            sortOrder: 1,
+          });
         }
+      } else if (removedDocumentIds.length > 0) {
+        const remainingDocuments = existingDocuments.filter(
+          (doc) => !removedDocumentIds.includes(doc.documentId)
+        );
+        documentMetadata = remainingDocuments.map((doc, index) => ({
+          image: "profile-image",
+          sortOrder: doc.sortOrder || index + 1,
+          DocumentID: doc.documentId,
+        }));
+      }
+
+      const userData = {
+        UserID: id || "",
+        FirstName: oFormData.firstName || "",
+        LastName: oFormData.lastName || "",
+        Email: oFormData.email || "",
+        Password: oFormData.password ? md5(oFormData.password) : "",
+        PhoneNumber: oFormData.phone || "",
+        AddressLine: oFormData.streetAddress || "",
+        CityID: oFormData.city ? parseInt(oFormData.city, 10) : 0,
+        StateID: oFormData.state ? parseInt(oFormData.state, 10) : 0,
+        CountryID: oFormData.country ? parseInt(oFormData.country, 10) : 0,
+        Zipcode: oFormData.pincode || "",
+        RoleID: oFormData.role || "",
+        StoreIDs: oFormData.stores || [],
+        IsActive: oFormData.status,
+        documentMetadata: documentMetadata,
+      };
+
+      if (id) {
+        userData.UpdatedBy = userId;
+      } else {
+        userData.CreatedBy = userId;
+      }
+
+      formData.append("data", JSON.stringify(userData));
+
+      if (nProfileImage) {
+        formData.append("profile-image", nProfileImage);
+      }
+
+      try {
+        const oResponse = await apiPost(
+          USER_CREATE_OR_UPDATE,
+          formData,
+          token,
+          true
+        );
+        const resData = oResponse?.data;
+
+        if (resData?.status === STATUS.SUCCESS.toUpperCase()) {
+          setRemovedDocumentIds([]);
+          showEmsg(resData?.message, STATUS.SUCCESS, 3000, async () => {
+            navigate("/users");
+          });
+        } else {
+          showEmsg(
+            resData?.message || t("COMMON.FAILED_OPERATION"),
+            STATUS.WARNING
+          );
+        }
+      } catch (error) {
+        console.error("API Error:", error);
+        const backendMessage = error?.response?.data?.message;
+        showEmsg(backendMessage || t("COMMON.ERROR_MESSAGE"), STATUS.ERROR);
+      } finally {
+        hideLoaderWithDelay(setSubmitting);
       }
     },
-    [existingDocuments]
+    [
+      validate,
+      id,
+      oFormData,
+      nProfileImage,
+      existingDocuments,
+      removedDocumentIds,
+      t,
+      navigate,
+    ]
   );
-
- const handleSubmit = useCallback(
-  async (e) => {
-    e.preventDefault();
-    const validationErrors = validate();
-    setErrors(validationErrors);
-    if (Object.keys(validationErrors).length > 0) return;
-
-    setSubmitting(true);
-    const token = localStorage.getItem("token");
-    const userId = localStorage.getItem("userId");
-    const formData = new FormData();
-
-    // Initialize documentMetadata as an empty array
-    let documentMetadata = [];
-
-    console.log("=== IMAGE STATE DEBUG ===");
-    console.log("New Image:", nProfileImage);
-    console.log("Existing Documents:", existingDocuments);
-    console.log("Removed Document IDs:", removedDocumentIds);
-
-    // Only include document metadata if there are actual image changes
-    if (nProfileImage) {
-      // New image is being uploaded
-      if (existingDocuments.length > 0 && existingDocuments[0]?.documentId) {
-        // Replacing existing image - include DocumentID
-        documentMetadata.push({
-          image: "profile-image",
-          sortOrder: 1,
-          DocumentID: existingDocuments[0].documentId
-        });
-        console.log("Replacing existing image with DocumentID:", existingDocuments[0].documentId);
-      } else {
-        // New upload - no DocumentID needed
-        documentMetadata.push({
-          image: "profile-image",
-          sortOrder: 1
-        });
-        console.log("New image upload");
-      }
-    } else if (removedDocumentIds.length > 0) {
-      // Some documents were removed, include only the remaining ones
-      const remainingDocuments = existingDocuments.filter(
-        doc => !removedDocumentIds.includes(doc.documentId)
-      );
-      documentMetadata = remainingDocuments.map((doc, index) => ({
-        image: "profile-image",
-        sortOrder: doc.sortOrder || index + 1,
-        DocumentID: doc.documentId
-      }));
-      console.log("Documents removed, keeping remaining:", remainingDocuments);
-    } else if (existingDocuments.length > 0) {
-      // No changes, but we have existing documents - include them
-      documentMetadata = existingDocuments.map((doc, index) => ({
-        image: "profile-image",
-        sortOrder: doc.sortOrder || index + 1,
-        DocumentID: doc.documentId
-      }));
-      console.log("No changes, keeping existing documents");
-    }
-    // If none of the above conditions are met, documentMetadata remains empty
-
-    console.log("Final documentMetadata:", documentMetadata);
-
-    const userData = {
-      UserID: id || "",
-      FirstName: oFormData.firstName || "",
-      LastName: oFormData.lastName || "",
-      Email: oFormData.email || "",
-      Password: oFormData.password ? md5(oFormData.password) : "",
-      PhoneNumber: oFormData.phone || "",
-      AddressLine: oFormData.streetAddress || "",
-      CityID: oFormData.city ? parseInt(oFormData.city, 10) : 0,
-      StateID: oFormData.state ? parseInt(oFormData.state, 10) : 0,
-      CountryID: oFormData.country ? parseInt(oFormData.country, 10) : 0,
-      Zipcode: oFormData.pincode || "",
-      RoleID: oFormData.role || "",
-      StoreIDs: oFormData.stores || [],
-      IsActive: oFormData.status === "Active",
-      documentMetadata: documentMetadata, // This will be empty array if no image changes
-    };
-
-    // Add CreatedBy or UpdatedBy
-    if (id) {
-      userData.UpdatedBy = userId;
-    } else {
-      userData.CreatedBy = userId;
-    }
-
-    formData.append("data", JSON.stringify(userData));
-
-    // Only append the file if there's a new image
-    if (nProfileImage) {
-      formData.append("profile-image", nProfileImage);
-    }
-
-    // Debug: Check what's being sent
-    console.log("=== FINAL PAYLOAD ===");
-    console.log("UserData:", JSON.stringify(userData, null, 2));
-    console.log("documentMetadata length:", documentMetadata.length);
-
-    try {
-      const oResponse = await apiPost(
-        USER_CREATE_OR_UPDATE,
-        formData,
-        token,
-        true
-      );
-      const resData = oResponse?.data;
-
-      if (resData?.status === STATUS.SUCCESS.toUpperCase()) {
-        setRemovedDocumentIds([]);
-        showEmsg(
-          resData?.message,
-          STATUS.SUCCESS,
-          3000,
-          async () => {
-            navigate("/users");
-          }
-        );
-      } else {
-        showEmsg(
-          resData?.message || t("COMMON.FAILED_OPERATION"),
-          STATUS.WARNING
-        );
-      }
-    } catch (error) {
-      console.error("API Error:", error);
-      const backendMessage = error?.response?.data?.message;
-      showEmsg(backendMessage || t("COMMON.ERROR_MESSAGE"), STATUS.ERROR);
-    } finally {
-      hideLoaderWithDelay(setSubmitting);
-    }
-  },
-  [
-    validate,
-    id,
-    oFormData,
-    nProfileImage,
-    existingDocuments,
-    removedDocumentIds,
-    t,
-    navigate,
-  ]
-);
 
   const loaderOverlay = bSubmitting && <Loader />;
 
@@ -614,8 +657,6 @@ const AddUser = () => {
         </div>
       </div>
 
-      {/* REMOVED: Existing documents thumbnails section */}
-
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
@@ -670,6 +711,7 @@ const AddUser = () => {
             </div>
           </div>
         </div>
+
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
             <h2 className="text-lg font-semibold text-gray-900">
@@ -702,8 +744,6 @@ const AddUser = () => {
                       key: "roles",
                       params: {
                         searchText: inputValue,
-                        pageNumber: 1,
-                        pageSize: 100,
                       },
                     })
                   );
@@ -737,8 +777,6 @@ const AddUser = () => {
                       key: "stores",
                       params: {
                         searchText: inputValue,
-                        pageNumber: 1,
-                        pageSize: 100,
                       },
                     })
                   );
@@ -790,11 +828,7 @@ const AddUser = () => {
                         fontSize: 13,
                       }}
                     >
-                      {passwordStrength === "strong"
-                        ? t("ADD_USER.PASSWORD_STRONG")
-                        : passwordStrength === "medium"
-                        ? t("ADD_USER.PASSWORD_MEDIUM")
-                        : t("ADD_USER.PASSWORD_WEAK")}
+                      {passwordStrengthText}
                     </span>
                     <ul
                       style={{
@@ -803,7 +837,7 @@ const AddUser = () => {
                         listStyle: "none",
                       }}
                     >
-                      {passwordRequirements.map((req, idx) => {
+                      {passwordRequirements(t).map((req, idx) => {
                         const passed = req.test(oFormData.password);
                         return (
                           <li
@@ -846,6 +880,7 @@ const AddUser = () => {
             </div>
           </div>
         </div>
+
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
             <h2 className="text-lg font-semibold text-gray-900">
@@ -871,12 +906,16 @@ const AddUser = () => {
                   name="country"
                   value={oFormData.country}
                   onChange={handleChange}
-                  options={getArray(aCountriesData).map((c) => ({
+                  options={countries.map((c) => ({
                     value: c.CountryID,
                     label: c.CountryName,
                   }))}
                   Icon={Building}
-                  error={oErrors.country}
+                  error={oErrors.country || countriesError}
+                  placeholder={
+                    countriesLoading ? t("COMMON.LOADING") : t("COMMON.SELECT_COUNTRY")
+                  }
+                  disabled={countriesLoading}
                 />
               </div>
               <div>
@@ -886,13 +925,13 @@ const AddUser = () => {
                   name="state"
                   value={oFormData.state}
                   onChange={handleChange}
-                  options={getArray(aStatesData)
-                    .filter(
-                      (s) => String(s.CountryID) === String(oFormData.country)
-                    )
-                    .map((s) => ({ value: s.StateID, label: s.StateName }))}
+                  options={states.map((s) => ({ value: s.StateID, label: s.StateName }))}
                   Icon={Building}
-                  error={oErrors.state}
+                  error={oErrors.state || statesError}
+                  placeholder={
+                    statesLoading ? t("COMMON.LOADING") : t("COMMON.SELECT_STATE")
+                  }
+                  disabled={statesLoading || !oFormData.country}
                 />
               </div>
               <div>
@@ -902,13 +941,13 @@ const AddUser = () => {
                   name="city"
                   value={oFormData.city}
                   onChange={handleChange}
-                  options={getArray(aCitiesData)
-                    .filter(
-                      (c) => String(c.StateID) === String(oFormData.state)
-                    )
-                    .map((c) => ({ value: c.CityID, label: c.CityName }))}
+                  options={cities.map((c) => ({ value: c.CityID, label: c.CityName }))}
                   Icon={Building}
-                  error={oErrors.city}
+                  error={oErrors.city || citiesError}
+                  placeholder={
+                    citiesLoading ? t("COMMON.LOADING") : t("COMMON.SELECT_CITY")
+                  }
+                  disabled={citiesLoading || !oFormData.state}
                 />
               </div>
               <TextInputWithIcon
@@ -924,6 +963,7 @@ const AddUser = () => {
             </div>
           </div>
         </div>
+
         <div className="flex justify-end space-x-4">
           <button
             type="button"

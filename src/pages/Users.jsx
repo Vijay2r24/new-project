@@ -5,7 +5,6 @@ import Toolbar from "../components/Toolbar";
 import Pagination from "../components/Pagination";
 import ActionButtons from "../components/ActionButtons";
 import { useTranslation } from "react-i18next";
-import { apiDelete } from "../utils/ApiUtils";
 import { USER_ACTIVE_STATUS, DELETE_USER } from "../contants/apiRoutes";
 import { useTitle } from "../context/TitleContext";
 import { ITEMS_PER_PAGE, STATUS } from "../contants/constants";
@@ -38,8 +37,20 @@ const Users = () => {
   const usersState = useSelector(
     (state) => state.allData.resources.users || {}
   );
-  const { data: usersData = [], total = 0, loading, error } = usersState;
-  const nTotalPages = Math.ceil((total || 0) / itemsPerPage);
+  
+  // Extract data with proper pagination handling
+  const { 
+    data: usersData = [], 
+    total = 0, 
+    loading, 
+    error,
+    pagination = {} 
+  } = usersState;
+
+  // Use API pagination data when available, otherwise calculate locally
+  const actualTotal = pagination.totalRecords || total;
+  const nTotalPages = pagination.totalPages || Math.ceil((actualTotal || 0) / itemsPerPage);
+  const currentPageSize = pagination.pageSize || itemsPerPage;
 
   const rolesState = useSelector(
     (state) => state.allData.resources.roles || {}
@@ -197,45 +208,6 @@ const Users = () => {
   const handlePageClick = (page) => setCurrentPage(page);
 
   const handleEdit = (userId) => navigate(`/editUser/${userId}`);
-
-  const [deletePopup, setDeletePopup] = useState({ open: false, userId: null });
-  const handleDelete = (userId) => {
-    if (!hasDeletePermission) {
-      showEmsg(t("COMMON.NO_DELETE_PERMISSION"), STATUS.ERROR);
-      return;
-    }
-    setDeletePopup({ open: true, userId });
-  };
-
-  const handleDeleteConfirm = async () => {
-    setSubmitting(true);
-    const { userId } = deletePopup;
-    try {
-      const token = localStorage.getItem("token");
-      const response = await apiDelete(`${DELETE_USER}/${userId}`, token);
-      const backendMessage = response.data.MESSAGE;
-      showEmsg(backendMessage, STATUS.SUCCESS);
-
-      // refetch after delete
-      const params = buildApiParams();
-      dispatch(
-        fetchResource({
-          key: "users",
-          params: params,
-        })
-      );
-
-      setDeletePopup({ open: false, userId: null });
-    } catch (err) {
-      const errorMessage = err?.response?.data?.MESSAGE;
-      showEmsg(errorMessage || t("COMMON.API_ERROR"), STATUS.ERROR);
-      setDeletePopup({ open: false, userId: null });
-    }
-    hideLoaderWithDelay(setSubmitting);
-  };
-
-  const handleDeletePopupClose = () =>
-    setDeletePopup({ open: false, userId: null });
 
   const [statusPopup, setStatusPopup] = useState({
     open: false,
@@ -453,7 +425,6 @@ const Users = () => {
                           <ActionButtons
                             id={user.UserID}
                             onEdit={handleEdit}
-                            onDelete={handleDelete}
                           />
                         </div>
                       </td>
@@ -544,7 +515,6 @@ const Users = () => {
                   <ActionButtons
                     id={user.UserID}
                     onEdit={handleEdit}
-                    onDelete={handleDelete}
                   />
                 </div>
               </div>
@@ -556,8 +526,8 @@ const Users = () => {
       <Pagination
         currentPage={nCurrentPage}
         totalPages={nTotalPages}
-        totalItems={total}
-        itemsPerPage={itemsPerPage}
+        totalItems={actualTotal}
+        itemsPerPage={currentPageSize}
         handlePrevPage={handlePrevPage}
         handleNextPage={handleNextPage}
         handlePageClick={handlePageClick}
@@ -570,13 +540,6 @@ const Users = () => {
           }?`}
           onClose={handleStatusPopupClose}
           onConfirm={handleStatusConfirm}
-        />
-      )}
-      {deletePopup.open && (
-        <FullscreenErrorPopup
-          message={t("USERS.DELETE_CONFIRM_MESSAGE")}
-          onClose={handleDeletePopupClose}
-          onConfirm={handleDeleteConfirm}
         />
       )}
     </div>
