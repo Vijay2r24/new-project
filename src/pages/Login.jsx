@@ -24,13 +24,21 @@ import {
   VALIDATE_UPDATE_PASSWORD,
   VALIDATE_OTP,
   GET_ALL_PERMISSIONS,
+  GET_USER_BY_ID,
 } from "../contants/apiRoutes";
 import { showEmsg } from "../utils/ShowEmsg";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { fetchApiData } from "./FetchApiData";
 import { STATUS } from "../contants/constants";
 import { useUserDetails } from "../../src/context/AllDataContext";
+import { useDispatch } from "react-redux";
+import { 
+  passwordRules, 
+  validatePassword, 
+  validateNewPassword, 
+  validateConfirmPassword 
+} from "../utils/passwordUtils";
+
 const Login = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -57,61 +65,20 @@ const Login = () => {
   const [sConfirmPassword, setConfirmPassword] = useState("");
   const [bShowNewPassword, setShowNewPassword] = useState(false);
   const [bShowConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { data: userDetails, fetch: fetchUserDetails } = useUserDetails();
-  const passwordRules = [
-    {
-      label: t("RESET_PASSWORD.RULES.LENGTH"),
-      test: (pw) => pw.length >= 8,
-    },
-    {
-      label: t("RESET_PASSWORD.RULES.UPPERCASE"),
-      test: (pw) => /[A-Z]/.test(pw),
-    },
-    {
-      label: t("RESET_PASSWORD.RULES.LOWERCASE"),
-      test: (pw) => /[a-z]/.test(pw),
-    },
-    {
-      label: t("RESET_PASSWORD.RULES.NUMBER"),
-      test: (pw) => /\d/.test(pw),
-    },
-    {
-      label: t("RESET_PASSWORD.RULES.SPECIAL"),
-      test: (pw) => /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(pw),
-    },
-  ];
+  
+  const { fetchUserDetails } = useUserDetails();
 
   const validateEmail = (email) => {
     if (!email.trim()) return t("LOGIN.ERRORS.EMAIL_REQUIRED");
-    return "";
-  };
-
-  const validatePassword = (password) => {
-    if (!password.trim()) return t("LOGIN.ERRORS.PASSWORD_REQUIRED");
-    return "";
-  };
-
-  const validateNewPassword = (password) => {
-    if (!password.trim()) return t("RESET_PASSWORD.ERRORS.PASSWORD_REQUIRED");
-    if (password.length < 6) return t("RESET_PASSWORD.ERRORS.PASSWORD_SHORT");
-    const strongRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
-    if (!strongRegex.test(password))
-      return t("RESET_PASSWORD.ERRORS.PASSWORD_WEAK");
-    return "";
-  };
-
-  const validateConfirmPassword = (confirmPassword, newPassword) => {
-    if (!confirmPassword.trim())
-      return t("RESET_PASSWORD.ERRORS.CONFIRM_PASSWORD_REQUIRED");
-    if (confirmPassword !== newPassword)
-      return t("RESET_PASSWORD.ERRORS.PASSWORDS_MISMATCH");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return t("LOGIN.ERRORS.EMAIL_INVALID");
     return "";
   };
 
   const handleChange = (field, value) => {
     let fieldError = "";
     let updatedFormData = { ...oFormData };
+    
     if (field === "phone") {
       value = value.replace(/\D/g, "");
     }
@@ -122,7 +89,7 @@ const Login = () => {
       if (field === "email") {
         fieldError = validateEmail(value);
       } else if (field === "password") {
-        fieldError = validatePassword(value);
+        fieldError = validatePassword(value, t);
       }
     } else if (sCurrentView === "forgotPassword" && field === "email") {
       setForgotPasswordEmail(value);
@@ -130,93 +97,118 @@ const Login = () => {
     } else if (sCurrentView === "resetPassword") {
       if (field === "newPassword") {
         setNewPassword(value);
-        fieldError = validateNewPassword(value);
+        fieldError = validateNewPassword(value, t);
         setError((prev) => ({
           ...prev,
-          confirmPassword: validateConfirmPassword(sConfirmPassword, value),
+          confirmPassword: validateConfirmPassword(sConfirmPassword, value, t),
         }));
       } else if (field === "confirmPassword") {
         setConfirmPassword(value);
-        fieldError = validateConfirmPassword(value, sNewPassword);
+        fieldError = validateConfirmPassword(value, sNewPassword, t);
       }
     }
 
     setError((prev) => ({ ...prev, [field]: fieldError, submit: "" }));
   };
 
- const loginUser = async () => {
-  const emailError = validateEmail(oFormData.email);
-  const passwordError = validatePassword(oFormData.password);
+  const fetchUserDetailsDirectly = async (userId, token) => {
+    try {
+      const response = await apiGet(`${GET_USER_BY_ID}/${userId}`, {}, token);
 
-  if (emailError || passwordError) {
-    setError((prev) => ({
-      ...prev,
-      email: emailError,
-      password: passwordError,
-    }));
-    return;
-  }
-
-  setError((prev) => ({ ...prev, email: "", password: "" }));
-
-  try {
-    const hashedPassword = md5(oFormData.password);
-
-    const oResponse = await apiPost(
-      LOGIN,
-      {
-        Email: oFormData.email,
-        Password: hashedPassword,
-      },
-      null,
-      false
-    );
-
-    const data = oResponse?.data?.data;
-    const message = oResponse?.data?.message;
-    const status = oResponse?.data?.status;
-
-    if (
-      data?.token &&
-      data?.UserID &&
-      status === STATUS.SUCCESS.toUpperCase()
-    ) {
-      showEmsg(message, STATUS.SUCCESS, 3000, async () => {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("userId", data.UserID);
-        localStorage.setItem("tenantID", data.TenantID);
-        localStorage.setItem(
-          "PermissionIDs",
-          JSON.stringify(data.PermissionIDs || [])
-        );
-
-        try {
-          const token = data.token;
-          const permResponse = await apiGet(GET_ALL_PERMISSIONS, {}, token);
-          if (permResponse?.data?.STATUS === STATUS.SUCCESS.toUpperCase()) {
-            localStorage.setItem(
-              "AllPermissions",
-              JSON.stringify(permResponse.data.data)
-            );
-          }
-        } catch (e) {}
-        await fetchUserDetails(data.UserID, data.token);
-
-        fetchApiData();
-        navigate("/dashboard");
-      });
-    } else {
-      const fallbackMessage = t("LOGIN.ERRORS.INVALID_CREDENTIALS");
-      setError((prev) => ({ ...prev, submit: fallbackMessage }));
-      showEmsg(message || fallbackMessage, STATUS.WARNING);
+      if (response?.data?.status === STATUS.SUCCESS.toUpperCase()) {
+        const userData = response.data.data;
+        localStorage.setItem("userDetails", JSON.stringify(userData));
+        return userData;
+      } else {
+        throw new Error(response?.data?.message || "Failed to fetch user details");
+      }
+    } catch (err) {
+      localStorage.removeItem("userDetails");
+      throw err;
     }
-  } catch (error) {
-    const errorMessage =
-      error?.response?.data?.MESSAGE || t("LOGIN.ERRORS.INVALID_CREDENTIALS");
-    setError((prev) => ({ ...prev, submit: errorMessage }));
-    showEmsg(errorMessage, STATUS.ERROR);
-  }
-};
+  };
+
+  const loginUser = async () => {
+    const emailError = validateEmail(oFormData.email);
+    const passwordError = validatePassword(oFormData.password, t);
+
+    if (emailError || passwordError) {
+      setError((prev) => ({
+        ...prev,
+        email: emailError,
+        password: passwordError,
+      }));
+      return;
+    }
+
+    setError((prev) => ({ ...prev, email: "", password: "" }));
+
+    try {
+      const hashedPassword = md5(oFormData.password);
+
+      const oResponse = await apiPost(
+        LOGIN,
+        {
+          Email: oFormData.email,
+          Password: hashedPassword,
+        },
+        null,
+        false
+      );
+
+      const data = oResponse?.data?.data;
+      const message = oResponse?.data?.message;
+      const status = oResponse?.data?.status;
+
+      if (
+        data?.token &&
+        data?.UserID &&
+        status === STATUS.SUCCESS.toUpperCase()
+      ) {
+        showEmsg(message, STATUS.SUCCESS, 3000, async () => {
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("userId", data.UserID);
+          localStorage.setItem("tenantID", data.TenantID);
+          localStorage.setItem(
+            "PermissionIDs",
+            JSON.stringify(data.PermissionIDs || [])
+          );
+
+          try {
+            const token = data.token;
+            const permResponse = await apiGet(GET_ALL_PERMISSIONS, {}, token);
+            if (permResponse?.data?.status === STATUS.SUCCESS.toUpperCase()) {
+              localStorage.setItem(
+                "AllPermissions",
+                JSON.stringify(permResponse.data.data)
+              );
+            }
+          } catch (e) {
+          }
+
+          try {
+            if (fetchUserDetails) {
+              await fetchUserDetails(data.UserID, data.token);
+            } else {
+              await fetchUserDetailsDirectly(data.UserID, data.token);
+            }
+          } catch (error) {
+          }
+          navigate("/dashboard");
+        });
+      } else {
+        const fallbackMessage = t("LOGIN.ERRORS.INVALID_CREDENTIALS");
+        setError((prev) => ({ ...prev, submit: fallbackMessage }));
+        showEmsg(message || fallbackMessage, STATUS.WARNING);
+      }
+    } catch (error) {
+      const errorMessage =
+        error?.response?.data?.MESSAGE || t("LOGIN.ERRORS.INVALID_CREDENTIALS");
+      setError((prev) => ({ ...prev, submit: errorMessage }));
+      showEmsg(errorMessage, STATUS.ERROR);
+    }
+  };
+
   const handleForgotPasswordClick = () => {
     setCurrentView("forgotPassword");
     setError({
@@ -228,6 +220,7 @@ const Login = () => {
       confirmPassword: "",
     });
   };
+
   const handleSendOtp = async () => {
     const emailError = validateEmail(sForgotPasswordEmail);
     if (emailError) {
@@ -242,8 +235,8 @@ const Login = () => {
         null,
         false
       );
-      const message = oResponse?.data?.MESSAGE;
-      if (oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
+      const message = oResponse?.data?.message;
+      if (oResponse.data.status === STATUS.SUCCESS.toUpperCase()) {
         showEmsg(message, STATUS.SUCCESS);
         setbShowOtpDialog(true);
         setTimerCount(60);
@@ -259,6 +252,7 @@ const Login = () => {
       showEmsg(errMsg || t("OTP.ERROR"), STATUS.ERROR);
     }
   };
+
   const handleVerifyOtp = async () => {
     if (!sOtp.trim()) {
       setError((prev) => ({ ...prev, otp: t("LOGIN.ERRORS.OTP_REQUIRED") }));
@@ -278,11 +272,11 @@ const Login = () => {
         OTP: Number(sOtp),
       };
       const oResponse = await apiPost(VALIDATE_OTP, oPayload, null, false);
-      const message = oResponse?.data?.MESSAGE;
+      const message = oResponse?.data?.message;
 
       if (
         oResponse.data &&
-        oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase()
+        oResponse.data.status === STATUS.SUCCESS.toUpperCase()
       ) {
         showEmsg(message, STATUS.SUCCESS);
         setbShowOtpDialog(false);
@@ -310,6 +304,7 @@ const Login = () => {
       setOtp("");
     }
   };
+
   const handleOtpInputChange = (index, value) => {
     if (value && !/^\d*$/.test(value)) {
       setError((prev) => ({ ...prev, otp: "OTP must only contain digits." }));
@@ -320,20 +315,24 @@ const Login = () => {
     newOtp[index] = value;
     setOtp(newOtp.join(""));
     if (value !== "" && index < 5) {
-      document.getElementById(`otp-input-${index + 1}`).focus();
+      const nextInput = document.getElementById(`otp-input-${index + 1}`);
+      if (nextInput) nextInput.focus();
     }
   };
 
   const handleOtpInputKeyDown = (index, e) => {
     if (e.key === "Backspace" && sOtp[index] === "" && index > 0) {
-      document.getElementById(`otp-input-${index - 1}`).focus();
+      const prevInput = document.getElementById(`otp-input-${index - 1}`);
+      if (prevInput) prevInput.focus();
     }
   };
+
   const handlePasswordReset = async () => {
-    const newPasswordError = validateNewPassword(sNewPassword);
+    const newPasswordError = validateNewPassword(sNewPassword, t);
     const confirmPasswordError = validateConfirmPassword(
       sConfirmPassword,
-      sNewPassword
+      sNewPassword,
+      t
     );
     if (newPasswordError || confirmPasswordError) {
       setError((prev) => ({
@@ -357,10 +356,10 @@ const Login = () => {
         null,
         false
       );
-      const message = oResponse?.data?.MESSAGE;
+      const message = oResponse?.data?.message;
       if (
         oResponse.data &&
-        oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase()
+        oResponse.data.status === STATUS.SUCCESS.toUpperCase()
       ) {
         showEmsg(message, STATUS.SUCCESS);
         setCurrentView("login");
@@ -386,6 +385,7 @@ const Login = () => {
       showEmsg(errMsg || t("LOGIN.ERRORS.PASSWORD_RESET_FAILED"), STATUS.ERROR);
     }
   };
+
   useEffect(() => {
     let timer;
     if (bTimerActive && nTimerCount > 0) {
@@ -450,7 +450,9 @@ const Login = () => {
                   onClick={() => setShowPassword((v) => !v)}
                   className="text-gray-500 hover:text-custom-bg"
                   aria-label={bShowPassword ? "Hide password" : "Show password"}
-                ></button>
+                >
+                  {bShowPassword ? "Hide" : "Show"}
+                </button>
               }
             />
             {sError.password && (
@@ -578,14 +580,16 @@ const Login = () => {
                   aria-label={
                     bShowNewPassword ? "Hide password" : "Show password"
                   }
-                ></button>
+                >
+                  {bShowNewPassword ? "Hide" : "Show"}
+                </button>
               }
             />
             {sError.newPassword && (
               <p className="text-sm text-red-500 mt-1">{sError.newPassword}</p>
             )}
             <ul className="text-xs mt-2 space-y-1">
-              {passwordRules.map((rule, idx) => {
+              {passwordRules(t).map((rule, idx) => {
                 const passed = rule.test(sNewPassword);
                 return (
                   <li key={idx} className="flex items-center gap-2">
@@ -623,7 +627,9 @@ const Login = () => {
                   aria-label={
                     bShowConfirmPassword ? "Hide password" : "Show password"
                   }
-                ></button>
+                >
+                  {bShowConfirmPassword ? "Hide" : "Show"}
+                </button>
               }
             />
             {sError.confirmPassword && (
