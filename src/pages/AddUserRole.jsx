@@ -32,6 +32,12 @@ const AddUserRole = () => {
   const { setTitle, setBackButton } = useTitle();
   const navigate = useNavigate();
 
+  // Check if the current role is an admin role (case-insensitive)
+  const isAdminRole = useCallback(() => {
+    const adminRoleNames = ['admin'];
+    return adminRoleNames.includes(sRoleName?.toLowerCase().trim());
+  }, [sRoleName]);
+
   useEffect(() => {
     setTitle(
       roleId
@@ -145,6 +151,11 @@ const AddUserRole = () => {
   }, [fetchPermissions]);
 
   const handleCheckboxChange = useCallback((moduleName, permissionId) => {
+    // Don't allow permission changes for admin roles
+    if (isAdminRole()) {
+      return;
+    }
+    
     setPermissionsByModule((prevState) => {
       const updatedPermissions = { ...prevState };
       updatedPermissions[moduleName] = updatedPermissions[moduleName].map(
@@ -155,9 +166,14 @@ const AddUserRole = () => {
       );
       return updatedPermissions;
     });
-  }, []);
+  }, [isAdminRole]);
 
   const handleSelectAllChange = useCallback((moduleName, isChecked) => {
+    // Don't allow permission changes for admin roles
+    if (isAdminRole()) {
+      return;
+    }
+    
     setPermissionsByModule((prevState) => {
       const updatedPermissions = { ...prevState };
       updatedPermissions[moduleName] = updatedPermissions[moduleName].map(
@@ -168,7 +184,7 @@ const AddUserRole = () => {
       );
       return updatedPermissions;
     });
-  }, []);
+  }, [isAdminRole]);
 
   const handleClose = useCallback(() => {
     navigate("/userRoles");
@@ -183,7 +199,23 @@ const AddUserRole = () => {
   }, [sRoleName, t]);
 
   const handleStatusChange = (e) => {
+    // Don't allow status changes for admin roles
+    if (isAdminRole()) {
+      return;
+    }
     setIsActive(e.target.value === "true");
+  };
+
+  const handleRoleNameChange = (e) => {
+    // Don't allow role name changes for admin roles during edit
+    if (roleId && isAdminRole()) {
+      return;
+    }
+    setRoleName(e.target.value);
+    setErrors((prev) => ({
+      ...prev,
+      RoleNameError: undefined,
+    }));
   };
 
   const handleSave = useCallback(
@@ -253,7 +285,8 @@ const AddUserRole = () => {
       sRoleName,
       bIsActive,
       t,
-      navigate
+      navigate,
+      isAdminRole
     ]
   );
 
@@ -266,6 +299,9 @@ const AddUserRole = () => {
       <Loader />
     </div>
   ) : null;
+
+  const isEditingAdmin = roleId && isAdminRole();
+
   return (
     <div className={`max-w-8xl mx-auto`}>
       <ToastContainer />
@@ -285,16 +321,11 @@ const AddUserRole = () => {
                 label={t("COMMON.ROLE")}
                 type="text"
                 value={sRoleName}
-                onChange={(e) => {
-                  setRoleName(e.target.value);
-                  setErrors((prev) => ({
-                    ...prev,
-                    RoleNameError: undefined,
-                  }));
-                }}
+                onChange={handleRoleNameChange}
                 placeholder={t("CREATE_USER_ROLE.ENTER_ROLE_NAME")}
                 error={oErrors.RoleNameError}
                 Icon={Shield}
+                disabled={isEditingAdmin}
               />
             </div>
             
@@ -311,6 +342,7 @@ const AddUserRole = () => {
                 }))}
                 Icon={Tag}
                 error={oErrors.IsActive}
+                disabled={isEditingAdmin}
               />
             </div>
           </div>
@@ -329,7 +361,9 @@ const AddUserRole = () => {
                 return (
                   <div
                     key={moduleName}
-                    className="border p-4 rounded-lg shadow bg-[#e5efff]"
+                    className={`border p-4 rounded-lg shadow ${
+                      isEditingAdmin ? 'bg-gray-100' : 'bg-[#e5efff]'
+                    }`}
                   >
                     <div className="flex justify-between items-center">
                       <h2 className="text-lg font-bold truncate">
@@ -342,7 +376,12 @@ const AddUserRole = () => {
                           onChange={(e) =>
                             handleSelectAllChange(moduleName, e.target.checked)
                           }
-                          className="mr-2 form-checkbox h-[12px] w-[12px] text-blue-600"
+                          className={`mr-2 form-checkbox h-[12px] w-[12px] ${
+                            isEditingAdmin 
+                              ? 'text-gray-400 cursor-not-allowed' 
+                              : 'text-blue-600'
+                          }`}
+                          disabled={isEditingAdmin}
                         />
                         {t("CREATE_USER_ROLE.SELECT_ALL")}
                       </label>
@@ -360,7 +399,12 @@ const AddUserRole = () => {
                             onChange={() =>
                               handleCheckboxChange(moduleName, permission.ID)
                             }
-                            className="mr-2 form-checkbox h-[12px] w-[12px] text-blue-600"
+                            className={`mr-2 form-checkbox h-[12px] w-[12px] ${
+                              isEditingAdmin 
+                                ? 'text-gray-400 cursor-not-allowed' 
+                                : 'text-blue-600'
+                            }`}
+                            disabled={isEditingAdmin}
                           />
                           {permission.Name}
                         </label>
@@ -379,7 +423,13 @@ const AddUserRole = () => {
             >
               {t("COMMON.CANCEL")}
             </button>
-            <button className="btn-primary truncate" type="submit">
+            <button 
+              className={`btn-primary truncate ${
+                isEditingAdmin ? 'opacity-50 cursor-not-allowed' : ''
+              }`} 
+              type="submit"
+              disabled={isEditingAdmin}
+            >
               {roleId ? t("COMMON.UPDATE") : t("CREATE_USER_ROLE.SAVE_ROLE")}
             </button>
           </div>
