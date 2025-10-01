@@ -1,29 +1,32 @@
 import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchResource, updateStatusById, clearResourceError } from "../../../store/slices/allDataSlice";
 import Toolbar from "../../../components/Toolbar";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { useCategories } from "../../../context/AllDataContext";
 import Pagination from "../../../components/Pagination";
 import { showEmsg } from "../../../utils/ShowEmsg";
 import FullscreenErrorPopup from "../../../components/FullscreenErrorPopup";
 import { UPDATE_CATEGORY_STATUS } from "../../../contants/apiRoutes";
 import Switch from "../../../components/Switch";
-import { ITEMS_PER_PAGE } from "../../../contants/constants";
+import { ITEMS_PER_PAGE, DEFAULT_PAGE, STATUS,STATUS_VALUES, STATUS_OPTIONS } from "../../../contants/constants";
 import { hideLoaderWithDelay } from "../../../utils/loaderUtils"; 
 
 const CategoryList = ({ onCreate, onBack, setSubmitting }) => {
   const { t } = useTranslation();
+  const dispatch = useDispatch();
   const [sSearchQuery, setSearchQuery] = useState("");
   const [bShowFilters, setShowFilters] = useState(false);
-  const [oFilters, setFilters] = useState({ status: "all" });
+  const [oFilters, setFilters] = useState({ status: STATUS_VALUES.ALL  });
 
-  const categories = useCategories();
-  const aCategories = categories.data || [];
-  const bLoading = categories.loading;
-  const sError = categories.error;
-  const iTotalItems = categories.total;
+  // Redux selectors
+  const categoriesState = useSelector((state) => state.allData.resources.categories);
+  const aCategories = categoriesState?.data || [];
+  const bLoading = categoriesState?.loading || false;
+  const sError = categoriesState?.error || null;
+  const iTotalItems = categoriesState?.total || 0;
 
-  const [nCurrentPage, setCurrentPage] = useState(1);
+  const [nCurrentPage, setCurrentPage] = useState(DEFAULT_PAGE);
   const [iItemsPerPage] = useState(ITEMS_PER_PAGE);
 
   const [statusPopup, setStatusPopup] = useState({
@@ -38,31 +41,68 @@ const CategoryList = ({ onCreate, onBack, setSubmitting }) => {
       pageSize: iItemsPerPage,
       searchText: sSearchQuery,
     };
-    if (oFilters.status && oFilters.status !== "all") {
-      params.status = oFilters.status;
+    if (oFilters.status && oFilters.status !== STATUS_VALUES.ALL ) {
+      params.IsActive = oFilters.status;
     }
-    categories.fetch(params);
-  }, [nCurrentPage, iItemsPerPage, sSearchQuery, oFilters.status]);
+    
+    // Dispatch fetchResource thunk
+    dispatch(fetchResource({ key: "categories", params }));
+  }, [dispatch, nCurrentPage, iItemsPerPage, sSearchQuery, oFilters.status]);
 
-  const handleStatusChange = (categoryId, currentIsActive) => {
-    setStatusPopup({ open: true, categoryId, newStatus: !currentIsActive });
+  // Clear error when component unmounts or search changes
+  useEffect(() => {
+    return () => {
+      if (sError) {
+        dispatch(clearResourceError("categories"));
+      }
+    };
+  }, [sError, dispatch]);
+
+  const handleStatusChange = (categoryId, currentStatus) => {
+    // Convert current status to boolean for the new status
+    const isCurrentlyActive = currentStatus === "Active";
+    setStatusPopup({ 
+      open: true, 
+      categoryId, 
+      newStatus: !isCurrentlyActive 
+    });
   };
 
   const handleStatusConfirm = async () => {
     if (setSubmitting) setSubmitting(true);
     const { categoryId, newStatus } = statusPopup;
 
-    const result = await categories.updateStatusById(
-      categoryId,
-      newStatus,
-      UPDATE_CATEGORY_STATUS,
-      "CategoryID"
-    );
-
-    showEmsg(result.message, result.status);
-    setStatusPopup({ open: false, categoryId: null, newStatus: null });
-
-    hideLoaderWithDelay(setSubmitting);
+    try {
+      // Dispatch updateStatusById thunk
+      const result = await dispatch(updateStatusById({
+        key: "categories",
+        id: categoryId,
+        newStatus: newStatus,
+        apiRoute: UPDATE_CATEGORY_STATUS,
+        idField: "CategoryID"
+      })).unwrap();
+      
+      showEmsg(result.message, STATUS.SUCCESS);
+      
+      // Refetch data after status update
+      const params = {
+        pageNumber: nCurrentPage,
+        pageSize: iItemsPerPage,
+        searchText: sSearchQuery,
+      };
+      if (oFilters.status && oFilters.status !== STATUS_VALUES.ALL ) {
+        params.IsActive = oFilters.status;
+      }
+      dispatch(fetchResource({ key: "categories", params }));
+      
+    } catch (err) {
+      console.error(err);
+      const errorMessage = err?.response?.data?.MESSAGE || t("COMMON.API_ERROR");
+      showEmsg(errorMessage, STATUS.ERROR);
+    } finally {
+      setStatusPopup({ open: false, categoryId: null, newStatus: null });
+      hideLoaderWithDelay(setSubmitting);
+    }
   };
 
   const handleStatusPopupClose = () => {
@@ -75,13 +115,13 @@ const CategoryList = ({ onCreate, onBack, setSubmitting }) => {
 
   const handleNextPage = () => {
     if (nCurrentPage < Math.ceil(iTotalItems / iItemsPerPage)) {
-      setCurrentPage((prev) => prev + 1);
+      setCurrentPage((prev) => prev + DEFAULT_PAGE);
     }
   };
 
   const handlePrevPage = () => {
-    if (nCurrentPage > 1) {
-      setCurrentPage((prev) => prev - 1);
+    if (nCurrentPage > DEFAULT_PAGE) {
+      setCurrentPage((prev) => prev -DEFAULT_PAGE);
     }
   };
 
@@ -90,7 +130,29 @@ const CategoryList = ({ onCreate, onBack, setSubmitting }) => {
       ...oFilters,
       [filterName]: e.target.value,
     });
+    // Reset to first page when filters change
+    setCurrentPage(DEFAULT_PAGE);
   };
+
+  // Get status text for display
+  const getStatusText = (category) => {
+    // Check both possible status fields
+    if (category.Status) return category.Status;
+    if (category.IsActive !== undefined) return category.IsActive ? "Active" : "Inactive";
+    return "Inactive"; // Default
+  };
+
+  // Check if category is active
+  const isCategoryActive = (category) => {
+    if (category.Status) return category.Status === "Active";
+    if (category.IsActive !== undefined) return category.IsActive;
+    return false; // Default
+  };
+
+  const statusFilterOptions = STATUS_OPTIONS.map(option => ({
+  value: option.value,
+  label: t(option.labelKey)
+}));
 
   return (
     <div>
@@ -118,11 +180,7 @@ const CategoryList = ({ onCreate, onBack, setSubmitting }) => {
                     label: t("COMMON.STATUS"),
                     name: "status",
                     value: oFilters.status,
-                    options: [
-                      { value: "all", label: t("COMMON.ALL") },
-                      { value: "Active", label: t("COMMON.ACTIVE") },
-                      { value: "Inactive", label: t("COMMON.INACTIVE") },
-                    ],
+                   options: statusFilterOptions,
                   },
                 ]
               : []
@@ -162,9 +220,9 @@ const CategoryList = ({ onCreate, onBack, setSubmitting }) => {
                     <td className="table-cell table-cell-text align-middle">
                       <div className="flex items-center gap-2">
                         <div className="h-10 w-10 flex items-center justify-center rounded-full border overflow-hidden bg-white">
-                          {category.CategoryImage ? (
+                            {category.CategoryImages && category.CategoryImages.length > 0 ? (
                             <img
-                              src={category.CategoryImage}
+                              src={category.CategoryImages[0].documentUrl}
                               alt={category.CategoryName}
                               className="w-full h-full object-cover"
                             />
@@ -195,16 +253,14 @@ const CategoryList = ({ onCreate, onBack, setSubmitting }) => {
                     <td className="table-cell">
                       <span
                         className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          category.Status === "Active"
+                          isCategoryActive(category)
                             ? "status-active"
                             : "status-inactive"
                         }`}
                       >
                         {t(
                           `COMMON.${
-                            category.Status === "Active"
-                              ? "ACTIVE"
-                              : "INACTIVE"
+                            isCategoryActive(category) ? "ACTIVE" : "INACTIVE"
                           }`
                         )}
                       </span>
@@ -224,11 +280,11 @@ const CategoryList = ({ onCreate, onBack, setSubmitting }) => {
                       onClick={(e) => e.stopPropagation()}
                     >
                       <Switch
-                        checked={category.Status === t("COMMON.ACTIVE")}
+                        checked={isCategoryActive(category)}
                         onChange={() =>
                           handleStatusChange(
                             category.CategoryID,
-                            category.Status === t("COMMON.ACTIVE")
+                            getStatusText(category)
                           )
                         }
                       />

@@ -1,29 +1,23 @@
-import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Tag, Info, Palette } from "lucide-react";
+import { Tag, Info, Palette } from "lucide-react";
 import TextInputWithIcon from "../../../components/TextInputWithIcon";
 import SelectWithIcon from "../../../components/SelectWithIcon";
 import BackButton from "../../../components/BackButton";
 import Loader from "../../../components/Loader";
 import { ToastContainer } from "react-toastify";
 
-import {
-  CREATE_COLOUR,
-  GET_COLOUR_BY_ID,
-  UPDATE_COLOUR,
-} from "../../../contants/apiRoutes";
-import { STATUS } from "../../../contants/constants";
-import { apiPost, apiGet, apiPut } from "../../../utils/ApiUtils";
+import { CREATE_COLOUR } from "../../../contants/apiRoutes";
+import { STATUS,STATUS_VALUES, STATUS_OPTIONS } from "../../../contants/constants";
+import { apiPost } from "../../../utils/ApiUtils";
 import { showEmsg } from "../../../utils/ShowEmsg";
 import { hideLoaderWithDelay } from "../../../utils/loaderUtils";
 
 const CreateColor = () => {
-  const { id: colorId } = useParams();
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const isEditing = !!colorId;
   const token = localStorage.getItem("token");
   const tenantID = localStorage.getItem("tenantID");
   const userId = localStorage.getItem("userId");
@@ -34,8 +28,7 @@ const CreateColor = () => {
     HexCode: "#000000",
     IsActive: true,
     RgbCode: "",
-    CreatedBy: "Admin",
-    UpdatedBy: "Admin",
+    CreatedBy: userId || "Admin",
   });
 
   const [oErrors, setErrors] = useState({});
@@ -50,44 +43,23 @@ const CreateColor = () => {
     return `rgb(${r}, ${g}, ${b})`;
   };
 
-  useEffect(() => {
-    const fetchColorDetails = async () => {
-      try {
-        const response = await apiGet(`${GET_COLOUR_BY_ID}/${colorId}`, {}, token);
-        const colorData = response?.data?.data?.data;
+  const handleInputChange = useCallback(
+    (e) => {
+      const { name, value, type, checked } = e.target;
+      const newValue = type === "checkbox" ? checked : value;
 
-        if (response.data.STATUS === STATUS.SUCCESS.toUpperCase() && colorData) {
-          setFormData((prev) => ({
-            ...prev,
-            Name: colorData.Name || "",
-            HexCode: colorData.HexCode || "#000000",
-            IsActive: colorData.Status === "Active",
-            RgbCode: colorData.RgbCode || "",
-            UpdatedBy: "Admin",
-          }));
-        }
-      } catch (err) {
-        console.error("Failed to fetch color details", err);
+      setFormData((prev) => ({
+        ...prev,
+        [name]: newValue,
+        ...(name === "HexCode" && { RgbCode: hexToRgb(value) }),
+      }));
+
+      if (oErrors[name]) {
+        setErrors((prev) => ({ ...prev, [name]: "" }));
       }
-    };
-
-    if (isEditing && colorId) fetchColorDetails();
-  }, [colorId, isEditing, token]);
-
-  const handleInputChange = useCallback((e) => {
-    const { name, value, type, checked } = e.target;
-    const newValue = type === "checkbox" ? checked : value;
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: newValue,
-      ...(name === "HexCode" && { RgbCode: hexToRgb(value) }),
-    }));
-
-    if (oErrors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
-    }
-  }, [oErrors]);
+    },
+    [oErrors]
+  );
 
   const validateForm = () => {
     const errors = {};
@@ -115,24 +87,19 @@ const CreateColor = () => {
       HexCode: oFormData.HexCode,
       RgbCode: oFormData.RgbCode,
       TenantID: oFormData.TenantID,
-      ...(isEditing
-        ? { Status: oFormData.IsActive ? "Active" : "Inactive", UpdatedBy: userId }
-        : { IsActive: oFormData.IsActive, CreatedBy: userId }),
+      IsActive: oFormData.IsActive,
+      CreatedBy: userId || "Admin",
     };
 
     try {
-      const apiCall = isEditing
-        ? apiPut(`${UPDATE_COLOUR}/${colorId}`, payload, token)
-        : apiPost(CREATE_COLOUR, payload, token);
+      const response = await apiPost(CREATE_COLOUR, payload, token);
 
-      const response = await apiCall;
-
-      if (response.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
-        showEmsg(response.data.MESSAGE, STATUS.SUCCESS, 3000, () => {
-          navigate("/browse", { state: { fromColorEdit: true } });
+      if (response.data.status === STATUS.SUCCESS.toUpperCase()) {
+        showEmsg(response.data.message, STATUS.SUCCESS, 3000, () => {
+          navigate("/browse", { state: { fromColorEdit: true } })
         });
       } else {
-        showEmsg(response.data.MESSAGE, STATUS.WARNING);
+        showEmsg(response.data.message, STATUS.WARNING);
       }
     } catch (err) {
       showEmsg(err?.response?.data?.MESSAGE || t("COMMON.API_ERROR"), STATUS.ERROR);
@@ -140,21 +107,27 @@ const CreateColor = () => {
       hideLoaderWithDelay(setSubmitting);
     }
   };
-
+ 
+  const statusOptions = STATUS_OPTIONS.filter(option => option.value !== STATUS_VALUES.ALL)
+    .map(option => ({
+      value: option.value,
+      label: t(option.labelKey)
+    }));
   const handleCancel = () =>
-    navigate("/browse", { state: { fromColorEdit: true } });
-
+        navigate("/browse", { state: { fromColorEdit: true } });
   return (
     <div>
-      {submitting && <div className="global-loader-overlay"><Loader /></div>}
-      {isEditing && <ToastContainer />}
+      {submitting && (
+        <div className="global-loader-overlay">
+          <Loader />
+        </div>
+      )}
+      <ToastContainer />
 
       <div className="flex items-center mb-6">
         <BackButton onClick={handleCancel} />
         <h2 className="text-xl font-bold text-gray-900">
-          {isEditing
-            ? t("PRODUCT_SETUP.CREATE_COLOR.EDIT_TITLE")
-            : t("PRODUCT_SETUP.CREATE_COLOR.CREATE_TITLE")}
+          {t("PRODUCT_SETUP.CREATE_COLOR.CREATE_TITLE")}
         </h2>
       </div>
 
@@ -204,10 +177,7 @@ const CreateColor = () => {
               name="IsActive"
               value={oFormData.IsActive}
               onChange={handleInputChange}
-              options={[
-                { value: true, label: t("COMMON.ACTIVE") },
-                { value: false, label: t("COMMON.INACTIVE") },
-              ]}
+              options={statusOptions}
               Icon={Tag}
               error={oErrors.IsActive}
             />
@@ -231,9 +201,7 @@ const CreateColor = () => {
             {t("COMMON.CANCEL")}
           </button>
           <button type="submit" className="btn-primary">
-            {isEditing
-              ? t("COMMON.SAVE_BUTTON")
-              : t("PRODUCT_SETUP.CREATE_COLOR.CREATE_BUTTON")}
+            {t("PRODUCT_SETUP.CREATE_COLOR.CREATE_BUTTON")}
           </button>
         </div>
       </form>

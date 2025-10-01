@@ -35,3 +35,11 @@ export const BANNER_HEIGHT = 600;
 export const FILTERS = {
   STATUS: "status",
 };
+export const FORM_MODES = {
+  CREATE: "create",
+  EDIT: "edit",
+};
+export const VIEW_TYPES = {
+  GRID: "grid",
+  LIST: "list",
+};
