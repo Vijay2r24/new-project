@@ -101,16 +101,6 @@ const CreateAttribute = () => {
     };
   }, [dispatch, isEditing, attributeValueId, fetchAttributeDetails, attributeTypesError]);
 
-  // Debug: Log attribute types to check if data is loading correctly
-  useEffect(() => {
-    console.log("Attribute Types State:", {
-      loading: attributeTypesLoading,
-      error: attributeTypesError,
-      data: aAttributeTypes,
-      count: aAttributeTypes.length
-    });
-  }, [attributeTypesLoading, attributeTypesError, aAttributeTypes]);
-
   /** Input change */
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
