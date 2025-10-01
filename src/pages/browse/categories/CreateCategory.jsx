@@ -175,16 +175,10 @@ const CreateCategory = () => {
     const descLength = oFormData.CategoryDescription?.trim().length || 0;
     if (descLength < 10 && descLength > 0) {
       errors.CategoryDescription = t("PRODUCT_SETUP.CREATE_CATEGORY.DESCRIPTION_MIN_LENGTH") || "Description must be at least 10 characters long";
-    } else if (descLength === 0) {
-      // Make description optional for now, but show warning if empty
-      // errors.CategoryDescription = "Description is recommended";
-    }
+    } 
     if (descLength > 500) {
       errors.CategoryDescription = t("PRODUCT_SETUP.CREATE_CATEGORY.DESCRIPTION_MAX_LENGTH") || "Description cannot exceed 500 characters";
     }
-
-    console.log("Validation Errors:", errors); // Debug log
-
     return errors;
   };
 
@@ -195,13 +189,9 @@ const CreateCategory = () => {
     setErrors({});
     
     const newErrors = validateForm();
-    
-    console.log("Form Data:", oFormData); // Debug log
-    console.log("Validation Errors:", newErrors); // Debug log
-    
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      console.log("Setting errors to state:", newErrors); // Debug log
       return;
     }
 

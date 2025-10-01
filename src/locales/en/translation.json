@@ -482,7 +482,17 @@
     "PRODUCT_ID":"Product ID",
     "VARIANTS":"Variants",
     "VARIANTS_ID":"Variant ID",
-    "CURRENT_VARIANT_DETAILS":"Current Variant Details"
+    "CURRENT_VARIANT_DETAILS":"Current Variant Details",
+    "PRODUCT_VARIANTS":"Product Variants",
+    "TOTAL_VARIANTS":"Total Variants",
+    "TOTAL_STOCK":"Total Stock",
+    "INVENTORY_SUMMARY":"Inventory Summary",
+    "LOW_STOCK_VARIANTS":"Low Stock Variants",
+    "OUT_OF_STOCK":"Out of Stock",
+    "STORE_INVENTORY":"Store Inventory",
+    "UNITS":"units",
+    "ADDITIONAL_INFO":"Additional Information",
+    "PRICING_RANGE":"Pricing Range"
   },
   "PRODUCT_CREATION": {
     "PRODUCT_NAME": "Product Name",
@@ -514,6 +524,7 @@
     "VARIANT_INFORMATION": "Variant Information",
     "ADD_NEW_VARIANT": "Add New Variant",
     "VARIANT": "Variant",
+    "SIZE":"Size",
     "COLOUR_ID": "Colour",
     "COLOUR_ID_PLACEHOLDER": "Select colour",
     "ATTRIBUTE_VALUES": "Attribute Values",

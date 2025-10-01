@@ -72,12 +72,6 @@ const Browse = () => {
       create: AttributeCreate,
       icon: Layers,
     },
-    //   {
-    //   name: t("PRODUCT_SETUP.TABS.PRODUCT_GROUPS"),
-    //   list: ProductGroupList,
-    //   create: CreateProductGroup,
-    //   icon: Boxes,
-    // },
     {
         name: t("PRODUCT_SETUP.TABS.SPECIFICATION_TYPE"),
         list: SpecificationTypeList,

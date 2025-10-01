@@ -48,8 +48,6 @@ const ImageCropperModal = ({
           "image/jpeg",
           0.9 // Add quality for better compression
         );
-      } else {
-        console.error("No canvas generated");
       }
     } catch (error) {
       console.error("Crop error:", error);
@@ -92,7 +90,6 @@ const ImageCropperModal = ({
             responsive={true}
             autoCropArea={0.8} // Slightly lower to avoid aggressive initial crop
             checkOrientation={false}
-            // ready={() => console.log("Cropper ready")} // Debug: Confirm ready state
           />
         </div>
         <div className="flex justify-end space-x-4">

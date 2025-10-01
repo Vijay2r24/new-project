@@ -356,7 +356,6 @@ const ProductList = () => {
       }
       await fetchProducts();
     } catch (err) {
-      console.error(err);
       showEmsg(err?.message || t("COMMON.API_ERROR"), STATUS.ERROR);
     } finally {
       // Reset popup state and stop loader
@@ -485,7 +484,6 @@ const ProductList = () => {
                           <ActionButtons
                             id={product.ProductID}
                             onEdit={handleEdit}
-                            onMore={() => console.log("")}
                           />
                         </div>
                       </td>
@@ -575,7 +573,6 @@ const ProductList = () => {
                 <ActionButtons
                   id={product.ProductID}
                   onEdit={handleEdit}
-                  onMore={() => console.log("")}
                 />
               </div>
             ))

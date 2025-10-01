@@ -266,7 +266,6 @@ const AddProductForm = () => {
                 });
           }
         } catch (error) {
-          console.error("Error fetching product:", error);
           showEmsg(t("PRODUCT_CREATION.FETCH_PRODUCT_FAILED"), STATUS.ERROR);
         }
       };
@@ -598,7 +597,6 @@ const AddProductForm = () => {
         return metadata;
       }),
     }));
-    console.log(variantsData)
     const payload = {
       TenantID: oFormData.TenantID,
       ProductName: oFormData.ProductName,

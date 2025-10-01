@@ -182,7 +182,7 @@ const ProductDetails = () => {
                 }`}
               >
                 <Store className="h-4 w-4" />
-                {t("STORES.INVENTORY")}(Total: {totalInventory})
+                {t("STORES.INVENTORY")}({t("TOTAL")}: {totalInventory})
               </button>
               <button
                 onClick={() => setActiveTab('specs')}
@@ -254,7 +254,7 @@ const ProductDetails = () => {
                           <span className="font-mono text-gray-900">{currentVariant.VariantID}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Status:</span>
+                          <span className="text-gray-600">{t("PRODUCT_SETUP.CREATE_PRODUCT_GROUP.STATUS_LABEL")}</span>
                           <span className={`px-2 py-1 rounded-full text-xs ${
                             currentVariant.IsActive 
                               ? 'bg-green-100 text-green-800' 
@@ -283,9 +283,9 @@ const ProductDetails = () => {
                 {/* All Variants Table */}
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-semibold text-gray-900">Product Variants</h3>
+                    <h3 className="text-xl font-semibold text-gray-900">{t("PRODUCTS.PRODUCT_VARIANTS")}</h3>
                     <span className="text-sm text-gray-600">
-                      Total Variants: {product.Variants.length}
+                      {t("PRODUCTS.TOTAL_VARIANTS")}: {product.Variants.length}
                     </span>
                   </div>
                   
@@ -294,28 +294,28 @@ const ProductDetails = () => {
                       <thead className="bg-gray-50">
                         <tr>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Variant
+                          {t("PRODUCT_CREATION.SIZE")}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Size
+                            {t("PRODUCT_CREATION.VARIANT")}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Color
+                            {t("PRODUCT_CREATION.COLOUR_ID")}
                           </th>
                           <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            MRP
+                             {t("PRODUCT_CREATION.MRP")}
                           </th>
                           <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Selling Price
+                            {t("PRODUCT_CREATION.SELLING_PRICE")}
                           </th>
                           <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Discount
+                            {t("BANNER_FORM.DISCOUNT_PERCENTAGE")}
                           </th>
                           <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Total Stock
+                            {t("PRODUCTS.TOTAL_STOCK")}
                           </th>
                           <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Actions
+                           {t("COMMON.ACTIONS")}
                           </th>
                         </tr>
                       </thead>
@@ -353,7 +353,7 @@ const ProductDetails = () => {
                                   </div>
                                   <div className="ml-4">
                                     <div className="text-sm font-medium text-gray-900">
-                                      Variant {index + 1}
+                                      {t("PRODUCT_CREATION.VARIANT")} {index + 1}
                                     </div>
                                     <div className="text-sm text-gray-500">
                                       {variant.VariantID.slice(-8)}
@@ -424,24 +424,24 @@ const ProductDetails = () => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Inventory Summary */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Inventory Summary</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">{t("PRODUCTS.INVENTORY_SUMMARY")}</h3>
                   <div className="space-y-4">
                     <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                      <span className="text-sm text-gray-600">Total Variants</span>
+                      <span className="text-sm text-gray-600">{t("PRODUCTS.TOTAL_VARIANTS")}</span>
                       <span className="text-sm font-semibold text-gray-900">{product.Variants.length}</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                      <span className="text-sm text-gray-600">Total Stock</span>
+                      <span className="text-sm text-gray-600">{t("PRODUCTS.TOTAL_STOCK")}</span>
                       <span className="text-sm font-semibold text-gray-900">{totalInventory}</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                      <span className="text-sm text-gray-600">Low Stock Variants</span>
+                      <span className="text-sm text-gray-600">{t("PRODUCTS.LOW_STOCK_VARIANTS")}</span>
                       <span className="text-sm font-semibold text-yellow-600">
                         {product.Variants.filter(v => getTotalInventory(v) < 10).length}
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                      <span className="text-sm text-gray-600">Out of Stock</span>
+                      <span className="text-sm text-gray-600">{t("PRODUCTS.OUT_OF_STOCK")}</span>
                       <span className="text-sm font-semibold text-red-600">
                         {product.Variants.filter(v => getTotalInventory(v) === 0).length}
                       </span>
@@ -451,15 +451,15 @@ const ProductDetails = () => {
 
                 {/* Detailed Inventory */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Store Inventory</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">{t("PRODUCTS.STORE_INVENTORY")}</h3>
                   {product.Variants.map((variant, index) => (
                     <div key={variant.VariantID} className="mb-6 p-4 bg-gray-50 rounded-lg">
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="font-medium text-gray-900">
-                          Variant {index + 1} - {getVariantAttributes(variant).Size?.value} / {getVariantAttributes(variant).Color?.value}
+                         {t("PRODUCT_CREATION.VARIANT")}  {index + 1} - {getVariantAttributes(variant).Size?.value} / {getVariantAttributes(variant).Color?.value}
                         </h4>
                         <span className="text-sm text-gray-500">
-                          Total: {getTotalInventory(variant)} units
+                         {t("VIEW_ORDER.TABLE.TOTAL")}: {getTotalInventory(variant)} {t("PRODUCTS.UNITS")}
                         </span>
                       </div>
                       <div className="space-y-2">
@@ -476,7 +476,7 @@ const ProductDetails = () => {
                                 ? 'bg-yellow-100 text-yellow-800' 
                                 : 'bg-red-100 text-red-800'
                             }`}>
-                              {store.Quantity} in stock
+                              {store.Quantity} {t("DASHBOARD.PRODUCT_MODAL.IN_STOCK")}
                             </span>
                           </div>
                         ))}
@@ -493,7 +493,7 @@ const ProductDetails = () => {
             <div className="p-8">
               {product.ProductDescription && (
                 <div className="mb-8">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">{t("PRODUCTS.DESCRIPTION")}</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">{t("COMMON.DESCRIPTION")}</h3>
                   <div
                     className="prose prose-sm max-w-none text-gray-700 bg-gray-50 p-4 rounded-lg"
                     dangerouslySetInnerHTML={{ __html: product.ProductDescription }}
@@ -503,7 +503,7 @@ const ProductDetails = () => {
               
               {product.ProductSpecification?.length > 0 && (
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">{t("PRODUCTS.SPECIFICATIONS")}</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">{t("PRODUCT_CREATION.SPECIFICATIONS")}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {product.ProductSpecification.map((spec, index) => (
                       <div key={index} className="bg-gray-50 p-4 rounded-lg">
@@ -530,21 +530,21 @@ const ProductDetails = () => {
                   <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
                     <Package className="h-5 w-5 text-gray-500 flex-shrink-0" />
                     <div>
-                      <p className="font-medium text-gray-900">{t("PRODUCTS.BRAND")}</p>
+                      <p className="font-medium text-gray-900">{t("PRODUCT_CREATION.BRAND_ID")}</p>
                       <p className="text-gray-600">{product.BrandName}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
                     <Tag className="h-5 w-5 text-gray-500 flex-shrink-0" />
                     <div>
-                      <p className="font-medium text-gray-900">{t("PRODUCTS.CATEGORY")}</p>
+                      <p className="font-medium text-gray-900">{t("COMMON.CATEGORY")}</p>
                       <p className="text-gray-600">{product.CategoryName}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
                     <DollarSign className="h-5 w-5 text-gray-500 flex-shrink-0" />
                     <div>
-                      <p className="font-medium text-gray-900">Pricing Range</p>
+                      <p className="font-medium text-gray-900">{t("PRODUCTS.PRICING_RANGE")}</p>
                       <p className="text-gray-600">
                         ₹{Math.min(...product.Variants.map(v => parseFloat(v.SellingPrice))).toFixed(2)} - 
                         ₹{Math.max(...product.Variants.map(v => parseFloat(v.SellingPrice))).toFixed(2)}

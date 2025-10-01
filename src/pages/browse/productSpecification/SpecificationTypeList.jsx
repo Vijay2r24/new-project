@@ -143,7 +143,6 @@ const SpecificationTypeList = ({ setSubmitting }) => {
         showEmsg(response?.data?.message || t("CONTEXT.ERROR_FETCHING_SPECIFICATION_TYPE"), STATUS.ERROR);
       }
     } catch (err) {
-      console.error(err);
       const errorMessage = err?.response?.data?.message || t("COMMON.API_ERROR");
       showEmsg(errorMessage, STATUS.ERROR);
     } finally {
@@ -209,7 +208,6 @@ const SpecificationTypeList = ({ setSubmitting }) => {
       }
       
     } catch (err) {
-      console.error(err);
       const errorMessage = err?.response?.data?.message || t("COMMON.API_ERROR");
       showEmsg(errorMessage, STATUS.ERROR);
     } finally {
@@ -268,7 +266,6 @@ const SpecificationTypeList = ({ setSubmitting }) => {
       }
       dispatch(fetchResource({ key: "specificationType", params }));
     } catch (err) {
-      console.error(err);
       showEmsg(err?.message || t("COMMON.API_ERROR"), STATUS.ERROR);
     } finally {
       setStatusPopup({ open: false, specificationTypeId: null, newStatus: null });
