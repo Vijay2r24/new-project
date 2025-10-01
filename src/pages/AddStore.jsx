@@ -1,9 +1,8 @@
-import { useState, useContext, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Building, MapPin, Phone, Mail } from "lucide-react";
 import TextInputWithIcon from "../components/TextInputWithIcon";
 import SelectWithIcon from "../components/SelectWithIcon";
 import { useTranslation } from "react-i18next";
-import { LocationDataContext } from "../context/LocationDataProvider";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiGet, apiPost } from "../utils/ApiUtils";
 import { GET_STORE_BY_ID, CREATE_OR_UPDATE_STORE } from "../contants/apiRoutes";
@@ -169,7 +168,6 @@ const AddStore = () => {
         );
       }
     } catch (error) {
-      console.error("Error fetching store:", error);
       showEmsg(
         error?.response?.data?.MESSAGE || t("COMMON.ERROR_MESSAGE"),
         STATUS.ERROR
@@ -197,11 +195,8 @@ const AddStore = () => {
             state: foundState.StateID
           }));
         } else if (!foundState && statesArray.length > 0) {
-          // State not found in loaded states, try to fetch it
-          console.warn("State not found in loaded states:", oFormData.stateName);
         }
       } catch (error) {
-        console.error("Error populating state:", error);
       }
     };
 
@@ -226,7 +221,6 @@ const AddStore = () => {
           }));
         }
       } catch (error) {
-        console.error("Error populating city:", error);
       }
     };
 

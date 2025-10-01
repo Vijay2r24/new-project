@@ -5,9 +5,9 @@ import Toolbar from "../components/Toolbar";
 import Pagination from "../components/Pagination";
 import ActionButtons from "../components/ActionButtons";
 import { useTranslation } from "react-i18next";
-import { USER_ACTIVE_STATUS, DELETE_USER } from "../contants/apiRoutes";
+import { USER_ACTIVE_STATUS} from "../contants/apiRoutes";
 import { useTitle } from "../context/TitleContext";
-import { ITEMS_PER_PAGE, STATUS } from "../contants/constants";
+import { ITEMS_PER_PAGE, STATUS, STATUS_OPTIONS } from "../contants/constants";
 import FullscreenErrorPopup from "../components/FullscreenErrorPopup";
 import { showEmsg } from "../utils/ShowEmsg";
 import { ToastContainer } from "react-toastify";
@@ -65,8 +65,7 @@ const Users = () => {
   const defaultFilters = { 
     role: "all", 
     status: "all",
-    store: "all",
-    sortOrder: "DESC"
+    store: "all"
   };
   const [oFilters, setFilters] = useState(defaultFilters);
 
@@ -74,8 +73,6 @@ const Users = () => {
     "User Management",
     "Delete User"
   );
-  const hasDeletePermission = hasPermissionId(permissionIdForDelete);
-
   // Helper function to get profile image URL
   const getProfileImageUrl = (user) => {
     if (!user.ProfileImageUrl) return userProfile;
@@ -112,8 +109,7 @@ const Users = () => {
       ...(oFilters.store !== "all" ? { storeName: oFilters.store } : {}),
       ...(oFilters.status !== "all" 
         ? { IsActive: oFilters.status === "Active" } 
-        : {}),
-      sortOrder: oFilters.sortOrder,
+        : {})
     };
     
     return params;
@@ -142,11 +138,10 @@ const Users = () => {
       : []),
   ];
 
-  const statusOptions = [
-    { value: "all", label: t("COMMON.ALL") },
-    { value: "Active", label: t("COMMON.ACTIVE") },
-    { value: "Inactive", label: t("COMMON.INACTIVE") },
-  ];
+  const statusOptions = STATUS_OPTIONS.map((opt) => ({
+     value: opt.value,
+     label: t(opt.labelKey),
+   }));
 
   const storeOptions = [
     { value: "all", label: t("COMMON.ALL") },

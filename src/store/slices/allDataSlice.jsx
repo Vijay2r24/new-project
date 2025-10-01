@@ -140,8 +140,6 @@ export const fetchUserDetails = createAsyncThunk(
       const token = localStorage.getItem("token");
       const response = await apiGet(`${GET_USER_BY_ID}/${userId}`, {}, token);
 
-      console.log("User details response:", response);
-
       if (response?.data?.status === STATUS.SUCCESS.toUpperCase()) {
         const userData = response.data.data;
         localStorage.setItem("userDetails", JSON.stringify(userData));

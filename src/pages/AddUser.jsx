@@ -1,7 +1,6 @@
 import {
   useState,
   useEffect,
-  useContext,
   useCallback,
   useRef,
   useMemo,
@@ -26,7 +25,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { apiGet, apiPost } from "../utils/ApiUtils";
 import { GET_USER_BY_ID, USER_CREATE_OR_UPDATE } from "../contants/apiRoutes";
 import { showEmsg } from "../utils/ShowEmsg";
-import { LocationDataContext } from "../context/LocationDataProvider";
 import { useTitle } from "../context/TitleContext";
 import { STATUS } from "../contants/constants";
 import md5 from "md5";
@@ -84,8 +82,6 @@ const AddUser = () => {
   const [removedDocumentIds, setRemovedDocumentIds] = useState([]);
   const { t } = useTranslation();
   const { id } = useParams();
-  const { aCountriesData, aStatesData, aCitiesData } =
-    useContext(LocationDataContext);
   const [bImgLoading, setImgLoading] = useState(true);
   const [bImgError, setImgError] = useState(false);
 
@@ -217,41 +213,34 @@ const AddUser = () => {
 
     return errors;
   }, [oFormData, t, id]);
-
-  // Fetch initial data when component mounts - only once
-  useEffect(() => {
-    if (!hasFetchedInitialData.current) {
-      hasFetchedInitialData.current = true;
-      
-      // Fetch countries if not loaded
-      if (!countries.length && !countriesLoading) {
-        hasFetchedCountries.current = true;
-        dispatch(fetchResource({ key: "countries" }));
-      }
-
-      // Fetch roles if not loaded
-      if (!roles.length && !rolesLoading && !hasFetchedRoles.current) {
-        hasFetchedRoles.current = true;
-        dispatch(
-          fetchResource({
-            key: "roles",
-            params: { pageNumber: 1, pageSize: 100 },
-          })
-        );
-      }
-
-      // Fetch stores if not loaded
-      if (!stores.length && !storesLoading && !hasFetchedStores.current) {
-        hasFetchedStores.current = true;
-        dispatch(
-          fetchResource({
-            key: "stores",
-            params: { pageNumber: 1, pageSize: 100 },
-          })
-        );
-      }
+useEffect(() => {
+  if (!hasFetchedInitialData.current) {
+    hasFetchedInitialData.current = true;
+    if (!countries.length && !countriesLoading) {
+      hasFetchedCountries.current = true;
+      dispatch(fetchResource({ key: "countries" }));
     }
-  }, [dispatch, countries, countriesLoading, roles, rolesLoading, stores, storesLoading]);
+    if (!roles.length && !rolesLoading && !hasFetchedRoles.current) {
+      hasFetchedRoles.current = true;
+      dispatch(
+        fetchResource({
+          key: "roles",
+          params: { searchText: "" },
+        })
+      );
+    }
+    if (!stores.length && !storesLoading && !hasFetchedStores.current) {
+      hasFetchedStores.current = true;
+      dispatch(
+        fetchResource({
+          key: "stores",
+          params: { searchText: "" },
+        })
+      );
+    }
+  }
+}, [dispatch, countries, countriesLoading, roles, rolesLoading, stores, storesLoading]);
+
 
   useEffect(() => {
     if (oFormData.country) {
@@ -274,13 +263,10 @@ const AddUser = () => {
       dispatch(fetchCitiesByStateId(oFormData.state))
         .unwrap()
         .then((result) => {
-          // Cities loaded successfully
         })
         .catch((error) => {
-          console.error("Error fetching cities:", error);
         });
     } else {
-      // Clear cities when no state is selected
       dispatch(clearCities());
       setFormData(prev => ({ ...prev, city: "" }));
     }
@@ -371,14 +357,11 @@ const AddUser = () => {
       setFetchUserError(backendMessage || t("COMMON.ERROR_MESSAGE"));
     }
   }, [id, t, countries]);
-
-  // Effect to populate state and city after country is set and states are loaded
   useEffect(() => {
     const populateStateAndCity = async () => {
       if (!id || !oFormData.country || !oFormData.stateName || !oFormData.countryName) return;
 
       try {
-        // Ensure states are loaded for the current country
         const statesArray = getArray(states);
         const foundState = statesArray.find(
           (s) => s.StateName === oFormData.stateName
@@ -391,7 +374,6 @@ const AddUser = () => {
           }));
         }
       } catch (error) {
-        console.error("Error populating state:", error);
       }
     };
 
@@ -415,7 +397,6 @@ const AddUser = () => {
           }));
         }
       } catch (error) {
-        console.error("Error populating city:", error);
       }
     };
 
