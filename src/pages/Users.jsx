@@ -5,10 +5,9 @@ import Toolbar from "../components/Toolbar";
 import Pagination from "../components/Pagination";
 import ActionButtons from "../components/ActionButtons";
 import { useTranslation } from "react-i18next";
-import { apiDelete } from "../utils/ApiUtils";
-import { USER_ACTIVE_STATUS, DELETE_USER } from "../contants/apiRoutes";
+import { USER_ACTIVE_STATUS} from "../contants/apiRoutes";
 import { useTitle } from "../context/TitleContext";
-import { ITEMS_PER_PAGE, STATUS } from "../contants/constants";
+import { ITEMS_PER_PAGE, STATUS, STATUS_OPTIONS } from "../contants/constants";
 import FullscreenErrorPopup from "../components/FullscreenErrorPopup";
 import { showEmsg } from "../utils/ShowEmsg";
 import { ToastContainer } from "react-toastify";
@@ -38,8 +37,20 @@ const Users = () => {
   const usersState = useSelector(
     (state) => state.allData.resources.users || {}
   );
-  const { data: usersData = [], total = 0, loading, error } = usersState;
-  const nTotalPages = Math.ceil((total || 0) / itemsPerPage);
+  
+  // Extract data with proper pagination handling
+  const { 
+    data: usersData = [], 
+    total = 0, 
+    loading, 
+    error,
+    pagination = {} 
+  } = usersState;
+
+  // Use API pagination data when available, otherwise calculate locally
+  const actualTotal = pagination.totalRecords || total;
+  const nTotalPages = pagination.totalPages || Math.ceil((actualTotal || 0) / itemsPerPage);
+  const currentPageSize = pagination.pageSize || itemsPerPage;
 
   const rolesState = useSelector(
     (state) => state.allData.resources.roles || {}
@@ -54,8 +65,7 @@ const Users = () => {
   const defaultFilters = { 
     role: "all", 
     status: "all",
-    store: "all",
-    sortOrder: "DESC"
+    store: "all"
   };
   const [oFilters, setFilters] = useState(defaultFilters);
 
@@ -63,8 +73,6 @@ const Users = () => {
     "User Management",
     "Delete User"
   );
-  const hasDeletePermission = hasPermissionId(permissionIdForDelete);
-
   // Helper function to get profile image URL
   const getProfileImageUrl = (user) => {
     if (!user.ProfileImageUrl) return userProfile;
@@ -101,8 +109,7 @@ const Users = () => {
       ...(oFilters.store !== "all" ? { storeName: oFilters.store } : {}),
       ...(oFilters.status !== "all" 
         ? { IsActive: oFilters.status === "Active" } 
-        : {}),
-      sortOrder: oFilters.sortOrder,
+        : {})
     };
     
     return params;
@@ -131,10 +138,19 @@ const Users = () => {
       : []),
   ];
 
-  const statusOptions = [
+  const statusOptions = STATUS_OPTIONS.map((opt) => ({
+     value: opt.value,
+     label: t(opt.labelKey),
+   }));
+
+  const storeOptions = [
     { value: "all", label: t("COMMON.ALL") },
-    { value: "Active", label: t("COMMON.ACTIVE") },
-    { value: "Inactive", label: t("COMMON.INACTIVE") },
+    ...(Array.isArray(aStores)
+      ? aStores.map((store) => ({
+          value: store.StoreName,
+          label: store.StoreName,
+        }))
+      : []),
   ];
 
   const storeOptions = [
@@ -197,45 +213,6 @@ const Users = () => {
   const handlePageClick = (page) => setCurrentPage(page);
 
   const handleEdit = (userId) => navigate(`/editUser/${userId}`);
-
-  const [deletePopup, setDeletePopup] = useState({ open: false, userId: null });
-  const handleDelete = (userId) => {
-    if (!hasDeletePermission) {
-      showEmsg(t("COMMON.NO_DELETE_PERMISSION"), STATUS.ERROR);
-      return;
-    }
-    setDeletePopup({ open: true, userId });
-  };
-
-  const handleDeleteConfirm = async () => {
-    setSubmitting(true);
-    const { userId } = deletePopup;
-    try {
-      const token = localStorage.getItem("token");
-      const response = await apiDelete(`${DELETE_USER}/${userId}`, token);
-      const backendMessage = response.data.MESSAGE;
-      showEmsg(backendMessage, STATUS.SUCCESS);
-
-      // refetch after delete
-      const params = buildApiParams();
-      dispatch(
-        fetchResource({
-          key: "users",
-          params: params,
-        })
-      );
-
-      setDeletePopup({ open: false, userId: null });
-    } catch (err) {
-      const errorMessage = err?.response?.data?.MESSAGE;
-      showEmsg(errorMessage || t("COMMON.API_ERROR"), STATUS.ERROR);
-      setDeletePopup({ open: false, userId: null });
-    }
-    hideLoaderWithDelay(setSubmitting);
-  };
-
-  const handleDeletePopupClose = () =>
-    setDeletePopup({ open: false, userId: null });
 
   const [statusPopup, setStatusPopup] = useState({
     open: false,
@@ -453,7 +430,6 @@ const Users = () => {
                           <ActionButtons
                             id={user.UserID}
                             onEdit={handleEdit}
-                            onDelete={handleDelete}
                           />
                         </div>
                       </td>
@@ -544,7 +520,6 @@ const Users = () => {
                   <ActionButtons
                     id={user.UserID}
                     onEdit={handleEdit}
-                    onDelete={handleDelete}
                   />
                 </div>
               </div>
@@ -556,8 +531,8 @@ const Users = () => {
       <Pagination
         currentPage={nCurrentPage}
         totalPages={nTotalPages}
-        totalItems={total}
-        itemsPerPage={itemsPerPage}
+        totalItems={actualTotal}
+        itemsPerPage={currentPageSize}
         handlePrevPage={handlePrevPage}
         handleNextPage={handleNextPage}
         handlePageClick={handlePageClick}
@@ -570,13 +545,6 @@ const Users = () => {
           }?`}
           onClose={handleStatusPopupClose}
           onConfirm={handleStatusConfirm}
-        />
-      )}
-      {deletePopup.open && (
-        <FullscreenErrorPopup
-          message={t("USERS.DELETE_CONFIRM_MESSAGE")}
-          onClose={handleDeletePopupClose}
-          onConfirm={handleDeleteConfirm}
         />
       )}
     </div>

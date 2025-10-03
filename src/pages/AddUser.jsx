@@ -1,7 +1,6 @@
 import {
   useState,
   useEffect,
-  useContext,
   useCallback,
   useRef,
   useMemo,
@@ -26,7 +25,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { apiGet, apiPost } from "../utils/ApiUtils";
 import { GET_USER_BY_ID, USER_CREATE_OR_UPDATE } from "../contants/apiRoutes";
 import { showEmsg } from "../utils/ShowEmsg";
-import { LocationDataContext } from "../context/LocationDataProvider";
 import { useTitle } from "../context/TitleContext";
 import { STATUS } from "../contants/constants";
 import md5 from "md5";
@@ -35,12 +33,20 @@ import { ToastContainer } from "react-toastify";
 import userProfile from "../../assets/images/userProfile.svg";
 import Loader from "../components/Loader";
 import { hideLoaderWithDelay } from "../utils/loaderUtils";
-import { fetchResource } from "../store/slices/allDataSlice";
+import { 
+  fetchResource, 
+  fetchStatesByCountryId, 
+  fetchCitiesByStateId,
+  clearStates,
+  clearCities 
+} from "../store/slices/allDataSlice";
+
+// Import password utilities
 import {
   passwordRequirements,
   calculatePasswordStrength,
   getPasswordStrengthText,
-  validateFormPassword,
+  validateFormPassword
 } from "../utils/passwordUtils";
 
 const getArray = (data) =>
@@ -64,7 +70,6 @@ const AddUser = () => {
     city: "",
     state: "",
     pincode: "",
-    status: "Active",
     country: "",
     countryName: "",
     stateName: "",
@@ -77,36 +82,60 @@ const AddUser = () => {
   const [removedDocumentIds, setRemovedDocumentIds] = useState([]);
   const { t } = useTranslation();
   const { id } = useParams();
-  const { aCountriesData, aStatesData, aCitiesData } =
-    useContext(LocationDataContext);
   const [bImgLoading, setImgLoading] = useState(true);
   const [bImgError, setImgError] = useState(false);
+
+  // Redux hooks
   const dispatch = useDispatch();
+
+  // Get data from the allDataSlice
   const rolesData = useSelector((state) => state.allData.resources.roles || {});
-  const storesData = useSelector(
-    (state) => state.allData.resources.stores || {}
-  );
+  const storesData = useSelector((state) => state.allData.resources.stores || {});
+  const countriesData = useSelector((state) => state.allData.resources.countries || {});
+  const statesData = useSelector((state) => state.allData.resources.states || {});
+  const citiesData = useSelector((state) => state.allData.resources.cities || {});
 
   const roles = rolesData.data || [];
   const stores = storesData.data || [];
+  const countries = countriesData.data || [];
+  const states = statesData.data || [];
+  const cities = citiesData.data || [];
+  
   const rolesLoading = rolesData.loading || false;
   const storesLoading = storesData.loading || false;
+  const countriesLoading = countriesData.loading || false;
+  const statesLoading = statesData.loading || false;
+  const citiesLoading = citiesData.loading || false;
+  
   const rolesError = rolesData.error || null;
   const storesError = storesData.error || null;
+  const countriesError = countriesData.error || null;
+  const statesError = statesData.error || null;
+  const citiesError = citiesData.error || null;
 
   const [oErrors, setErrors] = useState({});
   const { setTitle, setBackButton } = useTitle();
   const navigate = useNavigate();
   const [bSubmitting, setSubmitting] = useState(false);
+
+  // Refs to track if data has been fetched to prevent multiple API calls
   const hasFetchedRoles = useRef(false);
   const hasFetchedStores = useRef(false);
-  const passwordReqList = useMemo(() => passwordRequirements(t), [t]);
-  const passwordStrength = useMemo(() => {
-    return calculatePasswordStrength(oFormData.password);
-  }, [oFormData.password]);
-  const passwordStrengthText = useMemo(() => {
-    return getPasswordStrengthText(passwordStrength, t);
-  }, [passwordStrength, t]);
+  const hasFetchedCountries = useRef(false);
+  const hasFetchedUser = useRef(false);
+  const hasFetchedInitialData = useRef(false);
+
+  // Password strength calculation using the imported utility
+  const passwordStrength = useMemo(() => 
+    calculatePasswordStrength(oFormData.password), 
+    [oFormData.password]
+  );
+
+  // Get password strength text using the imported utility
+  const passwordStrengthText = useMemo(() => 
+    getPasswordStrengthText(passwordStrength, t), 
+    [passwordStrength, t]
+  );
 
   useEffect(() => {
     setTitle(id ? t("USERS.EDIT_USER") : t("USERS.ADD_NEW_USER"));
@@ -116,6 +145,8 @@ const AddUser = () => {
       setTitle("");
     };
   }, [setTitle, setBackButton, t, id, navigate]);
+
+  // Validation function - simplified using imported utilities
   const validate = useCallback(() => {
     const errors = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -149,19 +180,15 @@ const AddUser = () => {
       errors.stores = t("ADD_USER.VALIDATION.STORES_REQUIRED");
     }
 
+    // Use imported password validation
     const passwordErrors = validateFormPassword(
-      oFormData.password,
-      oFormData.confirmPassword,
-      t,
-      !id
+      oFormData.password, 
+      oFormData.confirmPassword, 
+      t, 
+      !id // isNewUser = true when creating new user
     );
     
-    if (passwordErrors.password) {
-      errors.password = passwordErrors.password;
-    }
-    if (passwordErrors.confirmPassword) {
-      errors.confirmPassword = passwordErrors.confirmPassword;
-    }
+    Object.assign(errors, passwordErrors);
 
     if (!oFormData.streetAddress?.trim()) {
       errors.streetAddress = t("ADD_USER.VALIDATION.ADDRESS_REQUIRED");
@@ -185,90 +212,14 @@ const AddUser = () => {
 
     return errors;
   }, [oFormData, t, id]);
-
-  const fetchUser = useCallback(async () => {
-    if (!id) return;
-
-    const token = localStorage.getItem("token");
-    try {
-      const oResponse = await apiGet(`${GET_USER_BY_ID}/${id}`, {}, token);
-      const resData = oResponse.data;
-
-      if (resData?.status === STATUS.SUCCESS.toUpperCase() && resData.data) {
-        const user = resData.data;
-
-        const foundCountry = getArray(aCountriesData).find(
-          (c) => c.CountryName === user.CountryName
-        );
-        const foundState = getArray(aStatesData).find(
-          (s) =>
-            s.StateName === user.StateName &&
-            String(s.CountryID) === String(foundCountry?.CountryID)
-        );
-        const foundCity = getArray(aCitiesData).find(
-          (c) =>
-            c.CityName === user.CityName &&
-            String(c.StateID) === String(foundState?.StateID)
-        );
-
-        setFormData((prevFormData) => ({
-          ...prevFormData,
-          firstName: user.FirstName || "",
-          lastName: user.LastName || "",
-          email: user.Email || "",
-          phone: user.PhoneNumber || "",
-          role: user.RoleID || "",
-          stores: user.Stores ? user.Stores.map((store) => store.StoreId) : [],
-          streetAddress: user.AddressLine || "",
-          city: foundCity?.CityID || "",
-          state: foundState?.StateID || "",
-          pincode: user.Zipcode || "",
-          status: user.IsActive ? "Active" : "Inactive",
-          country: foundCountry?.CountryID || "",
-          countryName: user.CountryName || "",
-          stateName: user.StateName || "",
-          cityName: user.CityName || "",
-          documentId: user.ProfileImageUrl
-            ? user.ProfileImageUrl.map((doc) => doc.documentId)
-            : [],
-        }));
-        if (user.ProfileImageUrl && user.ProfileImageUrl.length > 0) {
-          setImgLoading(true);
-          setProfileImagePreview(user.ProfileImageUrl[0].documentUrl);
-          setExistingDocuments(user.ProfileImageUrl);
-        } else {
-          setImgLoading(false);
-          setExistingDocuments([]);
-        }
-        setRemovedDocumentIds([]);
-
-        setFetchUserError("");
-      } else {
-        setFetchUserError(resData?.message || t("COMMON.FAILED_OPERATION"));
-      }
-    } catch (error) {
-      const backendMessage = error?.response?.data?.message;
-      setFetchUserError(backendMessage || t("COMMON.ERROR_MESSAGE"));
+useEffect(() => {
+  if (!hasFetchedInitialData.current) {
+    hasFetchedInitialData.current = true;
+    if (!countries.length && !countriesLoading) {
+      hasFetchedCountries.current = true;
+      dispatch(fetchResource({ key: "countries" }));
     }
-  }, [id, t, aCountriesData, aStatesData, aCitiesData]);
-
-  useEffect(() => {
-    if (
-      id &&
-      getArray(aCountriesData).length > 0 &&
-      getArray(aStatesData).length > 0 &&
-      getArray(aCitiesData).length > 0
-    ) {
-      fetchUser();
-    }
-  }, [id, fetchUser, aCountriesData, aStatesData, aCitiesData]);
-
-  useEffect(() => {
-    if (
-      (!roles || roles.length === 0) &&
-      !rolesLoading &&
-      !hasFetchedRoles.current
-    ) {
+    if (!roles.length && !rolesLoading && !hasFetchedRoles.current) {
       hasFetchedRoles.current = true;
       dispatch(
         fetchResource({
@@ -277,12 +228,7 @@ const AddUser = () => {
         })
       );
     }
-
-    if (
-      (!stores || stores.length === 0) &&
-      !storesLoading &&
-      !hasFetchedStores.current
-    ) {
+    if (!stores.length && !storesLoading && !hasFetchedStores.current) {
       hasFetchedStores.current = true;
       dispatch(
         fetchResource({
@@ -291,15 +237,211 @@ const AddUser = () => {
         })
       );
     }
-  }, [dispatch, roles, rolesLoading, stores, storesLoading]);
+  }
+}, [dispatch, countries, countriesLoading, roles, rolesLoading, stores, storesLoading]);
+
+
+  useEffect(() => {
+    if (oFormData.country) {
+      dispatch(fetchStatesByCountryId(oFormData.country))
+        .unwrap()
+        .then((result) => {
+          // States loaded successfully
+        })
+        .catch((error) => {
+          console.error("Error fetching states:", error);
+        });
+    } else {
+      dispatch(clearStates());
+      setFormData(prev => ({ ...prev, state: "", city: "" }));
+    }
+  }, [dispatch, oFormData.country]);
+
+  useEffect(() => {
+    if (oFormData.state) {
+      dispatch(fetchCitiesByStateId(oFormData.state))
+        .unwrap()
+        .then((result) => {
+        })
+        .catch((error) => {
+        });
+    } else {
+      dispatch(clearCities());
+      setFormData(prev => ({ ...prev, city: "" }));
+    }
+  }, [dispatch, oFormData.state]);
+
+  // Optimized fetchUser function without circular dependencies
+  const fetchUser = useCallback(async () => {
+    if (!id || hasFetchedUser.current) return;
+
+    hasFetchedUser.current = true;
+    const token = localStorage.getItem("token");
+    
+    try {
+      const oResponse = await apiGet(`${GET_USER_BY_ID}/${id}`, {}, token);
+      const resData = oResponse.data;
+
+      if (resData?.status === STATUS.SUCCESS.toUpperCase() && resData.data) {
+        const user = resData.data;
+
+        // Set basic form data immediately
+        setFormData(prev => ({
+          ...prev,
+          firstName: user.FirstName || "",
+          lastName: user.LastName || "",
+          email: user.Email || "",
+          phone: user.PhoneNumber || "",
+          role: user.RoleID || "",
+          IsActive: true,
+          stores: user.Stores ? user.Stores.map((store) => store.StoreId) : [],
+          streetAddress: user.AddressLine || "",
+          pincode: user.Zipcode || "",
+          countryName: user.CountryName || "",
+          stateName: user.StateName || "",
+          cityName: user.CityName || "",
+          documentId: user.ProfileImageUrl
+            ? user.ProfileImageUrl.map((doc) => doc.documentId)
+            : [],
+        }));
+
+        // For the profile image
+        if (user.ProfileImageUrl && user.ProfileImageUrl.length > 0) {
+          setImgLoading(true);
+          setProfileImagePreview(user.ProfileImageUrl[0].documentUrl);
+          setExistingDocuments(user.ProfileImageUrl);
+        } else {
+          setImgLoading(false);
+          setExistingDocuments([]);
+        }
+
+        // Store location names for later population
+        const locationData = {
+          countryName: user.CountryName,
+          stateName: user.StateName,
+          cityName: user.CityName
+        };
+
+        // Find and set country ID if available
+        const countriesArray = getArray(countries);
+        if (countriesArray.length > 0) {
+          const foundCountry = countriesArray.find(
+            (c) => c.CountryName === user.CountryName
+          );
+          if (foundCountry) {
+            setFormData(prev => ({
+              ...prev,
+              country: foundCountry.CountryID
+            }));
+          }
+        } else {
+          // If countries aren't loaded yet, store the names for later
+          setTimeout(() => {
+            setFormData(prev => ({
+              ...prev,
+              countryName: user.CountryName,
+              stateName: user.StateName,
+              cityName: user.CityName
+            }));
+          }, 100);
+        }
+
+        setRemovedDocumentIds([]);
+        setFetchUserError("");
+      } else {
+        setFetchUserError(resData?.message || t("COMMON.FAILED_OPERATION"));
+      }
+    } catch (error) {
+      const backendMessage = error?.response?.data?.message;
+      setFetchUserError(backendMessage || t("COMMON.ERROR_MESSAGE"));
+    }
+  }, [id, t, countries]);
+  useEffect(() => {
+    const populateStateAndCity = async () => {
+      if (!id || !oFormData.country || !oFormData.stateName || !oFormData.countryName) return;
+
+      try {
+        const statesArray = getArray(states);
+        const foundState = statesArray.find(
+          (s) => s.StateName === oFormData.stateName
+        );
+
+        if (foundState && !oFormData.state) {
+          setFormData(prev => ({
+            ...prev,
+            state: foundState.StateID
+          }));
+        }
+      } catch (error) {
+      }
+    };
+
+    populateStateAndCity();
+  }, [id, oFormData.country, oFormData.stateName, oFormData.countryName, states]);
+
+  useEffect(() => {
+    const populateCity = async () => {
+      if (!id || !oFormData.state || !oFormData.cityName) return;
+
+      try {
+        const citiesArray = getArray(cities);
+        const foundCity = citiesArray.find(
+          (c) => c.CityName === oFormData.cityName
+        );
+
+        if (foundCity && !oFormData.city) {
+          setFormData(prev => ({
+            ...prev,
+            city: foundCity.CityID
+          }));
+        }
+      } catch (error) {
+      }
+    };
+
+    populateCity();
+  }, [id, oFormData.state, oFormData.cityName, cities]);
+
+  useEffect(() => {
+    if (id && !hasFetchedUser.current && countries.length > 0) {
+      const timer = setTimeout(() => {
+        fetchUser();
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [id, countries.length, fetchUser]);
 
   const handleChange = useCallback(
     (e) => {
       const { name, value } = e.target;
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
+    
+      if (name === "country") {
+        setFormData((prev) => ({
+          ...prev,
+          [name]: value,
+          state: "",
+          city: "",
+          stateName: "",
+          cityName: "",
+        }));
+      }
+      else if (name === "state") {
+        setFormData((prev) => ({
+          ...prev,
+          [name]: value,
+          city: "",
+          cityName: "",
+        }));
+      }
+      // For all other fields
+      else {
+        setFormData((prev) => ({
+          ...prev,
+          [name]: value,
+        }));
+      }
+      
       // Clear error when user starts typing
       if (oErrors[name]) {
         setErrors((prev) => ({ ...prev, [name]: "" }));
@@ -332,25 +474,22 @@ const AddUser = () => {
       const token = localStorage.getItem("token");
       const userId = localStorage.getItem("userId");
       const formData = new FormData();
+
       let documentMetadata = [];
       if (nProfileImage) {
-        // New image is being uploaded
         if (existingDocuments.length > 0 && existingDocuments[0]?.documentId) {
-          // Replacing existing image - include DocumentID
           documentMetadata.push({
             image: "profile-image",
             sortOrder: 1,
             DocumentID: existingDocuments[0].documentId,
           });
         } else {
-          // New upload - no DocumentID needed
           documentMetadata.push({
             image: "profile-image",
             sortOrder: 1,
           });
         }
       } else if (removedDocumentIds.length > 0) {
-        // Some documents were removed, include only the remaining ones
         const remainingDocuments = existingDocuments.filter(
           (doc) => !removedDocumentIds.includes(doc.documentId)
         );
@@ -359,14 +498,8 @@ const AddUser = () => {
           sortOrder: doc.sortOrder || index + 1,
           DocumentID: doc.documentId,
         }));
-      } else if (existingDocuments.length > 0) {
-        // No changes, but we have existing documents - include them
-        documentMetadata = existingDocuments.map((doc, index) => ({
-          image: "profile-image",
-          sortOrder: doc.sortOrder || index + 1,
-          DocumentID: doc.documentId,
-        }));
       }
+
       const userData = {
         UserID: id || "",
         FirstName: oFormData.firstName || "",
@@ -381,11 +514,10 @@ const AddUser = () => {
         Zipcode: oFormData.pincode || "",
         RoleID: oFormData.role || "",
         StoreIDs: oFormData.stores || [],
-        IsActive: oFormData.status === "Active",
+        IsActive: oFormData.status,
         documentMetadata: documentMetadata,
       };
 
-      // Add CreatedBy or UpdatedBy
       if (id) {
         userData.UpdatedBy = userId;
       } else {
@@ -394,7 +526,6 @@ const AddUser = () => {
 
       formData.append("data", JSON.stringify(userData));
 
-      // Only append the file if there's a new image
       if (nProfileImage) {
         formData.append("profile-image", nProfileImage);
       }
@@ -410,14 +541,9 @@ const AddUser = () => {
 
         if (resData?.status === STATUS.SUCCESS.toUpperCase()) {
           setRemovedDocumentIds([]);
-          showEmsg(
-            resData?.message,
-            STATUS.SUCCESS,
-            3000,
-            async () => {
-              navigate("/users");
-            }
-          );
+          showEmsg(resData?.message, STATUS.SUCCESS, 3000, async () => {
+            navigate("/users");
+          });
         } else {
           showEmsg(
             resData?.message || t("COMMON.FAILED_OPERATION"),
@@ -425,6 +551,7 @@ const AddUser = () => {
           );
         }
       } catch (error) {
+        console.error("API Error:", error);
         const backendMessage = error?.response?.data?.message;
         showEmsg(backendMessage || t("COMMON.ERROR_MESSAGE"), STATUS.ERROR);
       } finally {
@@ -509,6 +636,7 @@ const AddUser = () => {
           </p>
         </div>
       </div>
+
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
@@ -563,6 +691,7 @@ const AddUser = () => {
             </div>
           </div>
         </div>
+
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
             <h2 className="text-lg font-semibold text-gray-900">
@@ -593,7 +722,9 @@ const AddUser = () => {
                   dispatch(
                     fetchResource({
                       key: "roles",
-                      params: { searchText: inputValue }, // Only search text
+                      params: {
+                        searchText: inputValue,
+                      },
                     })
                   );
                 }}
@@ -624,7 +755,9 @@ const AddUser = () => {
                   dispatch(
                     fetchResource({
                       key: "stores",
-                      params: { searchText: inputValue }, // Only search text
+                      params: {
+                        searchText: inputValue,
+                      },
                     })
                   );
                 }}
@@ -684,7 +817,7 @@ const AddUser = () => {
                         listStyle: "none",
                       }}
                     >
-                      {passwordReqList.map((req, idx) => {
+                      {passwordRequirements(t).map((req, idx) => {
                         const passed = req.test(oFormData.password);
                         return (
                           <li
@@ -727,6 +860,7 @@ const AddUser = () => {
             </div>
           </div>
         </div>
+
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
             <h2 className="text-lg font-semibold text-gray-900">
@@ -752,12 +886,16 @@ const AddUser = () => {
                   name="country"
                   value={oFormData.country}
                   onChange={handleChange}
-                  options={getArray(aCountriesData).map((c) => ({
+                  options={countries.map((c) => ({
                     value: c.CountryID,
                     label: c.CountryName,
                   }))}
                   Icon={Building}
-                  error={oErrors.country}
+                  error={oErrors.country || countriesError}
+                  placeholder={
+                    countriesLoading ? t("COMMON.LOADING") : t("COMMON.SELECT_COUNTRY")
+                  }
+                  disabled={countriesLoading}
                 />
               </div>
               <div>
@@ -767,13 +905,13 @@ const AddUser = () => {
                   name="state"
                   value={oFormData.state}
                   onChange={handleChange}
-                  options={getArray(aStatesData)
-                    .filter(
-                      (s) => String(s.CountryID) === String(oFormData.country)
-                    )
-                    .map((s) => ({ value: s.StateID, label: s.StateName }))}
+                  options={states.map((s) => ({ value: s.StateID, label: s.StateName }))}
                   Icon={Building}
-                  error={oErrors.state}
+                  error={oErrors.state || statesError}
+                  placeholder={
+                    statesLoading ? t("COMMON.LOADING") : t("COMMON.SELECT_STATE")
+                  }
+                  disabled={statesLoading || !oFormData.country}
                 />
               </div>
               <div>
@@ -783,13 +921,13 @@ const AddUser = () => {
                   name="city"
                   value={oFormData.city}
                   onChange={handleChange}
-                  options={getArray(aCitiesData)
-                    .filter(
-                      (c) => String(c.StateID) === String(oFormData.state)
-                    )
-                    .map((c) => ({ value: c.CityID, label: c.CityName }))}
+                  options={cities.map((c) => ({ value: c.CityID, label: c.CityName }))}
                   Icon={Building}
-                  error={oErrors.city}
+                  error={oErrors.city || citiesError}
+                  placeholder={
+                    citiesLoading ? t("COMMON.LOADING") : t("COMMON.SELECT_CITY")
+                  }
+                  disabled={citiesLoading || !oFormData.state}
                 />
               </div>
               <TextInputWithIcon
@@ -805,6 +943,7 @@ const AddUser = () => {
             </div>
           </div>
         </div>
+
         <div className="flex justify-end space-x-4">
           <button
             type="button"

@@ -114,7 +114,7 @@ const Login = () => {
   const fetchUserDetailsDirectly = async (userId, token) => {
     try {
       const response = await apiGet(`${GET_USER_BY_ID}/${userId}`, {}, token);
-
+    
       if (response?.data?.status === STATUS.SUCCESS.toUpperCase()) {
         const userData = response.data.data;
         localStorage.setItem("userDetails", JSON.stringify(userData));

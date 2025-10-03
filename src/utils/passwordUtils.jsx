@@ -21,8 +21,6 @@ export const passwordRules = (t) => [
     test: (pw) => /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(pw),
   },
 ];
-
-// Common password requirements for forms
 export const passwordRequirements = (t) => [
   {
     test: (password) => password.length >= 8,
@@ -67,8 +65,6 @@ export const validateConfirmPassword = (confirmPassword, newPassword, t) => {
   if (confirmPassword !== newPassword) return t("RESET_PASSWORD.ERRORS.PASSWORDS_MISMATCH");
   return "";
 };
-
-// Password strength calculator
 export const calculatePasswordStrength = (password) => {
   if (!password) return "";
   
@@ -90,8 +86,6 @@ export const calculatePasswordStrength = (password) => {
   if (strengthScore >= 3) return "medium";
   return "weak";
 };
-
-// Get password strength text
 export const getPasswordStrengthText = (strength, t) => {
   switch (strength) {
     case "strong":
@@ -104,8 +98,6 @@ export const getPasswordStrengthText = (strength, t) => {
       return "";
   }
 };
-
-// Comprehensive password validator for forms
 export const validateFormPassword = (password, confirmPassword, t, isNewUser = false) => {
   const errors = {};
   
