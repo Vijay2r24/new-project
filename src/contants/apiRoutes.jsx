@@ -116,3 +116,4 @@ export const GET_All_PAYMENT_STATUS = `/getAllPaymentStatus`;
 export const GET_ALL_PAYMENT_METHODS = `/getAllPaymentMethods`;
 export const GET_ALL_PAYMENT_TYPES = `/getAllPaymentTypes`;
 export const GET_PAYMENT_BYID =`/getPaymentById`;
+export const UPDATE_ORDER_ITEM_HISTORY = `/updateOrderItemHistory`;

@@ -465,7 +465,7 @@ const ProductList = () => {
                         <Switch
                           checked={product.IsActive}
                           onChange={() => handleStatusChange(product.ProductID, product.IsActive)}
-                          className={`${product.IsActive ? "bg-green-500" : "bg-gray-300"
+                          className={`${product.IsActive ? "bg-blue-600" : "bg-gray-300"
                             } relative inline-flex h-6 w-11 items-center rounded-full transition`}
                         >
                           <span
@@ -523,7 +523,7 @@ const ProductList = () => {
                   <Switch
                     checked={product.IsActive}
                     onChange={() => handleStatusChange(product.ProductID, product.IsActive)}
-                    className={`${product.IsActive ? "bg-green-500" : "bg-gray-300"
+                    className={`${product.IsActive ? "bg-blue-600" : "bg-gray-300"
                       } relative inline-flex h-6 w-11 items-center rounded-full transition`}
                   >
                     <span
