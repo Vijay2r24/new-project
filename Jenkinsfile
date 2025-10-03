@@ -46,6 +46,7 @@ pipeline {
                 script {
                     sh """
                         docker build --build-arg VITE_API_BASE_URL=${env.VITE_API_BASE_URL} \
+                        --build-arg SERVICE_PORT=${env.SERVICE_PORT} \
                         -t ${DOCKER_IMAGE}:${params.DOCKER_TAG} .
                     """
                 }

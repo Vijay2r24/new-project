@@ -115,7 +115,6 @@ const AddUser = () => {
 
   const [oErrors, setErrors] = useState({});
   const { setTitle, setBackButton } = useTitle();
-  const [fetchUserError, setFetchUserError] = useState("");
   const navigate = useNavigate();
   const [bSubmitting, setSubmitting] = useState(false);
 
@@ -350,10 +349,10 @@ useEffect(() => {
         setRemovedDocumentIds([]);
         setFetchUserError("");
       } else {
-        setFetchUserError(resData?.MESSAGE || t("COMMON.FAILED_OPERATION"));
+        setFetchUserError(resData?.message || t("COMMON.FAILED_OPERATION"));
       }
     } catch (error) {
-      const backendMessage = error?.response?.data?.MESSAGE;
+      const backendMessage = error?.response?.data?.message;
       setFetchUserError(backendMessage || t("COMMON.ERROR_MESSAGE"));
     }
   }, [id, t, countries]);

@@ -278,6 +278,7 @@ const allDataSlice = createSlice({
       .addCase(updateStatusById.fulfilled, (state, action) => {
         const { key, id, idField, payload } = action.payload;
         if (state.resources[key]?.data) {
+          // Update status in place
           state.resources[key].data = state.resources[key].data.map((item) =>
             item[idField] === id ? { ...item, Status: payload.Status } : item
           );

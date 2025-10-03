@@ -279,8 +279,8 @@ const ActiveBannersWithSequence = () => {
 
   // Group into rows of 4
   const groupedBanners = [];
-  for (let i = 0; i < activeBanners.length; i += 4) {
-    groupedBanners.push(activeBanners.slice(i, i + 4));
+  for (let i = 0; i < activeBanners.length; i += 3) {
+    groupedBanners.push(activeBanners.slice(i, i + 3));
   }
 
   if (isLoading) {
@@ -380,7 +380,7 @@ const ActiveBannersWithSequence = () => {
                   {groupedBanners.map((row, rowIndex) => (
                     <div
                       key={`row-${rowIndex}`}
-                      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+                      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
 
                     >
                       {row.map((banner, index) => {
@@ -450,7 +450,7 @@ const ActiveBannersWithSequence = () => {
                                         <img
                                           src={banner.BannerImages[0].BannerImage}
                                           alt={banner.BannerName}
-                                          className="w-full h-full object-cover rounded-t-2xl"
+                                          className="w-full h-full object-contain rounded-t-2xl"
                                         />
                                       ) : (
                                         <div className="h-full bg-gray-100 flex items-center justify-center rounded-t-2xl">
@@ -484,10 +484,6 @@ const ActiveBannersWithSequence = () => {
                                             <h3 className="text-lg font-semibold text-gray-900 mb-1">
                                               {banner.BannerName}
                                             </h3>
-                                            <p className="text-gray-500 text-sm">
-                                              {t("BANNERS.BANNER_ID")}:{" "}
-                                              {banner.BannerID}
-                                            </p>
                                           </div>
 
                                           <div
@@ -550,14 +546,14 @@ const ActiveBannersWithSequence = () => {
         )}
 
         {/* Instructions */}
-        <div className="mt-8 bg-custom-bg/10 border border-custom-bg/50 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-custom-bg mb-3">
+        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
+          <h3 className="text-lg font-semibold text-blue-900 mb-3">
             {t("BANNERS.HOW_TO_REORDER")}
           </h3>
-          <div className="grid md:grid-cols-2 gap-4 text-sm text-custom-bg">
+          <div className="grid md:grid-cols-2 gap-4 text-sm text-blue-800">
             <div className="flex items-start space-x-2">
-              <div className="w-6 h-6 rounded-full bg-custom-bg/20 flex items-center justify-center mt-0.5 flex-shrink-0">
-                <GripVertical className="h-4 w-4 text-custom-bg" />
+              <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center mt-0.5 flex-shrink-0">
+                <GripVertical className="h-4 w-4 text-blue-600" />
               </div>
               <div>
                 <strong>{t("BANNERS.CLICK_DRAG")}:</strong>{" "}
@@ -565,8 +561,8 @@ const ActiveBannersWithSequence = () => {
               </div>
             </div>
             <div className="flex items-start space-x-2">
-              <div className="w-6 h-6 rounded-full bg-custom-bg/20 flex items-center justify-center mt-0.5 flex-shrink-0">
-                <Hash className="h-4 w-4 text-custom-bg" />
+              <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center mt-0.5 flex-shrink-0">
+                <Hash className="h-4 w-4 text-blue-600" />
               </div>
               <div>
                 <strong>{t("BANNERS.SET_POSITION")}:</strong>{" "}
@@ -574,7 +570,7 @@ const ActiveBannersWithSequence = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div>  
       </div>
 
       {/* Preview Modal */}
