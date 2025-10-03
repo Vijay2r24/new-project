@@ -86,9 +86,10 @@ const UserRolesList = () => {
       pageSize: itemsPerPage,
       searchText: sSearchTerm,
     };
-    if (selectedStatus !== "all") {
-      filterParams.IsActive = selectedStatus;
-    }
+  
+     if (selectedStatus && selectedStatus !== "all") {
+         filterParams.IsActive = selectedStatus;
+      }
 
     const fetchData = async () => {
       try {
