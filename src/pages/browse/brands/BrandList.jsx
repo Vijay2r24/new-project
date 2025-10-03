@@ -1,68 +1,92 @@
 import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  fetchResource,
+  updateStatusById,
+  clearResourceError,
+} from "../../../store/slices/allDataSlice";
 import CreateBrand from "./CreateBrand";
 import Toolbar from "../../../components/Toolbar";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { useBrands } from "../../../context/AllDataContext";
 import Pagination from "../../../components/Pagination";
 import { showEmsg } from "../../../utils/ShowEmsg";
 import FullscreenErrorPopup from "../../../components/FullscreenErrorPopup";
 import { UPDATE_BRAND_STATUS } from "../../../contants/apiRoutes";
 import Switch from "../../../components/Switch";
-import { ITEMS_PER_PAGE } from "../../../contants/constants";
+import { ITEMS_PER_PAGE,DEFAULT_PAGE, STATUS, STATUS_VALUES, STATUS_OPTIONS } from "../../../contants/constants";
 import { hideLoaderWithDelay } from "../../../utils/loaderUtils";
 
 const BrandList = ({ onCreate, onBack, setSubmitting }) => {
-  const [bShowCreate, setShowCreate] = useState(false);
-  const [sSearchQuery, setSearchQuery] = useState("");
-  const [bShowFilters, setShowFilters] = useState(false);
-  const [oFilters, setFilters] = useState({ status: "all" });
-
+  const dispatch = useDispatch();
   const { t } = useTranslation();
-  const brands = useBrands();
-  const aBrands = brands.data || [];
-  const bLoading = brands.loading;
-  const sError = brands.error;
-  const iTotalItems = brands.total;
 
-  const [nCurrentPage, setCurrentPage] = useState(1);
-  const [iItemsPerPage] = useState(ITEMS_PER_PAGE);
+  const [bShowCreate, setShowCreate] = useState(false); // Toggle between list and create view
+  const [sSearchQuery, setSearchQuery] = useState(""); // Search term for filtering brands
+  const [bShowFilters, setShowFilters] = useState(false); // Show/hide filters dropdown
+  const [oFilters, setFilters] = useState({ status: STATUS_VALUES.ALL }); // Active filters (status filter here)
 
+  const [nCurrentPage, setCurrentPage] = useState(DEFAULT_PAGE); // Current pagination page
+  const [iItemsPerPage] = useState(ITEMS_PER_PAGE); // Number of items per page (constant)
+
+  // Popup state for brand status confirmation
   const [statusPopup, setStatusPopup] = useState({
     open: false,
     brandId: null,
     newStatus: null,
   });
 
+  // --- Redux Selectors ---
+  const brandsState = useSelector((state) => state.allData.resources.brands);
+  const aBrands = brandsState?.data || []; // Brand list
+  const bLoading = brandsState?.loading || false; // Loading state
+  const sError = brandsState?.error || null; // Error message
+  const iTotalItems = brandsState?.total || 0; // Total number of brands
+
+  /**
+   * Fetch brands whenever filters, search query, or page changes
+   */
   useEffect(() => {
     const params = {
       pageNumber: nCurrentPage,
       pageSize: iItemsPerPage,
       searchText: sSearchQuery,
     };
-    if (oFilters.status && oFilters.status !== "all") {
-      params.status = oFilters.status;
+    if (oFilters.status !== STATUS_VALUES.ALL) {
+      params.IsActive = oFilters.status; // Apply status filter if not "all"
     }
-    brands.fetch(params);
-  }, [nCurrentPage, iItemsPerPage, sSearchQuery, oFilters.status]);
+    dispatch(fetchResource({ key: "brands", params }));
+  }, [dispatch, nCurrentPage, iItemsPerPage, sSearchQuery, oFilters.status]);
 
-  const handlePageClick = (pageNumber) => {
-    setCurrentPage(pageNumber);
-  };
+  /**
+   * Clear error when component unmounts or when search query changes
+   */
+  useEffect(() => {
+    return () => {
+      if (sError) {
+        dispatch(clearResourceError("brands"));
+      }
+    };
+  }, [sError, dispatch]);
+
+  // --- Pagination Handlers ---
+  const handlePageClick = (pageNumber) => setCurrentPage(pageNumber);
 
   const handleNextPage = () => {
     if (nCurrentPage < Math.ceil(iTotalItems / iItemsPerPage)) {
-      setCurrentPage((prev) => prev + 1);
+      setCurrentPage((prev) => prev + DEFAULT_PAGE);
     }
   };
 
   const handlePrevPage = () => {
-    if (nCurrentPage > 1) {
-      setCurrentPage((prev) => prev - 1);
+    if (nCurrentPage > DEFAULT_PAGE) {
+      setCurrentPage((prev) => prev - DEFAULT_PAGE);
     }
   };
 
+  // --- Status Update Handlers ---
   const handleStatusChange = (brandId, currentIsActive) => {
+    // Open confirmation popup before updating status
     setStatusPopup({ open: true, brandId, newStatus: !currentIsActive });
   };
 
@@ -71,19 +95,34 @@ const BrandList = ({ onCreate, onBack, setSubmitting }) => {
     const { brandId, newStatus } = statusPopup;
 
     try {
-      const result = await brands.updateStatusById(
-        brandId,
-        newStatus,
-        UPDATE_BRAND_STATUS,
-        "BrandID"
-      );
-      showEmsg(result.message, result.status);
+      // Dispatch async status update request
+      const result = await dispatch(
+        updateStatusById({
+          key: "brands",
+          id: brandId,
+          newStatus,
+          apiRoute: UPDATE_BRAND_STATUS,
+          idField: "BrandID",
+        })
+      ).unwrap();
+
+      showEmsg(result.message, STATUS.SUCCESS);
+
+      // Refetch updated list after successful status change
+      const params = {
+        pageNumber: nCurrentPage,
+        pageSize: iItemsPerPage,
+        searchText: sSearchQuery,
+      };
+      if (oFilters.status !== STATUS_VALUES.ALL) {
+        params.IsActive = oFilters.status;
+      }
+      dispatch(fetchResource({ key: "brands", params }));
     } catch (err) {
       console.error(err);
-      const errorMessage =
-        err?.response?.data?.MESSAGE || t("COMMON.API_ERROR");
-      showEmsg(errorMessage, "error");
+      showEmsg(err?.message || t("COMMON.API_ERROR"),STATUS.ERROR);
     } finally {
+      // Reset popup state and stop loader
       setStatusPopup({ open: false, brandId: null, newStatus: null });
       hideLoaderWithDelay(setSubmitting);
     }
@@ -93,25 +132,36 @@ const BrandList = ({ onCreate, onBack, setSubmitting }) => {
     setStatusPopup({ open: false, brandId: null, newStatus: null });
   };
 
+  // --- Filters Handler ---
   const handleFilterChange = (e, filterName) => {
     setFilters({
       ...oFilters,
       [filterName]: e.target.value,
     });
+    setCurrentPage(DEFAULT_PAGE); // Reset to first page when filters change
   };
 
+  // Map STATUS_OPTIONS to the format expected by Toolbar component
+  const statusFilterOptions = STATUS_OPTIONS.map(option => ({
+    value: option.value,
+    label: t(option.labelKey)
+  }));
+
   if (bShowCreate) {
+    // If "Create Brand" is triggered, show create form instead of list
     return <CreateBrand onBack={() => setShowCreate(false)} />;
   }
 
   return (
     <div>
+      {/* Header Section */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-lg font-medium text-gray-900">
           {t("PRODUCT_SETUP.BRANDS.HEADING")}
         </h2>
       </div>
 
+      {/* Toolbar with Search & Filters */}
       <div className="mb-6">
         <Toolbar
           searchTerm={sSearchQuery}
@@ -131,11 +181,7 @@ const BrandList = ({ onCreate, onBack, setSubmitting }) => {
                     label: t("COMMON.STATUS"),
                     name: "status",
                     value: oFilters.status,
-                    options: [
-                      { value: "all", label: t("COMMON.ALL") },
-                      { value: "Active", label: t("COMMON.ACTIVE") },
-                      { value: "Inactive", label: t("COMMON.INACTIVE") },
-                    ],
+                    options: statusFilterOptions,
                   },
                 ]
               : []
@@ -144,14 +190,17 @@ const BrandList = ({ onCreate, onBack, setSubmitting }) => {
         />
       </div>
 
+      {/* Loading, Error, or Table */}
       {bLoading ? (
         <div className="text-center py-8 text-gray-500">
           {t("COMMON.LOADING")}
         </div>
       ) : sError ? (
-        <div className="text-center py-8 text-red-500">
-          {t("COMMON.ERROR")} {sError}
-        </div>
+        <FullscreenErrorPopup
+          message={sError}
+          onClose={() => dispatch(clearResourceError("brands"))}
+          showConfirmButton={false}
+        />
       ) : (
         <div className="table-container">
           <div className="table-wrapper">
@@ -172,27 +221,21 @@ const BrandList = ({ onCreate, onBack, setSubmitting }) => {
               </thead>
               <tbody className="table-body">
                 {aBrands.map((brand) => (
-                  <tr
-                    key={brand.BrandID}
-                    className="table-row items-center align-middle"
-                  >
+                  <tr key={brand.BrandID} className="table-row items-center">
+                    {/* Brand Name & Logo */}
                     <td className="table-cell table-cell-text align-middle">
                       <div className="flex items-center gap-2">
+                        {/* Brand Logo */}
                         <div className="h-10 w-10 flex items-center justify-center rounded-full border overflow-hidden bg-white">
-                          {brand.BrandLogo ? (
+                          {Array.isArray(brand.BrandLogo) &&
+                          brand.BrandLogo.length > 0 ? (
                             <img
-                              src={
-                                brand.BrandLogo.startsWith("http")
-                                  ? brand.BrandLogo
-                                  : `${
-                                      process.env.REACT_APP_IMAGE_BASE_URL || ""
-                                    }${brand.BrandLogo}`
-                              }
+                              src={brand.BrandLogo[0].documentUrl} // Display first logo
                               alt={brand.BrandName}
                               className="w-full h-full object-cover"
                               onError={(e) => {
                                 e.target.onerror = null;
-                                e.target.src = "/no-image.png";
+                                e.target.src = "/no-image.png"; // Fallback image
                               }}
                             />
                           ) : (
@@ -201,6 +244,8 @@ const BrandList = ({ onCreate, onBack, setSubmitting }) => {
                             </span>
                           )}
                         </div>
+
+                        {/* Brand Name with Edit Link */}
                         <Link
                           to={`/browse/editbrand/${brand.BrandID}`}
                           className="text-blue-600 hover:underline block truncate max-w-[200px]"
@@ -209,17 +254,21 @@ const BrandList = ({ onCreate, onBack, setSubmitting }) => {
                         </Link>
                       </div>
                     </td>
+
+                    {/* Status Badge */}
                     <td className="table-cell">
                       <span
                         className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          brand.Status === t("COMMON.ACTIVE")
-                            ? "status-active"
-                            : "status-inactive"
+                          brand.IsActive ? "status-active" : "status-inactive"
                         }`}
                       >
-                        {brand.Status}
+                        {brand.IsActive
+                          ? t("COMMON.ACTIVE")
+                          : t("COMMON.INACTIVE")}
                       </span>
                     </td>
+
+                    {/* Created At Timestamp */}
                     <td className="table-cell table-cell-text">
                       {new Date(brand.CreatedAt).toLocaleString(undefined, {
                         year: "numeric",
@@ -230,14 +279,13 @@ const BrandList = ({ onCreate, onBack, setSubmitting }) => {
                         hour12: true,
                       })}
                     </td>
+
+                    {/* Toggle Switch for Status */}
                     <td className="table-cell table-cell-text text-blue-600 hover:underline cursor-pointer">
                       <Switch
-                        checked={brand.Status === t("COMMON.ACTIVE")}
+                        checked={brand.IsActive}
                         onChange={() =>
-                          handleStatusChange(
-                            brand.BrandID,
-                            brand.Status === t("COMMON.ACTIVE")
-                          )
+                          handleStatusChange(brand.BrandID, brand.IsActive)
                         }
                       />
                     </td>
@@ -249,6 +297,7 @@ const BrandList = ({ onCreate, onBack, setSubmitting }) => {
         </div>
       )}
 
+      {/* No Results Message */}
       {bLoading === false && aBrands.length === 0 && (
         <div className="text-center py-12 text-gray-500">
           {sSearchQuery && (
@@ -263,6 +312,8 @@ const BrandList = ({ onCreate, onBack, setSubmitting }) => {
           )}
         </div>
       )}
+
+      {/* Pagination Controls */}
       {iTotalItems > 0 && (
         <Pagination
           currentPage={nCurrentPage}
@@ -275,6 +326,7 @@ const BrandList = ({ onCreate, onBack, setSubmitting }) => {
         />
       )}
 
+      {/* Confirmation Popup for Status Change */}
       {statusPopup.open && (
         <FullscreenErrorPopup
           message={

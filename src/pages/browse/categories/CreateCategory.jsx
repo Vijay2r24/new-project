@@ -2,13 +2,13 @@ import { useState, useEffect } from "react";
 import { Tag, Info, Image, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchResource, clearResourceError } from "../../../store/slices/allDataSlice";
 import {
-  CREATE_CATEGORY,
   GET_CATEGORY_BY_ID,
-  UPDATE_CATEGORY_BY_ID,
+  CREATE_OR_URDATE_CATEGORY,
 } from "../../../contants/apiRoutes";
-import { useCategories } from "../../../context/AllDataContext";
-import { apiPost, apiGet, apiPut } from "../../../utils/ApiUtils";
+import { apiPost, apiGet } from "../../../utils/ApiUtils";
 import { showEmsg } from "../../../utils/ShowEmsg";
 import { STATUS } from "../../../contants/constants";
 import { hideLoaderWithDelay } from "../../../utils/loaderUtils";
@@ -24,73 +24,112 @@ const defaultFormData = {
   TenantID: localStorage.getItem("tenantID"),
   CategoryName: "",
   CategoryImage: null,
-  Status: "",
   CategoryDescription: "",
-  ParentCategoryId: "",
+  ParentCategoryID: "",
+  IsActive: true,
   CreatedBy: "",
   UpdatedBy: "",
-  Heading: "",
+  existingImage: null,
 };
 
 const CreateCategory = () => {
   const { id: categoryId } = useParams();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const dispatch = useDispatch();
   const isEditing = !!categoryId;
-
-  const { data: aCategories = [], loading: bLoadingCategories } = useCategories();
 
   const [oFormData, setFormData] = useState(defaultFormData);
   const [oErrors, setErrors] = useState({});
   const [sImagePreview, setImagePreview] = useState(null);
   const [bSubmitting, setSubmitting] = useState(false);
 
+  // Redux state for categories
+  const categoriesState = useSelector((state) => state.allData.resources.categories);
+  const aCategories = categoriesState?.data || [];
+  const bLoadingCategories = categoriesState?.loading || false;
+  const categoriesError = categoriesState?.error;
+
+  // Fetch categories on mount
+  useEffect(() => {
+    dispatch(fetchResource({ key: "categories", params: {} }));
+  }, [dispatch]);
+
+  // Cleanup errors on unmount
+  useEffect(() => {
+    return () => {
+      if (categoriesError) {
+        dispatch(clearResourceError("categories"));
+      }
+      if (sImagePreview && typeof sImagePreview === "string" && sImagePreview.startsWith("blob:")) {
+        URL.revokeObjectURL(sImagePreview);
+      }
+    };
+  }, [categoriesError, sImagePreview, dispatch]);
+
+  // Fetch category by ID (for edit)
   useEffect(() => {
     const fetchCategoryDetails = async () => {
       try {
+        setSubmitting(true);
         const token = localStorage.getItem("token");
         const { data } = await apiGet(`${GET_CATEGORY_BY_ID}/${categoryId}`, {}, token);
-        if (data.STATUS === STATUS.SUCCESS.toUpperCase()) {
-          const categoryData = data.data?.Data;
+
+        if (data.status === STATUS.SUCCESS.toUpperCase()) {
+          const categoryData = data.data;
+
           if (categoryData) {
             setFormData({
               ...defaultFormData,
               ...categoryData,
+              CategoryImage: null, // reset upload
+              IsActive:
+                categoryData.IsActive !== undefined
+                  ? categoryData.IsActive
+                  : categoryData.Status?.toLowerCase() === "active",
               UpdatedBy: "",
             });
-            setImagePreview(categoryData.CategoryImage || null);
-          } else {
-            setErrors((prev) => ({
-              ...prev,
-              api: t("PRODUCT_SETUP.CREATE_CATEGORY.UNKNOWN_ERROR"),
-            }));
+
+            // Handle image from documentMetadata if it exists
+            if (categoryData.documentMetadata && categoryData.documentMetadata.length > 0) {
+              setFormData(prev => ({
+                ...prev,
+                existingImage: categoryData.documentMetadata[0]
+              }));
+              setImagePreview(categoryData.documentMetadata[0].documentUrl);
+            } else if (categoryData.CategoryImages?.length > 0) {
+              setFormData(prev => ({
+                ...prev,
+                existingImage: categoryData.CategoryImages[0]
+              }));
+              setImagePreview(categoryData.CategoryImages[0].documentUrl);
+            }
           }
-        } else {
-          setErrors((prev) => ({ ...prev, api: data.MESSAGE || t("PRODUCT_SETUP.CREATE_CATEGORY.UNKNOWN_ERROR") }));
         }
       } catch (err) {
-        const errorMsg = err?.response?.data?.MESSAGE || t("PRODUCT_SETUP.CREATE_CATEGORY.UNEXPECTED_ERROR");
+        const errorMsg =
+          err?.response?.data?.message || t("PRODUCT_SETUP.CREATE_CATEGORY.UNEXPECTED_ERROR");
         setErrors((prev) => ({ ...prev, api: errorMsg }));
+      } finally {
+        hideLoaderWithDelay(setSubmitting);
       }
     };
 
-    if (isEditing && categoryId && !bLoadingCategories) {
+    if (isEditing && categoryId) {
       fetchCategoryDetails();
     }
-  }, [categoryId, isEditing, bLoadingCategories, t]);
-
-  useEffect(() => {
-    return () => {
-      if (sImagePreview?.startsWith("blob:")) {
-        URL.revokeObjectURL(sImagePreview);
-      }
-    };
-  }, [sImagePreview]);
+  }, [categoryId, isEditing, t]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
-    if (oErrors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+    // Clear error when user starts typing
+    if (oErrors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
   };
 
   const handleFileChange = (e) => {
@@ -105,35 +144,52 @@ const CreateCategory = () => {
       return;
     }
 
+    // Clear image error when valid file is selected
+    setErrors((prev) => ({ ...prev, CategoryImage: "" }));
     setFormData((prev) => ({ ...prev, CategoryImage: file }));
     setImagePreview(URL.createObjectURL(file));
   };
 
   const handleRemoveImage = () => {
-    if (sImagePreview?.startsWith("blob:")) URL.revokeObjectURL(sImagePreview);
-    setFormData((prev) => ({ ...prev, CategoryImage: null }));
+    if (sImagePreview && typeof sImagePreview === "string" && sImagePreview.startsWith("blob:")) {
+      URL.revokeObjectURL(sImagePreview);
+    }
+    setFormData((prev) => ({ 
+      ...prev, 
+      CategoryImage: null,
+      existingImage: null
+    }));
     setImagePreview(null);
     setErrors((prev) => ({ ...prev, CategoryImage: "" }));
   };
 
   const validateForm = () => {
     const errors = {};
-    if (!oFormData.CategoryName.trim()) errors.CategoryName = t("PRODUCT_SETUP.CREATE_CATEGORY.NAME_ERROR");
-    if (!oFormData.Heading.trim()) errors.Heading = t("PRODUCT_SETUP.CREATE_CATEGORY.HEADING_REQUIRED");
-    if (!isEditing && !oFormData.CategoryImage) errors.CategoryImage = t("PRODUCT_SETUP.CREATE_CATEGORY.IMAGE_REQUIRED");
+    
+    // Category Name validation
+    if (!oFormData.CategoryName?.trim()) {
+      errors.CategoryName = t("PRODUCT_SETUP.CREATE_CATEGORY.NAME_ERROR") || "Category name is required";
+    }
 
-    const descLength = oFormData.CategoryDescription.trim().length;
-    if (descLength < 10) errors.CategoryDescription = t("PRODUCT_SETUP.CREATE_CATEGORY.DESCRIPTION_MIN_LENGTH");
-    if (descLength > 500) errors.CategoryDescription = t("PRODUCT_SETUP.CREATE_CATEGORY.DESCRIPTION_MAX_LENGTH");
-
-    if (!oFormData.Status) errors.Status = t("PRODUCT_SETUP.CREATE_CATEGORY.STATUS_INVALID");
-
+    // Category Description validation
+    const descLength = oFormData.CategoryDescription?.trim().length || 0;
+    if (descLength < 10 && descLength > 0) {
+      errors.CategoryDescription = t("PRODUCT_SETUP.CREATE_CATEGORY.DESCRIPTION_MIN_LENGTH") || "Description must be at least 10 characters long";
+    } 
+    if (descLength > 500) {
+      errors.CategoryDescription = t("PRODUCT_SETUP.CREATE_CATEGORY.DESCRIPTION_MAX_LENGTH") || "Description cannot exceed 500 characters";
+    }
     return errors;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Clear previous errors
+    setErrors({});
+    
     const newErrors = validateForm();
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -141,43 +197,124 @@ const CreateCategory = () => {
 
     setSubmitting(true);
     const dataToSend = new FormData();
+    const documentMetadata = [];
 
-    Object.entries(oFormData).forEach(([key, value]) => {
-      if (key === "CategoryImage" && value) {
-        dataToSend.append("UploadCategoryImages", value);
-      } else {
-        dataToSend.append(key, value ?? "");
-      }
-    });
+    // Add image to documentMetadata if exists
+    if (oFormData.CategoryImage) {
+      documentMetadata.push({ 
+        image: "category1", 
+        sortOrder: 1,
+        ...(isEditing && oFormData.existingImage && { documentId: oFormData.existingImage.documentId })
+      });
+    } else if (isEditing && !sImagePreview && oFormData.existingImage) {
+      documentMetadata.push({ 
+        action: "remove",
+        documentId: oFormData.existingImage.documentId 
+      });
+    }
 
-    dataToSend.append(isEditing ? "UpdatedBy" : "CreatedBy", localStorage.getItem("userId"));
+    // Prepare the JSON payload
+    const jsonPayload = {
+      CategoryID: isEditing ? categoryId : undefined,
+      TenantID: oFormData.TenantID,
+      CategoryName: oFormData.CategoryName,
+      CategoryDescription: oFormData.CategoryDescription,
+      IsActive: oFormData.IsActive,
+      ParentCategoryID: oFormData.ParentCategoryID || undefined,
+      documentMetadata,
+      CreatedBy: isEditing ? undefined : localStorage.getItem("userId"),
+      UpdatedBy: isEditing ? localStorage.getItem("userId") : undefined,
+    };
+
+    // Append the JSON payload
+    dataToSend.append("data", JSON.stringify(jsonPayload));
+
+    // Append the image file if exists
+    if (oFormData.CategoryImage) {
+      dataToSend.append("category1", oFormData.CategoryImage);
+    }
 
     try {
       const token = localStorage.getItem("token");
-      const oResponse = isEditing
-        ? await apiPut(`${UPDATE_CATEGORY_BY_ID}/${categoryId}`, dataToSend, token, true)
-        : await apiPost(CREATE_CATEGORY, dataToSend, token, true);
+      const oResponse = await apiPost(
+        CREATE_OR_URDATE_CATEGORY,
+        dataToSend,
+        token,
+        true // multipart/form-data
+      );
 
-      if (oResponse.data.STATUS === STATUS.SUCCESS.toUpperCase()) {
-        showEmsg(oResponse.data.MESSAGE, STATUS.SUCCESS, 3000, () => {
+      if (oResponse.data.status === STATUS.SUCCESS.toUpperCase()) {
+        showEmsg(oResponse.data.message, STATUS.SUCCESS, 3000, () => {
           navigate("/browse", { state: { fromCategoryEdit: true } });
         });
       } else {
-        showEmsg(oResponse.data.MESSAGE, STATUS.WARNING);
-        setErrors((prev) => ({ ...prev, api: oResponse.data.MESSAGE }));
+        showEmsg(oResponse.data.message, STATUS.WARNING);
+        setErrors((prev) => ({ ...prev, api: oResponse.data.message }));
       }
     } catch (err) {
-      const errorMessage = err?.response?.data?.MESSAGE || t("COMMON.API_ERROR");
+      const errorMessage = err?.response?.data?.message || t("COMMON.API_ERROR");
       showEmsg(errorMessage, STATUS.ERROR);
     } finally {
       hideLoaderWithDelay(setSubmitting);
     }
   };
 
+  // Filter categories to only include parent categories (ParentCategoryID is null)
+  const parentCategories = [
+    {
+      value: "",
+      label: t("PRODUCT_SETUP.CREATE_CATEGORY.SELECT_PARENT"),
+    },
+    ...aCategories
+      .filter((cat) => cat.ParentCategoryID === null || cat.ParentCategoryID === undefined)
+      .map((cat) => ({
+        value: cat.CategoryID,
+        label: cat.CategoryName,
+      })),
+  ];
+
+  // Helper function to render error messages
+  const renderErrorMessage = (error) => {
+    if (!error) return null;
+    return (
+      <div className="mt-1">
+        <p className="text-red-600 text-sm flex items-center">
+          <span className="mr-1">⚠️</span>
+          {error}
+        </p>
+      </div>
+    );
+  };
+
+  // Helper function to render form field with error
+  const renderFormField = (fieldName, fieldComponent, error = null) => (
+    <div className="flex-1">
+      {fieldComponent}
+      {renderErrorMessage(error)}
+    </div>
+  );
+
   return (
     <div className="w-full min-h-screen">
-      {bSubmitting && <div className="global-loader-overlay"><Loader /></div>}
-      {isEditing && <ToastContainer />}
+      {bSubmitting && (
+        <div className="global-loader-overlay">
+          <Loader />
+        </div>
+      )}
+      
+      <ToastContainer 
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+      
       <div className="flex items-center mb-6">
         <BackButton onClick={() => navigate("/browse", { state: { fromCategoryEdit: true } })} />
         <h2 className="text-xl font-bold text-gray-900">
@@ -187,69 +324,70 @@ const CreateCategory = () => {
         </h2>
       </div>
 
-      {/* Inputs and Selects */}
-      <form className="space-y-4" onSubmit={handleSubmit}>
-        <div className="flex flex-col md:flex-row md:space-x-4">
-          <TextInputWithIcon
-            label={t("PRODUCT_SETUP.CREATE_CATEGORY.NAME_LABEL")}
-            id="CategoryName"
-            name="CategoryName"
-            value={oFormData.CategoryName}
-            onChange={handleInputChange}
-            placeholder={t("PRODUCT_SETUP.CREATE_CATEGORY.NAME_PLACEHOLDER")}
-            error={oErrors.CategoryName}
-            Icon={Tag}
-          />
-          <TextInputWithIcon
-            label={t("COMMON.HEADING_LABEL") || t("COMMON.TITLE")}
-            id="Heading"
-            name="Heading"
-            value={oFormData.Heading}
-            onChange={handleInputChange}
-            placeholder={t("PRODUCT_SETUP.CREATE_CATEGORY.HEADING_PLACE")}
-            error={oErrors.Heading}
-            Icon={Info}
-          />
+      {/* Form */}
+      <form className="space-y-6" onSubmit={handleSubmit}>
+        {/* Category Name and Status Row */}
+        <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
+         <div className="flex-1">
+            <TextInputWithIcon
+              label={t("PRODUCT_SETUP.CREATE_CATEGORY.NAME_LABEL")}
+              id="CategoryName"
+              name="CategoryName"
+              value={oFormData.CategoryName}
+              onChange={handleInputChange}
+              placeholder={t("PRODUCT_SETUP.CREATE_CATEGORY.NAME_PLACEHOLDER")}
+              error={oErrors.CategoryName}
+              Icon={Tag}
+            />
+         </div>
+          
+          <div className="flex-1">
+            <SelectWithIcon
+              label={t("PRODUCT_SETUP.CREATE_CATEGORY.STATUS_LABEL")}
+              id="IsActive"
+              name="IsActive"
+              value={String(oFormData.IsActive)}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, IsActive: e.target.value === "true" }))
+              }
+              options={[
+                { value: "true", label: t("COMMON.ACTIVE") },
+                { value: "false", label: t("COMMON.INACTIVE") },
+              ]}
+              Icon={Tag}
+            />
+          </div>
         </div>
 
-        <div className="flex flex-col md:flex-row md:space-x-4">
-          <SelectWithIcon
-            label={t("PRODUCT_SETUP.CREATE_CATEGORY.PARENT_LABEL")}
-            id="ParentCategoryId"
-            name="ParentCategoryId"
-            value={oFormData.ParentCategoryId}
-            onChange={handleInputChange}
-            options={aCategories.map((cat) => ({
-              value: cat.CategoryID,
-              label: cat.CategoryName,
-            }))}
-            loading={bLoadingCategories}
-            placeholder={t("PRODUCT_SETUP.CREATE_CATEGORY.SELECT_PARENT")}
-            Icon={Tag}
-            onInputChange={(value) => categories.fetch({ searchText: value })}
-          />
-          <SelectWithIcon
-            label={t("PRODUCT_SETUP.CREATE_CATEGORY.STATUS_LABEL")}
-            id="Status"
-            name="Status"
-            value={oFormData.Status}
-            onChange={handleInputChange}
-            options={[
-              { value: "Active", label: t("COMMON.ACTIVE") },
-              { value: "Inactive", label: t("COMMON.INACTIVE") },
-            ]}
-            Icon={Tag}
-            error={oErrors.Status}
-          />
+        {/* Parent Category Row */}
+        <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
+          <div className="flex-1">
+            <SelectWithIcon
+              label={t("PRODUCT_SETUP.CREATE_CATEGORY.PARENT_LABEL")}
+              id="ParentCategoryID"
+              name="ParentCategoryID"
+              value={oFormData.ParentCategoryID}
+              onChange={handleInputChange}
+              options={parentCategories}
+              loading={bLoadingCategories}
+              placeholder={t("PRODUCT_SETUP.CREATE_CATEGORY.SELECT_PARENT")}
+              Icon={Tag}
+            />
+          </div>
         </div>
 
-        {/* Image Upload */}
-        <div className="flex flex-col md:flex-row md:space-x-4">
+        {/* Image Upload and Description Row */}
+        <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
+          {/* Image Upload */}
           <div className="w-full md:w-1/2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t("PRODUCT_SETUP.CREATE_CATEGORY.IMAGE_LABEL")}
             </label>
-            <div className={`relative group rounded-xl border-2 ${oErrors.CategoryImage ? "border-red-300" : "border-gray-200"} border-dashed transition-all duration-200 hover:border-custom-bg bg-gray-50 hover:bg-gray-50/50`}>
+            <div
+              className={`relative group rounded-xl border-2 ${
+                oErrors.CategoryImage ? "border-red-300" : "border-gray-200"
+              } border-dashed transition-all duration-200 hover:border-custom-bg bg-gray-50 hover:bg-gray-50/50`}
+            >
               <div className="p-6 space-y-3 text-center">
                 <div className="flex justify-center">
                   <div className="p-3 rounded-full bg-white shadow-sm border border-gray-100">
@@ -257,29 +395,50 @@ const CreateCategory = () => {
                   </div>
                 </div>
                 <div className="flex text-sm text-muted justify-center">
-                  <label htmlFor="file-upload" className="relative cursor-pointer rounded-md font-medium text-[#5B45E0] hover:text-[#4c39c7]">
+                  <label
+                    htmlFor="file-upload"
+                    className="relative cursor-pointer rounded-md font-medium text-[#5B45E0] hover:text-[#4c39c7]"
+                  >
                     <span>{t("COMMON.UPLOAD")}</span>
-                    <input id="file-upload" name="CategoryImage" type="file" accept="image/*" onChange={handleFileChange} className="sr-only" />
+                    <input
+                      id="file-upload"
+                      name="CategoryImage"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="sr-only"
+                    />
                   </label>
                   <p className="pl-1">{t("COMMON.DRAG_DROP_TEXT")}</p>
                 </div>
                 {sImagePreview && (
                   <div className="mt-4 flex justify-center relative">
-                    <img src={sImagePreview} alt="Category Preview" className="max-h-32 max-w-full rounded-md border border-gray-200 shadow" />
-                    <button type="button" onClick={handleRemoveImage} className="absolute -top-3 -right-3 p-1.5 bg-white border border-gray-300 text-gray-600 rounded-full shadow hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors duration-200 z-10">
+                    <img
+                      src={sImagePreview}
+                      alt="Category Preview"
+                      className="max-h-32 max-w-full rounded-md border border-gray-200 shadow"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="absolute -top-3 -right-3 p-1.5 bg-white border border-gray-300 text-gray-600 rounded-full shadow hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors duration-200 z-10"
+                    >
                       <X className="h-4 w-4" />
                     </button>
                   </div>
                 )}
                 {oErrors.CategoryImage && (
                   <p className="text-sm text-red flex items-center justify-center">
-                    <span className="mr-1">⚠️</span>{oErrors.CategoryImage}
+                    <span className="mr-1">⚠️</span>
+                    {oErrors.CategoryImage}
                   </p>
                 )}
               </div>
             </div>
+            {renderErrorMessage(oErrors.CategoryImage)}
           </div>
 
+          {/* Description */}
           <div className="w-full md:w-1/2">
             <TextAreaWithIcon
               label={t("COMMON.DESCRIPTION")}
@@ -287,18 +446,44 @@ const CreateCategory = () => {
               value={oFormData.CategoryDescription}
               onChange={handleInputChange}
               placeholder={t("PRODUCT_SETUP.CREATE_CATEGORY.DESCRIPTION_PLACEHOLDER")}
+              error={oErrors.CategoryDescription}
               icon={Info}
+              className={oErrors.CategoryDescription ? "border-red-300 focus:border-red-500" : ""}
+              rows={4}
             />
+            {renderErrorMessage(oErrors.CategoryDescription)}
           </div>
         </div>
 
+        {/* API Error Display */}
+        {oErrors.api && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <span className="text-red-600">⚠️</span>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">Error</h3>
+                <div className="mt-2 text-sm text-red-700">
+                  {oErrors.api}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Footer Buttons */}
         <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
-          <button type="button" className="btn-cancel" onClick={() => navigate("/browse", { state: { fromCategoryEdit: true } })}>
+          <button
+            type="button"
+            className="btn-cancel"
+            onClick={() => navigate("/browse", { state: { fromCategoryEdit: true } })}
+            disabled={bSubmitting}
+          >
             {t("COMMON.CANCEL")}
           </button>
-          <button type="submit" className="btn-primary">
-            {isEditing ? t("COMMON.SAVE_BUTTON") : t("PRODUCT_SETUP.CREATE_CATEGORY.CREATE_BUTTON")}
+          <button type="submit" className="btn-primary" disabled={bSubmitting}>
+            {bSubmitting ? t("COMMON.LOADING") : (isEditing ? t("COMMON.SAVE_BUTTON") : t("PRODUCT_SETUP.CREATE_CATEGORY.CREATE_BUTTON"))}
           </button>
         </div>
       </form>

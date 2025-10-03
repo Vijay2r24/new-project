@@ -1,34 +1,36 @@
 import { useState, useEffect } from "react";
-import CreateAttribute from "./CreateAttribute";
+import { useSelector, useDispatch } from "react-redux";
+import CreateAttribute from "./CreateAttributeTypeValuesList";
 import Toolbar from "../../../components/Toolbar";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { useAttributes } from "../../../context/AllDataContext";
-import Pagination from "../../../components/Pagination"; 
+import Pagination from "../../../components/Pagination";
 import FullscreenErrorPopup from "../../../components/FullscreenErrorPopup";
 import Switch from "../../../components/Switch";
 import { showEmsg } from "../../../utils/ShowEmsg";
-import { UPDATE_ATTRIBUTE_STATUS } from "../../../contants/apiRoutes";
-import { ITEMS_PER_PAGE } from "../../../contants/constants";
-import { hideLoaderWithDelay } from '../../../utils/loaderUtils';
+import { UPDATE_ATTRIBUTRE_VALUE_STATUS } from "../../../contants/apiRoutes";
+import { ITEMS_PER_PAGE ,DEFAULT_PAGE, STATUS, STATUS_VALUES, STATUS_OPTIONS} from "../../../contants/constants";
+import { hideLoaderWithDelay } from "../../../utils/loaderUtils";
+import { fetchResource, updateStatusById, clearResourceError } from "../../../store/slices/allDataSlice";
 
-const AttributeList = ({ onCreate, onBack,setSubmitting }) => {
+const AttributeTypeValueList = ({ onCreate, onBack, setSubmitting }) => {
   const [sSearchQuery, setSearchQuery] = useState("");
-  const [oFilters, setFilters] = useState({ status: "all" });
+  const [oFilters, setFilters] = useState({ status: STATUS_VALUES.ALL });
   const [bShowFilter, setShowFilter] = useState(false);
   const [bShowCreate, setShowCreate] = useState(false);
   const { t } = useTranslation();
+  const dispatch = useDispatch();
 
   const {
     data: aAttributes = [],
-    loading: bLoading,
-    error: sError,
-    total: iTotalItems,
-    fetch,
-    updateStatusById,
-  } = useAttributes();
+    loading: bLoading = false,
+    error: sError = null,
+    total: iTotalItems = 0,
+    pagination,
+  } = useSelector((state) => state.allData.resources.attributes || {});
 
-  const [iCurrentPage, setCurrentPage] = useState(1);
+  const [iCurrentPage, setCurrentPage] = useState(DEFAULT_PAGE);
   const [iItemsPerPage] = useState(ITEMS_PER_PAGE);
 
   const [bShowErrorPopup, setShowErrorPopup] = useState(false);
@@ -48,32 +50,60 @@ const AttributeList = ({ onCreate, onBack,setSubmitting }) => {
       pageSize: iItemsPerPage,
       searchText: sSearchQuery,
     };
-    if (oFilters.status && oFilters.status !== "all") {
-      params.status = oFilters.status;
+    if (oFilters.status !== STATUS_VALUES.ALL) {
+      params.IsActive = oFilters.status;
     }
-    fetch(params);
-  }, [iCurrentPage, iItemsPerPage, sSearchQuery, oFilters.status]);
+    dispatch(fetchResource({ key: "attributes", params }));
+  }, [dispatch, iCurrentPage, iItemsPerPage, sSearchQuery, oFilters.status]);
+
+  // Clear error on unmount
+  useEffect(() => {
+    return () => {
+      dispatch(clearResourceError("attributes"));
+    };
+  }, [dispatch]);
 
   const handleStatusChange = (attributeId, currentIsActive) => {
     setStatusPopup({ open: true, attributeId, newStatus: !currentIsActive });
   };
 
   const handleStatusConfirm = async () => {
-      if (setSubmitting) setSubmitting(true);
+    if (setSubmitting) setSubmitting(true);
+
     const { attributeId, newStatus } = statusPopup;
     try {
-      const result = await updateStatusById(
-        attributeId,
-        newStatus,
-        UPDATE_ATTRIBUTE_STATUS, 
-        "AttributeID"
-      );
-      showEmsg(result.message, result.status);
+      const result = await dispatch(
+        updateStatusById({
+          key: "attributes",
+          id: attributeId,
+          newStatus,
+          apiRoute: UPDATE_ATTRIBUTRE_VALUE_STATUS,
+          idField: "AttributeID",
+        })
+      ).unwrap();
+
+      showEmsg(result.message, result.status ||  STATUS.SUCCESS);
+    } catch (err) {
+      console.error(err);
+      setErrorMessage(t("COMMON.API_ERROR"));
+      setShowErrorPopup(true);
     } finally {
       setStatusPopup({ open: false, attributeId: null, newStatus: null });
       hideLoaderWithDelay(setSubmitting);
+
+      // Refetch after update
+      const params = {
+        pageNumber: iCurrentPage,
+        pageSize: iItemsPerPage,
+        searchText: sSearchQuery,
+      };
+      if (oFilters.status !== STATUS_VALUES.ALL) {
+        params.IsActive = oFilters.status;
+      }
+      dispatch(fetchResource({ key: "attributes", params }));
     }
   };
+
 
   const handleStatusPopupClose = () => {
     setStatusPopup({ open: false, attributeId: null, newStatus: null });
@@ -88,9 +118,15 @@ const AttributeList = ({ onCreate, onBack,setSubmitting }) => {
 
   const handlePageClick = (pageNumber) => setCurrentPage(pageNumber);
   const handlePrevPage = () =>
-    setCurrentPage((prev) => (prev > 1 ? prev - 1 : prev));
+    setCurrentPage((prev) => (prev > DEFAULT_PAGE ? prev - DEFAULT_PAGE : prev));
   const handleNextPage = () =>
-    setCurrentPage((prev) => (prev < iTotalPages ? prev + 1 : prev));
+    setCurrentPage((prev) => (prev < iTotalPages ? prev + DEFAULT_PAGE : prev));
+
+  // Map STATUS_OPTIONS to the format expected by Toolbar component
+  const statusFilterOptions = STATUS_OPTIONS.map(option => ({
+    value: option.value,
+    label: t(option.labelKey)
+  }));
 
   if (bShowCreate) {
     return <CreateAttribute onBack={() => setShowCreate(false)} />;
@@ -119,17 +155,13 @@ const AttributeList = ({ onCreate, onBack,setSubmitting }) => {
             additionalFilters={
               bShowFilter
                 ? [
-                    {
-                      label: t("COMMON.STATUS"),
-                      name: "status",
-                      value: oFilters.status,
-                      options: [
-                        { value: "all", label: t("COMMON.ALL") },
-                        { value: "Active", label: t("COMMON.ACTIVE") },
-                        { value: "Inactive", label: t("COMMON.INACTIVE") },
-                      ],
-                    },
-                  ]
+                  {
+                    label: t("COMMON.STATUS"),
+                    name: "status",
+                    value: oFilters.status,
+                    options: statusFilterOptions,
+                  },
+                ]
                 : []
             }
             handleFilterChange={bShowFilter ? handleFilterChange : undefined}
@@ -189,31 +221,20 @@ const AttributeList = ({ onCreate, onBack,setSubmitting }) => {
                       </td>
                       <td className="table-cell">
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            attribute.Status === t("COMMON.ACTIVE")
-                              ? "status-active"
-                              : "status-inactive"
-                          }`}
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${attribute.IsActive ? "status-active" : "status-inactive"
+                            }`}
                         >
-                          {t(
-                            `COMMON.${
-                              attribute.Status === "Active"
-                                ? "ACTIVE"
-                                : "INACTIVE"
-                            }`
-                          )}
+                          {t(`COMMON.${attribute.IsActive ? "ACTIVE" : "INACTIVE"}`)}
                         </span>
                       </td>
                       <td className="table-cell table-cell-text">
                         <Switch
-                          checked={attribute.Status === t("COMMON.ACTIVE")}
+                          checked={attribute.IsActive}
                           onChange={() =>
-                            handleStatusChange(
-                              attribute.AttributeID,
-                              attribute.Status === t("COMMON.ACTIVE")
-                            )
+                            handleStatusChange(attribute.AttributeValueID, attribute.IsActive) // ✅ correct
                           }
                         />
+
                       </td>
                     </tr>
                   ))}
@@ -227,11 +248,11 @@ const AttributeList = ({ onCreate, onBack,setSubmitting }) => {
             <div className="text-gray-500">
               {t("PRODUCT_SETUP.ATTRIBUTES.EMPTY_MESSAGE")}
             </div>
-            {(sSearchQuery || oFilters.status !== "all") && (
+            {(sSearchQuery || oFilters.status !== STATUS_VALUES.ALL) && (
               <button
                 onClick={() => {
                   setSearchQuery("");
-                  setFilters({ status: "all" });
+                  setFilters({ status: STATUS_VALUES.ALL });
                 }}
                 className="mt-2 text-[#5B45E0] hover:text-[#4c39c7]"
               >
@@ -273,4 +294,4 @@ const AttributeList = ({ onCreate, onBack,setSubmitting }) => {
   );
 };
 
-export default AttributeList;
+export default AttributeTypeValueList;

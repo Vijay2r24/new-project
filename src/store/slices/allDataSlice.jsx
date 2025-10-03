@@ -14,7 +14,8 @@ import {
   GET_All_PAYMENT_STATUS,
   GET_ALL_PAYMENT_METHODS,
   GET_ALL_PAYMENT_TYPES,
-  GET_USER_BY_ID // Make sure to add this import
+  GET_USER_BY_ID,
+  GET_ALL_SPECIFICATIONS // Make sure to add this import
 } from "../../contants/apiRoutes"; // API endpoints (centralized constants)
 import { STATUS } from "../../contants/constants"; // Shared constants like SUCCESS/ERROR
 
@@ -56,6 +57,12 @@ const aResourceConfigs = [
     api: GET_ALL_PAYMENT_TYPES,
     idField: "PaymentTypeID", // Adjust this if needed based on your API response
   },
+   {
+    key:"specificationType",
+    api:GET_ALL_SPECIFICATIONS,
+    totalKey:"totalRecords",
+    idField:"SpecificationTypeID",
+  }
 ];
 
 /**

@@ -1,56 +1,54 @@
 import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchResource, clearResourceError } from '../../../store/slices/allDataSlice';
 import Toolbar from '../../../components/Toolbar';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
-import { useColors } from '../../../context/AllDataContext';
 import Pagination from '../../../components/Pagination';
-import { showEmsg } from '../../../utils/ShowEmsg';
-import Switch from '../../../components/Switch';
 import FullscreenErrorPopup from '../../../components/FullscreenErrorPopup';
-import { UPDATE_COLOUR_STATUS } from '../../../contants/apiRoutes';
-import { ITEMS_PER_PAGE } from '../../../contants/constants';
-import { hideLoaderWithDelay } from '../../../utils/loaderUtils';
+import { ITEMS_PER_PAGE,DEFAULT_PAGE,STATUS_VALUES, STATUS_OPTIONS } from '../../../contants/constants';
+
 const ColorList = ({ onCreate, onBack, setSubmitting }) => {
   const [sSearchQuery, setSearchQuery] = useState('');
-  const [oFilters, setFilters] = useState({ status: "all" });
+  const [oFilters, setFilters] = useState({ status: STATUS_VALUES.ALL  });
   const [bShowFilters, setShowFilters] = useState(false);
   const { t } = useTranslation();
+  const dispatch = useDispatch();
 
-  const { data: aColors, loading: bLoading, error: sError, total: iTotalItems, fetch: fetchColors, toggleStatus: toggleColorStatus, updateStatusById } = useColors();
+  // Redux selectors
+  const colorsState = useSelector((state) => state.allData.resources.colors);
+  const aColors = colorsState?.data || [];
+  const bLoading = colorsState?.loading || false;
+  const sError = colorsState?.error || null;
+  const iTotalItems = colorsState?.total || 0;
 
-  const [nCurrentPage, setCurrentPage] = useState(1);
+  const [nCurrentPage, setCurrentPage] = useState(DEFAULT_PAGE);
   const [iItemsPerPage] = useState(ITEMS_PER_PAGE); 
 
-  const [statusPopup, setStatusPopup] = useState({ open: false, colorId: null, newStatus: null });
+  // Local state for optimistic UI updates (just keeping data in sync)
+  const [localColors, setLocalColors] = useState(aColors || []);
 
+  useEffect(() => {
+    setLocalColors(aColors || []);
+  }, [aColors]);
+
+  // Fetch colors data
   useEffect(() => {
     const params = {
       pageNumber: nCurrentPage,
       pageSize: iItemsPerPage,
       searchText: sSearchQuery,
     };
-    if (oFilters.status && oFilters.status !== "all") {
-      params.status = oFilters.status;
-    }
-    fetchColors(params);
-  }, [nCurrentPage, iItemsPerPage, sSearchQuery, oFilters.status]);
+    dispatch(fetchResource({ key: "colors", params }));
+  }, [dispatch, nCurrentPage, iItemsPerPage, sSearchQuery]);
 
-  const handleStatusChange = (colorId, currentIsActive) => {
-    setStatusPopup({ open: true, colorId, newStatus: !currentIsActive });
-  };
-
-  const handleStatusConfirm = async () => {
-      if (setSubmitting) setSubmitting(true);
-    const { colorId, newStatus } = statusPopup;
-    const result = await updateStatusById(colorId, newStatus, UPDATE_COLOUR_STATUS, 'ColourID');
-    showEmsg(result.message, result.status);
-    setStatusPopup({ open: false, colorId: null, newStatus: null });
-    hideLoaderWithDelay(setSubmitting);
-  };
-
-  const handleStatusPopupClose = () => {
-    setStatusPopup({ open: false, colorId: null, newStatus: null });
-  };
+  // Clear error on unmount
+  useEffect(() => {
+    return () => {
+      if (sError) {
+        dispatch(clearResourceError("colors"));
+      }
+    };
+  }, [sError, dispatch]);
 
   const handleFilterChange = (e, filterName) => {
     setFilters({
@@ -65,13 +63,13 @@ const ColorList = ({ onCreate, onBack, setSubmitting }) => {
 
   const handleNextPage = () => {
     if (nCurrentPage < Math.ceil(iTotalItems / iItemsPerPage)) {
-      setCurrentPage(prev => prev + 1);
+      setCurrentPage(prev => prev + DEFAULT_PAGE);
     }
   };
 
   const handlePrevPage = () => {
-    if (nCurrentPage > 1) {
-      setCurrentPage(prev => prev - 1);
+    if (nCurrentPage > DEFAULT_PAGE) {
+      setCurrentPage(prev => prev - DEFAULT_PAGE);
     }
   };
 
@@ -90,21 +88,9 @@ const ColorList = ({ onCreate, onBack, setSubmitting }) => {
           searchPlaceholder={t("PRODUCT_SETUP.COLORS.SEARCH_PLACEHOLDER")}
           showSearch={true}
           showViewToggle={false}
-          showFilterButton={true}
+          showFilterButton={false}
           onCreate={onCreate}
           createLabel={t("PRODUCT_SETUP.CREATE")}
-          additionalFilters={bShowFilters ? [
-            {
-              label: t("COMMON.STATUS"),
-              name: "status",
-              value: oFilters.status,
-              options: [
-                { value: "all", label: t("COMMON.ALL") },
-                { value: "Active", label: t("COMMON.ACTIVE") },
-                { value: "Inactive", label: t("COMMON.INACTIVE") },
-              ],
-            },
-          ] : []}
           handleFilterChange={bShowFilters ? handleFilterChange : undefined}
         />
       </div>
@@ -112,7 +98,11 @@ const ColorList = ({ onCreate, onBack, setSubmitting }) => {
       {bLoading ? (
         <div className="text-center py-8 text-gray-500">{t('COMMON.LOADING')}</div>
       ) : sError ? (
-        <div className="text-center py-8 text-red-500">{t('COMMON.ERROR')}: {sError}</div>
+        <FullscreenErrorPopup
+          message={sError}
+          onClose={() => dispatch(clearResourceError("colors"))}
+          showConfirmButton={false}
+        />
       ) : (
         <div className="table-container">
           <div className="table-wrapper">
@@ -120,14 +110,12 @@ const ColorList = ({ onCreate, onBack, setSubmitting }) => {
               <thead className="table-head">
                 <tr>
                   <th className="table-head-cell">{t("PRODUCT_SETUP.COLORS.TABLE.COLOR")}</th>
-                  <th className="table-head-cell">{t("PRODUCT_SETUP.COLORS.TABLE.HEX_CODE")}</th>
-                  <th className="table-head-cell">{t("COMMON.STATUS")}</th>
-                  <th className="table-head-cell">{t("COMMON.UPDATE_STATUS")}</th>
+                  <th className="table-head-cell">{t("PRODUCT_SETUP.COLORS.TABLE.HEX_CODE")}</th>        
                 </tr>
               </thead>
               <tbody className="table-body">
-                {aColors.map((color) => (
-                  <tr key={color.ColorID} className="table-row">
+                {localColors.map((color) => (
+                  <tr key={color.ColourID} className="table-row">
                     <td className="table-cell table-cell-text">
                       <div className="flex items-center">
                         <div
@@ -135,25 +123,11 @@ const ColorList = ({ onCreate, onBack, setSubmitting }) => {
                           style={{ backgroundColor: color.HexCode }}
                         />
                         <div className="text-sm font-medium text-gray-900">
-                          <Link to={`/browse/editcolor/${color.ColourID}`} className="text-blue-600 hover:underline">
-                            {color.Name}
-                          </Link>
+                          {color.Name}
                         </div>
                       </div>
                     </td>
-                    <td className="table-cell table-cell-text text-secondary">{color.HexCode}</td>
-                    <td className="table-cell">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        color.Status === t("COMMON.ACTIVE")
-                          ? 'status-active'
-                          : 'status-inactive'
-                      }`}>
-                        {color.Status}
-                      </span>
-                    </td>
-                    <td className="table-cell table-cell-text">
-                      <Switch checked={color.Status === t("COMMON.ACTIVE")} onChange={() => handleStatusChange(color.ColourID, color.Status === t("COMMON.ACTIVE"))} />
-                    </td> 
+                    <td className="table-cell table-cell-text text-secondary">{color.HexCode}</td>            
                   </tr>
                 ))}
               </tbody>
@@ -169,7 +143,7 @@ const ColorList = ({ onCreate, onBack, setSubmitting }) => {
             <button
               onClick={() => {
                 setSearchQuery("");
-                setFilters({ status: "all" });
+                setFilters({ status: STATUS_VALUES.ALL});
               }}
               className="mt-2 text-[#5B45E0] hover:text-[#4c39c7]"
             >
@@ -188,14 +162,6 @@ const ColorList = ({ onCreate, onBack, setSubmitting }) => {
           handlePrevPage={handlePrevPage}
           handleNextPage={handleNextPage}
           handlePageClick={handlePageClick}
-        />
-      )}
-
-      {statusPopup.open && (
-        <FullscreenErrorPopup
-          message={statusPopup.newStatus ? t("PRODUCT_SETUP.COLORS.CONFIRM_ACTIVATE") : t("PRODUCT_SETUP.COLORS.CONFIRM_DEACTIVATE")}
-          onClose={handleStatusPopupClose}
-          onConfirm={handleStatusConfirm}
         />
       )}
     </div>
