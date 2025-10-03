@@ -9,7 +9,7 @@ import Loader from "../../../components/Loader";
 import { ToastContainer } from "react-toastify";
 
 import { CREATE_COLOUR } from "../../../contants/apiRoutes";
-import { STATUS,STATUS_VALUES, STATUS_OPTIONS } from "../../../contants/constants";
+import { STATUS,STATUS_VALUES, STATUS_OPTIONS,DEFAULT_COLOR } from "../../../contants/constants";
 import { apiPost } from "../../../utils/ApiUtils";
 import { showEmsg } from "../../../utils/ShowEmsg";
 import { hideLoaderWithDelay } from "../../../utils/loaderUtils";
@@ -25,7 +25,7 @@ const CreateColor = () => {
   const [oFormData, setFormData] = useState({
     TenantID: tenantID,
     Name: "",
-    HexCode: "#000000",
+    HexCode: DEFAULT_COLOR,
     IsActive: true,
     RgbCode: "",
     CreatedBy: userId || "Admin",

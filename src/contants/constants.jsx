@@ -6,7 +6,7 @@ export const STATUS = {
   WARNING:"warning",
   FAILURE:"failure"
 };
-
+export const DEFAULT_COLOR = "#000000";
 export const COLORS = {
   PRIMARY: "#3498db",
   SECONDARY: "#2ecc71",

@@ -27,7 +27,6 @@ const ImageCropperModal = ({
 
     const cropper = cropperRef.current?.cropper;
     if (!cropper) {
-      console.error("Cropper instance not ready");
       return;
     }
 
@@ -41,7 +40,6 @@ const ImageCropperModal = ({
         canvas.toBlob(
           (blob) => {
             if (blob && !processing) { // Double-check to avoid stale calls
-              console.log("Crop complete - sending blob"); // Debug log
               onCropComplete(blob, resolvedContext);
             }
           },
