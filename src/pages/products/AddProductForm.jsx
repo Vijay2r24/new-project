@@ -1,14 +1,5 @@
-
 import { useState, useCallback, useEffect, useRef } from "react";
-import {
-  Plus,
-  X,
-  Upload,
-  Tag,
-  Hash,
-  ShoppingBag,
-  Layers,
-} from "lucide-react";
+import { Plus, X, Upload, Tag, Hash, ShoppingBag, Layers } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import TextInputWithIcon from "../../components/TextInputWithIcon";
 import SelectWithIcon from "../../components/SelectWithIcon";
@@ -163,10 +154,10 @@ const AddProductForm = () => {
             {},
             token
           );
-  
+
           if (response.data.status === STATUS.SUCCESS.toUpperCase()) {
             const product = response.data?.data;
-  
+
             // Collect all unique attribute types and their values across all variants
             const attributeMap = {};
             product.Variants.forEach((variant) => {
@@ -184,14 +175,14 @@ const AddProductForm = () => {
                 }
               });
             });
-  
+
             const transformedAttributes = Object.values(attributeMap).map(
               (attr) => ({
                 ...attr,
                 AttributeValueIDs: Array.from(attr.AttributeValueIDs),
               })
             );
-  
+
             // Set basic product information in oFormData
             setFormData({
               ProductName: product.ProductName || "",
@@ -204,29 +195,29 @@ const AddProductForm = () => {
               SpecificationTypeID:
                 product.ProductSpecification[0]?.SpecificatiobnTypeID || "",
             });
-  
+
             // Set attributes
             setAAttributes(
               transformedAttributes.length > 0
                 ? transformedAttributes
                 : [{ AttributeTypeID: "", AttributeValueIDs: [] }]
             );
-  
+
             // Set specifications
             const specifications = product.ProductSpecification.map((spec) => ({
               SpecificationTypeID: spec.SpecificatiobnTypeID || "",
               Value: spec.Value || "",
             }));
-  
+
             setSpecifications(
               specifications.length > 0
                 ? specifications
                 : [{ SpecificationTypeID: "", Value: "" }]
             );
-  
+
             // Set variants with MRP, SellingPrice, Inventory, and Images
             const variants = product.Variants.map((variant, idx) => ({
-              VariantID: variant.VariantID,  
+              VariantID: variant.VariantID,
               attributes:
                 variant.Attributes.map((attr) => ({
                   AttributeTypeID: attr.AttributeTypeID,
@@ -244,7 +235,7 @@ const AddProductForm = () => {
                 documentId: image.documentId,
               })),
             }));
-  
+
             setVariants(
               variants.length > 0
                 ? variants
@@ -259,21 +250,28 @@ const AddProductForm = () => {
                     },
                   ]
             );
-                // Fetch attributes for each unique AttributeTypeID after setting attributes
-                const uniqueTypeIDs = new Set(transformedAttributes.map(attr => attr.AttributeTypeID));
-                uniqueTypeIDs.forEach(typeID => {
-                  dispatch(fetchResource({ key: "attributes", params: { AttributeTypeID: typeID } }));
-                });
+            // Fetch attributes for each unique AttributeTypeID after setting attributes
+            const uniqueTypeIDs = new Set(
+              transformedAttributes.map((attr) => attr.AttributeTypeID)
+            );
+            uniqueTypeIDs.forEach((typeID) => {
+              dispatch(
+                fetchResource({
+                  key: "attributes",
+                  params: { AttributeTypeID: typeID },
+                })
+              );
+            });
           }
         } catch (error) {
           showEmsg(t("PRODUCT_CREATION.FETCH_PRODUCT_FAILED"), STATUS.ERROR);
         }
       };
-  
+
       fetchProduct();
     }
   }, [productId, t, dispatch]);
-  
+
   useEffect(() => {
     setTitle(
       productId ? t("PRODUCTS.EDIT_PRODUCT") : t("PRODUCTS.ADD_NEW_PRODUCT")
@@ -287,7 +285,10 @@ const AddProductForm = () => {
   ]);
 
   const addAttributeRow = () => {
-    setAAttributes((prev) => [...prev, { AttributeTypeID: "", AttributeValueIDs: [] }]);
+    setAAttributes((prev) => [
+      ...prev,
+      { AttributeTypeID: "", AttributeValueIDs: [] },
+    ]);
   };
 
   const removeAttributeRow = (index) => {
@@ -296,9 +297,7 @@ const AddProductForm = () => {
 
   const handleAttributeChange = (index, field, value) => {
     setAAttributes((prev) =>
-      prev.map((attr, i) =>
-        i === index ? { ...attr, [field]: value } : attr
-      )
+      prev.map((attr, i) => (i === index ? { ...attr, [field]: value } : attr))
     );
     if (field === "AttributeTypeID") {
       setAAttributes((prev) =>
@@ -432,7 +431,6 @@ const AddProductForm = () => {
   const handleCropComplete = (blob, variantIndex) => {
     if (blob) {
       const croppedUrl = URL.createObjectURL(blob);
-      const generatedDocumentId = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
       setVariants((prevVariants) => {
         const newVariants = [...prevVariants];
         const currentImages = newVariants[variantIndex].images;
@@ -443,13 +441,11 @@ const AddProductForm = () => {
         newVariants[variantIndex].images = [
           ...currentImages,
           {
-            id: generatedDocumentId,
             file: new File([blob], `cropped-image-${Date.now()}.jpg`, {
               type: "image/jpeg",
             }),
             preview: croppedUrl,
             sortOrder: newSortOrder,
-            documentId: generatedDocumentId,
           },
         ];
         return newVariants;
@@ -473,23 +469,31 @@ const AddProductForm = () => {
   const removeImage = (variantIndex, imageIndex) => {
     setVariants((prevVariants) => {
       const newVariants = [...prevVariants];
-      const previewUrl = newVariants[variantIndex].images[imageIndex].preview;
-      if (typeof previewUrl === "string" && previewUrl.startsWith("blob:")) {
-        URL.revokeObjectURL(previewUrl);
+      const image = newVariants[variantIndex].images[imageIndex];
+
+      if (
+        typeof image.preview === "string" &&
+        image.preview.startsWith("blob:")
+      ) {
+        URL.revokeObjectURL(image.preview);
       }
+
+      if (image.documentId) {
+        if (!newVariants[variantIndex].removedImages) {
+          newVariants[variantIndex].removedImages = [];
+        }
+        newVariants[variantIndex].removedImages.push(image);
+      }
+
       newVariants[variantIndex].images.splice(imageIndex, 1);
 
-      if (newVariants[variantIndex].images.length === 0) {
-        setValidationErrors((prev) => ({
-          ...prev,
-          [`variant_${variantIndex}_images`]: t("PRODUCT_CREATION.IMAGE_REQUIRED"),
-        }));
-      } else {
-        setValidationErrors((prev) => ({
-          ...prev,
-          [`variant_${variantIndex}_images`]: undefined,
-        }));
-      }
+      const hasImages = newVariants[variantIndex].images.length > 0;
+      setValidationErrors((prev) => ({
+        ...prev,
+        [`variant_${variantIndex}_images`]: hasImages
+          ? undefined
+          : t("PRODUCT_CREATION.IMAGE_REQUIRED"),
+      }));
 
       return newVariants;
     });
@@ -541,7 +545,9 @@ const AddProductForm = () => {
             (a.AttributeTypeID || a.attributeTypeID) === attr.AttributeTypeID
         );
         return att
-          ? `${att.Value || att.value}${att.Unit || att.unit ? ` (${att.Unit || att.unit})` : ""}`
+          ? `${att.Value || att.value}${
+              att.Unit || att.unit ? ` (${att.Unit || att.unit})` : ""
+            }`
           : "Unknown";
       })
       .join(" - ");
@@ -552,15 +558,29 @@ const AddProductForm = () => {
     setSubmitting(true);
     // Basic validation
     const errors = {};
-    if (!oFormData.ProductName) errors.ProductName = t("PRODUCT_CREATION.PRODUCT_NAME_REQUIRED");
-    if (!oFormData.BrandID) errors.BrandID = t("PRODUCT_CREATION.BRAND_ID_REQUIRED");
-    if (!oFormData.CategoryID) errors.CategoryID = t("PRODUCT_CREATION.CATEGORY_ID_REQUIRED");
-    if (!oFormData.StoreID) errors.StoreID = t("PRODUCT_CREATION.STORE_ID_REQUIRED");
+    if (!oFormData.ProductName)
+      errors.ProductName = t("PRODUCT_CREATION.PRODUCT_NAME_REQUIRED");
+    if (!oFormData.BrandID)
+      errors.BrandID = t("PRODUCT_CREATION.BRAND_ID_REQUIRED");
+    if (!oFormData.CategoryID)
+      errors.CategoryID = t("PRODUCT_CREATION.CATEGORY_ID_REQUIRED");
+    if (!oFormData.StoreID)
+      errors.StoreID = t("PRODUCT_CREATION.STORE_ID_REQUIRED");
     aVariants.forEach((variant, index) => {
-      if (!variant.Quantity) errors[`variant_${index}_Quantity`] = t("PRODUCT_CREATION.QUANTITY_REQUIRED");
-      if (!variant.MRP) errors[`variant_${index}_MRP`] = t("PRODUCT_CREATION.MRP_REQUIRED");
-      if (!variant.SellingPrice) errors[`variant_${index}_SellingPrice`] = t("PRODUCT_CREATION.SELLING_PRICE_REQUIRED");
-      if (variant.images.length === 0) errors[`variant_${index}_images`] = t("PRODUCT_CREATION.IMAGE_REQUIRED");
+      if (!variant.Quantity)
+        errors[`variant_${index}_Quantity`] = t(
+          "PRODUCT_CREATION.QUANTITY_REQUIRED"
+        );
+      if (!variant.MRP)
+        errors[`variant_${index}_MRP`] = t("PRODUCT_CREATION.MRP_REQUIRED");
+      if (!variant.SellingPrice)
+        errors[`variant_${index}_SellingPrice`] = t(
+          "PRODUCT_CREATION.SELLING_PRICE_REQUIRED"
+        );
+      if (variant.images.length === 0)
+        errors[`variant_${index}_images`] = t(
+          "PRODUCT_CREATION.IMAGE_REQUIRED"
+        );
     });
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -574,28 +594,35 @@ const AddProductForm = () => {
         Value: spec.Value,
       }));
     const variantsData = aVariants.map((variant, variantIndex) => ({
-      ...(productId && variant.VariantID && { ProductVariantID: variant.VariantID }),
+      ...(productId &&
+        variant.VariantID && { ProductVariantID: variant.VariantID }),
       MRP: parseFloat(variant.MRP) || 0,
       SellingPrice: parseFloat(variant.SellingPrice) || 0,
       StoreID: variant.StoreID || oFormData.StoreID,
       Quantity: parseInt(variant.Quantity) || 0,
       IsActive: true,
       Attributes: variant.attributes,
-      documentMetadata: variant.images.map((img, imgIndex) => {
-        const metadata = {
-          sortOrder: img.sortOrder || imgIndex + 1,
-        };
-    
-        if (productId && img.documentId) {
-          metadata.DocumentID = img.documentId;
-        }
-    
-        if (img.file) {
-          metadata.image = `images_${variantIndex}_${img.sortOrder}`;
-        }
-    
-        return metadata;
-      }),
+
+      documentMetadata: [
+        // New or kept images
+        ...variant.images
+          .map((img, imgIndex) => {
+            if (img.file) {
+              return {
+                sortOrder: img.sortOrder || imgIndex + 1,
+                image: `images_${variantIndex}_${img.sortOrder}`,
+              };
+            }
+            return null;
+          })
+          .filter(Boolean),
+
+        // Removed images
+        ...(variant.removedImages || []).map((img) => ({
+          DocumentID: img.documentId,
+          IsDeleted: true,
+        })),
+      ],
     }));
     const payload = {
       TenantID: oFormData.TenantID,
@@ -619,7 +646,12 @@ const AddProductForm = () => {
     });
     try {
       const token = localStorage.getItem("token");
-      const response = await apiPost(CREATE_OR_UPDATE_PRODUCT, data, token, true);
+      const response = await apiPost(
+        CREATE_OR_UPDATE_PRODUCT,
+        data,
+        token,
+        true
+      );
       const resData = response?.data;
       if (resData?.status === STATUS.SUCCESS.toUpperCase()) {
         showEmsg(
@@ -667,9 +699,10 @@ const AddProductForm = () => {
         <div
           {...getRootProps()}
           className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-300
-            ${isDragActive
-              ? "border-blue-500 bg-blue-50 scale-[1.02] shadow-lg"
-              : "border-gray-300 hover:border-blue-400 hover:bg-gray-50 hover:shadow-md"
+            ${
+              isDragActive
+                ? "border-blue-500 bg-blue-50 scale-[1.02] shadow-lg"
+                : "border-gray-300 hover:border-blue-400 hover:bg-gray-50 hover:shadow-md"
             }`}
         >
           <input {...getInputProps()} />
@@ -699,7 +732,9 @@ const AddProductForm = () => {
               setVariants((prevVariants) => {
                 const newVariants = [...prevVariants];
                 const images = newVariants[variantIndex].images;
-                const oldIndex = images.findIndex((img) => img.id === active.id);
+                const oldIndex = images.findIndex(
+                  (img) => img.id === active.id
+                );
                 const newIndex = images.findIndex((img) => img.id === over.id);
                 const movedImages = arrayMove(images, oldIndex, newIndex);
                 movedImages.forEach((img, idx) => {
@@ -778,7 +813,9 @@ const AddProductForm = () => {
         <ImageCropperModal
           key={cropperModal.image}
           image={cropperModal.image}
-          onCropComplete={(blob) => handleCropComplete(blob, cropperModal.variantIndex)}
+          onCropComplete={(blob) =>
+            handleCropComplete(blob, cropperModal.variantIndex)
+          }
           onClose={() => {
             if (cropperModal.image?.startsWith("blob:")) {
               URL.revokeObjectURL(cropperModal.image);
@@ -849,7 +886,11 @@ const AddProductForm = () => {
                     value={oFormData.CategoryID}
                     onChange={handleInputChange}
                     options={categories
-                      .filter((category) => category.ParentCategoryID !== null && category.ParentCategoryID !== undefined)
+                      .filter(
+                        (category) =>
+                          category.ParentCategoryID !== null &&
+                          category.ParentCategoryID !== undefined
+                      )
                       .map((category) => ({
                         value: category.CategoryID,
                         label: category.CategoryName,
@@ -873,7 +914,10 @@ const AddProductForm = () => {
                     }))}
                     Icon={Tag}
                     error={oValidationErrors.StoreID}
-                    placeholder={t("PRODUCT_CREATION.STORE_ID_PLACEHOLDER") || "Select store"}
+                    placeholder={
+                      t("PRODUCT_CREATION.STORE_ID_PLACEHOLDER") ||
+                      "Select store"
+                    }
                   />
                 </div>
               </div>
@@ -906,17 +950,26 @@ const AddProductForm = () => {
                           name={`AttributeTypeID-${index}`}
                           value={attr.AttributeTypeID}
                           onChange={(e) => {
-                            handleAttributeChange(index, "AttributeTypeID", e.target.value);
+                            handleAttributeChange(
+                              index,
+                              "AttributeTypeID",
+                              e.target.value
+                            );
                           }}
                           options={attributeTypes
                             ?.filter((type) => type.IsActive)
                             .map((type) => ({
-                              value: type.AttributeTypeID || type.attributeTypeID,
+                              value:
+                                type.AttributeTypeID || type.attributeTypeID,
                               label: type.Name || type.name,
                             }))}
                           Icon={Hash}
-                          error={oValidationErrors[`attr_${index}_AttributeTypeID`]}
-                          placeholder={t("PRODUCT_CREATION.ATTRIBUTE_ID_PLACEHOLDER")}
+                          error={
+                            oValidationErrors[`attr_${index}_AttributeTypeID`]
+                          }
+                          placeholder={t(
+                            "PRODUCT_CREATION.ATTRIBUTE_ID_PLACEHOLDER"
+                          )}
                         />
                       </div>
                       <div className="flex items-end gap-4">
@@ -929,26 +982,39 @@ const AddProductForm = () => {
                             const selectedValues = Array.isArray(e.target.value)
                               ? e.target.value
                               : [e.target.value].filter(Boolean);
-                            handleAttributeChange(index, "AttributeValueIDs", selectedValues);
+                            handleAttributeChange(
+                              index,
+                              "AttributeValueIDs",
+                              selectedValues
+                            );
                           }}
                           options={attributes
                             .filter((attribute) => {
-                              const typeId = attribute.AttributeTypeID || attribute.attributeTypeID;
+                              const typeId =
+                                attribute.AttributeTypeID ||
+                                attribute.attributeTypeID;
                               return (
                                 attribute.IsActive &&
                                 String(typeId) === String(attr.AttributeTypeID)
                               );
                             })
                             .map((attribute) => ({
-                              value: attribute.AttributeValueID || attribute.attributeValueID,
-                              label: `${attribute.Value || attribute.value}${attribute.Unit || attribute.unit
+                              value:
+                                attribute.AttributeValueID ||
+                                attribute.attributeValueID,
+                              label: `${attribute.Value || attribute.value}${
+                                attribute.Unit || attribute.unit
                                   ? ` (${attribute.Unit || attribute.unit})`
                                   : ""
-                                }`,
+                              }`,
                             }))}
                           Icon={Layers}
-                          error={oValidationErrors[`attr_${index}_AttributeValueIDs`]}
-                          placeholder={t("PRODUCT_CREATION.ATTRIBUTE_VALUES_PLACEHOLDER")}
+                          error={
+                            oValidationErrors[`attr_${index}_AttributeValueIDs`]
+                          }
+                          placeholder={t(
+                            "PRODUCT_CREATION.ATTRIBUTE_VALUES_PLACEHOLDER"
+                          )}
                           multiple
                           isDisabled={!attr.AttributeTypeID}
                         />
@@ -1014,8 +1080,14 @@ const AddProductForm = () => {
                             label: specType.Name,
                           }))}
                           Icon={Tag}
-                          error={oValidationErrors[`spec_${index}_SpecificationTypeID`]}
-                          placeholder={t("PRODUCT_CREATION.SPECIFICATION_TYPE_PLACEHOLDER")}
+                          error={
+                            oValidationErrors[
+                              `spec_${index}_SpecificationTypeID`
+                            ]
+                          }
+                          placeholder={t(
+                            "PRODUCT_CREATION.SPECIFICATION_TYPE_PLACEHOLDER"
+                          )}
                         />
                       </div>
                       <div className="flex items-end gap-4">
@@ -1026,9 +1098,15 @@ const AddProductForm = () => {
                             name={`SpecificationValue-${index}`}
                             value={spec.Value}
                             onChange={(e) =>
-                              handleSpecificationChange(index, "Value", e.target.value)
+                              handleSpecificationChange(
+                                index,
+                                "Value",
+                                e.target.value
+                              )
                             }
-                            placeholder={t("PRODUCT_CREATION.SPECIFICATION_VALUE_PLACEHOLDER")}
+                            placeholder={t(
+                              "PRODUCT_CREATION.SPECIFICATION_VALUE_PLACEHOLDER"
+                            )}
                             Icon={Tag}
                             error={oValidationErrors[`spec_${index}_Value`]}
                           />
@@ -1062,9 +1140,12 @@ const AddProductForm = () => {
                       target: { name: "ProductDescription", value },
                     })
                   }
-                  placeholder={t("PRODUCT_CREATION.PRODUCT_DESCRIPTION_PLACEHOLDER")}
-                  className={`h-32 mb-10 ${oValidationErrors.ProductDescription ? "border-red-500" : ""
-                    }`}
+                  placeholder={t(
+                    "PRODUCT_CREATION.PRODUCT_DESCRIPTION_PLACEHOLDER"
+                  )}
+                  className={`h-32 mb-10 ${
+                    oValidationErrors.ProductDescription ? "border-red-500" : ""
+                  }`}
                   ref={productDescriptionRef}
                 />
                 {oValidationErrors.ProductDescription && (
@@ -1092,9 +1173,10 @@ const AddProductForm = () => {
                     key={index}
                     className={({ selected }) =>
                       `px-6 py-3 text-sm font-medium leading-5 border-b-2 outline-none
-                      ${selected
-                        ? "border-custom-bg text-custom-bg"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                      ${
+                        selected
+                          ? "border-custom-bg text-custom-bg"
+                          : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                       }`
                     }
                   >
@@ -1125,9 +1207,16 @@ const AddProductForm = () => {
                           name="Quantity"
                           value={variant.Quantity}
                           onChange={(e) =>
-                            handleVariantChange(index, "Quantity", e.target.value)
+                            handleVariantChange(
+                              index,
+                              "Quantity",
+                              e.target.value
+                            )
                           }
-                          placeholder={t("PRODUCT_CREATION.QUANTITY_PLACEHOLDER") || "Enter quantity"}
+                          placeholder={
+                            t("PRODUCT_CREATION.QUANTITY_PLACEHOLDER") ||
+                            "Enter quantity"
+                          }
                           Icon={Hash}
                           error={oValidationErrors[`variant_${index}_Quantity`]}
                           ref={(el) => addVariantRef(`Quantity-${index}`, el)}
@@ -1142,7 +1231,9 @@ const AddProductForm = () => {
                           onChange={(e) =>
                             handleVariantChange(index, "MRP", e.target.value)
                           }
-                          placeholder={t("PRODUCT_CREATION.MRP_PLACEHOLDER") || "Enter MRP"}
+                          placeholder={
+                            t("PRODUCT_CREATION.MRP_PLACEHOLDER") || "Enter MRP"
+                          }
                           Icon={() => (
                             <span
                               className="text-lg font-bold text-gray-400"
@@ -1164,12 +1255,26 @@ const AddProductForm = () => {
                           name="ProductDiscount"
                           value={variant.ProductDiscount}
                           onChange={(e) =>
-                            handleVariantChange(index, "ProductDiscount", e.target.value)
+                            handleVariantChange(
+                              index,
+                              "ProductDiscount",
+                              e.target.value
+                            )
                           }
-                          placeholder={t("PRODUCT_CREATION.PRODUCT_DISCOUNT_PLACEHOLDER") || "Enter discount"}
+                          placeholder={
+                            t(
+                              "PRODUCT_CREATION.PRODUCT_DISCOUNT_PLACEHOLDER"
+                            ) || "Enter discount"
+                          }
                           Icon={Tag}
-                          error={oValidationErrors[`variant_${index}_ProductDiscount`]}
-                          ref={(el) => addVariantRef(`ProductDiscount-${index}`, el)}
+                          error={
+                            oValidationErrors[
+                              `variant_${index}_ProductDiscount`
+                            ]
+                          }
+                          ref={(el) =>
+                            addVariantRef(`ProductDiscount-${index}`, el)
+                          }
                         />
                       </div>
                       <div>
@@ -1179,9 +1284,16 @@ const AddProductForm = () => {
                           name="SellingPrice"
                           value={variant.SellingPrice}
                           onChange={(e) =>
-                            handleVariantChange(index, "SellingPrice", e.target.value)
+                            handleVariantChange(
+                              index,
+                              "SellingPrice",
+                              e.target.value
+                            )
                           }
-                          placeholder={t("PRODUCT_CREATION.SELLING_PRICE_PLACEHOLDER") || "Enter selling price"}
+                          placeholder={
+                            t("PRODUCT_CREATION.SELLING_PRICE_PLACEHOLDER") ||
+                            "Enter selling price"
+                          }
                           Icon={() => (
                             <span
                               className="text-lg font-bold text-gray-400"
@@ -1190,8 +1302,12 @@ const AddProductForm = () => {
                               ₹
                             </span>
                           )}
-                          error={oValidationErrors[`variant_${index}_SellingPrice`]}
-                          ref={(el) => addVariantRef(`SellingPrice-${index}`, el)}
+                          error={
+                            oValidationErrors[`variant_${index}_SellingPrice`]
+                          }
+                          ref={(el) =>
+                            addVariantRef(`SellingPrice-${index}`, el)
+                          }
                         />
                       </div>
                     </div>

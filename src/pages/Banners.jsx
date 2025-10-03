@@ -259,22 +259,17 @@ const Banners = () => {
                   )}
                   {project.Price && (
                     <p className="text-sm text-gray-600 truncate">
-                      {t("BANNER_FORM.PRICE")}: ₹{project.Price.toLocaleString()}
+                      {t("COMMON.PRICE")}: ₹{project.Price.toLocaleString()}
                     </p>
                   )}
-                  {/* {project.SortOrder && (
-                    <p className="text-sm text-gray-600 truncate">
-                      {t("BANNER_FORM.SEQUENCE")}: {project.SortOrder}
-                    </p>
-                  )} */}
                   <div className="flex items-center justify-between mt-2">
                     <div
                       onClick={() =>
                         handleToggleStatus(project.BannerID, project.Status)
                       }
                       className={`relative w-10 h-5 rounded-full cursor-pointer transition-all duration-200 ${project.Status === "Active"
-                          ? "bg-green-400"
-                          : "bg-red-400"
+                          ? "bg-blue-600"
+                          : "bg-gray-300"
                         }`}
                     >
                       <div
@@ -286,8 +281,8 @@ const Banners = () => {
                     </div>
                     <span
                       className={`text-sm font-medium ml-3 ${project.Status === "Active"
-                          ? "text-green-600"
-                          : "text-red-600"
+                          ? "text-blue-600"
+                          : "text-gray-500"
                         }`}
                     >
                       {project.Status}

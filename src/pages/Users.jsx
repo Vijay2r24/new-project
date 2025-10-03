@@ -153,16 +153,6 @@ const Users = () => {
       : []),
   ];
 
-  const storeOptions = [
-    { value: "all", label: t("COMMON.ALL") },
-    ...(Array.isArray(aStores)
-      ? aStores.map((store) => ({
-          value: store.StoreName,
-          label: store.StoreName,
-        }))
-      : []),
-  ];
-
   const handleDropdownInputChange = (inputValue, filterName) => {
     if (filterName === "role") {
       dispatch(

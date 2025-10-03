@@ -700,6 +700,7 @@
     "FAILED_TO_SAVE_ROLE": "Failed to save user role."
   },
   "BANNER_FORM": {
+    "TITLE":"Banner Management",
     "VIEW_ACTIVE_BANNERS": "Active Banners Sequence",
     "CREATE_BANNER": "Create banner",
     "UPLOAD_BANNER": "Upload Banner",
@@ -813,7 +814,24 @@
     "OF": "of",
     "INVALID_POSITION": "Must be between 1 and {count}",
     "NO_IMAGE": "No image available",
-    "SAVE_SUCCESS": "Banner sequence saved successfully"
+    "SAVE_SUCCESS": "Banner sequence saved successfully",
+    "PREVIEW_TITLE":"Banners Preview",
+    "PREVIEW":"Preview",
+    "NO_BANNERS_FOUND": "No banners found.",
+    "PAGE": "Page",
+    "UNNAMED_BANNER": "Unnamed Banner",
+    "PRICE": "Price",
+    "SEQUENCE": "Sequence",
+    "STATUS_ACTIVE": "Active",
+    "STATUS_INACTIVE": "Inactive",
+    "IMAGE_DIMENSIONS_TOO_SMALL": "Image dimensions are too small. Minimum size required is {{width}}x{{height}} pixels.",
+    "INVALID_IMAGE_TYPE": "Only image files are allowed. Please upload a valid image.",
+    "PAUSE": "Pause auto-play",
+    "PLAY": "Start auto-play",
+    "DELETE_SUCCESS": "Banner deleted successfully.",
+    "STATUS_UPDATED": "Banner status updated successfully.",
+    "STATUS_CONFIRM_MESSAGE": "Are you sure you want to change the status of this banner to {{status}}?"
+
   },
   "ORDER_HISTORY": {
     "TITLE": "Order History",
