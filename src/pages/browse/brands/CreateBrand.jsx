@@ -1,110 +1,116 @@
 import { useState, useEffect } from "react";
-import {
-  ArrowLeft,
-  Building,
-  Info,
-  Tag,
-  Hash,
-  LayoutList,
-  Image,
-  X,
-} from "lucide-react";
+import { ArrowLeft, Building, Info, Image, X, Tag } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 
 import TextInputWithIcon from "../../../components/TextInputWithIcon";
-import SelectWithIcon from "../../../components/SelectWithIcon";
 import TextAreaWithIcon from "../../../components/TextAreaWithIcon";
 import Loader from "../../../components/Loader";
+import SelectWithIcon from "../../../components/SelectWithIcon";
 
-import { apiPost, apiGet, apiPut } from "../../../utils/ApiUtils";
+import { apiPost, apiGet } from "../../../utils/ApiUtils";
 import { showEmsg } from "../../../utils/ShowEmsg";
 import { hideLoaderWithDelay } from "../../../utils/loaderUtils";
-
 import {
-  CREATE_BRAND,
+  CREATE_OR_UPDATE_BRAND,
   GET_BRAND_BY_ID,
-  UPDATE_BRAND_BY_ID,
 } from "../../../contants/apiRoutes";
-import { STATUS } from "../../../contants/constants";
-import { useCategories } from "../../../context/AllDataContext";
+import { STATUS, STATUS_VALUES, STATUS_OPTIONS } from "../../../contants/constants";
 
 import { ToastContainer } from "react-toastify";
 
 const CreateBrand = () => {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const { id: brandId } = useParams();
+  const { t } = useTranslation(); // i18n translation hook
+  const navigate = useNavigate(); // navigation hook
+  const { id: brandId } = useParams(); // get brandId from route params
 
-  const isEditing = Boolean(brandId);
+  const isEditing = Boolean(brandId); // check if editing or creating
   const token = localStorage.getItem("token");
   const userId = localStorage.getItem("userId");
 
-  const categories = useCategories();
-  const {
-    data: aCategories = [],
-    loading: bLoadingCategories,
-    error: sErrorCategories,
-    fetchAll,
-    fetch,
-  } = categories;
-
+  // Form state to hold brand details
   const [oFormData, setFormData] = useState({
     TenantID: localStorage.getItem("tenantID"),
     BrandName: "",
-    CategoryID: "",
-    Heading: "",
     BrandCode: "",
-    IsActive: true,
+    IsActive: STATUS_VALUES.BOOLEAN_ACTIVE,
     BrandLogo: null,
     description: "",
     CreatedBy: "Admin",
     UpdatedBy: "Admin",
+    existingLogo: null, // Track existing logo when editing
   });
 
+  // Error messages for validation
   const [oErrors, setErrors] = useState({});
+  // Preview URL for uploaded or existing logo
   const [sImagePreview, setImagePreview] = useState(null);
-  const [bSubmitting, setSubmitting] = useState(false); 
+  // Submission loader
+  const [bSubmitting, setSubmitting] = useState(false);
+
+  /**
+   * Fetch brand details if editing
+   */
   useEffect(() => {
-    if (isEditing && brandId && !bLoadingCategories) {
+    if (isEditing && brandId) {
       const fetchBrandDetails = async () => {
         try {
           const res = await apiGet(`${GET_BRAND_BY_ID}/${brandId}`, {}, token);
-          const brand = res?.data?.data?.brand;
-          if (res?.data?.STATUS === STATUS.SUCCESS.toUpperCase() && brand) {
+          const brand = res?.data?.data;
+
+          if (
+            (res?.data?.STATUS === STATUS.SUCCESS.toUpperCase() ||
+              res?.data?.status === STATUS.SUCCESS.toUpperCase()) &&
+            brand
+          ) {
+            // Populate form with existing brand data
             setFormData((prev) => ({
               ...prev,
               TenantID: brand.TenantID || localStorage.getItem("tenantID"),
               BrandName: brand.BrandName || "",
-              CategoryID: brand.CategoryID || "",
-              Heading: brand.Heading || "",
               BrandCode: brand.BrandCode || "",
-              IsActive: brand.Status,
-              BrandLogo: brand.BrandLogo || null,
+              IsActive:
+                brand.IsActive !== undefined
+                  ? brand.IsActive
+                  : brand.Status === "Active",
+              BrandLogo: null, // reset (file is handled separately)
               description: brand.BrandDescription || "",
               CreatedBy: brand.CreatedBy || t("COMMON.ADMIN"),
               UpdatedBy: t("COMMON.ADMIN"),
+              existingLogo: brand.BrandLogo?.[0] || null, // store first logo if exists
             }));
-            if (brand.BrandLogo) setImagePreview(brand.BrandLogo);
+
+            // Set logo preview
+            if (brand.BrandLogo && brand.BrandLogo.length > 0) {
+              setImagePreview(brand.BrandLogo[0].documentUrl);
+            }
           }
-        } catch {}
+        } catch (error) {
+          console.error("Error fetching brand details:", error);
+        }
       };
       fetchBrandDetails();
     }
-  }, [brandId, isEditing, bLoadingCategories, t, token]);
+  }, [brandId, isEditing, t, token]);
 
-  useEffect(() => {
-    fetchAll();
-  }, []);
-
+  /**
+   * Cleanup blob URLs on unmount
+   */
   useEffect(() => {
     return () => {
-      if (sImagePreview?.startsWith("blob:")) {
+      if (
+        sImagePreview &&
+        typeof sImagePreview === "string" &&
+        sImagePreview.startsWith("blob:")
+      ) {
         URL.revokeObjectURL(sImagePreview);
       }
     };
   }, [sImagePreview]);
 
+  /**
+   * Generic form field change handler
+   */
   const handleInputChange = ({ target: { name, value, type, checked } }) => {
     setFormData((prev) => ({
       ...prev,
@@ -115,6 +121,9 @@ const CreateBrand = () => {
     }
   };
 
+  /**
+   * File upload handler (for logo)
+   */
   const handleFileChange = ({ target: { files } }) => {
     const file = files[0];
     if (!file) {
@@ -123,6 +132,7 @@ const CreateBrand = () => {
       return;
     }
 
+    // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       setErrors((prev) => ({
         ...prev,
@@ -135,35 +145,50 @@ const CreateBrand = () => {
     setImagePreview(URL.createObjectURL(file));
   };
 
+  /**
+   * Remove uploaded or existing logo
+   */
   const handleRemoveImage = () => {
-    if (sImagePreview?.startsWith("blob:")) {
+    if (
+      sImagePreview &&
+      typeof sImagePreview === "string" &&
+      sImagePreview.startsWith("blob:")
+    ) {
       URL.revokeObjectURL(sImagePreview);
     }
-    setFormData((prev) => ({ ...prev, BrandLogo: null }));
+    setFormData((prev) => ({
+      ...prev,
+      BrandLogo: null,
+      existingLogo: null, // clear reference if editing
+    }));
     setImagePreview(null);
     setErrors((prev) => ({ ...prev, BrandLogo: "" }));
   };
 
+  /**
+   * Client-side form validation
+   */
   const validateForm = () => {
     const errors = {};
-    const { BrandName, CategoryID, Heading, BrandCode, BrandLogo } = oFormData;
+    const { BrandName, BrandCode } = oFormData;
 
     if (!BrandName.trim())
       errors.BrandName = t("PRODUCT_SETUP.CREATE_BRAND.BRAND_NAME_REQUIRED");
-    if (!CategoryID)
-      errors.CategoryID = t("PRODUCT_SETUP.CREATE_BRAND.CATEGORY_REQUIRED");
-    if (!Heading.trim())
-      errors.Heading = t("PRODUCT_SETUP.CREATE_BRAND.HEADING_REQUIRED");
     if (!BrandCode.trim())
       errors.BrandCode = t("PRODUCT_SETUP.CREATE_BRAND.BRAND_CODE_REQUIRED");
-    if (!BrandLogo && !isEditing)
+    if (!sImagePreview && !isEditing)
       errors.BrandLogo = t("PRODUCT_SETUP.CREATE_BRAND.BRAND_LOGO_REQUIRED");
 
     return errors;
   };
 
+  /**
+   * Submit handler (Create/Update brand)
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Run validation
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length) {
       setErrors(validationErrors);
@@ -173,48 +198,103 @@ const CreateBrand = () => {
     setSubmitting(true);
 
     const dataToSend = new FormData();
-    Object.entries(oFormData).forEach(([key, value]) => {
-      if (value !== null && value !== undefined && key !== "BrandLogo") {
-        dataToSend.append(key, value);
-      }
-    });
+    const documentMetadata = [];
 
+    // Handle logo upload / update / removal
     if (oFormData.BrandLogo) {
-      dataToSend.append("BrandLogo", oFormData.BrandLogo);
+      documentMetadata.push({
+        image: "brand_image",
+        sortOrder: 1,
+        ...(isEditing &&
+          oFormData.existingLogo && {
+            documentId: oFormData.existingLogo.documentId,
+          }),
+      });
+    } else if (isEditing && !sImagePreview) {
+      // If editing and removing the existing logo
+      documentMetadata.push({
+        action: "remove",
+        documentId: oFormData.existingLogo?.documentId,
+      });
+    }
+
+    // Construct payload depending on Create or Edit mode
+    let jsonPayload;
+    if (isEditing) {
+      jsonPayload = {
+        BrandID: brandId,
+        TenantID: oFormData.TenantID,
+        BrandName: oFormData.BrandName,
+        BrandCode: oFormData.BrandCode,
+        IsActive: oFormData.IsActive,
+        BrandDescription: oFormData.description,
+        documentMetadata,
+        UpdatedBy: userId,
+      };
+    } else {
+      jsonPayload = {
+        TenantID: oFormData.TenantID,
+        BrandName: oFormData.BrandName,
+        BrandCode: oFormData.BrandCode,
+        IsActive: oFormData.IsActive,
+        BrandDescription: oFormData.description,
+        documentMetadata,
+        CreatedBy: userId,
+      };
+    }
+
+    // Attach payload & files to FormData
+    dataToSend.append("data", JSON.stringify(jsonPayload));
+    if (oFormData.BrandLogo) {
+      dataToSend.append("brand_image", oFormData.BrandLogo);
     }
 
     try {
-      let response;
-      if (isEditing) {
-        dataToSend.append("UpdatedBy", userId);
-        response = await apiPut(
-          `${UPDATE_BRAND_BY_ID}/${brandId}`,
-          dataToSend,
-          token,
-          true
-        );
-      } else {
-        dataToSend.append("CreatedBy", userId);
-        response = await apiPost(CREATE_BRAND, dataToSend, token, true);
-      }
+      // API call
+      const response = await apiPost(
+        CREATE_OR_UPDATE_BRAND,
+        dataToSend,
+        token,
+        true // multipart/form-data
+      );
 
-      const { STATUS: resStatus, MESSAGE } = response.data;
-      if (resStatus === STATUS.SUCCESS.toUpperCase()) {
-        showEmsg(MESSAGE, STATUS.SUCCESS, 3000, () =>
+      const responseStatus = response.data.STATUS || response.data.status;
+      const responseMessage = response.data.MESSAGE || response.data.message;
+
+      if (
+        responseStatus === STATUS.SUCCESS.toUpperCase() ||
+        responseStatus === STATUS.SUCCESS
+      ) {
+        // Success notification + redirect
+        showEmsg(responseMessage, STATUS.SUCCESS, 3000, () =>
           navigate("/browse", { state: { fromBrandEdit: true } })
         );
       } else {
-        showEmsg(MESSAGE, STATUS.WARNING);
-        setErrors((prev) => ({ ...prev, api: MESSAGE }));
+        // Warning / validation error
+        showEmsg(responseMessage, STATUS.WARNING);
+        setErrors((prev) => ({ ...prev, api: responseMessage }));
       }
     } catch (err) {
-      const message = err?.response?.data?.MESSAGE || t("COMMON.API_ERROR");
+      console.error("API Error:", err);
+      const message =
+        err?.response?.data?.MESSAGE ||
+        err?.response?.data?.message ||
+        t("COMMON.API_ERROR");
       showEmsg(message, STATUS.ERROR);
     } finally {
+      // Hide loader with delay
       hideLoaderWithDelay(setSubmitting);
     }
   };
 
+  // Prepare status options using STATUS_OPTIONS from constants (filter out ALL option)
+  const statusOptions = STATUS_OPTIONS.filter(option => option.value !== STATUS_VALUES.ALL)
+    .map(option => ({
+      value: option.value.toString(),
+      label: t(option.labelKey)
+    }));
+
+  // Show loader overlay while submitting
   const loaderOverlay = bSubmitting && (
     <div className="global-loader-overlay">
       <Loader />
@@ -226,6 +306,7 @@ const CreateBrand = () => {
       {loaderOverlay}
       {isEditing && <ToastContainer />}
       <div className="w-full p-0 sm:p-0">
+        {/* Page Header */}
         <div className="flex items-center mb-4">
           <button
             onClick={() =>
@@ -241,7 +322,10 @@ const CreateBrand = () => {
               : t("PRODUCT_SETUP.CREATE_BRAND.CREATE_TITLE")}
           </h2>
         </div>
+
+        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Brand Name + Brand Code */}
           <div className="flex flex-col md:flex-row md:space-x-4">
             <div className="w-full md:w-1/2">
               <TextInputWithIcon
@@ -256,42 +340,6 @@ const CreateBrand = () => {
               />
             </div>
             <div className="w-full md:w-1/2">
-              <SelectWithIcon
-                label={t("PRODUCT_SETUP.CREATE_CATEGORY.PARENT_LABEL")}
-                id="CategoryID"
-                name="CategoryID"
-                value={oFormData.CategoryID}
-                onChange={handleInputChange}
-                options={aCategories.map((cat) => ({
-                  value: cat.CategoryID,
-                  label: cat.CategoryName,
-                }))}
-                loading={bLoadingCategories}
-                error={oErrors.CategoryID || sErrorCategories}
-                placeholder={t("PRODUCT_SETUP.CREATE_CATEGORY.SELECT_PARENT")}
-                Icon={Tag}
-                onInputChange={(value) =>
-                  categories.fetch({ searchText: value })
-                }
-              />
-            </div>
-          </div>
-          <div className="flex flex-col md:flex-row md:space-x-4">
-            <div className="w-full md:w-1/2">
-              <TextInputWithIcon
-                label={t("COMMON.HEADING_LABEL")}
-                id="Heading"
-                name="Heading"
-                value={oFormData.Heading}
-                onChange={handleInputChange}
-                placeholder={t(
-                  "PRODUCT_SETUP.CREATE_BRAND.HEADING_PLACEHOLDER"
-                )}
-                error={oErrors.Heading}
-                Icon={LayoutList}
-              />
-            </div>
-            <div className="w-full md:w-1/2">
               <TextInputWithIcon
                 label={t("PRODUCT_SETUP.CREATE_BRAND.BRAND_CODE_LABEL")}
                 id="BrandCode"
@@ -302,87 +350,104 @@ const CreateBrand = () => {
                   "PRODUCT_SETUP.CREATE_BRAND.BRAND_CODE_PLACEHOLDER"
                 )}
                 error={oErrors.BrandCode}
-                Icon={Hash}
+                Icon={Tag}
               />
             </div>
           </div>
+
+          {/* Status */}
           <div className="flex flex-col md:flex-row md:space-x-4">
             <div className="w-full md:w-1/2">
               <SelectWithIcon
                 label={t("PRODUCT_SETUP.CREATE_BRAND.STATUS_LABEL")}
                 id="IsActive"
                 name="IsActive"
-                value={oFormData.IsActive}
-                onChange={handleInputChange}
-                options={[
-                  { value: "Active", label: t("COMMON.ACTIVE") },
-                  { value: "Inactive", label: t("COMMON.INACTIVE") },
-                ]}
+                value={oFormData.IsActive.toString()}
+                onChange={(e) =>
+                  handleInputChange({
+                    target: {
+                      name: "IsActive",
+                      value: e.target.value === "true",
+                    },
+                  })
+                }
+                options={statusOptions}
                 Icon={Tag}
                 error={oErrors.IsActive}
               />
             </div>
-            <div className="w-full md:w-1/2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t("PRODUCT_SETUP.CREATE_BRAND.LOGO_LABEL")}
-              </label>
-              <div
-                className={`relative group rounded-xl border-2 ${
-                  oErrors.BrandLogo ? "border-red-300" : "border-gray-200"
-                } border-dashed transition-all duration-200 hover:border-custom-bg bg-gray-50 hover:bg-gray-50/50`}
-              >
-                <div className="p-6">
-                  <div className="space-y-3 text-center">
-                    <div className="flex justify-center">
-                      <div className="p-3 rounded-full bg-white shadow-sm border border-gray-100">
-                        <Image className="h-8 w-8 text-gray-400 group-hover:text-[#5B45E0] transition-colors duration-200" />
-                      </div>
+          </div>
+
+          {/* Logo Upload */}
+          <div className="w-full">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t("PRODUCT_SETUP.CREATE_BRAND.LOGO_LABEL")}
+            </label>
+            <div
+              className={`relative group rounded-xl border-2 ${
+                oErrors.BrandLogo ? "border-red-300" : "border-gray-200"
+              } border-dashed transition-all duration-200 hover:border-custom-bg bg-gray-50 hover:bg-gray-50/50`}
+            >
+              <div className="p-6">
+                <div className="space-y-3 text-center">
+                  {/* Upload Icon */}
+                  <div className="flex justify-center">
+                    <div className="p-3 rounded-full bg-white shadow-sm border border-gray-100">
+                      <Image className="h-8 w-8 text-gray-400 group-hover:text-[#5B45E0] transition-colors duration-200" />
                     </div>
-                    <div className="flex text-sm text-muted justify-center">
-                      <label
-                        htmlFor="file-upload"
-                        className="relative cursor-pointer rounded-md font-medium text-[#5B45E0] hover:text-[#4c39c7] focus-within:outline-none"
-                      >
-                        <span>{t("COMMON.UPLOAD")}</span>
-                        <input
-                          id="file-upload"
-                          name="BrandLogo"
-                          type="file"
-                          accept="image/*"
-                          onChange={handleFileChange}
-                          className="sr-only"
-                        />
-                      </label>
-                      <p className="pl-1">{t("COMMON.DRAG_DROP_TEXT")}</p>
-                    </div>
-                    {sImagePreview && (
-                      <div className="mt-4 flex justify-center relative">
-                        <img
-                          src={sImagePreview}
-                          alt="Brand Logo Preview"
-                          className="max-h-32 max-w-full rounded-md border border-gray-200 shadow"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleRemoveImage}
-                          className="absolute -top-3 -right-3 p-1.5 bg-white border border-gray-300 text-gray-600 rounded-full shadow hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors duration-200 z-10"
-                          title="Remove image"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    )}
-                    {oErrors.BrandLogo && (
-                      <p className="text-sm text-red flex items-center justify-center">
-                        <span className="mr-1">⚠️</span>
-                        {oErrors.BrandLogo}
-                      </p>
-                    )}
                   </div>
+
+                  {/* Upload input */}
+                  <div className="flex text-sm text-muted justify-center">
+                    <label
+                      htmlFor="file-upload"
+                      className="relative cursor-pointer rounded-md font-medium text-[#5B45E0] hover:text-[#4c39c7]"
+                    >
+                      <span>{t("COMMON.UPLOAD")}</span>
+                      <input
+                        id="file-upload"
+                        name="BrandLogo"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="sr-only"
+                      />
+                    </label>
+                    <p className="pl-1">{t("COMMON.DRAG_DROP_TEXT")}</p>
+                  </div>
+
+                  {/* Image preview */}
+                  {sImagePreview && (
+                    <div className="mt-4 flex justify-center relative">
+                      <img
+                        src={sImagePreview}
+                        alt="Brand Logo Preview"
+                        className="max-h-32 max-w-full rounded-md border border-gray-200 shadow"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="absolute -top-3 -right-3 p-1.5 bg-white border border-gray-300 text-gray-600 rounded-full shadow hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors duration-200 z-10"
+                        title="Remove image"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Logo errors */}
+                  {oErrors.BrandLogo && (
+                    <p className="text-sm text-red flex items-center justify-center">
+                      <span className="mr-1">⚠️</span>
+                      {oErrors.BrandLogo}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Description */}
           <div className="w-full">
             <TextAreaWithIcon
               label={t("COMMON.DESCRIPTION")}
@@ -395,6 +460,8 @@ const CreateBrand = () => {
               icon={Info}
             />
           </div>
+
+          {/* Form actions */}
           <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
             <button
               type="button"

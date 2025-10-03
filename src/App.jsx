@@ -33,9 +33,10 @@ const CreateBrand = lazy(() => import("./pages/browse/brands/CreateBrand"));
 const CreateCategory = lazy(() => import("./pages/browse/categories/CreateCategory"));
 const CreateAttributeType = lazy(() => import("./pages/browse/attributeTypes/CreateAttributeType"));
 const CreateColor = lazy(() => import("./pages/browse/colors/CreateColor"));
-const CreateAttribute = lazy(() => import("./pages/browse/attributes/CreateAttribute"));
+const CreateAttribute = lazy(() => import("./pages/browse/AttributeTypeValues/CreateAttributeTypeValuesList"));
 const CreateProductGroup = lazy(() => import("./pages/browse/productGroups/CreateProductGroup"));
 const ActiveBanners = lazy(() => import("./pages/ActiveBannersWithSequence"));
+const ProductDetails = lazy(()=>import("./pages/products/ProductDetails"));
 
 // 🔹 Permission codes
 const dashboardPermission = getPermissionCode('Dashboard Management', 'View Dashboard');
@@ -339,7 +340,14 @@ const App = () => {
                   </ProtectedRoute>
                 }
               />
-
+            <Route
+                path="/productdetails/:productId?"
+                element={
+                  <ProtectedRoute>
+                    <ProductDetails />
+                  </ProtectedRoute>
+                }
+              />
               {/* Not Authorized */}
               <Route path="/not-authorized" element={<NotAuthorized />} />
             </Routes>

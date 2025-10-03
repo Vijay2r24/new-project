@@ -8,8 +8,8 @@ import AttributeTypeList from "./attributeTypes/AttributeTypeList";
 import AttributeTypeCreate from "./attributeTypes/CreateAttributeType";
 import ColorList from "./colors/ColorList";
 import ColorCreate from "./colors/CreateColor";
-import AttributeList from "./attributes/AttributeList";
-import AttributeCreate from "./attributes/CreateAttribute";
+import AttributeList from "./AttributeTypeValues/AttributeTypeValuesList";
+import AttributeCreate from "./AttributeTypeValues/CreateAttributeTypeValuesList";
 import ProductGroupList from "./productGroups/ProductGroupList";
 import CreateProductGroup from "./productGroups/CreateProductGroup";
 import Loader from "../../components/Loader";
@@ -26,14 +26,15 @@ import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 import { useTitle } from "../../context/TitleContext";
 import { ToastContainer } from "react-toastify";
-
+import SpecificationTypeList from "./productSpecification/SpecificationTypeList";
+import { VIEW_TYPES,FORM_MODES } from "../../contants/constants";
 function classNames(...classes) {
   return classes.filter(Boolean).join(" ");
 }
 
 const Browse = () => {
   const [nSelectedTab, setSelectedTab] = useState(0);
-  const [sViewMode, setViewMode] = useState("list");
+  const [sViewMode, setViewMode] = useState(VIEW_TYPES.LIST);
   const [submitting, setSubmitting] = useState(false);
 
   const { t } = useTranslation();
@@ -71,12 +72,12 @@ const Browse = () => {
       create: AttributeCreate,
       icon: Layers,
     },
-      {
-      name: t("PRODUCT_SETUP.TABS.PRODUCT_GROUPS"),
-      list: ProductGroupList,
-      create: CreateProductGroup,
-      icon: Boxes,
-    },
+    {
+        name: t("PRODUCT_SETUP.TABS.SPECIFICATION_TYPE"),
+        list: SpecificationTypeList,
+        create: CreateProductGroup,
+        icon: Boxes,
+      },
   ];
 
  useEffect(() => {
@@ -87,7 +88,7 @@ const Browse = () => {
       if (categoryTabIndex !== -1) {
         setSelectedTab(categoryTabIndex);
       }
-      setViewMode("list");
+      setViewMode(VIEW_TYPES.LIST);
       window.history.replaceState({}, document.title);
     } else if (location.state && location.state.fromAttributeTypeEdit) {
       const attributeTypeTabIndex = aTabs.findIndex(
@@ -96,7 +97,7 @@ const Browse = () => {
       if (attributeTypeTabIndex !== -1) {
         setSelectedTab(attributeTypeTabIndex);
       }
-      setViewMode("list");
+      setViewMode(VIEW_TYPES.LIST);
       window.history.replaceState({}, document.title);
     } else if (location.state && location.state.fromBrandEdit) {
       const brandTabIndex = aTabs.findIndex(
@@ -105,7 +106,7 @@ const Browse = () => {
       if (brandTabIndex !== -1) {
         setSelectedTab(brandTabIndex);
       }
-      setViewMode("list");
+      setViewMode(VIEW_TYPES.LIST);
       window.history.replaceState({}, document.title);
     } else if (location.state && location.state.fromColorEdit) {
       const colorTabIndex = aTabs.findIndex(
@@ -114,7 +115,7 @@ const Browse = () => {
       if (colorTabIndex !== -1) {
         setSelectedTab(colorTabIndex);
       }
-      setViewMode("list");
+      setViewMode(VIEW_TYPES.LIST);
       window.history.replaceState({}, document.title);
     } else if (location.state && location.state.fromAttributeEdit) {
       const attributeTabIndex = aTabs.findIndex(
@@ -123,7 +124,7 @@ const Browse = () => {
       if (attributeTabIndex !== -1) {
         setSelectedTab(attributeTabIndex);
       }
-      setViewMode("list");
+      setViewMode(VIEW_TYPES.LIST);
       window.history.replaceState({}, document.title);
     } else if (location.state && location.state.fromProductGroupEdit) {
       const productGroupTabIndex = aTabs.findIndex(
@@ -132,7 +133,7 @@ const Browse = () => {
       if (productGroupTabIndex !== -1) {
         setSelectedTab(productGroupTabIndex);
       }
-      setViewMode("list");
+      setViewMode(VIEW_TYPES.LIST);
       window.history.replaceState({}, document.title);
     }
   }, [location.state, t]);
@@ -156,7 +157,7 @@ const Browse = () => {
           onChange={(index) => {
             setSubmitting(true);
             setSelectedTab(index);
-            setViewMode("list");
+            setViewMode(VIEW_TYPES.LIST);
             hideLoaderWithDelay(setSubmitting, 500);
           }}
         >
@@ -187,9 +188,9 @@ const Browse = () => {
           <Tab.Panels>
             {aTabs.map((tab, idx) => (
               <Tab.Panel key={idx} className="p-4 sm:p-6">
-                {sViewMode === "list" ? (
+                {sViewMode === VIEW_TYPES.LIST ? (
                   <tab.list
-                    onCreate={() => setViewMode("create")}
+                    onCreate={() => setViewMode(FORM_MODES.CREATE)}
                     setSubmitting={setSubmitting}
                   />
                 ) : (

@@ -1,36 +1,37 @@
 import { useState, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import Toolbar from "../../../components/Toolbar";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { useAttributeTypes } from "../../../context/AllDataContext";
 import { showEmsg } from "../../../utils/ShowEmsg";
 import Pagination from "../../../components/Pagination";
 import FullscreenErrorPopup from "../../../components/FullscreenErrorPopup";
 import Switch from "../../../components/Switch";
 import { UPDATE_ATTRIBUTE_TYPE_STATUS } from "../../../contants/apiRoutes";
-import { ITEMS_PER_PAGE } from "../../../contants/constants";
+import { ITEMS_PER_PAGE, DEFAULT_PAGE, STATUS, STATUS_VALUES, STATUS_OPTIONS } from "../../../contants/constants";
 import { hideLoaderWithDelay } from "../../../utils/loaderUtils";
+import { fetchResource, updateStatusById, clearResourceError } from "../../../store/slices/allDataSlice"; // Adjust path as needed
 
 const AttributeTypeList = ({ onCreate, onBack, setSubmitting }) => {
   const [sSearchQuery, setSearchQuery] = useState("");
   const [bShowFilter, setShowFilter] = useState(false);
-  const [oFilters, setFilters] = useState({ status: "all" });
+  const [oFilters, setFilters] = useState({ status: STATUS_VALUES.ALL });
   const { t } = useTranslation();
+  const dispatch = useDispatch();
 
   const {
-    data: aAttributeTypes,
-    loading: bLoading,
-    error: sError,
-    total: iTotalItems,
-    fetch: fetchAttributeTypes,
-    updateStatusById,
-  } = useAttributeTypes();
+    data: aAttributeTypes = [],
+    loading: bLoading = false,
+    error: sError = null,
+    total: iTotalItems = 0,
+    pagination,
+  } = useSelector((state) => state.allData.resources.attributeTypes || {});
 
-  const [iCurrentPage, setCurrentPage] = useState(1);
+  const [iCurrentPage, setCurrentPage] = useState(DEFAULT_PAGE);
   const [iItemsPerPage] = useState(ITEMS_PER_PAGE);
   const [statusPopup, setStatusPopup] = useState({
     open: false,
-    attributeTypeId: null,
+    AttributeTypeID: null,
     newStatus: null,
   });
 
@@ -40,16 +41,23 @@ const AttributeTypeList = ({ onCreate, onBack, setSubmitting }) => {
       pageSize: iItemsPerPage,
       searchText: sSearchQuery,
     };
-    if (oFilters.status && oFilters.status !== "all") {
-      params.status = oFilters.status;
+    if (oFilters.status !== STATUS_VALUES.ALL) {
+      params.IsActive = oFilters.status;
     }
-    fetchAttributeTypes(params);
-  }, [iCurrentPage, iItemsPerPage, sSearchQuery, oFilters.status]);
+    dispatch(fetchResource({ key: "attributeTypes", params }));
+  }, [dispatch, iCurrentPage, iItemsPerPage, sSearchQuery, oFilters.status]);
 
-  const handleStatusChange = (attributeTypeId, currentIsActive) => {
+  // Clear error on unmount or when needed
+  useEffect(() => {
+    return () => {
+      dispatch(clearResourceError("attributeTypes"));
+    };
+  }, [dispatch]);
+
+  const handleStatusChange = (AttributeTypeID, currentIsActive) => {
     setStatusPopup({
       open: true,
-      attributeTypeId,
+      AttributeTypeID,
       newStatus: !currentIsActive,
     });
   };
@@ -57,32 +65,42 @@ const AttributeTypeList = ({ onCreate, onBack, setSubmitting }) => {
   const handleStatusConfirm = async () => {
     if (setSubmitting) setSubmitting(true);
 
-    const { attributeTypeId, newStatus } = statusPopup;
-    const result = await updateStatusById(
-      attributeTypeId,
-      newStatus,
-      UPDATE_ATTRIBUTE_TYPE_STATUS,
-      "AttributeTypeID"
-    );
+    const { AttributeTypeID, newStatus } = statusPopup;
+    try {
+      const result = await dispatch(
+        updateStatusById({
+          key: "attributeTypes",
+          id: AttributeTypeID,
+          newStatus,
+          apiRoute: UPDATE_ATTRIBUTE_TYPE_STATUS,
+          idField: "AttributeTypeID",
+        })
+      ).unwrap(); // Use unwrap to get the payload or throw error
 
-    showEmsg(result.message, result.status);
-    setStatusPopup({ open: false, attributeTypeId: null, newStatus: null });
+      showEmsg(result.message, result.status || STATUS.SUCCESS);
+    } catch (err) {
+      console.error(err);
+      showEmsg(t("COMMON.API_ERROR"), STATUS.ERROR);
+    } finally {
+      setStatusPopup({ open: false, AttributeTypeID: null, newStatus: null });
 
-    const params = {
-      pageNumber: iCurrentPage,
-      pageSize: iItemsPerPage,
-      searchText: sSearchQuery,
-    };
-    if (oFilters.status && oFilters.status !== "all") {
-      params.status = oFilters.status;
+      // refetch after update
+      const params = {
+        pageNumber: iCurrentPage,
+        pageSize: iItemsPerPage,
+        searchText: sSearchQuery,
+      };
+      if (oFilters.status !== STATUS_VALUES.ALL) {
+        params.isActive = oFilters.status;
+      }
+      dispatch(fetchResource({ key: "attributeTypes", params }));
+
+      hideLoaderWithDelay(setSubmitting);
     }
-    fetchAttributeTypes(params);
-
-    hideLoaderWithDelay(setSubmitting);
   };
 
   const handleStatusPopupClose = () => {
-    setStatusPopup({ open: false, attributeTypeId: null, newStatus: null });
+    setStatusPopup({ open: false, AttributeTypeID: null, newStatus: null });
   };
 
   const handleFilterChange = (e, filterName) => {
@@ -90,6 +108,8 @@ const AttributeTypeList = ({ onCreate, onBack, setSubmitting }) => {
       ...oFilters,
       [filterName]: e.target.value,
     });
+    // Reset to page 1 when filters change
+    setCurrentPage(DEFAULT_PAGE);
   };
 
   const iTotalPages = Math.ceil(iTotalItems / iItemsPerPage);
@@ -100,15 +120,21 @@ const AttributeTypeList = ({ onCreate, onBack, setSubmitting }) => {
 
   const handleNextPage = () => {
     if (iCurrentPage < iTotalPages) {
-      setCurrentPage((prev) => prev + 1);
+      setCurrentPage((prev) => prev + DEFAULT_PAGE);
     }
   };
 
   const handlePrevPage = () => {
-    if (iCurrentPage > 1) {
-      setCurrentPage((prev) => prev - 1);
+    if (iCurrentPage > DEFAULT_PAGE) {
+      setCurrentPage((prev) => prev - DEFAULT_PAGE);
     }
   };
+
+  // Map STATUS_OPTIONS to the format
+  const statusFilterOptions = STATUS_OPTIONS.map(option => ({
+    value: option.value,
+    label: t(option.labelKey)
+  }));
 
   return (
     <div>
@@ -138,11 +164,7 @@ const AttributeTypeList = ({ onCreate, onBack, setSubmitting }) => {
                     label: t("COMMON.STATUS"),
                     name: "status",
                     value: oFilters.status,
-                    options: [
-                      { value: "all", label: t("COMMON.ALL") },
-                      { value: "Active", label: t("COMMON.ACTIVE") },
-                      { value: "Inactive", label: t("COMMON.INACTIVE") },
-                    ],
+                    options: statusFilterOptions,
                   },
                 ]
               : []
@@ -185,52 +207,55 @@ const AttributeTypeList = ({ onCreate, onBack, setSubmitting }) => {
               </thead>
               <tbody className="table-body">
                 {aAttributeTypes.map((type) => (
-                  <tr key={type.attributeTypeID} className="table-row text-left">
+                  <tr
+                    key={type.AttributeTypeID}
+                    className="table-row text-left"
+                  >
+                    {/* Name */}
                     <td className="table-cell table-cell-text">
                       <Link
-                        to={`/browse/editattributetype/${type.attributeTypeID}`}
+                        to={`/browse/editattributetype/${type.AttributeTypeID}`}
                         className="text-sm font-medium text-blue-600 hover:underline block truncate max-w-[180px]"
                         title={type.name}
                       >
-                        {type.name}
+                        {type.Name}
                       </Link>
                     </td>
+
+                    {/* Description */}
                     <td className="table-cell">
                       <div
                         className="table-cell-subtext truncate max-w-[220px]"
                         title={type.attributeTypeDescription}
                       >
-                        {type.attributeTypeDescription}
+                        {type.AttributeTypeDescription}
                       </div>
                     </td>
+
+                    {/* Total Attributes */}
                     <td className="table-cell table-cell-text text-center">
                       <div className="text-sm text-gray-900 text-center">
-                        {type.count}
+                        {type.TotalAttributes}
                       </div>
                     </td>
+
+                    {/* Status */}
                     <td className="table-cell">
                       <span
                         className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          type.status === t("COMMON.ACTIVE")
-                            ? "status-active"
-                            : "status-inactive"
+                          type.IsActive ? "status-active" : "status-inactive"
                         }`}
                       >
-                        {t(
-                          `COMMON.${
-                            type.status === "Active" ? "ACTIVE" : "INACTIVE"
-                          }`
-                        )}
+                        {t(`COMMON.${type.IsActive ? "ACTIVE" : "INACTIVE"}`)}
                       </span>
                     </td>
+
+                    {/* Switch */}
                     <td className="table-cell table-cell-text">
                       <Switch
-                        checked={type.status === t("COMMON.ACTIVE")}
+                        checked={type.IsActive}
                         onChange={() =>
-                          handleStatusChange(
-                            type.attributeTypeID,
-                            type.status === t("COMMON.ACTIVE")
-                          )
+                          handleStatusChange(type.AttributeTypeID, type.IsActive)
                         }
                       />
                     </td>

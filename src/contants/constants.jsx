@@ -6,7 +6,7 @@ export const STATUS = {
   WARNING:"warning",
   FAILURE:"failure"
 };
-
+export const DEFAULT_COLOR = "#000000";
 export const COLORS = {
   PRIMARY: "#3498db",
   SECONDARY: "#2ecc71",
@@ -34,4 +34,12 @@ export const BANNER_HEIGHT = 600;
 
 export const FILTERS = {
   STATUS: "status",
+};
+export const FORM_MODES = {
+  CREATE: "create",
+  EDIT: "edit",
+};
+export const VIEW_TYPES = {
+  GRID: "grid",
+  LIST: "list",
 };
