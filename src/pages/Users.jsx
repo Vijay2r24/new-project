@@ -5,7 +5,7 @@ import Toolbar from "../components/Toolbar";
 import Pagination from "../components/Pagination";
 import ActionButtons from "../components/ActionButtons";
 import { useTranslation } from "react-i18next";
-import { USER_ACTIVE_STATUS} from "../contants/apiRoutes";
+import { USER_ACTIVE_STATUS } from "../contants/apiRoutes";
 import { useTitle } from "../context/TitleContext";
 import { ITEMS_PER_PAGE, STATUS, STATUS_OPTIONS } from "../contants/constants";
 import FullscreenErrorPopup from "../components/FullscreenErrorPopup";
@@ -37,19 +37,20 @@ const Users = () => {
   const usersState = useSelector(
     (state) => state.allData.resources.users || {}
   );
-  
+
   // Extract data with proper pagination handling
-  const { 
-    data: usersData = [], 
-    total = 0, 
-    loading, 
+  const {
+    data: usersData = [],
+    total = 0,
+    loading,
     error,
-    pagination = {} 
+    pagination = {},
   } = usersState;
 
   // Use API pagination data when available, otherwise calculate locally
   const actualTotal = pagination.totalRecords || total;
-  const nTotalPages = pagination.totalPages || Math.ceil((actualTotal || 0) / itemsPerPage);
+  const nTotalPages =
+    pagination.totalPages || Math.ceil((actualTotal || 0) / itemsPerPage);
   const currentPageSize = pagination.pageSize || itemsPerPage;
 
   const rolesState = useSelector(
@@ -62,10 +63,10 @@ const Users = () => {
   );
   const { data: aStores = [] } = storesState;
 
-  const defaultFilters = { 
-    role: "all", 
+  const defaultFilters = {
+    role: "all",
     status: "all",
-    store: "all"
+    store: "all",
   };
   const [oFilters, setFilters] = useState(defaultFilters);
 
@@ -76,30 +77,33 @@ const Users = () => {
   // Helper function to get profile image URL
   const getProfileImageUrl = (user) => {
     if (!user.ProfileImageUrl) return userProfile;
-    
+
     // Handle both string and array formats
-    if (typeof user.ProfileImageUrl === 'string') {
+    if (typeof user.ProfileImageUrl === "string") {
       return user.ProfileImageUrl;
     }
-    
-    if (Array.isArray(user.ProfileImageUrl) && user.ProfileImageUrl.length > 0) {
+
+    if (
+      Array.isArray(user.ProfileImageUrl) &&
+      user.ProfileImageUrl.length > 0
+    ) {
       // Get the first image with the highest sortOrder or the first one
-      const sortedImages = [...user.ProfileImageUrl].sort((a, b) => 
-        (b.sortOrder || 0) - (a.sortOrder || 0)
+      const sortedImages = [...user.ProfileImageUrl].sort(
+        (a, b) => (b.sortOrder || 0) - (a.sortOrder || 0)
       );
       return sortedImages[0].documentUrl || userProfile;
     }
-    
+
     return userProfile;
   };
 
   // Helper function to get stores as comma-separated string
   const getStoresString = (user) => {
     if (!user.Stores || !Array.isArray(user.Stores)) return "";
-    return user.Stores.map(store => store.StoreName).join(", ");
+    return user.Stores.map((store) => store.StoreName).join(", ");
   };
 
-  // Use useCallback for buildApiParams to prevent unnecessary recreations
+  // Updated buildApiParams function to match Stores component
   const buildApiParams = useCallback(() => {
     const params = {
       pageNumber: nCurrentPage,
@@ -107,11 +111,13 @@ const Users = () => {
       ...(sSearchTerm ? { searchText: sSearchTerm } : {}),
       ...(oFilters.role !== "all" ? { roleName: oFilters.role } : {}),
       ...(oFilters.store !== "all" ? { storeName: oFilters.store } : {}),
-      ...(oFilters.status !== "all" 
-        ? { IsActive: oFilters.status === "Active" } 
-        : {})
     };
-    
+
+    // only include IsActive when it's NOT "all" and NOT empty
+    if (oFilters.status && oFilters.status !== "all") {
+      params.IsActive = oFilters.status;
+    }
+
     return params;
   }, [nCurrentPage, itemsPerPage, sSearchTerm, oFilters]);
 
@@ -139,9 +145,9 @@ const Users = () => {
   ];
 
   const statusOptions = STATUS_OPTIONS.map((opt) => ({
-     value: opt.value,
-     label: t(opt.labelKey),
-   }));
+    value: opt.value,
+    label: t(opt.labelKey),
+  }));
 
   const storeOptions = [
     { value: "all", label: t("COMMON.ALL") },
@@ -254,7 +260,7 @@ const Users = () => {
     if (debounceTimer) {
       clearTimeout(debounceTimer);
     }
-    
+
     const timer = setTimeout(() => {
       const params = buildApiParams();
       dispatch(
@@ -264,15 +270,22 @@ const Users = () => {
         })
       );
     }, 300); // 300ms debounce delay
-    
+
     setDebounceTimer(timer);
-    
+
     return () => {
       if (debounceTimer) {
         clearTimeout(debounceTimer);
       }
     };
-  }, [nCurrentPage, itemsPerPage, sSearchTerm, oFilters, dispatch, buildApiParams]);
+  }, [
+    nCurrentPage,
+    itemsPerPage,
+    sSearchTerm,
+    oFilters,
+    dispatch,
+    buildApiParams,
+  ]);
 
   useEffect(() => {
     setTitle(t("USERS.TITLE"));
@@ -417,10 +430,7 @@ const Users = () => {
                       </td>
                       <td className="table-cell text-left font-medium align-middle">
                         <div className="flex justify-left items-left">
-                          <ActionButtons
-                            id={user.UserID}
-                            onEdit={handleEdit}
-                          />
+                          <ActionButtons id={user.UserID} onEdit={handleEdit} />
                         </div>
                       </td>
                     </tr>
@@ -474,18 +484,16 @@ const Users = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="text-sm text-gray-600">
                   <div className="font-medium mb-1">{t("COMMON.STORE")}:</div>
                   <div className="truncate">{getStoresString(user)}</div>
                 </div>
-                
+
                 <div className="flex flex-wrap items-center gap-2 pt-2">
                   <span
                     className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      user.IsActive
-                        ? "status-active"
-                        : "status-inactive"
+                      user.IsActive ? "status-active" : "status-inactive"
                     }`}
                   >
                     {user.IsActive ? t("COMMON.ACTIVE") : t("COMMON.INACTIVE")}
@@ -507,10 +515,7 @@ const Users = () => {
                   </div>
                 </div>
                 <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 mt-2">
-                  <ActionButtons
-                    id={user.UserID}
-                    onEdit={handleEdit}
-                  />
+                  <ActionButtons id={user.UserID} onEdit={handleEdit} />
                 </div>
               </div>
             ))

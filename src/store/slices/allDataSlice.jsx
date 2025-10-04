@@ -17,7 +17,8 @@ import {
   GET_USER_BY_ID,
   GET_COUNTRIES,
   GET_STATES_BY_COUNTRY_ID,
-  GET_CITIES_BY_STATE_ID
+  GET_CITIES_BY_STATE_ID,
+  GET_ALL_SPECIFICATIONS
 } from "../../contants/apiRoutes";
 import { STATUS } from "../../contants/constants";
 
@@ -69,6 +70,12 @@ const aResourceConfigs = [
     key: "cities",
     api: GET_CITIES_BY_STATE_ID,
     idField: "CityID"
+  },
+  {
+    key:"specificationType",
+    api:GET_ALL_SPECIFICATIONS,
+    totalKey:"totalRecords",
+    idField:"SpecificationTypeID",
   }
 ];
 
