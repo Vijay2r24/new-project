@@ -10,6 +10,7 @@ import { ITEMS_PER_PAGE, STATUS } from "../contants/constants";
 import FullscreenErrorPopup from "../components/FullscreenErrorPopup";
 import { ToastContainer } from "react-toastify";
 import noImage from "../../assets/images/missing-pictur.jpg";
+import Switch from "../components/Switch";
 
 const Banners = () => {
   const [aBanners, setBanners] = useState([]);
@@ -195,7 +196,7 @@ const Banners = () => {
             {paginatedBanners.map((project) => (
               <div
                 key={project.BannerID}
-                className="bg-white shadow-xl rounded-2xl overflow-hidden flex flex-col transition-transform transform hover:scale-[1.03] border border-gray-100"
+                className="bg-white shadow-xl rounded-2xl overflow-hidden flex flex-col transition-transform transform hover:scale-[1.01] border border-gray-100"
               >
                 <div className="relative w-full">
                   {project.BannerImages && project.BannerImages.length > 0 ? (
@@ -213,14 +214,6 @@ const Banners = () => {
                       className="w-full aspect-[16/9] object-contain"
                     />
                   )}
-                  <span
-                    className={`absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-semibold shadow ${project.Status === "Active"
-                        ? "status-active bg-green-100 text-green-800"
-                        : "status-inactive bg-red-100 text-red-800"
-                      }`}
-                  >
-                    {project.Status}
-                  </span>
                   <div className="absolute top-3 right-3 z-20">
                     <button
                       className="text-custom-bg hover:text-custom-bg p-1 rounded-full focus:outline-none"
@@ -263,30 +256,21 @@ const Banners = () => {
                     </p>
                   )}
                   <div className="flex items-center justify-between mt-2">
-                    <div
-                      onClick={() =>
+                      <Switch
+                      checked={project.Status === "Active"}
+                      onChange={() =>
                         handleToggleStatus(project.BannerID, project.Status)
                       }
-                      className={`relative w-10 h-5 rounded-full cursor-pointer transition-all duration-200 ${project.Status === "Active"
-                          ? "bg-blue-600"
-                          : "bg-gray-300"
-                        }`}
-                    >
-                      <div
-                        className={`absolute top-1/2 left-0.5 transform -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-200 ${project.Status === "Active"
-                            ? "translate-x-5"
-                            : "translate-x-0"
-                          }`}
-                      ></div>
-                    </div>
+                      />
                     <span
-                      className={`text-sm font-medium ml-3 ${project.Status === "Active"
-                          ? "text-blue-600"
-                          : "text-gray-500"
-                        }`}
-                    >
-                      {project.Status}
-                    </span>
+    className={`text-sm font-medium ml-3 px-2 py-1 rounded-full text-xs font-semibold shadow ${
+      project.Status === "Active"
+        ? "status-active bg-green-100 text-green-800"
+        : "status-inactive bg-red-100 text-red-800"
+    }`}
+  >
+    {project.Status}
+  </span>
                   </div>
                 </div>
               </div>
@@ -317,7 +301,7 @@ const Banners = () => {
       {statusPopup.open && (
         <FullscreenErrorPopup
           title={t("FULLSCREEN_ERROR_POPUP.TITLE")}
-          message={t("BANNER_FORM.STATUS_CONFIRM_MESSAGE", {
+          message={t("BANNERS.STATUS_CONFIRM_MESSAGE", {
             status: statusPopup.currentStatus === "Active" ? t("COMMON.INACTIVE") : t("COMMON.ACTIVE"),
           })}
           onClose={handleStatusPopupClose}

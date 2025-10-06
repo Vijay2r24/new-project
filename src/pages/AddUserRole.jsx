@@ -225,11 +225,9 @@ const AddUserRole = () => {
         setSubmitting(true);
         const permissions = Object.values(oPermissionsByModule)
           .flat()
-          .filter(permission => permission.IsChecked)
-          .map((permission) => ({
-          
+          .map((permission) => ({ 
             permissionId: permission.ID, 
-            isChecked: true
+            isChecked: permission.IsChecked 
           }));
 
         const userId = localStorage.getItem("userId");
