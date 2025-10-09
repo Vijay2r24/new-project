@@ -154,8 +154,11 @@ const OrderList = () => {
               orderId: order.OrderID,
               orderDate: order.OrderDate,
               totalAmount: order.TotalAmount,
-              totalQuantity: order.totalQuantity,
+              totalOrderItems: order.totalOrderItems,
               paymentStatus: order.payment?.[0]?.PaymentStatusName || "N/A",
+              customerName: `${order.FirstName} ${order.LastName}`.trim(),
+              email: order.Email,
+              phoneNumber: order.PhoneNumber,
               order: order,
             }));
           }
@@ -205,6 +208,17 @@ const OrderList = () => {
       Delivered: "status-delivered",
       Cancelled: "status-cancelled",
       Returned: "status-cancelled",
+    };
+    return statusClasses[status] || "status-default";
+  }, []);
+
+  const getPaymentStatusColor = useCallback((status) => {
+    const statusClasses = {
+      Pending: "status-pending",
+      Completed: "status-delivered",
+      Failed: "status-cancelled",
+      Refunded: "status-cancelled",
+      Processing: "status-processing",
     };
     return statusClasses[status] || "status-default";
   }, []);
@@ -268,16 +282,19 @@ const OrderList = () => {
                     {t("ORDERS.TABLE.ORDER_NUMBER")}
                   </th>
                   <th className="table-head-cell">
-                    {t("ORDERS.TABLE.PRODUCT_NAME")}
+                    {t("ORDERS.TABLE.CUSTOMER_NAME")}
                   </th>
-                  <th className="table-head-cell">{t("COMMON.QUANTITY")}</th>
+                  <th className="table-head-cell">
+                    {t("ORDERS.TABLE.PAYMENT_STATUS")}
+                  </th>
+                  <th className="table-head-cell">{t("COMMON.TOTAL_ORDER_ITEMS")}</th>
                   <th className="table-head-cell">{t("COMMON.ACTIONS")}</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {bFilterLoading ? (
                   <tr>
-                    <td colSpan={4} className="py-8 text-center">
+                    <td colSpan={5} className="py-8 text-center">
                       <div className="flex justify-center">
                         <Loader size="small" />
                       </div>
@@ -285,13 +302,13 @@ const OrderList = () => {
                   </tr>
                 ) : sError ? (
                   <tr>
-                    <td colSpan="4" className="text-center py-8 text-gray-600">
+                    <td colSpan="5" className="text-center py-8 text-gray-600">
                       {sError}
                     </td>
                   </tr>
                 ) : aProductRows.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="text-center py-8 text-gray-600">
+                    <td colSpan="5" className="text-center py-8 text-gray-600">
                       {t("ORDERS.NO_ORDERS_FOUND")}
                     </td>
                   </tr>
@@ -308,12 +325,24 @@ const OrderList = () => {
                       </td>
                       <td className="table-cell">
                         <div className="text-sm text-gray-700 truncate max-w-[200px]">
-                          {productRow.productName || "Unnamed Product"}
+                          {productRow.customerName || "Unknown Customer"}
+                        </div>
+                        <div className="text-xs text-gray-500 truncate max-w-[200px]">
+                          {productRow.email}
                         </div>
                       </td>
                       <td className="table-cell">
+                        <span
+                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getPaymentStatusColor(
+                            productRow.paymentStatus
+                          )}`}
+                        >
+                          {productRow.paymentStatus}
+                        </span>
+                      </td>
+                      <td className="table-cell">
                         <div className="text-sm text-gray-900 text-center">
-                          {productRow.quantity}
+                          {productRow.totalOrderItems}
                         </div>
                       </td>
                       <td className="table-cell">
@@ -360,19 +389,24 @@ const OrderList = () => {
                     {productRow.orderId.split("-")[0]}
                   </div>
                   <span
-                    className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${getStatusColor(
-                      productRow.orderStatus
+                    className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${getPaymentStatusColor(
+                      productRow.paymentStatus
                     )}`}
                   >
-                    {productRow.orderStatus}
+                    {productRow.paymentStatus}
                   </span>
                 </div>
                 <div className="mt-4">
                   <div className="text-base font-bold text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis">
-                    {productRow.productName}
+                    {productRow.customerName}
                   </div>
                   <div className="text-sm text-caption mt-1">
-                    {t("COMMON.QUANTITY")} : {productRow.quantity}
+                    {productRow.email}
+                  </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <div className="text-sm text-gray-600">
+                      {t("COMMON.TOTAL_ORDER_ITEMS")}: {productRow.totalOrderItems}
+                    </div>
                   </div>
                 </div>
 

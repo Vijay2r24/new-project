@@ -401,12 +401,13 @@
     "NO_ORDERS_FOUND": "No Orders Found",
     "VIEW_DETAILS": "View Details",
     "DELIVERY": "Delivery",
-    "SEARCH_PLACEHOLDER": "Search by order Number, product",
+    "SEARCH_PLACEHOLDER": "Search by order Number, Product",
     "TABLE": {
-      "ORDER_NUMBER": "Order Number",
       "ORDER_DATE": "Order Date",
-      "PRODUCT_NAME": "Product Name",
       "CUSTOMER_INFO": "Customer Info",
+       "ORDER_NUMBER": "Order Number",
+      "CUSTOMER_NAME": "Customer Name",
+      "PAYMENT_STATUS": "Payment Status",
       "DELIVERY_INFO": "Delivery Info"
     },
     "FILTERS": {
@@ -451,10 +452,13 @@
     "SUBTOTAL": "Subtotal",
     "SHIPPING": "Shipping",
     "EDIT_ORDER_ITEM": "Edit Item",
-    "REMARKS": "remarks",
+    "REMARKS": "Remarks",
     "TAX": "Tax",
     "HIGHLIGHTED": "Selected",
     "ORDERTOTAL": "Order Total",
+    "PAYMENT_TYPE":"Payment Type",
+    "ORDER_ITEM_HISTORY":"Order Item History",
+    "ORDER_DATE_TIME":"Order Date & time",
     "TABLE": {
       "STATUS": "status",
       "TOTAL": "Total"
@@ -575,7 +579,7 @@
     "CONTACT": "Contact",
     "INVENTORY": "Inventory",
     "EMPLOYEES": "Employees",
-    "SEARCH_PLACEHOLDER": "Search by address, city, or store name",
+    "SEARCH_PLACEHOLDER": "Search by Address, City, or Store name",
     "FILTERS": {
       "USER_ROLE": "User Role",
       "STATUS": "Status"
@@ -842,6 +846,7 @@
     "TOTAL_UPDATES": "Total updates"
   },
   "COMMON": {
+    "TOTAL_ORDER_ITEMS":"totalOrder Items",
     "UPDATE_STATUS": "Active",
     "SAVE_BUTTON": "Save Changes",
     "CANCEL": "Cancel",
@@ -979,5 +984,36 @@
   },
   "NOT_AUTHORIZED": {
     "MESSAGE": "You are not authorized to view this page."
+  },
+  "DATE_PICKER": {
+    "SELECT_DATE": "Select date",
+    "TODAY": "Today",
+    "YESTERDAY": "Yesterday",
+    "PAST_7_DAYS": "Past 7 days",
+    "PAST_30_DAYS": "Past 30 days",
+    "CLEAR": "Clear",
+    "MONTHS": {
+      "JANUARY": "January",
+      "FEBRUARY": "February",
+      "MARCH": "March",
+      "APRIL": "April",
+      "MAY": "May",
+      "JUNE": "June",
+      "JULY": "July",
+      "AUGUST": "August",
+      "SEPTEMBER": "September",
+      "OCTOBER": "October",
+      "NOVEMBER": "November",
+      "DECEMBER": "December"
+    },
+    "DAYS": {
+      "SUN": "Sun",
+      "MON": "Mon",
+      "TUE": "Tue",
+      "WED": "Wed",
+      "THU": "Thu",
+      "FRI": "Fri",
+      "SAT": "Sat"
+    }
   }
 }
