@@ -221,37 +221,55 @@ const BrandList = ({ onCreate, onBack, setSubmitting }) => {
               </thead>
               <tbody className="table-body">
                 {aBrands.map((brand) => (
-                  <tr key={brand.BrandID} className="table-row items-center">
+                  <tr 
+                    key={brand.BrandID} 
+                    className={`table-row items-center ${!brand.IsActive ? 'bg-gray-50' : ''}`}
+                  >
                     {/* Brand Name & Logo */}
                     <td className="table-cell table-cell-text align-middle">
                       <div className="flex items-center gap-2">
                         {/* Brand Logo */}
-                        <div className="h-10 w-10 flex items-center justify-center rounded-full border overflow-hidden bg-white">
+                        <div className={`h-10 w-10 flex items-center justify-center rounded-full border overflow-hidden ${
+                          !brand.IsActive ? 'bg-gray-100 border-gray-200' : 'bg-white'
+                        }`}>
                           {Array.isArray(brand.BrandLogo) &&
                           brand.BrandLogo.length > 0 ? (
                             <img
                               src={brand.BrandLogo[0].documentUrl} // Display first logo
                               alt={brand.BrandName}
-                              className="w-full h-full object-cover"
+                              className={`w-full h-full object-cover ${
+                                !brand.IsActive ? 'opacity-60' : ''
+                              }`}
                               onError={(e) => {
                                 e.target.onerror = null;
                                 e.target.src = "/no-image.png"; // Fallback image
                               }}
                             />
                           ) : (
-                            <span className="text-gray-400 text-xs">
+                            <span className={`text-xs ${
+                              !brand.IsActive ? 'text-gray-400' : 'text-gray-400'
+                            }`}>
                               {t("COMMON.NO_IMAGE")}
                             </span>
                           )}
                         </div>
 
-                        {/* Brand Name with Edit Link */}
-                        <Link
-                          to={`/browse/editbrand/${brand.BrandID}`}
-                          className="text-blue-600 hover:underline block truncate max-w-[200px]"
-                        >
-                          {brand.BrandName}
-                        </Link>
+                        {/* Brand Name with Edit Link - Disabled for inactive brands */}
+                        {brand.IsActive ? (
+                          <Link
+                            to={`/browse/editbrand/${brand.BrandID}`}
+                            className="text-blue-600 hover:underline block truncate max-w-[200px]"
+                          >
+                            {brand.BrandName}
+                          </Link>
+                        ) : (
+                          <span 
+                            className="text-gray-500 block truncate max-w-[200px] cursor-not-allowed"
+                            title={t("PRODUCT_SETUP.BRANDS.EDIT_DISABLED_TOOLTIP")}
+                          >
+                            {brand.BrandName}
+                          </span>
+                        )}
                       </div>
                     </td>
 
@@ -269,7 +287,9 @@ const BrandList = ({ onCreate, onBack, setSubmitting }) => {
                     </td>
 
                     {/* Created At Timestamp */}
-                    <td className="table-cell table-cell-text">
+                    <td className={`table-cell table-cell-text ${
+                      !brand.IsActive ? 'text-gray-400' : ''
+                    }`}>
                       {new Date(brand.CreatedAt).toLocaleString(undefined, {
                         year: "numeric",
                         month: "2-digit",
@@ -281,7 +301,7 @@ const BrandList = ({ onCreate, onBack, setSubmitting }) => {
                     </td>
 
                     {/* Toggle Switch for Status */}
-                    <td className="table-cell table-cell-text text-blue-600 hover:underline cursor-pointer">
+                    <td className="table-cell table-cell-text">
                       <Switch
                         checked={brand.IsActive}
                         onChange={() =>

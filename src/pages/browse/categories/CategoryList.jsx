@@ -216,32 +216,52 @@ const CategoryList = ({ onCreate, onBack, setSubmitting }) => {
               </thead>
               <tbody className="table-body">
                 {aCategories.map((category) => (
-                  <tr key={category.CategoryID} className="table-row">
+                  <tr 
+                    key={category.CategoryID} 
+                    className={`table-row ${!isCategoryActive(category) ? 'bg-gray-50' : ''}`}
+                  >
                     <td className="table-cell table-cell-text align-middle">
                       <div className="flex items-center gap-2">
-                        <div className="h-10 w-10 flex items-center justify-center rounded-full border overflow-hidden bg-white">
+                        <div className={`h-10 w-10 flex items-center justify-center rounded-full border overflow-hidden ${
+                          !isCategoryActive(category) ? 'bg-gray-100 border-gray-200' : 'bg-white'
+                        }`}>
                             {category.CategoryImages && category.CategoryImages.length > 0 ? (
                             <img
                               src={category.CategoryImages[0].documentUrl}
                               alt={category.CategoryName}
-                              className="w-full h-full object-cover"
+                              className={`w-full h-full object-cover ${
+                                !isCategoryActive(category) ? 'opacity-60' : ''
+                              }`}
                             />
                           ) : (
-                            <span className="text-gray-400 text-xs">
+                            <span className={`text-xs ${
+                              !isCategoryActive(category) ? 'text-gray-400' : 'text-gray-400'
+                            }`}>
                               No Image
                             </span>
                           )}
                         </div>
-                        <Link
-                          to={`/browse/editcatagiry/${category.CategoryID}`}
-                          className="text-blue-600 hover:underline block truncate max-w-[180px]"
-                          title={category.CategoryName}
-                        >
-                          {category.CategoryName}
-                        </Link>
+                        {isCategoryActive(category) ? (
+                          <Link
+                            to={`/browse/editcatagiry/${category.CategoryID}`}
+                            className="text-blue-600 hover:underline block truncate max-w-[180px]"
+                            title={category.CategoryName}
+                          >
+                            {category.CategoryName}
+                          </Link>
+                        ) : (
+                          <span 
+                            className="text-gray-500 block truncate max-w-[180px] cursor-not-allowed"
+                            title={t("PRODUCT_SETUP.CATEGORIES.EDIT_DISABLED_TOOLTIP")}
+                          >
+                            {category.CategoryName}
+                          </span>
+                        )}
                       </div>
                     </td>
-                    <td className="table-cell text-left align-middle max-w-[200px] overflow-hidden">
+                    <td className={`table-cell text-left align-middle max-w-[200px] overflow-hidden ${
+                      !isCategoryActive(category) ? 'text-gray-400' : ''
+                    }`}>
                       <div
                         className="truncate table-cell-subtext"
                         title={category.CategoryDescription}
@@ -265,7 +285,9 @@ const CategoryList = ({ onCreate, onBack, setSubmitting }) => {
                         )}
                       </span>
                     </td>
-                    <td className="table-cell table-cell-text">
+                    <td className={`table-cell table-cell-text ${
+                      !isCategoryActive(category) ? 'text-gray-400' : ''
+                    }`}>
                       {new Date(category.CreatedAt).toLocaleString(undefined, {
                         year: "numeric",
                         month: "2-digit",

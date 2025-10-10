@@ -39,6 +39,7 @@ const CreateBrand = () => {
     CreatedBy: "Admin",
     UpdatedBy: "Admin",
     existingLogo: null, // Track existing logo when editing
+    existingLogoDocumentId: null, // Store documentId for removal
   });
 
   // Error messages for validation
@@ -78,6 +79,7 @@ const CreateBrand = () => {
               CreatedBy: brand.CreatedBy || t("COMMON.ADMIN"),
               UpdatedBy: t("COMMON.ADMIN"),
               existingLogo: brand.BrandLogo?.[0] || null, // store first logo if exists
+              existingLogoDocumentId: brand.BrandLogo?.[0]?.documentId || null, // store documentId
             }));
 
             // Set logo preview
@@ -141,7 +143,11 @@ const CreateBrand = () => {
       return;
     }
 
-    setFormData((prev) => ({ ...prev, BrandLogo: file }));
+    setFormData((prev) => ({ 
+      ...prev, 
+      BrandLogo: file,
+      existingLogo: null, // Clear existing logo when new file is uploaded
+    }));
     setImagePreview(URL.createObjectURL(file));
   };
 
@@ -159,7 +165,7 @@ const CreateBrand = () => {
     setFormData((prev) => ({
       ...prev,
       BrandLogo: null,
-      existingLogo: null, // clear reference if editing
+      existingLogo: null, // clear existing logo reference
     }));
     setImagePreview(null);
     setErrors((prev) => ({ ...prev, BrandLogo: "" }));
@@ -205,16 +211,21 @@ const CreateBrand = () => {
       documentMetadata.push({
         image: "brand_image",
         sortOrder: 1,
-        ...(isEditing &&
-          oFormData.existingLogo && {
-            documentId: oFormData.existingLogo.documentId,
-          }),
+        ...(isEditing && oFormData.existingLogoDocumentId && {
+          DocumentID: oFormData.existingLogoDocumentId,
+        }),
       });
-    } else if (isEditing && !sImagePreview) {
-      // If editing and removing the existing logo
+    } else if (isEditing && !sImagePreview && oFormData.existingLogoDocumentId) {
+      // Editing and image removed - send remove action with documentId
       documentMetadata.push({
         action: "remove",
-        documentId: oFormData.existingLogo?.documentId,
+        DocumentID: oFormData.existingLogoDocumentId,
+      });
+    } else if (isEditing && sImagePreview && !oFormData.BrandLogo && oFormData.existingLogoDocumentId) {
+      documentMetadata.push({
+        image: "brand_image",
+        sortOrder: 1,
+        DocumentID: oFormData.existingLogoDocumentId,
       });
     }
 
@@ -228,7 +239,7 @@ const CreateBrand = () => {
         BrandCode: oFormData.BrandCode,
         IsActive: oFormData.IsActive,
         BrandDescription: oFormData.description,
-        documentMetadata,
+        documentMetadata: documentMetadata.length > 0 ? documentMetadata : undefined,
         UpdatedBy: userId,
       };
     } else {
@@ -238,7 +249,7 @@ const CreateBrand = () => {
         BrandCode: oFormData.BrandCode,
         IsActive: oFormData.IsActive,
         BrandDescription: oFormData.description,
-        documentMetadata,
+        documentMetadata: documentMetadata.length > 0 ? documentMetadata : undefined,
         CreatedBy: userId,
       };
     }

@@ -187,6 +187,9 @@ const AttributeTypeValueList = ({ onCreate, onBack, setSubmitting }) => {
                     <th className="table-head-cell">
                       {t("PRODUCT_SETUP.ATTRIBUTES.TABLE.NAME")}
                     </th>
+                    {/* <th className="table-head-cell">
+                      {t("PRODUCT_SETUP.TABS.ATTRIBUTE_TYPES")}
+                    </th> */}
                     <th className="table-head-cell">
                       {t("COMMON.UNIT")}
                     </th>
@@ -200,18 +203,27 @@ const AttributeTypeValueList = ({ onCreate, onBack, setSubmitting }) => {
                   {aAttributes.map((attribute) => (
                     <tr
                       key={attribute.AttributeValueID}
-                      className="table-row text-left"
+                      className={`table-row text-left ${!attribute.IsActive ? 'bg-gray-50' : ''}`}
                     >
                       <td className="table-cell table-cell-text">
-                        <Link
-                          to={`/browse/editattribute/${attribute.AttributeValueID}`}
-                          className="text-blue-600 hover:underline block truncate max-w-[180px]"
-                          title={attribute.Value}
-                        >
-                          {attribute.Value}
-                        </Link>
+                        {attribute.IsActive ? (
+                          <Link
+                            to={`/browse/editattribute/${attribute.AttributeValueID}`}
+                            className="text-blue-600 hover:underline block truncate max-w-[180px]"
+                            title={attribute.Value}
+                          >
+                            {attribute.Value}
+                          </Link>
+                        ) : (
+                          <span 
+                            className="text-gray-500 block truncate max-w-[180px] cursor-not-allowed"
+                            title={t("PRODUCT_SETUP.ATTRIBUTES.EDIT_DISABLED_TOOLTIP")}
+                          >
+                            {attribute.Value}
+                          </span>
+                        )}
                       </td>
-                      <td className="table-cell table-cell-text">
+                      <td className={`table-cell table-cell-text ${!attribute.IsActive ? 'text-gray-400' : ''}`}>
                         <div
                           className="truncate max-w-[220px]"
                           title={attribute.Unit}

@@ -209,21 +209,30 @@ const AttributeTypeList = ({ onCreate, onBack, setSubmitting }) => {
                 {aAttributeTypes.map((type) => (
                   <tr
                     key={type.AttributeTypeID}
-                    className="table-row text-left"
+                    className={`table-row text-left ${!type.IsActive ? 'bg-gray-50' : ''}`}
                   >
                     {/* Name */}
                     <td className="table-cell table-cell-text">
-                      <Link
-                        to={`/browse/editattributetype/${type.AttributeTypeID}`}
-                        className="text-sm font-medium text-blue-600 hover:underline block truncate max-w-[180px]"
-                        title={type.name}
-                      >
-                        {type.Name}
-                      </Link>
+                      {type.IsActive ? (
+                        <Link
+                          to={`/browse/editattributetype/${type.AttributeTypeID}`}
+                          className="text-sm font-medium text-blue-600 hover:underline block truncate max-w-[180px]"
+                          title={type.name}
+                        >
+                          {type.Name}
+                        </Link>
+                      ) : (
+                        <span 
+                          className="text-sm font-medium text-gray-500 block truncate max-w-[180px] cursor-not-allowed"
+                          title={t("PRODUCT_SETUP.ATTRIBUTE_TYPE.EDIT_DISABLED_TOOLTIP")}
+                        >
+                          {type.Name}
+                        </span>
+                      )}
                     </td>
 
                     {/* Description */}
-                    <td className="table-cell">
+                    <td className={`table-cell ${!type.IsActive ? 'text-gray-400' : ''}`}>
                       <div
                         className="table-cell-subtext truncate max-w-[220px]"
                         title={type.attributeTypeDescription}
@@ -233,8 +242,8 @@ const AttributeTypeList = ({ onCreate, onBack, setSubmitting }) => {
                     </td>
 
                     {/* Total Attributes */}
-                    <td className="table-cell table-cell-text text-center">
-                      <div className="text-sm text-gray-900 text-center">
+                    <td className={`table-cell table-cell-text text-center ${!type.IsActive ? 'text-gray-400' : ''}`}>
+                      <div className="text-sm text-center">
                         {type.TotalAttributes}
                       </div>
                     </td>
