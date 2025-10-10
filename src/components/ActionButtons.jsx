@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { Edit, Trash, MoreVertical } from 'lucide-react';
-
-const ActionButtons = ({ id, onEdit,disableEdit, onDelete, onMore, canDelete = true }) => {
+import { Edit, Trash, MoreVertical, Eye  } from 'lucide-react';
+import { Link } from "react-router-dom";
+const ActionButtons = ({ id, onEdit,disableEdit, onDelete, onMore,viewLink, canDelete = true }) => {
   const { t } = useTranslation();
   
   return (
@@ -28,6 +28,15 @@ const ActionButtons = ({ id, onEdit,disableEdit, onDelete, onMore, canDelete = t
         >
           <Trash className="h-5 w-5" />
         </button>
+      )}
+       {viewLink && (
+        <Link 
+          to={viewLink} 
+          className="view-button" 
+          title={t("COMMON.VIEW")}
+        >
+          <Eye className="h-5 w-5" />
+        </Link>
       )}
     </div>
   );

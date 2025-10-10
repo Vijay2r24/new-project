@@ -142,13 +142,13 @@ const ProductList = () => {
         params.IsActive = oFilters.status.toLowerCase();
       }
       if (oFilters.category && oFilters.category !== "all") {
-        params.categoryName = oFilters.category;
+        params.categoryId = oFilters.category;
       }
       if (oFilters.brand && oFilters.brand !== "all") {
-        params.brandName = oFilters.brand;
+        params.brandId = oFilters.brand;
       }
       if (oFilters.store && oFilters.store !== "all") {
-        params.storeName = oFilters.store;
+        params.storeId = oFilters.store;
       }
 
       const oResponse = await apiGet(GETPRODUCTDETAILS, params, token);
@@ -216,7 +216,7 @@ const ProductList = () => {
   const categoryOptions = [
     { value: "all", label: t("COMMON.ALL") },
     ...categories.map((cat) => ({
-      value: cat.CategoryName,
+      value: cat.CategoryID,
       label: cat.CategoryName,
     })),
   ];
@@ -224,7 +224,7 @@ const ProductList = () => {
   const brandOptions = [
     { value: "all", label: t("COMMON.ALL") },
     ...brands.map((brand) => ({
-      value: brand.BrandName,
+      value: brand.BrandID,
       label: brand.BrandName,
     })),
   ];
@@ -232,7 +232,7 @@ const ProductList = () => {
   const storeOptions = [
     { value: "all", label: t("COMMON.ALL") },
     ...stores.map((store) => ({
-      value: store.StoreName,
+      value: store.StoreID,
       label: store.StoreName,
     })),
   ];
@@ -543,6 +543,7 @@ const ProductList = () => {
                             id={product.ProductID}
                             onEdit={handleEdit}
                             disableEdit={!product.IsActive}
+                            viewLink={`/productdetails/${product.ProductID}`} 
                           />
                         </div>
                       </td>
@@ -640,6 +641,7 @@ const ProductList = () => {
                   id={product.ProductID} 
                   onEdit={handleEdit} 
                   disableEdit={!product.IsActive}
+                  viewLink={`/productdetails/${product.ProductID}`} 
                 />
               </div>
             ))

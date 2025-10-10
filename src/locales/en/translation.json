@@ -866,6 +866,7 @@
     "NEXT": "Next",
     "ALL": "All",
     "EDIT": "Edit",
+    "VIEW":"View",
     "ERROR": "Error",
     "DELETE": "Delete",
     "CLEAR_SEARCH": "Clear search",
