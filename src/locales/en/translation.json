@@ -720,7 +720,9 @@
     "CREATE_BANNER_DESCRIPTION": "Create and upload banners for your store. Add images, set categories, brands, and more.",
     "BANNER_STATUS_UPDATE_SUCCESS": "Banner status updated successfully.",
     "BANNER_STATUS_UPDATE_ERROR": "Failed to update banner status.",
-    "NO_BANNERS_FOUND": "No banners found."
+    "NO_BANNERS_FOUND": "No banners found.",
+    "PAGE":"page",
+    "OF":"of"
   },
   "NOTIFICATIONS": {
     "TITLE": "Notifications",
