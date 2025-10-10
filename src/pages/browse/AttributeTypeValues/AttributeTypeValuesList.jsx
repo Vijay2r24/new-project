@@ -187,9 +187,6 @@ const AttributeTypeValueList = ({ onCreate, onBack, setSubmitting }) => {
                     <th className="table-head-cell">
                       {t("PRODUCT_SETUP.ATTRIBUTES.TABLE.NAME")}
                     </th>
-                    {/* <th className="table-head-cell">
-                      {t("PRODUCT_SETUP.TABS.ATTRIBUTE_TYPES")}
-                    </th> */}
                     <th className="table-head-cell">
                       {t("COMMON.UNIT")}
                     </th>
