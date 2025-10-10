@@ -63,10 +63,22 @@ const OrderList = () => {
       if (initialLoadComplete) {
         setFilterLoading(true);
       }
-      setFilters((prevFilters) => ({
-        ...prevFilters,
-        [filterName]: e.target.value,
-      }));
+      
+      if (filterName === 'dateRange') {
+        // Handle date range picker
+        const dateValue = e.target.value;
+        setFilters((prevFilters) => ({
+          ...prevFilters,
+          startDate: dateValue?.startDate || '',
+          endDate: dateValue?.endDate || '',
+        }));
+      } else {
+        // Handle other filters
+        setFilters((prevFilters) => ({
+          ...prevFilters,
+          [filterName]: e.target.value,
+        }));
+      }
       setCurrentPage(1);
     },
     [initialLoadComplete]
@@ -103,15 +115,9 @@ const OrderList = () => {
       options: getPaymentStatusOptions(),
     },
     {
-      label: t("ORDERS.FILTERS.START_DATE"),
-      name: "startDate",
-      value: oFilters.startDate,
-      type: "date",
-    },
-    {
-      label: t("ORDERS.FILTERS.END_DATE"),
-      name: "endDate",
-      value: oFilters.endDate,
+      label: "Date Range",
+      name: "dateRange",
+      value: { startDate: oFilters.startDate, endDate: oFilters.endDate },
       type: "date",
     },
   ];

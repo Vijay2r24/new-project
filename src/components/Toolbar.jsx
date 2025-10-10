@@ -1,4 +1,4 @@
-import { Search, List, LayoutGrid, Filter, Plus, Download } from 'lucide-react';
+import { Search, List, LayoutGrid, Filter, Plus, Download, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Select from 'react-select';
 import CustomDatePicker from './CustomDatePicker';
@@ -22,6 +22,12 @@ const OrderToolbar = ({
   onExport, // ✅ Added prop for Export
 }) => {
   const { t } = useTranslation();
+
+  // Remove any explicit end-date filter entries
+  const filtersToRender = (additionalFilters || []).filter((f) => {
+    const n = (f?.name || '').toString().toLowerCase();
+    return n !== 'enddate' && n !== 'end_date' && n !== 'end';
+  });
 
   return (
     <div className="mb-6">
@@ -100,9 +106,9 @@ const OrderToolbar = ({
       </div>
 
       {showFilterDropdown && (
-        <div className="mt-4 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+        <div className="mt-2 p-4 bg-white rounded-lg border border-gray-200 shadow-sm relative overflow-visible z-30">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-sm font-medium text-gray-900">{t('TOOLBAR.FILTERS')}</h3>
+            <h3 className="text-sm font-medium text-gray-900"></h3>
             {onClearFilters && (
               <button
                 onClick={onClearFilters}
@@ -114,10 +120,10 @@ const OrderToolbar = ({
           </div>
 
           <div className="flex flex-wrap gap-4">
-            {additionalFilters.map((filter, index) => {
+            {filtersToRender.map((filter, index) => {
               if (filter.type === 'date') {
                 return (
-                  <div key={index} className="mb-4 w-48">
+                  <div key={index} className="mb-4 w-48 relative z-40">
                     <CustomDatePicker
                       label={filter.label}
                       value={filter.value}
@@ -151,7 +157,7 @@ const OrderToolbar = ({
                           )
                         }
                         options={filter.options}
-                        placeholder={filter.searchPlaceholder || 'Search...'}
+                        placeholder=""
                         isSearchable
                         className="w-48"
                         classNamePrefix="react-select"
@@ -159,24 +165,39 @@ const OrderToolbar = ({
                         components={{
                           DropdownIndicator: () => (
                             <div className="pl-2 flex items-center">
-                              <Search className="h-4 w-4 text-gray-400" />
+                              <ChevronDown className="h-4 w-4 text-gray-400" />
                             </div>
                           ),
+                          IndicatorSeparator: () => null,
                         }}
                       />
                     ) : (
-                      <select
-                        value={filter.value}
-                        onChange={(e) => handleFilterChange(e, filter.name)}
-                        className="block w-48 px-3 py-2 border border-gray-300 rounded-lg focus:ring-[#5B45E0] focus:border-[#5B45E0] sm:text-sm"
-                      >
-                        {filter.options &&
-                          filter.options.map((option, idx) => (
-                            <option key={idx} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                      </select>
+                      <Select
+                        value={
+                          (filter.options &&
+                            filter.options.find((opt) => opt.value === filter.value)) ||
+                          null
+                        }
+                        onChange={(option) =>
+                          handleFilterChange(
+                            { target: { value: option.value } },
+                            filter.name
+                          )
+                        }
+                        options={filter.options}
+                        placeholder="Select option..."
+                        isSearchable={false}
+                        className="w-48"
+                        classNamePrefix="react-select"
+                        components={{
+                          DropdownIndicator: () => (
+                            <div className="pl-2 flex items-center">
+                              <ChevronDown className="h-4 w-4 text-gray-400" />
+                            </div>
+                          ),
+                          IndicatorSeparator: () => null,
+                        }}
+                      />
                     )}
                   </div>
                 );
