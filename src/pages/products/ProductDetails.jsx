@@ -39,7 +39,7 @@ const ProductDetails = () => {
   const [selectedImage, setSelectedImage] = useState(0);
 
   useEffect(() => {
-    setTitle(`${t("PRODUCTS.PRODUCTS_DETAILS")} - Admin`);
+    setTitle(`${t("PRODUCTS.PRODUCTS_DETAILS")}`);
     setBackButton(<BackButton onClick={() => navigate("/productList")} />);
     fetchProductDetails();
     return () => {
