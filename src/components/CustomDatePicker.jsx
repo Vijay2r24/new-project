@@ -1,8 +1,14 @@
-import React from 'react';
+import React from "react";
 import Datepicker from "react-tailwindcss-datepicker";
 import { Calendar, X } from "lucide-react";
- 
-const CustomDatePicker = ({ value = { startDate: null, endDate: null }, onChange, label = "Date Range", ...rest }) => {
+import { DATE_PICKER_CONFIG } from "../contants/constants";
+
+const CustomDatePicker = ({
+  value = { startDate: null, endDate: null },
+  onChange,
+  label = "Date Range",
+  ...rest
+}) => {
   const handleClear = () => {
     const clearedValue = { startDate: null, endDate: null };
     onChange?.(clearedValue);
@@ -12,7 +18,7 @@ const CustomDatePicker = ({ value = { startDate: null, endDate: null }, onChange
     // Ensure we pass the dates in the correct format
     const formattedValue = {
       startDate: newValue?.startDate || null,
-      endDate: newValue?.endDate || null
+      endDate: newValue?.endDate || null,
     };
     onChange?.(formattedValue);
   };
@@ -22,7 +28,7 @@ const CustomDatePicker = ({ value = { startDate: null, endDate: null }, onChange
   // Ensure the value passed to Datepicker is always in the correct format
   const datePickerValue = {
     startDate: value?.startDate || null,
-    endDate: value?.endDate || null
+    endDate: value?.endDate || null,
   };
 
   return (
@@ -52,11 +58,13 @@ const CustomDatePicker = ({ value = { startDate: null, endDate: null }, onChange
             useRange={true}
             asSingle={false}
             showShortcuts={true}
-            primaryColor="purple"
-            popoverDirection="down"
-            displayFormat="YYYY-MM-DD"
+            primaryColor={DATE_PICKER_CONFIG.PRIMARY_COLOR}
+            popoverDirection={DATE_PICKER_CONFIG.POPOVER_DIRECTION}
+            displayFormat={DATE_PICKER_CONFIG.DISPLAY_FORMAT}
             containerClassName="relative w-full z-10"
-            inputClassName={`block w-full ${hasValue ? 'pr-10' : 'pr-3'} pl-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5B45E0] focus:border-[#5B45E0] sm:text-sm bg-white text-gray-900`}
+            inputClassName={`block w-full ${
+              hasValue ? "pr-10" : "pr-3"
+            } pl-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5B45E0] focus:border-[#5B45E0] sm:text-sm bg-white text-gray-900`}
             {...rest}
           />
         </div>
@@ -64,5 +72,5 @@ const CustomDatePicker = ({ value = { startDate: null, endDate: null }, onChange
     </div>
   );
 };
- 
+
 export default CustomDatePicker;
