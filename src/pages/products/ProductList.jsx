@@ -142,13 +142,13 @@ const ProductList = () => {
         params.IsActive = oFilters.status.toLowerCase();
       }
       if (oFilters.category && oFilters.category !== "all") {
-        params.categoryName = oFilters.category;
+        params.categoryId = oFilters.category;
       }
       if (oFilters.brand && oFilters.brand !== "all") {
-        params.brandName = oFilters.brand;
+        params.brandId = oFilters.brand;
       }
       if (oFilters.store && oFilters.store !== "all") {
-        params.storeName = oFilters.store;
+        params.storeId = oFilters.store;
       }
 
       const oResponse = await apiGet(GETPRODUCTDETAILS, params, token);
@@ -216,7 +216,7 @@ const ProductList = () => {
   const categoryOptions = [
     { value: "all", label: t("COMMON.ALL") },
     ...categories.map((cat) => ({
-      value: cat.CategoryName,
+      value: cat.CategoryID,
       label: cat.CategoryName,
     })),
   ];
@@ -224,7 +224,7 @@ const ProductList = () => {
   const brandOptions = [
     { value: "all", label: t("COMMON.ALL") },
     ...brands.map((brand) => ({
-      value: brand.BrandName,
+      value: brand.BrandID,
       label: brand.BrandName,
     })),
   ];
@@ -232,7 +232,7 @@ const ProductList = () => {
   const storeOptions = [
     { value: "all", label: t("COMMON.ALL") },
     ...stores.map((store) => ({
-      value: store.StoreName,
+      value: store.StoreID,
       label: store.StoreName,
     })),
   ];
@@ -449,36 +449,62 @@ const ProductList = () => {
                   </tr>
                 ) : (
                   aProducts.map((product) => (
-                    <tr key={product.ProductID} className="table-row text-left">
+                    <tr key={product.ProductID} className={`table-row text-left ${!product.IsActive ? 'bg-gray-50' : ''}`}>
                       <td className="table-cell">
-                        <Link
-                          to={`/productdetails/${product.ProductID}`}
-                          className="flex items-center justify-left hover:bg-gray-50 p-2 rounded transition"
-                        >
-                          <div className="flex items-center justify-left">
-                            <div className="h-10 w-10 flex-shrink-0">
-                              <img
-                                className="h-10 w-10 rounded object-cover"
-                                src={product.firstImage}
-                                alt={product.ProductName}
-                                onError={(e) => {
-                                  e.target.onerror = null;
-                                  e.target.src = noImage;
-                                }}
-                              />
+                        {product.IsActive ? (
+                          <Link
+                            to={`/productdetails/${product.ProductID}`}
+                            className="flex items-center justify-left hover:bg-gray-50 p-2 rounded transition"
+                          >
+                            <div className="flex items-center justify-left">
+                              <div className="h-10 w-10 flex-shrink-0">
+                                <img
+                                  className="h-10 w-10 rounded object-cover"
+                                  src={product.firstImage}
+                                  alt={product.ProductName}
+                                  onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = noImage;
+                                  }}
+                                />
+                              </div>
+                              <div className="ml-3">
+                                <div
+                                  className="font-medium text-sm text-gray-900 ellipsis-text"
+                                  title={product.ProductName}
+                                >
+                                  {product.ProductName}
+                                </div>
+                              </div>
                             </div>
-                            <div className="ml-3">
-                              <div
-                                className="font-medium text-sm text-gray-900 ellipsis-text"
-                                title={product.ProductName}
-                              >
-                                {product.ProductName}
+                          </Link>
+                        ) : (
+                          <div className="flex items-center justify-left p-2">
+                            <div className="flex items-center justify-left">
+                              <div className="h-10 w-10 flex-shrink-0">
+                                <img
+                                  className="h-10 w-10 rounded object-cover opacity-60"
+                                  src={product.firstImage}
+                                  alt={product.ProductName}
+                                  onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = noImage;
+                                  }}
+                                />
+                              </div>
+                              <div className="ml-3">
+                                <div
+                                  className="font-medium text-sm text-gray-500 ellipsis-text cursor-not-allowed"
+                                  title={t("PRODUCTS.EDIT_DISABLED_TOOLTIP")}
+                                >
+                                  {product.ProductName}
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </Link>
+                        )}
                       </td>
-                      <td className="table-cell table-cell-text">
+                      <td className={`table-cell table-cell-text ${!product.IsActive ? 'text-gray-400' : ''}`}>
                         <div
                           className="ellipsis-text"
                           title={product.subCategory}
@@ -486,10 +512,10 @@ const ProductList = () => {
                           {product.subCategory}
                         </div>
                       </td>
-                      <td className="table-cell text-left table-cell-text">
+                      <td className={`table-cell text-left table-cell-text ${!product.IsActive ? 'text-gray-400' : ''}`}>
                         ₹{parseFloat(product.MRP).toFixed(2)}
                       </td>
-                      <td className="table-cell text-center table-cell-text">
+                      <td className={`table-cell text-center table-cell-text ${!product.IsActive ? 'text-gray-400' : ''}`}>
                         {product.quantity || 0}
                       </td>
                       <td className="table-cell">
@@ -503,7 +529,7 @@ const ProductList = () => {
                           }
                         />
                       </td>
-                      <td className="table-cell text-left table-cell-text">
+                      <td className={`table-cell text-left table-cell-text ${!product.IsActive ? 'text-gray-400' : ''}`}>
                         <div
                           className="ellipsis-text"
                           title={product.storeName}
@@ -516,6 +542,8 @@ const ProductList = () => {
                           <ActionButtons
                             id={product.ProductID}
                             onEdit={handleEdit}
+                            disableEdit={!product.IsActive}
+                            viewLink={`/productdetails/${product.ProductID}`} 
                           />
                         </div>
                       </td>
@@ -540,7 +568,9 @@ const ProductList = () => {
             aProducts.map((product) => (
               <div
                 key={product.ProductID}
-                className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col gap-4 hover:shadow-lg transition-shadow duration-200"
+                className={`bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col gap-4 hover:shadow-lg transition-shadow duration-200 ${
+                  !product.IsActive ? 'bg-gray-50' : ''
+                }`}
               >
                 <div className="flex items-center justify-between">
                   <span
@@ -560,11 +590,15 @@ const ProductList = () => {
                   />
                 </div>
                 <div className="flex items-center gap-4 mt-2">
-                  <div className="flex-shrink-0 h-16 w-16 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                  <div className={`flex-shrink-0 h-16 w-16 rounded-lg flex items-center justify-center overflow-hidden ${
+                    !product.IsActive ? 'bg-gray-100' : 'bg-gray-100'
+                  }`}>
                     <img
                       src={product.firstImage}
                       alt={product.ProductName}
-                      className="h-full w-full object-cover"
+                      className={`h-full w-full object-cover ${
+                        !product.IsActive ? 'opacity-60' : ''
+                      }`}
                       onError={(e) => {
                         e.target.onerror = null;
                         e.target.src = noImage;
@@ -575,21 +609,27 @@ const ProductList = () => {
                   </div>
                   <div className="flex-1">
                     <div
-                      className="text-sm font-medium text-gray-900 ellipsis-text"
-                      title={product.ProductName}
+                      className={`text-sm font-medium ellipsis-text ${
+                        !product.IsActive ? 'text-gray-500 cursor-not-allowed' : 'text-gray-900'
+                      }`}
+                      title={!product.IsActive ? t("PRODUCTS.EDIT_DISABLED_TOOLTIP") : product.ProductName}
                     >
                       {product.ProductName}
                     </div>
                   </div>
                 </div>
                 <div
-                  className="text-sm text-gray-900 mt-2 ellipsis-text"
+                  className={`text-sm mt-2 ellipsis-text ${
+                    !product.IsActive ? 'text-gray-400' : 'text-gray-900'
+                  }`}
                   title={product.subCategory}
                 >
                   <span className="font-medium">{t("COMMON.CATEGORY")}</span>{" "}
                   {product.subCategory}
                 </div>
-                <div className="flex items-center justify-between border-t pt-2 mt-2">
+                <div className={`flex items-center justify-between border-t pt-2 mt-2 ${
+                  !product.IsActive ? 'text-gray-400' : ''
+                }`}>
                   <div>
                     {t("PRODUCTS.STOCK")}: {product.quantity || 0}
                   </div>
@@ -597,7 +637,12 @@ const ProductList = () => {
                     {t("COMMON.PRICE")} ₹{parseFloat(product.MRP).toFixed(2)}
                   </div>
                 </div>
-                <ActionButtons id={product.ProductID} onEdit={handleEdit} />
+                <ActionButtons 
+                  id={product.ProductID} 
+                  onEdit={handleEdit} 
+                  disableEdit={!product.IsActive}
+                  viewLink={`/productdetails/${product.ProductID}`} 
+                />
               </div>
             ))
           )}

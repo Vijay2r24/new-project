@@ -1167,7 +1167,7 @@ const AddProductForm = () => {
               selectedIndex={nSelectedVariantIndex}
               onChange={setSelectedVariantIndex}
             >
-              <Tab.List className="flex flex-wrap border-b border-gray-200 bg-gray-50 p-4">
+              <Tab.List className="flex border-b border-gray-200 bg-gray-50 p-4 space-x-2 overflow-x-auto whitespace-nowrap scrollbar-hide">
                 {aVariants.map((variant, index) => (
                   <Tab
                     key={index}

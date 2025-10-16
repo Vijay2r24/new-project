@@ -151,7 +151,7 @@
     },
     "ATTRIBUTES": {
       "TITLE": "Attributes",
-      "SEARCH_PLACEHOLDER": "Search attributes...",
+      "SEARCH_PLACEHOLDER": "Search Attributes...",
       "TABLE": {
         "NAME": "Name",
         "TYPE": "Type"
@@ -162,7 +162,10 @@
       "STATUS_UPDATE_WARNING": "This attribute is used in one or more products. Deactivating it may affect product listings.",
       "EMPTY_MESSAGE": "No attributes found.",
       "CONFIRM_ACTIVATE": "Are you sure you want to activate this attribute?",
-      "CONFIRM_DEACTIVATE": "Are you sure you want to deactivate this attribute?"
+      "CONFIRM_DEACTIVATE": "Are you sure you want to deactivate this attribute?",
+      "NO_ATTRIBUTE_VALUES": "No attribute values found",
+      "NO_ATTRIBUTE_VALUES_DESC": "This attribute type does not have any values yet.",
+      "EDIT_DISABLED_TOOLTIP": "Editing disabled for inactive attributes. Activate the attribute to enable editing."
     },
     "CREATE_ATTRIBUTES": {
       "CREATE_TITLE": "Create Attribute",
@@ -197,7 +200,7 @@
     },
     "PRODUCT_GROUPS": {
       "TITLE": "Product Groups",
-      "SEARCH_PLACEHOLDER": "Search product group",
+      "SEARCH_PLACEHOLDER": "Search Product Group",
       "EMPTY": {
         "MESSAGE": "No product groups found."
       },
@@ -210,7 +213,7 @@
     },
     "ATTRIBUTE_TYPE": {
       "LIST_TITLE": "Trait Types",
-      "SEARCH_PLACEHOLDER": "Search traittypes...",
+      "SEARCH_PLACEHOLDER": "Search Trail Types...",
       "NAME": "Name",
       "CODE": "Code",
       "DESCRIPTION_LABEL": "Description",
@@ -219,7 +222,8 @@
       "EMPTY_MESSAGE": "No Trait types found",
       "EDIT_TITLE": "Edit trait Type",
       "CONFIRM_ACTIVATE": "Are you sure you want to activate this trait type?",
-      "CONFIRM_DEACTIVATE": "Are you sure you want to deactivate this trait type?"
+      "CONFIRM_DEACTIVATE": "Are you sure you want to deactivate this trait type?",
+      "EDIT_DISABLED_TOOLTIP": "Editing disabled for inactive attribute types. Activate the attribute type to enable editing."
     },
     "CREATE_ATTRIBUTE_TYPE": {
       "CREATE_TITLE": "Create trait Type",
@@ -236,7 +240,7 @@
     },
     "BRANDS": {
       "HEADING": "Brands",
-      "SEARCH_PLACEHOLDER": "Search brands...",
+      "SEARCH_PLACEHOLDER": "Search Brands...",
       "TABLE": {
         "NAME": "Brand Name",
         "LOGO": "Logo",
@@ -250,7 +254,8 @@
       },
       "CONFIRM_ACTIVATE": "Are you sure you want to activate this brand?",
       "CONFIRM_DEACTIVATE": "Are you sure you want to deactivate this brand?",
-      "NO_BRANDS_FOUND": "No brands found."
+      "NO_BRANDS_FOUND": "No brands found.",
+      "EDIT_DISABLED_TOOLTIP": "Editing disabled for inactive brands. Activate the brand to enable editing."
     },
     "CREATE_BRAND": {
       "CREATE_TITLE": "Create Brand",
@@ -274,7 +279,7 @@
     },
     "CATEGORIES": {
       "TITLE": "Categories",
-      "SEARCH_PLACEHOLDER": "Search category...",
+      "SEARCH_PLACEHOLDER": "Search Category...",
       "TABLE": {
         "NAME": "Name",
         "IMAGE": "Image"
@@ -288,7 +293,8 @@
         "CONFIRM_BUTTON": "Confirm"
       },
       "CONFIRM_ACTIVATE": "Are you sure you want to activate this category?",
-      "CONFIRM_DEACTIVATE": "Are you sure you want to deactivate this category?"
+      "CONFIRM_DEACTIVATE": "Are you sure you want to deactivate this category?",
+      "EDIT_DISABLED_TOOLTIP": "Editing disabled for inactive categories. Activate the category to enable editing."
     },
     "CREATE_CATEGORY": {
       "CREATE_TITLE": "Create Category",
@@ -315,7 +321,7 @@
     },
     "COLORS": {
       "TITLE": "Colors",
-      "SEARCH_PLACEHOLDER": "Search color...",
+      "SEARCH_PLACEHOLDER": "Search Color...",
       "TABLE": {
         "COLOR": "Color",
         "HEX_CODE": "Hex Code"
@@ -350,7 +356,8 @@
       "NAME_PLACEHOLDER": "Enter specification type name",
       "CONFIRM_ACTIVATE": "Are you sure you want to activate this item?",
       "CONFIRM_DEACTIVATE": "Are you sure you want to deactivate this item?",
-      "SEARCH_PLACEHOLDER": "Search specification types...",
+      "SEARCH_PLACEHOLDER": "Search Specification Types...",
+      "EDIT_DISABLED_TOOLTIP": "Editing disabled for inactive specification types. Activate the specification type to enable editing.",
       "TABLE": {
         "NAME": "Name"
       }
@@ -401,7 +408,7 @@
     "NO_ORDERS_FOUND": "No Orders Found",
     "VIEW_DETAILS": "View Details",
     "DELIVERY": "Delivery",
-    "SEARCH_PLACEHOLDER": "Search by order Number, product",
+    "SEARCH_PLACEHOLDER": "Search by Order Number, Product",
     "TABLE": {
       "ORDER_NUMBER": "Order Number",
       "ORDER_DATE": "Order Date",
@@ -492,7 +499,8 @@
     "STORE_INVENTORY":"Store Inventory",
     "UNITS":"units",
     "ADDITIONAL_INFO":"Additional Information",
-    "PRICING_RANGE":"Pricing Range"
+    "PRICING_RANGE":"Pricing Range",
+    "EDIT_DISABLED_TOOLTIP": "Editing disabled for inactive products. Activate the product to enable editing."
   },
   "PRODUCT_CREATION": {
     "PRODUCT_NAME": "Product Name",
@@ -575,7 +583,7 @@
     "CONTACT": "Contact",
     "INVENTORY": "Inventory",
     "EMPLOYEES": "Employees",
-    "SEARCH_PLACEHOLDER": "Search by address, city, or store name",
+    "SEARCH_PLACEHOLDER": "Search by Address, City, or Store name",
     "FILTERS": {
       "USER_ROLE": "User Role",
       "STATUS": "Status"
@@ -623,7 +631,7 @@
     },
     "NO_USERS_FOUND": "No users found.",
     "USERS_FOUND": "Loading users...",
-    "SEARCH_PLACEHOLDER": "Search users",
+    "SEARCH_PLACEHOLDER": "Search Users",
     "FETCH_ERROR": "An error occurred while fetching users.",
     "FILTERS": {
       "USER_ROLE": "User Role",
@@ -722,7 +730,8 @@
     "BANNER_STATUS_UPDATE_ERROR": "Failed to update banner status.",
     "NO_BANNERS_FOUND": "No banners found.",
     "PAGE":"page",
-    "OF":"of"
+    "OF":"of",
+    "IMAGE_DIMENSIONS_TOO_SMALL": "Image dimensions are too small. Minimum size required is {{width}}x{{height}} pixels."
   },
   "NOTIFICATIONS": {
     "TITLE": "Notifications",
@@ -826,7 +835,6 @@
     "SEQUENCE": "Sequence",
     "STATUS_ACTIVE": "Active",
     "STATUS_INACTIVE": "Inactive",
-    "IMAGE_DIMENSIONS_TOO_SMALL": "Image dimensions are too small. Minimum size required is {{width}}x{{height}} pixels.",
     "INVALID_IMAGE_TYPE": "Only image files are allowed. Please upload a valid image.",
     "PAUSE": "Pause auto-play",
     "PLAY": "Start auto-play",
@@ -858,6 +866,7 @@
     "NEXT": "Next",
     "ALL": "All",
     "EDIT": "Edit",
+    "VIEW":"View",
     "ERROR": "Error",
     "DELETE": "Delete",
     "CLEAR_SEARCH": "Clear search",

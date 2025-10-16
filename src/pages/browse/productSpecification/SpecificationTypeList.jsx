@@ -380,11 +380,12 @@ const SpecificationTypeList = ({ setSubmitting }) => {
                 {aSpecificationTypes.map((specType) => {
                   const editing = isEditing(specType.SpecificationTypeID);
                   const currentStatus = editing ? getCurrentStatus(specType.SpecificationTypeID) : specType.IsActive;
+                  const isInactive = !currentStatus;
                   
                   return (
                     <tr key={specType.SpecificationTypeID} className={`table-row ${editing ? "bg-blue-50" : ""}`}>
                       {/* Name column */}
-                      <td className="table-cell">
+                      <td className={`table-cell ${isInactive && !editing ? 'text-gray-500' : ''}`}>
                         {editing ? (
                           <input
                             type="text"
@@ -397,8 +398,8 @@ const SpecificationTypeList = ({ setSubmitting }) => {
                           />
                         ) : (
                           <div 
-                            className="block truncate max-w-[180px]"
-                            title={specType.Name}
+                            className={`block truncate max-w-[180px] ${isInactive ? 'cursor-not-allowed' : ''}`}
+                            title={isInactive ? t("PRODUCT_SETUP.SPECIFICATION_TYPES.EDIT_DISABLED_TOOLTIP") : specType.Name}
                           >
                             {specType.Name}
                           </div>
@@ -406,7 +407,7 @@ const SpecificationTypeList = ({ setSubmitting }) => {
                       </td>
 
                       {/* Created At column */}
-                      <td className="table-cell table-cell-text">
+                      <td className={`table-cell table-cell-text ${isInactive && !editing ? 'text-gray-400' : ''}`}>
                         {specType.CreatedAt ? new Date(specType.CreatedAt).toLocaleString(undefined, {
                           year: "numeric",
                           month: "2-digit",
@@ -452,6 +453,7 @@ const SpecificationTypeList = ({ setSubmitting }) => {
                               id={specType.SpecificationTypeID}
                               className="mr-10" 
                               onEdit={() => handleEdit(specType)}
+                              disableEdit={isInactive}
                             />
                           )}
                         </div>
