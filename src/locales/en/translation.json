@@ -749,10 +749,13 @@
     "DETAILS_TITLE": "Push Notification Details",
     "TITLE_LABEL": "Title",
     "TITLE_PLACEHOLDER": "Enter title here",
+    "PREVIEW_TITLE": "Notification Preview",
+    "PREVIEW_MESSAGE": "This is how your notification will look on a mobile device.",
     "MESSAGE_LABEL": "Message",
     "MESSAGE_PLACEHOLDER": "Write your message here",
     "IMAGE_LABEL": "Upload Image",
     "IMAGE_FORMATS": "PNG, JPG up to 2MB",
+    "NO_PREVIEW": "No preview available",
     "IMAGE_PREVIEW_ALT": "Uploaded notification image"
   },
   "SILENT_NOTIFICATION": {
