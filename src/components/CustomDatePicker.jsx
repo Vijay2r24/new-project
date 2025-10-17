@@ -1,6 +1,7 @@
 import React from 'react';
 import Datepicker from "react-tailwindcss-datepicker";
 import { Calendar, X } from "lucide-react";
+import { DATE_PICKER_CONFIG } from '../contants/constants';
  
 const CustomDatePicker = ({ value = { startDate: null, endDate: null }, onChange, label = "Date Range", ...rest }) => {
   const handleClear = () => {
@@ -52,9 +53,9 @@ const CustomDatePicker = ({ value = { startDate: null, endDate: null }, onChange
             useRange={true}
             asSingle={false}
             showShortcuts={true}
-            primaryColor="purple"
-            popoverDirection="down"
-            displayFormat="YYYY-MM-DD"
+            primaryColor={DATE_PICKER_CONFIG.PRIMARY_COLOR}
+            popoverDirection={DATE_PICKER_CONFIG.POPOVER_DIRECTION}
+            displayFormat={DATE_PICKER_CONFIG.DISPLAY_FORMAT}
             containerClassName="relative w-full z-10"
             popoverClassName="z-50"
             inputClassName={`block w-full ${hasValue ? 'pr-10' : 'pr-3'} pl-10 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5B45E0] focus:border-[#5B45E0] sm:text-sm bg-white text-gray-900 placeholder-gray-400`}
