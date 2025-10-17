@@ -117,3 +117,7 @@ export const GET_ALL_PAYMENT_METHODS = `/getAllPaymentMethods`;
 export const GET_ALL_PAYMENT_TYPES = `/getAllPaymentTypes`;
 export const GET_PAYMENT_BYID =`/getPaymentById`;
 export const UPDATE_ORDER_ITEM_HISTORY = `/updateOrderItemHistory`;
+export const GENERATE_ORDER_REPORT = `/generateOrderReport`;
+export const GET_STORE_REPORT = `/getStoreReport`;
+export const GET_PRODUCT_LIST_REPORT = `/getProductListReport`;
+export const GET_PAYMENT_REPORT = `/getPaymentReport`;

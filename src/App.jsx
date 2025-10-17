@@ -24,6 +24,8 @@ const Stores = lazy(() => import("./pages/Stores"));
 const AddStore = lazy(() => import("./pages/AddStore"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const Login = lazy(() => import("./pages/Login"));
+const Payments = lazy(() => import('./pages/payments/Payments'));
+const PaymentDetailsWrapper = lazy(() => import('./pages/payments/PaymentDetails'));
 const AddUserRole = lazy(() => import("./pages/AddUserRole"));
 const Banners = lazy(() => import("./pages/Banners"));
 const Bannerscreate = lazy(() => import("./pages/BannersCreate"));
@@ -114,6 +116,20 @@ const App = () => {
                   </ProtectedRoute>
                 }
               />
+              <Route
+              path="/payments"
+              element={
+                <ProtectedRoute permissionCode={notificationsPermission}>
+                  <Payments />
+                </ProtectedRoute>
+              }
+              />
+               <Route path="/payment-details/:id" 
+               element={
+                <ProtectedRoute permissionCode={notificationsPermission}>
+                 <PaymentDetailsWrapper />
+                </ProtectedRoute>
+               } />
               <Route
                 path="/activeBanners"
                 element={

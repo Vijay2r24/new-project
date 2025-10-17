@@ -18,10 +18,10 @@ export const apiGet = async (endpoint, oParams = {}, token = null) => {
   return oResponse;
 };
 
-// POST request
-export const apiPost = async (endpoint, data, token = null, isFormData = false) => {
+// POST request with response type support
+export const apiPost = async (endpoint, data, token = null, isFormData = false, responseType = 'json') => {
   const api = oCreateApiInstance(token, isFormData);
-  const oResponse = await api.post(endpoint, data);
+  const oResponse = await api.post(endpoint, data, { responseType });
   return oResponse;
 };
 

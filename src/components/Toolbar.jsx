@@ -19,14 +19,23 @@ const OrderToolbar = ({
   onClearFilters,
   onCreate,
   createLabel,
-  onExport, // ✅ Added prop for Export
+  onExport, 
+  exportLabel,
 }) => {
   const { t } = useTranslation();
 
-  // Remove any explicit end-date filter entries
+  // Remove any explicit end-date filter entries and conditionally filter date picker
   const filtersToRender = (additionalFilters || []).filter((f) => {
     const n = (f?.name || '').toString().toLowerCase();
-    return n !== 'enddate' && n !== 'end_date' && n !== 'end';
+    const isEndDate = n !== 'enddate' && n !== 'end_date' && n !== 'end';
+    const isDatePicker = f.type === 'date';
+    
+    // Only show date picker if export functionality is available
+    if (isDatePicker && !onExport) {
+      return false;
+    }
+    
+    return isEndDate;
   });
 
   return (
@@ -90,7 +99,7 @@ const OrderToolbar = ({
             className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 gap-2"
           >
             <Download className="w-4 h-4" />
-            {t('ORDERS.EXPORT_BUTTON')}
+            {exportLabel || 'Export'}
           </button>
         )}
 
@@ -123,7 +132,7 @@ const OrderToolbar = ({
             {filtersToRender.map((filter, index) => {
               if (filter.type === 'date') {
                 return (
-                  <div key={index} className="mb-4 w-48 relative z-40">
+                  <div key={index} className="mb-4 w-64 relative z-40">
                     <CustomDatePicker
                       label={filter.label}
                       value={filter.value}
@@ -133,6 +142,7 @@ const OrderToolbar = ({
                       name={filter.name}
                       error={filter.error}
                       disableFuture={filter.disableFuture}
+                      className="w-full" // Ensure date picker uses full width of container
                     />
                   </div>
                 );

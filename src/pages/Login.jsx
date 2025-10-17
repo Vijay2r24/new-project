@@ -165,7 +165,7 @@ const Login = () => {
         data?.UserID &&
         status === STATUS.SUCCESS.toUpperCase()
       ) {
-        showEmsg(message, STATUS.SUCCESS, 3000, async () => {
+        showEmsg(message, STATUS.SUCCESS, 1400, async () => {
           localStorage.setItem("token", data.token);
           localStorage.setItem("userId", data.UserID);
           localStorage.setItem("tenantID", data.TenantID);
@@ -203,7 +203,7 @@ const Login = () => {
       }
     } catch (error) {
       const errorMessage =
-        error?.response?.data?.MESSAGE || t("LOGIN.ERRORS.INVALID_CREDENTIALS");
+        error?.response?.data?.message || t("LOGIN.ERRORS.INVALID_CREDENTIALS");
       setError((prev) => ({ ...prev, submit: errorMessage }));
       showEmsg(errorMessage, STATUS.ERROR);
     }
@@ -248,7 +248,7 @@ const Login = () => {
         showEmsg(message, STATUS.WARNING);
       }
     } catch (error) {
-      const errMsg = error?.response?.data?.MESSAGE;
+      const errMsg = error?.response?.data?.message;
       showEmsg(errMsg || t("OTP.ERROR"), STATUS.ERROR);
     }
   };
@@ -381,7 +381,7 @@ const Login = () => {
         );
       }
     } catch (error) {
-      const errMsg = error?.response?.data?.MESSAGE;
+      const errMsg = error?.response?.data?.message;
       showEmsg(errMsg || t("LOGIN.ERRORS.PASSWORD_RESET_FAILED"), STATUS.ERROR);
     }
   };

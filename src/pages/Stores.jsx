@@ -3,6 +3,7 @@ import { MapPin, Phone, Mail, Building } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import Toolbar from "../components/Toolbar";
+import ExportPanel from "../components/ExportPanel";
 import Pagination from "../components/Pagination";
 import ActionButtons from "../components/ActionButtons";
 import { useTranslation } from "react-i18next";
@@ -18,6 +19,7 @@ import Loader from "../components/Loader";
 import { hideLoaderWithDelay } from "../utils/loaderUtils";
 import { getPermissionCode, hasPermissionId } from "../utils/permissionUtils";
 import { fetchResource, updateStatusById } from "../store/slices/allDataSlice";
+import { exportStoreReport } from "../store/slices/exportSlice";
 
 const Stores = () => {
   const { t } = useTranslation();
@@ -38,6 +40,8 @@ const Stores = () => {
   const [bShowFilterDropdown, setShowFilterDropdown] = useState(false);
   const defaultFilters = {
     status: "",
+    startDate: "",
+    endDate: "",
   };
   const [oFilters, setFilters] = useState(defaultFilters);
   const [bSubmitting, setSubmitting] = useState(false);
@@ -98,17 +102,29 @@ const Stores = () => {
     if (initialLoadComplete) {
       setFilterLoading(true);
     }
-    const { name, value } = e.target;
     
-    let processedValue = value;
-    if ((filterName || name) === "status" && value !== "") {
-      processedValue = value === "true";
+    if (filterName === 'dateRange') {
+      // Handle date range picker
+      const dateValue = e.target.value;
+      setFilters((prevFilters) => ({
+        ...prevFilters,
+        startDate: dateValue?.startDate || '',
+        endDate: dateValue?.endDate || '',
+      }));
+    } else {
+      // Handle other filters
+      const { name, value } = e.target;
+      
+      let processedValue = value;
+      if ((filterName || name) === "status" && value !== "") {
+        processedValue = value === "true";
+      }
+      
+      setFilters((prev) => ({
+        ...prev,
+        [filterName || name]: processedValue,
+      }));
     }
-    
-    setFilters((prev) => ({
-      ...prev,
-      [filterName || name]: processedValue,
-    }));
     setCurrentPage(1);
   };
 
@@ -205,6 +221,22 @@ const Stores = () => {
     setDeletePopup({ open: false, storeId: null });
   };
 
+  const [bShowExportPanel, setShowExportPanel] = useState(false);
+  const [oExportDate, setExportDate] = useState({ startDate: null, endDate: null });
+
+  const handleExportStores = () => {
+    setShowExportPanel(true);
+  };
+
+  const handleConfirmExportStores = () => {
+    dispatch(exportStoreReport({
+      startDate: oExportDate.startDate,
+      endDate: oExportDate.endDate,
+      isActive: oFilters.status !== "" ? oFilters.status : undefined
+    }));
+    setShowExportPanel(false);
+  };
+
   useEffect(() => {
     const fetchStoresData = async () => {
       try {
@@ -275,9 +307,19 @@ const Stores = () => {
         handleFilterChange={handleFilterChange}
         searchPlaceholder={t("STORES.SEARCH_PLACEHOLDER")}
         onClearFilters={handleClearFilters}
+        onExport={handleExportStores}
         onCreate={() => navigate("/add-store")}
         createLabel={t("STORES.ADD_STORE")}
       />
+
+      {bShowExportPanel && (
+        <ExportPanel
+          value={oExportDate}
+          onChange={(val) => setExportDate(val)}
+          onCancel={() => setShowExportPanel(false)}
+          onConfirm={handleConfirmExportStores}
+        />
+      )}
 
       {viewMode === "table" ? (
         <div className="table-container overflow-hidden">
@@ -418,33 +460,22 @@ const Stores = () => {
                   </div>
                 </div>
 
-                <div className="mt-auto pt-4 border-t border-gray-100">
-                  <div className="flex items-center justify-between mb-3">
-                    <span
-                      className={`status-badge ${
-                        store.IsActive
-                          ? "status-active"
-                          : "status-inactive"
-                      }`}
-                    >
-                      {getStatusText(store.IsActive)}
-                    </span>
-                    <Switch
-                      checked={store.IsActive}
-                      onChange={() =>
-                        handleStatusChange(store.StoreID, store.IsActive)
-                      }
-                    />
-                  </div>
-                  
-                  {/* Action Buttons */}
-                  <div className="flex items-center justify-end gap-2">
-                    <ActionButtons
-                      id={store.StoreID}
-                      onEdit={handleEdit}
-                      onDelete={hasDeletePermission ? handleDelete : null}
-                    />
-                  </div>
+                <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
+                  <span
+                    className={`status-badge ${
+                      store.IsActive
+                        ? "status-active"
+                        : "status-inactive"
+                    }`}
+                  >
+                    {getStatusText(store.IsActive)}
+                  </span>
+                  <Switch
+                    checked={store.IsActive}
+                    onChange={() =>
+                      handleStatusChange(store.StoreID, store.IsActive)
+                    }
+                  />
                 </div>
               </div>
             ))
