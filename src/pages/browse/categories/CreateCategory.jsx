@@ -30,6 +30,7 @@ const defaultFormData = {
   CreatedBy: "",
   UpdatedBy: "",
   existingImage: null,
+  existingImageDocumentId: null, 
 };
 
 const CreateCategory = () => {
@@ -91,18 +92,24 @@ const CreateCategory = () => {
             });
 
             // Handle image from documentMetadata if it exists
+            let existingImageData = null;
+            let existingDocumentId = null;
+
             if (categoryData.documentMetadata && categoryData.documentMetadata.length > 0) {
-              setFormData(prev => ({
-                ...prev,
-                existingImage: categoryData.documentMetadata[0]
-              }));
-              setImagePreview(categoryData.documentMetadata[0].documentUrl);
+              existingImageData = categoryData.documentMetadata[0];
+              existingDocumentId = categoryData.documentMetadata[0].documentId;
             } else if (categoryData.CategoryImages?.length > 0) {
+              existingImageData = categoryData.CategoryImages[0];
+              existingDocumentId = categoryData.CategoryImages[0].documentId;
+            }
+
+            if (existingImageData) {
               setFormData(prev => ({
                 ...prev,
-                existingImage: categoryData.CategoryImages[0]
+                existingImage: existingImageData,
+                existingImageDocumentId: existingDocumentId // Store documentId separately
               }));
-              setImagePreview(categoryData.CategoryImages[0].documentUrl);
+              setImagePreview(existingImageData.documentUrl);
             }
           }
         }
@@ -146,7 +153,11 @@ const CreateCategory = () => {
 
     // Clear image error when valid file is selected
     setErrors((prev) => ({ ...prev, CategoryImage: "" }));
-    setFormData((prev) => ({ ...prev, CategoryImage: file }));
+    setFormData((prev) => ({ 
+      ...prev, 
+      CategoryImage: file,
+      existingImage: null, // Clear existing image when new file is uploaded
+    }));
     setImagePreview(URL.createObjectURL(file));
   };
 
@@ -204,12 +215,22 @@ const CreateCategory = () => {
       documentMetadata.push({ 
         image: "category1", 
         sortOrder: 1,
-        ...(isEditing && oFormData.existingImage && { documentId: oFormData.existingImage.documentId })
+        ...(isEditing && oFormData.existingImageDocumentId && { 
+          DocumentID: oFormData.existingImageDocumentId 
+        })
       });
-    } else if (isEditing && !sImagePreview && oFormData.existingImage) {
+    } else if (isEditing && !sImagePreview && oFormData.existingImageDocumentId) {
+      // Editing and image removed - send remove action with stored documentId
       documentMetadata.push({ 
         action: "remove",
-        documentId: oFormData.existingImage.documentId 
+        DocumentID: oFormData.existingImageDocumentId 
+      });
+    } else if (isEditing && sImagePreview && !oFormData.CategoryImage && oFormData.existingImageDocumentId) {
+      // Editing but keeping existing image - include documentId for reference
+      documentMetadata.push({ 
+        image: "category1", 
+        sortOrder: 1,
+        DocumentID: oFormData.existingImageDocumentId 
       });
     }
 
@@ -221,7 +242,7 @@ const CreateCategory = () => {
       CategoryDescription: oFormData.CategoryDescription,
       IsActive: oFormData.IsActive,
       ParentCategoryID: oFormData.ParentCategoryID || undefined,
-      documentMetadata,
+      ...(documentMetadata.length > 0 && { documentMetadata }),
       CreatedBy: isEditing ? undefined : localStorage.getItem("userId"),
       UpdatedBy: isEditing ? localStorage.getItem("userId") : undefined,
     };

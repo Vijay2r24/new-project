@@ -298,7 +298,7 @@ const UserRolesList = () => {
                           </div>
                         </td>
                         <td className="table-cell text-center font-medium align-middle">
-                          <div className="flex justify-center items-center">
+                          <div className="flex justify-left items-left">
                             <ActionButtons
                               id={role.roleid || role.RoleID}
                               onEdit={() => handleEdit(role.RoleID, roleName, role.IsActive)}

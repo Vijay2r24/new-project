@@ -24,7 +24,7 @@ import { GET_ALL_BANNERS, UPDATE_BANNER_SORTORDER } from "../contants/apiRoutes"
 import { apiGet, apiPatch } from "../utils/ApiUtils";
 import { toast } from "react-toastify";
 import { STATUS } from "../contants/constants";
-
+import { ToastContainer } from "react-toastify";
 const ActiveBannersWithSequence = () => {
   const { t } = useTranslation();
   const [activeBanners, setActiveBanners] = useState([]);
@@ -296,6 +296,7 @@ const ActiveBannersWithSequence = () => {
       className={`min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 ${isDragging ? "cursor-grabbing" : ""
         }`}
     >
+      <ToastContainer />
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-4">
         <div className="mb-8 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0">

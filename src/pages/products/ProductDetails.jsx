@@ -39,7 +39,7 @@ const ProductDetails = () => {
   const [selectedImage, setSelectedImage] = useState(0);
 
   useEffect(() => {
-    setTitle(`${t("PRODUCTS.PRODUCTS_DETAILS")} - Admin`);
+    setTitle(`${t("PRODUCTS.PRODUCTS_DETAILS")}`);
     setBackButton(<BackButton onClick={() => navigate("/productList")} />);
     fetchProductDetails();
     return () => {
@@ -138,7 +138,7 @@ const ProductDetails = () => {
           <div className="border-b border-gray-200 px-8 py-6">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div className="flex-1">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                <h1 className="text-xl font-bold text-custom-bg mb-2">
                   {product.ProductName}
                 </h1>
                 <div className="flex items-center gap-6 text-sm text-gray-600">
@@ -166,7 +166,7 @@ const ProductDetails = () => {
                 onClick={() => setActiveTab('variants')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
                   activeTab === 'variants'
-                    ? 'border-blue-500 text-blue-600'
+                    ? 'border-custom-bg text-custom-bg'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -177,7 +177,7 @@ const ProductDetails = () => {
                 onClick={() => setActiveTab('inventory')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
                   activeTab === 'inventory'
-                    ? 'border-blue-500 text-blue-600'
+                    ? 'border-custom-bg text-custom-bg'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -188,7 +188,7 @@ const ProductDetails = () => {
                 onClick={() => setActiveTab('specs')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
                   activeTab === 'specs'
-                    ? 'border-blue-500 text-blue-600'
+                    ? 'border-custom-bg text-custom-bg'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
@@ -231,7 +231,7 @@ const ProductDetails = () => {
                           key={image.documentId}
                           onClick={() => setSelectedImage(index)}
                           className={`aspect-square bg-gray-100 rounded-md overflow-hidden border-2 ${
-                            selectedImage === index ? "border-blue-500" : "border-transparent"
+                            selectedImage === index ? "border-custom-bg" : "border-transparent"
                           }`}
                         >
                           <img
@@ -329,7 +329,7 @@ const ProductDetails = () => {
                             <tr 
                               key={variant.VariantID}
                               className={`hover:bg-gray-50 cursor-pointer transition-colors ${
-                                selectedVariant === index ? 'bg-blue-50 border-l-4 border-blue-500' : ''
+                                selectedVariant === index ? 'bg-blue-50 border-l-4 border-custom-bg' : ''
                               }`}
                               onClick={() => {
                                 setSelectedVariant(index);

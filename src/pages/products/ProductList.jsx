@@ -11,10 +11,13 @@ import {
   DELETE_PRODUCT_WITH_IMAGES,
   UPDATE_PRODUCT_STATUS,
 } from "../../contants/apiRoutes";
-import { Switch } from "@headlessui/react";
+import Switch from "../../components/Switch.jsx";
 import { useTitle } from "../../context/TitleContext";
 import { ITEMS_PER_PAGE, STATUS } from "../../contants/constants.jsx";
-import { fetchResource, updateStatusById } from "../../store/slices/allDataSlice.jsx";
+import {
+  fetchResource,
+  updateStatusById,
+} from "../../store/slices/allDataSlice.jsx";
 import FullscreenErrorPopup from "../../components/FullscreenErrorPopup";
 import { ToastContainer } from "react-toastify";
 import noImage from "../../../assets/images/missing-pictur.jpg";
@@ -139,13 +142,13 @@ const ProductList = () => {
         params.IsActive = oFilters.status.toLowerCase();
       }
       if (oFilters.category && oFilters.category !== "all") {
-        params.categoryName = oFilters.category;
+        params.categoryId = oFilters.category;
       }
       if (oFilters.brand && oFilters.brand !== "all") {
-        params.brandName = oFilters.brand;
+        params.brandId = oFilters.brand;
       }
       if (oFilters.store && oFilters.store !== "all") {
-        params.storeName = oFilters.store;
+        params.storeId = oFilters.store;
       }
 
       const oResponse = await apiGet(GETPRODUCTDETAILS, params, token);
@@ -154,7 +157,9 @@ const ProductList = () => {
         const rawProducts = Array.isArray(resData.data) ? resData.data : [];
         const transformedProducts = rawProducts.map((product) => {
           const firstVariant =
-            product.Variants.find((v) => v.IsActive) || product.Variants[0] || {};
+            product.Variants.find((v) => v.IsActive) ||
+            product.Variants[0] ||
+            {};
           return {
             ...product,
             subCategory: product.CategoryName,
@@ -163,7 +168,8 @@ const ProductList = () => {
             storeName: getStoreName(firstVariant.Inventory || []),
             firstImage: getFirstImage(firstVariant.ProductVariantImages || []),
             status:
-              product.IsActive && getTotalStock(firstVariant.Inventory || []) > 0
+              product.IsActive &&
+              getTotalStock(firstVariant.Inventory || []) > 0
                 ? "active"
                 : "out-of-stock",
           };
@@ -190,7 +196,14 @@ const ProductList = () => {
         setInitialLoadComplete(true);
       }
     }
-  }, [nCurrentPage, itemsPerPage, sSearchTerm, oFilters, t, initialLoadComplete]);
+  }, [
+    nCurrentPage,
+    itemsPerPage,
+    sSearchTerm,
+    oFilters,
+    t,
+    initialLoadComplete,
+  ]);
 
   useEffect(() => {
     fetchProducts();
@@ -203,7 +216,7 @@ const ProductList = () => {
   const categoryOptions = [
     { value: "all", label: t("COMMON.ALL") },
     ...categories.map((cat) => ({
-      value: cat.CategoryName,
+      value: cat.CategoryID,
       label: cat.CategoryName,
     })),
   ];
@@ -211,7 +224,7 @@ const ProductList = () => {
   const brandOptions = [
     { value: "all", label: t("COMMON.ALL") },
     ...brands.map((brand) => ({
-      value: brand.BrandName,
+      value: brand.BrandID,
       label: brand.BrandName,
     })),
   ];
@@ -219,7 +232,7 @@ const ProductList = () => {
   const storeOptions = [
     { value: "all", label: t("COMMON.ALL") },
     ...stores.map((store) => ({
-      value: store.StoreName,
+      value: store.StoreID,
       label: store.StoreName,
     })),
   ];
@@ -235,21 +248,30 @@ const ProductList = () => {
       dispatch(
         fetchResource({
           key: "categories",
-          params: inputValue && inputValue.trim() !== "" ? { searchText: inputValue } : {},
+          params:
+            inputValue && inputValue.trim() !== ""
+              ? { searchText: inputValue }
+              : {},
         })
       );
     } else if (filterName === "brand") {
       dispatch(
         fetchResource({
           key: "brands",
-          params: inputValue && inputValue.trim() !== "" ? { searchText: inputValue } : {},
+          params:
+            inputValue && inputValue.trim() !== ""
+              ? { searchText: inputValue }
+              : {},
         })
       );
     } else if (filterName === "store") {
       dispatch(
         fetchResource({
           key: "stores",
-          params: inputValue && inputValue.trim() !== "" ? { searchText: inputValue } : {},
+          params:
+            inputValue && inputValue.trim() !== ""
+              ? { searchText: inputValue }
+              : {},
         })
       );
     }
@@ -264,7 +286,8 @@ const ProductList = () => {
       placeholder: t("PRODUCT_SETUP.TABS.CATEGORIES"),
       searchable: true,
       searchPlaceholder: t("COMMON.SEARCH_CATEGORY"),
-      onInputChange: (inputValue) => handleDropdownInputChange(inputValue, "category"),
+      onInputChange: (inputValue) =>
+        handleDropdownInputChange(inputValue, "category"),
     },
     {
       label: t("PRODUCT_SETUP.TABS.BRANDS"),
@@ -274,7 +297,8 @@ const ProductList = () => {
       placeholder: t("PRODUCT_SETUP.TABS.BRANDS"),
       searchable: true,
       searchPlaceholder: t("COMMON.SEARCH_BRAND"),
-      onInputChange: (inputValue) => handleDropdownInputChange(inputValue, "brand"),
+      onInputChange: (inputValue) =>
+        handleDropdownInputChange(inputValue, "brand"),
     },
     {
       label: t("SIDEBAR.STORES"),
@@ -284,7 +308,8 @@ const ProductList = () => {
       placeholder: t("PRODUCT_SETUP.TABS.STORES"),
       searchable: true,
       searchPlaceholder: t("COMMON.SEARCH_STORE"),
-      onInputChange: (inputValue) => handleDropdownInputChange(inputValue, "store"),
+      onInputChange: (inputValue) =>
+        handleDropdownInputChange(inputValue, "store"),
     },
     {
       label: t("COMMON.STATUS"),
@@ -364,7 +389,6 @@ const ProductList = () => {
     }
   };
 
-
   const handleStatusPopupClose = () => {
     setStatusPopup({ open: false, productId: null, newStatus: null });
   };
@@ -386,7 +410,9 @@ const ProductList = () => {
         onCreate={() => navigate("/Addproduct")}
       />
       {bLoading ? (
-        <div className="text-center py-8 text-gray-500">{t("COMMON.LOADING")}</div>
+        <div className="text-center py-8 text-gray-500">
+          {t("COMMON.LOADING")}
+        </div>
       ) : sError ? (
         <div className="text-center py-8 text-red-500">{sError}</div>
       ) : sViewMode === "table" ? (
@@ -400,7 +426,9 @@ const ProductList = () => {
                   <th className="table-head-cell">{t("COMMON.PRICE")}</th>
                   <th className="table-head-cell">{t("PRODUCTS.STOCK")}</th>
                   <th className="table-head-cell">{t("COMMON.STATUS")}</th>
-                  <th className="table-head-cell">{t("PRODUCTS.STORE_NAME")}</th>
+                  <th className="table-head-cell">
+                    {t("PRODUCTS.STORE_NAME")}
+                  </th>
                   <th className="table-head-cell">{t("COMMON.ACTIONS")}</th>
                 </tr>
               </thead>
@@ -421,61 +449,91 @@ const ProductList = () => {
                   </tr>
                 ) : (
                   aProducts.map((product) => (
-                    <tr key={product.ProductID} className="table-row text-left">
+                    <tr key={product.ProductID} className={`table-row text-left ${!product.IsActive ? 'bg-gray-50' : ''}`}>
                       <td className="table-cell">
-                      <Link
-    to={`/productdetails/${product.ProductID}`}
-    className="flex items-center justify-left hover:bg-gray-50 p-2 rounded transition"
-  >
-                        <div className="flex items-center justify-left">
-                          <div className="h-10 w-10 flex-shrink-0">
-                            <img
-                              className="h-10 w-10 rounded object-cover"
-                              src={product.firstImage}
-                              alt={product.ProductName}
-                              onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = noImage;
-                              }}
-                            />
-                          </div>
-                          <div className="ml-3">
-                            <div
-                              className="font-medium text-sm text-gray-900 ellipsis-text"
-                              title={product.ProductName}
-                            >
-                              {product.ProductName}
+                        {product.IsActive ? (
+                          <Link
+                            to={`/productdetails/${product.ProductID}`}
+                            className="flex items-center justify-left hover:bg-gray-50 p-2 rounded transition"
+                          >
+                            <div className="flex items-center justify-left">
+                              <div className="h-10 w-10 flex-shrink-0">
+                                <img
+                                  className="h-10 w-10 rounded object-cover"
+                                  src={product.firstImage}
+                                  alt={product.ProductName}
+                                  onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = noImage;
+                                  }}
+                                />
+                              </div>
+                              <div className="ml-3">
+                                <div
+                                  className="font-medium text-sm text-gray-900 ellipsis-text"
+                                  title={product.ProductName}
+                                >
+                                  {product.ProductName}
+                                </div>
+                              </div>
+                            </div>
+                          </Link>
+                        ) : (
+                          <div className="flex items-center justify-left p-2">
+                            <div className="flex items-center justify-left">
+                              <div className="h-10 w-10 flex-shrink-0">
+                                <img
+                                  className="h-10 w-10 rounded object-cover opacity-60"
+                                  src={product.firstImage}
+                                  alt={product.ProductName}
+                                  onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = noImage;
+                                  }}
+                                />
+                              </div>
+                              <div className="ml-3">
+                                <div
+                                  className="font-medium text-sm text-gray-500 ellipsis-text cursor-not-allowed"
+                                  title={t("PRODUCTS.EDIT_DISABLED_TOOLTIP")}
+                                >
+                                  {product.ProductName}
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        </Link>
+                        )}
                       </td>
-                      <td className="table-cell table-cell-text">
-                        <div className="ellipsis-text" title={product.subCategory}>
+                      <td className={`table-cell table-cell-text ${!product.IsActive ? 'text-gray-400' : ''}`}>
+                        <div
+                          className="ellipsis-text"
+                          title={product.subCategory}
+                        >
                           {product.subCategory}
                         </div>
                       </td>
-                      <td className="table-cell text-left table-cell-text">
+                      <td className={`table-cell text-left table-cell-text ${!product.IsActive ? 'text-gray-400' : ''}`}>
                         ₹{parseFloat(product.MRP).toFixed(2)}
                       </td>
-                      <td className="table-cell text-center table-cell-text">
+                      <td className={`table-cell text-center table-cell-text ${!product.IsActive ? 'text-gray-400' : ''}`}>
                         {product.quantity || 0}
                       </td>
                       <td className="table-cell">
                         <Switch
                           checked={product.IsActive}
-                          onChange={() => handleStatusChange(product.ProductID, product.IsActive)}
-                          className={`${product.IsActive ? "bg-blue-600" : "bg-gray-300"
-                            } relative inline-flex h-6 w-11 items-center rounded-full transition`}
-                        >
-                          <span
-                            className={`${product.IsActive ? "translate-x-6" : "translate-x-1"
-                              } inline-block h-4 w-4 transform rounded-full bg-white transition`}
-                          />
-                        </Switch>
+                          onChange={() =>
+                            handleStatusChange(
+                              product.ProductID,
+                              product.IsActive
+                            )
+                          }
+                        />
                       </td>
-                      <td className="table-cell text-left table-cell-text">
-                        <div className="ellipsis-text" title={product.storeName}>
+                      <td className={`table-cell text-left table-cell-text ${!product.IsActive ? 'text-gray-400' : ''}`}>
+                        <div
+                          className="ellipsis-text"
+                          title={product.storeName}
+                        >
                           {product.storeName}
                         </div>
                       </td>
@@ -484,6 +542,8 @@ const ProductList = () => {
                           <ActionButtons
                             id={product.ProductID}
                             onEdit={handleEdit}
+                            disableEdit={!product.IsActive}
+                            viewLink={`/productdetails/${product.ProductID}`} 
                           />
                         </div>
                       </td>
@@ -508,7 +568,9 @@ const ProductList = () => {
             aProducts.map((product) => (
               <div
                 key={product.ProductID}
-                className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col gap-4 hover:shadow-lg transition-shadow duration-200"
+                className={`bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col gap-4 hover:shadow-lg transition-shadow duration-200 ${
+                  !product.IsActive ? 'bg-gray-50' : ''
+                }`}
               >
                 <div className="flex items-center justify-between">
                   <span
@@ -522,22 +584,21 @@ const ProductList = () => {
                   {/* Status Switch */}
                   <Switch
                     checked={product.IsActive}
-                    onChange={() => handleStatusChange(product.ProductID, product.IsActive)}
-                    className={`${product.IsActive ? "bg-blue-600" : "bg-gray-300"
-                      } relative inline-flex h-6 w-11 items-center rounded-full transition`}
-                  >
-                    <span
-                      className={`${product.IsActive ? "translate-x-6" : "translate-x-1"
-                        } inline-block h-4 w-4 transform rounded-full bg-white transition`}
-                    />
-                  </Switch>
+                    onChange={() =>
+                      handleStatusChange(product.ProductID, product.IsActive)
+                    }
+                  />
                 </div>
                 <div className="flex items-center gap-4 mt-2">
-                  <div className="flex-shrink-0 h-16 w-16 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                  <div className={`flex-shrink-0 h-16 w-16 rounded-lg flex items-center justify-center overflow-hidden ${
+                    !product.IsActive ? 'bg-gray-100' : 'bg-gray-100'
+                  }`}>
                     <img
                       src={product.firstImage}
                       alt={product.ProductName}
-                      className="h-full w-full object-cover"
+                      className={`h-full w-full object-cover ${
+                        !product.IsActive ? 'opacity-60' : ''
+                      }`}
                       onError={(e) => {
                         e.target.onerror = null;
                         e.target.src = noImage;
@@ -548,21 +609,27 @@ const ProductList = () => {
                   </div>
                   <div className="flex-1">
                     <div
-                      className="text-sm font-medium text-gray-900 ellipsis-text"
-                      title={product.ProductName}
+                      className={`text-sm font-medium ellipsis-text ${
+                        !product.IsActive ? 'text-gray-500 cursor-not-allowed' : 'text-gray-900'
+                      }`}
+                      title={!product.IsActive ? t("PRODUCTS.EDIT_DISABLED_TOOLTIP") : product.ProductName}
                     >
                       {product.ProductName}
                     </div>
                   </div>
                 </div>
                 <div
-                  className="text-sm text-gray-900 mt-2 ellipsis-text"
+                  className={`text-sm mt-2 ellipsis-text ${
+                    !product.IsActive ? 'text-gray-400' : 'text-gray-900'
+                  }`}
                   title={product.subCategory}
                 >
                   <span className="font-medium">{t("COMMON.CATEGORY")}</span>{" "}
                   {product.subCategory}
                 </div>
-                <div className="flex items-center justify-between border-t pt-2 mt-2">
+                <div className={`flex items-center justify-between border-t pt-2 mt-2 ${
+                  !product.IsActive ? 'text-gray-400' : ''
+                }`}>
                   <div>
                     {t("PRODUCTS.STOCK")}: {product.quantity || 0}
                   </div>
@@ -570,9 +637,11 @@ const ProductList = () => {
                     {t("COMMON.PRICE")} ₹{parseFloat(product.MRP).toFixed(2)}
                   </div>
                 </div>
-                <ActionButtons
-                  id={product.ProductID}
-                  onEdit={handleEdit}
+                <ActionButtons 
+                  id={product.ProductID} 
+                  onEdit={handleEdit} 
+                  disableEdit={!product.IsActive}
+                  viewLink={`/productdetails/${product.ProductID}`} 
                 />
               </div>
             ))
