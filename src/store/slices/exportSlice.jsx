@@ -7,8 +7,8 @@ import {
   GET_PAYMENT_REPORT,
 } from "../../contants/apiRoutes";
 import { showEmsg } from "../../utils/ShowEmsg";
-import { EXPORT_TYPES, STATUS } from "../../contants/constants";
-import i18next from "i18next"; // ✅ Import translation instance
+import { EXPORT_TYPES, REPORT_FILE_NAMES, STATUS } from "../../contants/constants";
+import i18next from "i18next"; 
 
 /**
  * Export Order Report
@@ -42,7 +42,7 @@ export const exportOrderReport = createAsyncThunk(
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = `orders-report-${new Date().toISOString().split("T")[0]}.xlsx`;
+        link.download = REPORT_FILE_NAMES.ORDERS;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -100,7 +100,7 @@ export const exportStoreReport = createAsyncThunk(
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = `stores-report-${new Date().toISOString().split("T")[0]}.xlsx`;
+        link.download = REPORT_FILE_NAMES.STORES;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -157,7 +157,7 @@ export const exportProductReport = createAsyncThunk(
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = `products-report-${new Date().toISOString().split("T")[0]}.xlsx`;
+        link.download = REPORT_FILE_NAMES.PRODUCTS;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -210,7 +210,7 @@ export const exportPaymentReport = createAsyncThunk(
 
       if (response.data) {
         const blob = new Blob([response.data], {
-          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          type: REPORT_FILE_NAMES.PAYMENTS,
         });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement("a");

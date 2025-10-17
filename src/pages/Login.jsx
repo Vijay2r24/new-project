@@ -29,7 +29,7 @@ import {
 import { showEmsg } from "../utils/ShowEmsg";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { STATUS } from "../contants/constants";
+import { STATUS, TOAST_DURATION } from "../contants/constants";
 import { useUserDetails } from "../../src/context/AllDataContext";
 import { useDispatch } from "react-redux";
 import { 
@@ -165,7 +165,7 @@ const Login = () => {
         data?.UserID &&
         status === STATUS.SUCCESS.toUpperCase()
       ) {
-        showEmsg(message, STATUS.SUCCESS, 1400, async () => {
+        showEmsg(message, STATUS.SUCCESS, TOAST_DURATION.SHORT, async () => {
           localStorage.setItem("token", data.token);
           localStorage.setItem("userId", data.UserID);
           localStorage.setItem("tenantID", data.TenantID);

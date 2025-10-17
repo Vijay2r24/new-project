@@ -18,7 +18,7 @@ import { useTranslation } from "react-i18next";
 import BackButton from "../../components/BackButton";
 import { apiGet } from "../../utils/ApiUtils"; 
 import { GET_PAYMENT_BYID } from "../../contants/apiRoutes";
-import { STATUS } from "../../contants/constants";
+import { DATE_FORMAT_OPTIONS, STATUS } from "../../contants/constants";
 
 const PaymentDetails = () => {
   const { id } = useParams();
@@ -66,14 +66,8 @@ const PaymentDetails = () => {
   }, [id, token, t]);
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+  return new Date(dateString).toLocaleDateString("en-US", DATE_FORMAT_OPTIONS);
+};
 
   const formatAmount = (amount) => {
     return `₹${parseFloat(amount).toLocaleString("en-IN", {

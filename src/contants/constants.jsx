@@ -59,3 +59,23 @@ export const DOWNLOAD_ICON = (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
   </svg>
 );
+export const TOAST_DURATION = {
+  SHORT: 1500,
+  MEDIUM: 3000,
+  LONG: 5000
+};
+export const DATE_FORMAT_OPTIONS = {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+};
+const getTodayDate = () => new Date().toISOString().split("T")[0];
+
+export const REPORT_FILE_NAMES = {
+  ORDERS: `orders-report-${getTodayDate()}.xlsx`,
+  STORES: `stores-report-${getTodayDate()}.xlsx`,
+  PRODUCTS: `products-report-${getTodayDate()}.xlsx`,
+  PAYMENTS: `payments-report-${getTodayDate()}.xlsx`,
+};
