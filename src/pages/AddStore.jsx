@@ -108,7 +108,7 @@ const AddStore = () => {
       if (oResponse.data.status === STATUS.SUCCESS.toUpperCase()) {
         const store = oResponse.data.data;
 
-        // Set basic form data immediately without waiting for location data
+        // Set basic form data immediately
         setFormData(prev => ({
           ...prev,
           name: store.StoreName || "",
@@ -123,14 +123,7 @@ const AddStore = () => {
         }));
         setStatus(store.IsActive);
 
-        // Store location names for later population
-        const locationData = {
-          countryName: store.CountryName,
-          stateName: store.StateName,
-          cityName: store.CityName
-        };
-
-        // Find and set country ID if available
+        // Find and set country ID
         const countriesArray = getArray(countriesData.data);
         if (countriesArray.length > 0) {
           const foundCountry = countriesArray.find(
@@ -141,24 +134,7 @@ const AddStore = () => {
               ...prev,
               country: foundCountry.CountryID
             }));
-            // Store location data in form for state/city population
-            setFormData(prev => ({
-              ...prev,
-              countryName: store.CountryName,
-              stateName: store.StateName,
-              cityName: store.CityName
-            }));
           }
-        } else {
-          // If countries aren't loaded yet, store the names for later
-          setTimeout(() => {
-            setFormData(prev => ({
-              ...prev,
-              countryName: store.CountryName,
-              stateName: store.StateName,
-              cityName: store.CityName
-            }));
-          }, 100);
         }
 
       } else {
@@ -177,67 +153,50 @@ const AddStore = () => {
     }
   }, [id, isFetchingStore, countriesData.data, t]);
 
-  // Effect to populate state and city after country is set and states are loaded
+  // Effect to populate state when states are loaded and we have state name
   useEffect(() => {
-    const populateStateAndCity = async () => {
-      if (!id || !oFormData.country || !oFormData.stateName || !oFormData.countryName) return;
+    if (!id || !oFormData.country || !oFormData.stateName || oFormData.state) return;
 
-      try {
-        // Ensure states are loaded for the current country
-        const statesArray = getArray(statesData.data);
-        const foundState = statesArray.find(
-          (s) => s.StateName === oFormData.stateName
-        );
-
-        if (foundState && !oFormData.state) {
-          setFormData(prev => ({
-            ...prev,
-            state: foundState.StateID
-          }));
-        } else if (!foundState && statesArray.length > 0) {
-        }
-      } catch (error) {
-      }
-    };
-
-    populateStateAndCity();
-  }, [id, oFormData.country, oFormData.stateName, oFormData.countryName, statesData.data]);
-
-  // Effect to populate city after state is set and cities are loaded
-  useEffect(() => {
-    const populateCity = async () => {
-      if (!id || !oFormData.state || !oFormData.cityName) return;
-
-      try {
-        const citiesArray = getArray(citiesData.data);
-        const foundCity = citiesArray.find(
-          (c) => c.CityName === oFormData.cityName
-        );
-
-        if (foundCity && !oFormData.city) {
-          setFormData(prev => ({
-            ...prev,
-            city: foundCity.CityID
-          }));
-        }
-      } catch (error) {
-      }
-    };
-
-    populateCity();
-  }, [id, oFormData.state, oFormData.cityName, citiesData.data]);
-
-  // Fetch store only once when component mounts with ID
-  useEffect(() => {
-    if (id && !hasFetchedStore.current) {
-      // Small delay to ensure countries are loaded first
-      const timer = setTimeout(() => {
-        fetchStore();
-      }, 100);
+    const statesArray = getArray(statesData.data);
+    if (statesArray.length > 0) {
+      const foundState = statesArray.find(
+        (s) => s.StateName === oFormData.stateName
+      );
       
-      return () => clearTimeout(timer);
+      if (foundState) {
+        setFormData(prev => ({
+          ...prev,
+          state: foundState.StateID
+        }));
+      }
     }
-  }, [id]); // Only depend on id
+  }, [id, oFormData.country, oFormData.stateName, oFormData.state, statesData.data]);
+
+  // Effect to populate city when cities are loaded and we have city name
+  useEffect(() => {
+    if (!id || !oFormData.state || !oFormData.cityName || oFormData.city) return;
+
+    const citiesArray = getArray(citiesData.data);
+    if (citiesArray.length > 0) {
+      const foundCity = citiesArray.find(
+        (c) => c.CityName === oFormData.cityName
+      );
+      
+      if (foundCity) {
+        setFormData(prev => ({
+          ...prev,
+          city: foundCity.CityID
+        }));
+      }
+    }
+  }, [id, oFormData.state, oFormData.cityName, oFormData.city, citiesData.data]);
+
+  // Fetch store only once when component mounts with ID and countries are loaded
+  useEffect(() => {
+    if (id && !hasFetchedStore.current && countriesData.data.length > 0) {
+      fetchStore();
+    }
+  }, [id, countriesData.data.length, fetchStore]);
 
   useEffect(() => {
     setTitle(id ? t("STORES.EDIT_STORE") : t("STORES.ADD_STORE"));

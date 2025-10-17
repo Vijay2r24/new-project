@@ -43,3 +43,8 @@ export const VIEW_TYPES = {
   GRID: "grid",
   LIST: "list",
 };
+export const DATE_PICKER_CONFIG = {
+  PRIMARY_COLOR: "purple",
+  POPOVER_DIRECTION: "down",
+  DISPLAY_FORMAT: "YYYY-MM-DD",
+};

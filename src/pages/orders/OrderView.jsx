@@ -106,41 +106,47 @@ const OrderView = () => {
   );
 
   // Function to get next available statuses based on current status
-  const getNextStatusOptions = useCallback((currentStatus) => {
-    // If we don't have order status data, return empty array
-    if (!orderStatusArray.length) return [];
-    
-    // Find the current status in the order status array
-    const currentStatusObj = orderStatusArray.find(
-      status => status.OrderStatus.toLowerCase() === currentStatus.toLowerCase()
-    );
-    
-    if (!currentStatusObj) return [];
-    
-    // This is a simplified approach - return all statuses except the current one
-    return orderStatusArray
-      .filter(status => status.OrderStatus.toLowerCase() !== currentStatus.toLowerCase())
-      .map(status => status.OrderStatus);
-  }, [orderStatusArray]);
+  const getNextStatusOptions = useCallback(
+    (currentStatus) => {
+      // If we don't have order status data, return empty array
+      if (!orderStatusArray.length) return [];
 
-const openEditDialog = (orderItemId) => {
-  // find item by OrderItemID
-  const item = nOrder.orderItems.find((i) => i.OrderItemID === orderItemId);
+      // Find the current status in the order status array
+      const currentStatusObj = orderStatusArray.find(
+        (status) =>
+          status.OrderStatus.toLowerCase() === currentStatus.toLowerCase()
+      );
 
-  if (!item) return; // safety check
+      if (!currentStatusObj) return [];
 
-  setEditingItem(item);
-
-  const currentStatus = orderStatusArray.find(
-    (status) => status.OrderStatus === item.status
+      // This is a simplified approach - return all statuses except the current one
+      return orderStatusArray
+        .filter(
+          (status) =>
+            status.OrderStatus.toLowerCase() !== currentStatus.toLowerCase()
+        )
+        .map((status) => status.OrderStatus);
+    },
+    [orderStatusArray]
   );
 
-  setEditedStatus(item.status || "");
-  setEditedStatusId(currentStatus?.StatusID || null);
-  setEditedRemarks("");
-  setShowEditDialog(true);
-};
+  const openEditDialog = (orderItemId) => {
+    // find item by OrderItemID
+    const item = nOrder.orderItems.find((i) => i.OrderItemID === orderItemId);
 
+    if (!item) return; // safety check
+
+    setEditingItem(item);
+
+    const currentStatus = orderStatusArray.find(
+      (status) => status.OrderStatus === item.status
+    );
+
+    setEditedStatus(item.status || "");
+    setEditedStatusId(currentStatus?.StatusID || null);
+    setEditedRemarks("");
+    setShowEditDialog(true);
+  };
 
   const closeEditDialog = () => {
     setShowEditDialog(false);
@@ -191,14 +197,17 @@ const openEditDialog = (orderItemId) => {
           },
           orderItems: data.orderItems.map((item, index) => ({
             id: item.OrderItemID || `item-${index}`,
+            OrderItemID: item.OrderItemID, // Make sure this is included
             name: item.ProductName,
             sku: item.SKU,
             image: item.orderItemImage?.[0]?.documentUrl || null,
             price: parseFloat(item.SellingPrice || item.MRP || 0),
             quantity: item.Quantity,
             status: item.OrderStatus || "Pending",
+            // Use payment data from the API response
             paymentMethod: payment.PaymentTypeName || "N/A",
-            paymentStatus: payment.PaymentStatusName || "Pending",
+            paymentStatus: payment.PaymentStatusName,
+            PaymentTypeName:payment.PaymentTypeName,
             paymentDate: payment.PaymentDate || data.OrderDate,
           })),
           total: data.orderItems.reduce((sum, item) => {
@@ -208,6 +217,8 @@ const openEditDialog = (orderItemId) => {
                 parseInt(item.Quantity || 1)
             );
           }, 0),
+          // Also include payment array at root level for backward compatibility
+          payment: data.payment || [],
         };
 
         setOrder(mappedOrder);
@@ -270,13 +281,7 @@ const openEditDialog = (orderItemId) => {
       setBackButton(null);
       setTitle("");
     };
-  }, [
-    orderId,
-    setTitle,
-    setBackButton,
-    t,
-    fetchOrderDetails
-  ]);
+  }, [orderId, setTitle, setBackButton, t, fetchOrderDetails]);
 
   const handleSaveChanges = useCallback(async () => {
     setbSubmitting(true);
@@ -313,30 +318,31 @@ const openEditDialog = (orderItemId) => {
 
   // Get next status options for the editing item
   const getNextStatusOptionsForItem = useCallback(() => {
-  if (!oEditingItem || !orderStatusArray.length) return [];
-  
-  const currentStatus = oEditingItem.status;
-  const currentStatusObj = orderStatusArray.find(status => 
-    status.OrderStatus === currentStatus
-  );
-  
-  if (!currentStatusObj) return [];
-  
-  const currentSortOrder = currentStatusObj.SortOrder;
-  
-  return orderStatusArray
-    .filter(status => 
-      status &&
-      typeof status.OrderStatusID !== 'undefined' &&
-      typeof status.OrderStatus !== 'undefined' &&
-      status.SortOrder > currentSortOrder // Only show statuses with higher sort order
-    )
-    .map(status => ({
-      value: status.OrderStatusID.toString(),
-      label: status.OrderStatus,
-      color: status.Colour?.HexCode || '#000000',
-    }));
-}, [oEditingItem, orderStatusArray]);
+    if (!oEditingItem || !orderStatusArray.length) return [];
+
+    const currentStatus = oEditingItem.status;
+    const currentStatusObj = orderStatusArray.find(
+      (status) => status.OrderStatus === currentStatus
+    );
+
+    if (!currentStatusObj) return [];
+
+    const currentSortOrder = currentStatusObj.SortOrder;
+
+    return orderStatusArray
+      .filter(
+        (status) =>
+          status &&
+          typeof status.OrderStatusID !== "undefined" &&
+          typeof status.OrderStatus !== "undefined" &&
+          status.SortOrder > currentSortOrder // Only show statuses with higher sort order
+      )
+      .map((status) => ({
+        value: status.OrderStatusID.toString(),
+        label: status.OrderStatus,
+        color: status.Colour?.HexCode || "#000000",
+      }));
+  }, [oEditingItem, orderStatusArray]);
 
   const orderStatusOptions = getNextStatusOptionsForItem();
 
@@ -496,14 +502,10 @@ const openEditDialog = (orderItemId) => {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm print:text-xs">
-                    {t("VIEW_ORDER.PAYMENT_DATE")}
+                    {t("VIEW_ORDER.PAYMENT_TYPE")}
                   </span>
                   <span className="text-sm font-medium print:text-xs">
-                    {nOrder?.orderItems?.[0]?.paymentDate
-                      ? new Date(
-                          nOrder.orderItems[0].paymentDate
-                        ).toLocaleDateString()
-                      : "N/A"}
+                    {nOrder?.orderItems?.[0]?.PaymentTypeName || "N/A"}
                   </span>
                 </div>
               </div>
@@ -523,29 +525,23 @@ const openEditDialog = (orderItemId) => {
                 <div className="space-y-3 bg-white print:space-y-2 text-gray-700 print:text-gray-800">
                   <div className="flex items-center justify-between">
                     <span className="text-sm print:text-xs">
-                      {t("VIEW_ORDER.ORDER_DATE")}
-                    </span>
-                    <div className="flex items-center text-sm text-gray-900 font-medium print:text-xs">
-                      <Calendar className="h-4 w-4 mr-1.5 text-gray-500 print:hidden" />
-                      {nOrder.orderDate
-                        ? new Date(nOrder.orderDate).toLocaleDateString()
-                        : ""}
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm print:text-xs">
-                      {t("VIEW_ORDER.ORDER_TIME")}
+                      {t("VIEW_ORDER.ORDER_DATE_TIME")}
                     </span>
                     <div className="flex items-center text-sm text-gray-900 font-medium print:text-xs">
                       <Clock className="h-4 w-4 mr-1.5 text-gray-500 print:hidden" />
                       {nOrder.orderDate
-                        ? new Date(nOrder.orderDate).toLocaleTimeString([], {
+                        ? `${new Date(
+                            nOrder.orderDate
+                          ).toLocaleDateString()} ${new Date(
+                            nOrder.orderDate
+                          ).toLocaleTimeString([], {
                             hour: "2-digit",
                             minute: "2-digit",
-                          })
+                          })}`
                         : ""}
                     </div>
                   </div>
+
                   <div className="flex items-center justify-between font-medium border-t border-gray-100 pt-3 mt-3 print:border-gray-200 print:pt-2 print:mt-2">
                     <span className="text-base text-gray-900 print:text-sm">
                       {t("VIEW_ORDER.TOTAL_AMOUNT")}
@@ -582,13 +578,13 @@ const openEditDialog = (orderItemId) => {
                       </th>
                       <th
                         scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-caption uppercase tracking-wider print:px-3 print:py-2 print:text-xs"
+                        className="px-6 py-3 text-center text-xs font-medium text-caption uppercase tracking-wider print:px-3 print:py-2 print:text-xs"
                       >
                         {t("COMMON.STATUS")}
                       </th>
                       <th
                         scope="col"
-                        className="px-6 py-3 text-right text-xs font-medium text-caption uppercase tracking-wider print:px-3 print:py-2 print:text-xs"
+                        className="px-6 py-3 text-center text-xs font-medium text-caption uppercase tracking-wider print:px-3 print:py-2 print:text-xs"
                       >
                         {t("COMMON.ACTIONS")}
                       </th>
@@ -655,10 +651,10 @@ const openEditDialog = (orderItemId) => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 print:px-3 print:py-2 print:text-xs">
                           ₹{item.price?.toFixed(2)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 print:px-3 print:py-2 print:text-xs">
+                        <td className="px-6 py-4 whitespace-nowrap mt-4 text-sm text-gray-800 print:px-3 print:py-2 print:text-xs text-center flex items-center justify-center">
                           <StatusBadge status={item.status} />
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-3 print:px-3 print:py-2 print:text-xs print:space-x-1">
+                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium print:px-3 print:py-2 print:text-xs">
                           <div className="flex items-center justify-center gap-3 print:gap-1">
                             <button
                               className="text-blue-600 hover:text-blue-800 print:hidden"
@@ -669,9 +665,7 @@ const openEditDialog = (orderItemId) => {
                             </button>
                             <button
                               onClick={() => {
-                                console.log("Clicked item:", item);
-                                console.log("Item ID:", item.OrderItemID);
-                                handleOpenHistory(item.id);
+                                handleOpenHistory(item.OrderItemID);
                               }}
                               className="flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg shadow-sm transition"
                             >

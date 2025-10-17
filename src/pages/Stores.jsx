@@ -418,22 +418,33 @@ const Stores = () => {
                   </div>
                 </div>
 
-                <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
-                  <span
-                    className={`status-badge ${
-                      store.IsActive
-                        ? "status-active"
-                        : "status-inactive"
-                    }`}
-                  >
-                    {getStatusText(store.IsActive)}
-                  </span>
-                  <Switch
-                    checked={store.IsActive}
-                    onChange={() =>
-                      handleStatusChange(store.StoreID, store.IsActive)
-                    }
-                  />
+                <div className="mt-auto pt-4 border-t border-gray-100">
+                  <div className="flex items-center justify-between mb-3">
+                    <span
+                      className={`status-badge ${
+                        store.IsActive
+                          ? "status-active"
+                          : "status-inactive"
+                      }`}
+                    >
+                      {getStatusText(store.IsActive)}
+                    </span>
+                    <Switch
+                      checked={store.IsActive}
+                      onChange={() =>
+                        handleStatusChange(store.StoreID, store.IsActive)
+                      }
+                    />
+                  </div>
+                  
+                  {/* Action Buttons */}
+                  <div className="flex items-center justify-end gap-2">
+                    <ActionButtons
+                      id={store.StoreID}
+                      onEdit={handleEdit}
+                      onDelete={hasDeletePermission ? handleDelete : null}
+                    />
+                  </div>
                 </div>
               </div>
             ))

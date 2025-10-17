@@ -1,92 +1,74 @@
-import { useState } from 'react';
-import { useEffect } from 'react';
-import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import dayjs from 'dayjs';
+import React from "react";
+import Datepicker from "react-tailwindcss-datepicker";
+import { Calendar, X } from "lucide-react";
+import { DATE_PICKER_CONFIG } from "../contants/constants";
 
 const CustomDatePicker = ({
-  label,
-  value,
+  value = { startDate: null, endDate: null },
   onChange,
-  error,
+  label = "Date Range",
+  ...rest
 }) => {
-  const [internalValue, setInternalValue] = useState(value ? dayjs(value) : null);
+  const handleClear = () => {
+    const clearedValue = { startDate: null, endDate: null };
+    onChange?.(clearedValue);
+  };
 
-  // Sync internalValue with value prop
-  useEffect(() => {
-    setInternalValue(value ? dayjs(value) : null);
-  }, [value]);
+  const handleDateChange = (newValue) => {
+    // Ensure we pass the dates in the correct format
+    const formattedValue = {
+      startDate: newValue?.startDate || null,
+      endDate: newValue?.endDate || null,
+    };
+    onChange?.(formattedValue);
+  };
 
-  const handleChange = (newValue) => {
-    const dateString = newValue ? newValue.format('YYYY-MM-DD') : '';
-    setInternalValue(newValue);
-    onChange(dateString);
+  const hasValue = value?.startDate || value?.endDate;
+
+  // Ensure the value passed to Datepicker is always in the correct format
+  const datePickerValue = {
+    startDate: value?.startDate || null,
+    endDate: value?.endDate || null,
   };
 
   return (
-    <div className="w-48">
+    <div className="relative overflow-visible">
       {label && (
-        <label
-          className={`block text-sm font-medium mb-1 ${
-            error ? 'text-red-500' : 'text-gray-700'
-          }`}
-        >
+        <label className="block text-sm font-medium text-gray-700 mb-1">
           {label}
         </label>
       )}
-      <LocalizationProvider dateAdapter={AdapterDayjs}>
-        <DatePicker
-          value={internalValue}
-          onChange={handleChange}
-          slotProps={{
-            textField: {
-              fullWidth: true,
-              variant: 'outlined',
-              size: 'small',
-              InputProps: {
-                sx: {
-                  height: '38px', // Slightly shorter than before
-                  fontSize: '0.875rem',
-                  borderRadius: '0.5rem',
-                  padding: '0 10px',
-                  boxSizing: 'border-box',
-                },
-              },
-              InputLabelProps: {
-                shrink: true,
-                sx: {
-                  fontSize: '0.875rem',
-                },
-              },
-              sx: {
-                '& .MuiInputBase-root': {
-                  height: '38px',
-                  fontSize: '0.875rem',
-                  borderRadius: '0.5rem',
-                },
-                '& input': {
-                  height: '38px',
-                  boxSizing: 'border-box',
-                  padding: '6px 10px', // slightly smaller vertical padding
-                  fontSize: '0.875rem',
-                },
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: error ? '#d32f2f' : '#ccc',
-                },
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#5B45E0',
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#5B45E0',
-                  borderWidth: 2,
-                },
-              },
-              error: !!error,
-              helperText: error,
-            },
-          }}
-        />
-      </LocalizationProvider>
+      <div className="relative w-48 z-40">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-20">
+          <Calendar className="h-4 w-4 text-gray-400" />
+        </div>
+        {hasValue && (
+          <button
+            onClick={handleClear}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center z-20 hover:bg-gray-100 rounded-r-lg transition-colors"
+            type="button"
+          >
+            <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+          </button>
+        )}
+        <div className="[&_svg]:hidden">
+          <Datepicker
+            value={datePickerValue}
+            onChange={handleDateChange}
+            useRange={true}
+            asSingle={false}
+            showShortcuts={true}
+            primaryColor={DATE_PICKER_CONFIG.PRIMARY_COLOR}
+            popoverDirection={DATE_PICKER_CONFIG.POPOVER_DIRECTION}
+            displayFormat={DATE_PICKER_CONFIG.DISPLAY_FORMAT}
+            containerClassName="relative w-full z-10"
+            inputClassName={`block w-full ${
+              hasValue ? "pr-10" : "pr-3"
+            } pl-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5B45E0] focus:border-[#5B45E0] sm:text-sm bg-white text-gray-900`}
+            {...rest}
+          />
+        </div>
+      </div>
     </div>
   );
 };

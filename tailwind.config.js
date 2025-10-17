@@ -1,29 +1,33 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  content: [
+    './index.html',
+    './src/**/*.{js,ts,jsx,tsx}',
+    './node_modules/react-tailwindcss-datepicker/dist/index.esm.js',
+  ],
   theme: {
     extend: {
       fontFamily: {
         sans: [
-          'Inter', 
-          'ui-sans-serif', 
-          'system-ui', 
-          '-apple-system', 
-          'BlinkMacSystemFont', 
-          'Segoe UI', 
-          'Roboto', 
-          'Helvetica Neue', 
-          'Arial', 
-          'sans-serif'
+          'Inter',
+          'ui-sans-serif',
+          'system-ui',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'Segoe UI',
+          'Roboto',
+          'Helvetica Neue',
+          'Arial',
+          'sans-serif',
         ],
       },
       colors: {
-         "custom-blue1":"#00ACC1",
-        "custom-pink": "#DA70D6",
-        "sidebar-bg":"#ffff",
-        "custom-bg": "#FF5A5F",//600 
-        "bg-hover":"#E14E52",//700 
-        "sd-hover":"#FFE5E7",
+        'custom-blue1': '#00ACC1',
+        'custom-pink': '#DA70D6',
+        'sidebar-bg': '#ffff',
+        'custom-bg': '#FF5A5F',
+        'bg-hover': '#E14E52',
+        'sd-hover': '#FFE5E7',
         primary: {
           50: '#f5f3ff',
           100: '#ede9fe',
