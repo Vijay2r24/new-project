@@ -2,30 +2,28 @@ import { useState, useEffect } from "react";
 import {
   Upload,
   X,
-  Plus,
-  Bell,
-  Settings,
   Send,
-  AlertCircle,
+  MapPin,
+  Bell,
+  Clock,
 } from "lucide-react";
 import TextInputWithIcon from "../components/TextInputWithIcon";
+import TextAreaWithIcon from "../components/TextAreaWithIcon";
 import { useTranslation } from "react-i18next";
-import ActionButtons from "../components/ActionButtons";
-import BackButton from "../components/BackButton";
 import { useNavigate } from "react-router-dom";
 import { apiPost } from "../utils/ApiUtils";
-import ReactQuill from "react-quill";
 import { SEND_NOTIFICATIONS } from "../contants/apiRoutes";
 import { STATUS } from "../contants/constants";
 import { showEmsg } from "../utils/ShowEmsg";
 import { ToastContainer } from "react-toastify";
 import { useTitle } from "../context/TitleContext";
+import BackButton from "../components/BackButton";
 
 const Notifications = () => {
-  const [sActiveTab, setActiveTab] = useState("push");
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { setTitle, setBackButton } = useTitle();
+
   const [oPushFormData, setPushFormData] = useState({
     title: "",
     message: "",
@@ -35,35 +33,6 @@ const Notifications = () => {
   const [pushError, setPushError] = useState(null);
   const [pushSuccess, setPushSuccess] = useState(null);
   const [pushValidationErrors, setPushValidationErrors] = useState({});
-
-  const [oSilentFormData, setSilentFormData] = useState({
-    componentName: "",
-    json: "",
-  });
-
-  const [aComponentNotifications] = useState([
-    {
-      id: 1,
-      componentId: "CMP001",
-      componentName: "User Profile",
-      description: "Updates to user profile information",
-      status: "Active",
-    },
-    {
-      id: 2,
-      componentId: "CMP002",
-      componentName: "Order Status",
-      description: "Changes in order status",
-      status: "Active",
-    },
-    {
-      id: 3,
-      componentId: "CMP003",
-      componentName: "Inventory",
-      description: "Stock level updates",
-      status: "Inactive",
-    },
-  ]);
 
   useEffect(() => {
     setTitle(t("NOTIFICATIONS.TITLE"));
@@ -86,8 +55,6 @@ const Notifications = () => {
     }));
   };
 
-  const handleEdit = () => {};
-  const handleDelete = () => {};
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -111,14 +78,11 @@ const Notifications = () => {
     const errors = {};
     if (!oPushFormData.title || !oPushFormData.title.trim()) {
       errors.title =
-        t("PUSH_NOTIFICATION.TITLE_LABEL") + " " + t("COMMON.REQUIRED");
+        t("PUSH_NOTIFICATION.TITLE_LABEL");
     }
-    if (
-      !oPushFormData.message ||
-      !oPushFormData.message.replace(/<(.|\n)*?>/g, "").trim()
-    ) {
+    if (!oPushFormData.message || !oPushFormData.message.trim()) {
       errors.message =
-        t("PUSH_NOTIFICATION.MESSAGE_LABEL") + " " + t("COMMON.REQUIRED");
+        t("PUSH_NOTIFICATION.MESSAGE_LABEL");
     }
     setPushValidationErrors(errors);
     return Object.keys(errors).length === 0;
@@ -131,305 +95,204 @@ const Notifications = () => {
     if (!validatePushForm()) return;
     const token = localStorage.getItem("token");
     const data = new FormData();
-    data.append(
-      "data",
-      JSON.stringify({
-        title: oPushFormData.title,
-        body: oPushFormData.message,
-      })
-    );
+    data.append("title", oPushFormData.title);
+    data.append("body", oPushFormData.message.trim());
     if (oPushFormData.image) {
       data.append("NotificationImage", oPushFormData.image);
     }
+
     try {
       const oResponse = await apiPost(SEND_NOTIFICATIONS, data, token, true);
-      if (oResponse?.data?.STATUS === STATUS.SUCCESS.toUpperCase()) {
-        showEmsg(oResponse?.data?.MESSAGE, STATUS.SUCCESS);
+      if (oResponse?.data?.status === STATUS.SUCCESS.toUpperCase()) {
+        showEmsg(oResponse?.data?.message, STATUS.SUCCESS);
+        setPushFormData({
+          title: "",
+          message: "",
+          image: null,
+        });
+        setPreviewUrl(null);
       } else {
-        showEmsg(oResponse?.data?.MESSAGE, STATUS.ERROR);
+        showEmsg(oResponse?.data?.message, STATUS.ERROR);
         setPushError(oResponse?.data?.MESSAGE);
       }
     } catch (error) {
-      showEmsg(error?.response?.data?.MESSAGE);
-      setPushError(error?.response?.data?.MESSAGE);
+      showEmsg(error?.response?.data?.message);
+      setPushError(error?.response?.data?.message);
     }
   };
 
-  const handleSilentChange = (e) => {
-    const { name, value } = e.target;
-    setSilentFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleSilentSubmit = (e) => {
-    e.preventDefault();
-  };
-
   return (
-    <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen">
+    <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 min-h-screen">
       <ToastContainer />
-      <div className="mb-8">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
-            <button
-              onClick={() => setActiveTab("push")}
-              className={`${
-                sActiveTab === "push"
-                  ? "border-custom-bg text-custom-bg"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
-            >
-              <Send className="h-4 w-4" />
-              {t("TABS.PUSH_NOTIFICATIONS")}
-            </button>
-            <button
-              onClick={() => setActiveTab("silent")}
-              className={`${
-                sActiveTab === "silent"
-                  ? "border-custom-bg text-custom-bg"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2`}
-            >
-              <Settings className="h-4 w-4" />
-              {t("TABS.SILENT_NOTIFICATIONS")}
-            </button>
-          </nav>
-        </div>
-      </div>
-
-      {sActiveTab === "push" && (
-        <form onSubmit={handlePushSubmit} className="space-y-8">
-          {pushError && <div className="text-red-500 mb-2">{pushError}</div>}
-          {pushSuccess && (
-            <div className="text-green-600 mb-2">{pushSuccess}</div>
-          )}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Send className="h-5 w-5 text-custom-bg" />
-                {t("PUSH_NOTIFICATION.DETAILS_TITLE")}
-              </h2>
+      <form onSubmit={handlePushSubmit} className="space-y-8">
+        {/* Error/Success Messages */}
+        <div className="space-y-4">
+          {pushError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              {pushError}
             </div>
-            <div className="p-6 space-y-6">
-              <div className="flex gap-4 flex-wrap">
-                <div className="flex-1 min-w-[280px]">
-                  <TextInputWithIcon
-                    label={t("PUSH_NOTIFICATION.TITLE_LABEL")}
-                    id="title"
-                    name="title"
-                    value={oPushFormData.title}
-                    onChange={handlePushChange}
-                    placeholder={t("PUSH_NOTIFICATION.TITLE_PLACEHOLDER")}
-                    Icon={Send}
-                    error={pushValidationErrors.title}
-                  />
-                </div>
-                <div className="flex-1 mb-4 min-w-[280px]">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t("PUSH_NOTIFICATION.MESSAGE_LABEL")}
-                  </label>
-                  {pushValidationErrors.message && (
-                    <div className="text-red-500 text-sm mb-1">
-                      {pushValidationErrors.message}
+          )}
+          {pushSuccess && (
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+              {pushSuccess}
+            </div>
+          )}
+        </div>
+
+        {/* Push Notification Form */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Send className="h-5 w-5 text-custom-bg" />
+              {t("PUSH_NOTIFICATION.DETAILS_TITLE")}
+            </h2>
+          </div>
+
+          <div className="p-6 space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <TextInputWithIcon
+                label={t("PUSH_NOTIFICATION.TITLE_LABEL")}
+                id="title"
+                name="title"
+                value={oPushFormData.title}
+                onChange={handlePushChange}
+                placeholder={t("PUSH_NOTIFICATION.TITLE_PLACEHOLDER")}
+                Icon={Send}
+                error={pushValidationErrors.title}
+                required
+              />
+
+              <TextAreaWithIcon
+                label={t("PUSH_NOTIFICATION.MESSAGE_LABEL")}
+                name="message"
+                value={oPushFormData.message}
+                onChange={handlePushChange}
+                placeholder={t("PUSH_NOTIFICATION.MESSAGE_PLACEHOLDER")}
+                icon={MapPin}
+                error={pushValidationErrors.message}
+                required
+              />
+            </div>
+
+            {/* Image Upload */}
+            <div className="space-y-4">
+              <label className="block text-sm font-medium text-gray-700">
+                {t("PUSH_NOTIFICATION.IMAGE_LABEL")}
+              </label>
+              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-[#5B45E0] transition-colors duration-200">
+                <div className="space-y-3 text-center">
+                  {nPreviewUrl ? (
+                    <div className="relative inline-block">
+                      <img
+                        src={nPreviewUrl}
+                        alt={t("PUSH_NOTIFICATION.IMAGE_PREVIEW_ALT")}
+                        className="mx-auto h-32 w-auto object-contain rounded-lg shadow-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={removeImage}
+                        className="absolute -top-2 -right-2 p-1 bg-red-500 rounded-full text-white hover:bg-red-600 transition-colors duration-200 shadow-lg"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
                     </div>
+                  ) : (
+                    <>
+                      <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                      <div className="flex flex-col sm:flex-row text-sm text-gray-600 justify-center items-center gap-1">
+                        <label
+                          htmlFor="image-upload"
+                          className="relative cursor-pointer bg-white rounded-md font-medium text-[#5B45E0] hover:text-[#4c39c7] focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-[#5B45E0] transition-colors duration-200"
+                        >
+                          <span>{t("COMMON.UPLOAD_A_FILE")}</span>
+                          <input
+                            id="image-upload"
+                            name="image"
+                            type="file"
+                            className="sr-only"
+                            accept="image/*"
+                            onChange={handleImageChange}
+                          />
+                        </label>
+                        <p className="text-gray-500">
+                          {t("COMMON.OR_DRAG_AND_DROP")}
+                        </p>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        PNG, JPG, GIF up to 10MB
+                      </p>
+                    </>
                   )}
-                  <ReactQuill
-                    theme="snow"
-                    value={oPushFormData.message}
-                    onChange={(value) => {
-                      setPushFormData((prev) => ({ ...prev, message: value }));
-                      if (value.replace(/<(.|\n)*?>/g, "").trim()) {
-                        setPushValidationErrors((prev) => ({
-                          ...prev,
-                          message: undefined,
-                        }));
-                      }
-                    }}
-                    placeholder={t("PUSH_NOTIFICATION.MESSAGE_PLACEHOLDER")}
-                    className="h-32 mb-2"
-                  />
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t("PUSH_NOTIFICATION.IMAGE_LABEL")}
-                </label>
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-[#5B45E0] transition-colors duration-200">
-                  <div className="space-y-1 text-center">
-                    {nPreviewUrl ? (
-                      <div className="relative">
-                        <img
-                          src={nPreviewUrl}
-                          alt={t("PUSH_NOTIFICATION.IMAGE_PREVIEW_ALT")}
-                          className="mx-auto h-32 w-auto object-contain rounded-lg"
-                        />
-                        <button
-                          type="button"
-                          onClick={removeImage}
-                          className="absolute top-0 right-0 -mt-2 -mr-2 p-1 bg-red-100 rounded-full text-red hover:bg-red-200 transition-colors duration-200"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                        <div className="flex text-sm text-caption">
-                          <label
-                            htmlFor="image-upload"
-                            className="relative cursor-pointer bg-white rounded-md font-medium text-[#5B45E0] hover:text-[#4c39c7] focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-[#5B45E0] transition-colors duration-200"
-                          >
-                            <span>{t("COMMON.UPLOAD_A_FILE")}</span>
-                            <input
-                              id="image-upload"
-                              name="image"
-                              type="file"
-                              className="sr-only"
-                              accept="image/*"
-                              onChange={handleImageChange}
-                            />
-                          </label>
-                          <p className="pl-1">{t("COMMON.OR_DRAG_AND_DROP")}</p>
-                        </div>
-                      </>
-                    )}
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Notification Preview */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Bell className="h-5 w-5 text-custom-bg" />
+              {t("PUSH_NOTIFICATION.PREVIEW_TITLE")}
+            </h2>
+          </div>
+
+          <div className="p-6 flex justify-center">
+            {(!oPushFormData.title && !oPushFormData.message && !nPreviewUrl) ? (
+              <p className="text-gray-400 text-center italic">
+                {t("PUSH_NOTIFICATION.NO_PREVIEW")}
+              </p>
+            ) : (
+              <div className="w-full max-w-xs bg-[#1E1E1E] text-white rounded-xl p-3 shadow-lg border border-gray-700 relative">
+                {/* Header */}
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="bg-[#5B45E0] p-1 rounded-md">
+                    <Bell className="h-4 w-4 text-white" />
+                  </div>
+                  <span className="font-medium text-sm">My App</span>
+                  <div className="ml-auto flex items-center text-xs text-gray-400 gap-1">
+                    <Clock className="h-3 w-3" /> 1m ago
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
 
-          <div className="flex justify-end space-x-4">
-            <button
-              type="button"
-              onClick={() => window.history.back()}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5B45E0] transition-colors duration-200"
-            >
-              {t("COMMON.CANCEL")}
-            </button>
-            <button type="submit" className="btn-primary">
-              <Send className="h-4 w-4 mr-2" />
-              {t("BUTTONS.SEND_NOTIFICATION")}
-            </button>
-          </div>
-        </form>
-      )}
+                {/* Content */}
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold">{oPushFormData.title || "Notification Title"}</p>
+                  <p className="text-xs text-gray-300">{oPushFormData.message || "Notification message will appear here."}</p>
+                </div>
 
-      {sActiveTab === "silent" && (
-        <div className="space-y-8">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <Settings className="h-5 w-5 text-custom-bg" />
-                {t("SILENT_NOTIFICATION.ADD_TITLE")}
-              </h2>
-            </div>
-            <form onSubmit={handleSilentSubmit} className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <TextInputWithIcon
-                  label={t("SILENT_NOTIFICATION.COMPONENT_NAME_LABEL")}
-                  id="componentName"
-                  name="componentName"
-                  value={oSilentFormData.componentName}
-                  onChange={handleSilentChange}
-                  placeholder={t(
-                    "SILENT_NOTIFICATION.COMPONENT_NAME_PLACEHOLDER"
-                  )}
-                  Icon={Settings}
-                  required
-                />
-                <TextInputWithIcon
-                  label={t("SILENT_NOTIFICATION.JSON_LABEL")}
-                  id="json"
-                  name="json"
-                  value={oSilentFormData.json}
-                  onChange={handleSilentChange}
-                  placeholder={t("SILENT_NOTIFICATION.JSON_PLACEHOLDER")}
-                  Icon={AlertCircle}
-                  required
-                />
+                {/* Image if present */}
+                {nPreviewUrl && (
+                  <img
+                    src={nPreviewUrl}
+                    alt="Notification"
+                    className="mt-2 w-full rounded-lg object-cover max-h-32 border border-gray-600"
+                  />
+                )}
               </div>
-              <div className="flex justify-end">
-                <button type="submit" className="btn-primary">
-                  <Plus className="h-4 w-4 mr-2" />
-                  {t("BUTTONS.ADD_NOTIFICATION")}
-                </button>
-              </div>
-            </form>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-custom-bg" />
-                {t("COMPONENT_NOTIFICATIONS.TITLE")}
-              </h2>
-            </div>
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t("COMPONENT_NOTIFICATIONS.TABLE_HEADERS.ID")}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t("COMPONENT_NOTIFICATIONS.TABLE_HEADERS.COMPONENT_NAME")}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t("COMPONENT_NOTIFICATIONS.TABLE_HEADERS.JSON")}
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t("COMMON.STATUS")}
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t("COMPONENT_NOTIFICATIONS.TABLE_HEADERS.ACTIONS")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {aComponentNotifications.map((notification) => (
-                  <tr
-                    key={notification.id}
-                    className="hover:bg-gray-50 transition-colors duration-200"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {notification.componentId}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {notification.componentName}
-                    </td>
-                    <td className="px-6 py-4 text-secondary">
-                      {notification.description}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          notification.status === "Active"
-                            ? "status-active"
-                            : "status-inactive"
-                        }`}
-                      >
-                        {notification.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <ActionButtons
-                        id={notification.id}
-                        onEdit={handleEdit}
-                        onDelete={handleDelete}
-                        onMore={() =>
-                          console.log("More options for", notification.id)
-                        }
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            )}
           </div>
         </div>
-      )}
+
+        {/* Buttons */}
+        <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4">
+          <button
+            type="button"
+            onClick={() => navigate("/dashboard")}
+            className="px-6 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5B45E0] transition-colors duration-200 order-2 sm:order-1"
+          >
+            {t("COMMON.CANCEL")}
+          </button>
+          <button 
+            type="submit" 
+            className="btn-primary order-1 sm:order-2 flex items-center justify-center"
+          >
+            <Send className="h-4 w-4 mr-2" />
+            {t("BUTTONS.SEND_NOTIFICATION")}
+          </button>
+        </div>
+      </form>
     </div>
   );
 };
