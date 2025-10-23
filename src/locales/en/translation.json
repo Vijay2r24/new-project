@@ -102,6 +102,7 @@
   "DASHBOARD": {
     "TITLE": "Dashboard",
     "DESCRIPTION": "Overview of your store's performance and recent activity",
+    "NO_TOP_PRODUCTS":"No Products found",
     "PRODUCT_MODAL": {
       "CATEGORY_DEFAULT": "General",
       "REVENUE": "Revenue",

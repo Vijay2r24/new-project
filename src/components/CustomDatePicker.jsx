@@ -3,7 +3,7 @@ import Datepicker from "react-tailwindcss-datepicker";
 import { Calendar, X } from "lucide-react";
 import { DATE_PICKER_CONFIG } from '../contants/constants';
  
-const CustomDatePicker = ({ value = { startDate: null, endDate: null }, onChange, label = "Date Range", ...rest }) => {
+const CustomDatePicker = ({ value = { startDate: null, endDate: null }, onChange, label = "", ...rest }) => {
   const handleClear = () => {
     const clearedValue = { startDate: null, endDate: null };
     onChange?.(clearedValue);

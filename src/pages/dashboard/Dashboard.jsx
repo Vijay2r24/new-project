@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import {
   TrendingUp,
   ShoppingCart,
@@ -9,154 +9,517 @@ import {
   ArrowDown,
   Star,
   Clock,
-  AlertCircle
-} from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { useTitle } from '../../context/TitleContext';
+  AlertCircle,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { useTitle } from "../../context/TitleContext";
+import DatePicker from "../../components/CustomDatePicker";
+import {
+  GET_TOTAL_REVENUE,
+  GET_TOTAL_ORDERS,
+  GET_TOTAL_CUSTOMERS,
+  GET_RECENT_ORDERS,
+  GET_TOP_PRODUCTS,
+} from "../../contants/apiRoutes";
+import { apiGet } from "../../utils/ApiUtils";
+import Loader from "../../components/Loader";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const aMetrics = [
-    {
-      title: 'Total Revenue',
-      value: '$24,500',
-      change: '+12.5%',
-      trend: 'up',
-      icon: DollarSign,
-      color: 'bg-green-100 text-green-600'
-    },
-    {
-      title: 'Total Orders',
-      value: '1,234',
-      change: '+8.2%',
-      trend: 'up',
-      icon: ShoppingCart,
-      color: 'bg-blue-100 text-blue-600'
-    },
-    {
-      title: 'Total Customers',
-      value: '856',
-      change: '+5.3%',
-      trend: 'up',
-      icon: Users,
-      color: 'bg-purple-100 text-purple-600'
-    },
-    {
-      title: 'Average Order',
-      value: '$89.50',
-      change: '-2.4%',
-      trend: 'down',
-      icon: TrendingUp,
-      color: 'bg-orange-100 text-orange-600'
-    }
-  ];
-
-  const aRecentOrders = [
-    {
-      id: 'ORD-001',
-      customer: 'John Doe',
-      date: '2024-03-15',
-      amount: '$245.00',
-      status: 'Delivered',
-      items: 3
-    },
-    {
-      id: 'ORD-002',
-      customer: 'Jane Smith',
-      date: '2024-03-15',
-      amount: '$189.50',
-      status: 'Processing',
-      items: 2
-    },
-    {
-      id: 'ORD-003',
-      customer: 'Mike Johnson',
-      date: '2024-03-14',
-      amount: '$320.75',
-      status: 'Shipped',
-      items: 4
-    },
-    {
-      id: 'ORD-004',
-      customer: 'Sarah Wilson',
-      date: '2024-03-14',
-      amount: '$145.25',
-      status: 'Pending',
-      items: 1
-    }
-  ];
-
-  const aTopProducts = [
-    {
-      name: 'Wireless Headphones',
-      sales: 245,
-      revenue: '$24,500',
-      rating: 4.8,
-      stock: 45,
-      image: 'https://images.pexels.com/photos/3394665/pexels-photo-3394665.jpeg?auto=compress&cs=tinysrgb&w=300'
-    },
-    {
-      name: 'Smart Watch',
-      sales: 189,
-      revenue: '$18,900',
-      rating: 4.6,
-      stock: 32,
-      image: 'https://images.pexels.com/photos/437037/pexels-photo-437037.jpeg?auto=compress&cs=tinysrgb&w=300'
-    },
-    {
-      name: 'Laptop Backpack',
-      sales: 156,
-      revenue: '$7,800',
-      rating: 4.9,
-      stock: 28,
-      image: 'https://images.pexels.com/photos/461198/pexels-photo-461198.jpeg?auto=compress&cs=tinysrgb&w=300'
-    }
-  ];
-
-  const aLowStockItems = [
-    {
-      name: 'Wireless Mouse',
-      stock: 5,
-      threshold: 10
-    },
-    {
-      name: 'Mechanical Keyboard',
-      stock: 3,
-      threshold: 15
-    },
-    {
-      name: 'USB-C Hub',
-      stock: 2,
-      threshold: 20
-    }
-  ];
-
-  const [nTopProductsPage, setTopProductsPage] = useState(1);
-  const PRODUCTS_PER_PAGE = 3;
   const { t } = useTranslation();
   const { setTitle } = useTitle();
-  const totalTopProductsPages = Math.ceil(aTopProducts.length / PRODUCTS_PER_PAGE);
-  const paginatedTopProducts = aTopProducts.slice(
-    (nTopProductsPage - 1) * PRODUCTS_PER_PAGE,
-    nTopProductsPage * PRODUCTS_PER_PAGE
-  );
 
+  // State for API data
+  const [metrics, setMetrics] = useState([
+    {
+      title: "Total Revenue",
+      value: "$0",
+      change: "+0%",
+      trend: "up",
+      icon: DollarSign,
+      color: "bg-green-100 text-green-600",
+      comparisonText: "vs last period",
+    },
+    {
+      title: "Total Orders",
+      value: "0",
+      change: "+0%",
+      trend: "up",
+      icon: ShoppingCart,
+      color: "bg-blue-100 text-blue-600",
+      comparisonText: "vs last period",
+    },
+    {
+      title: "Total Customers",
+      value: "0",
+      change: "+0%",
+      trend: "up",
+      icon: Users,
+      color: "bg-purple-100 text-purple-600",
+      comparisonText: "vs last period",
+    },
+    {
+      title: "Average Order",
+      value: "$0",
+      change: "+0%",
+      trend: "up",
+      icon: TrendingUp,
+      color: "bg-orange-100 text-orange-600",
+      comparisonText: "vs last period",
+    },
+  ]);
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [topProducts, setTopProducts] = useState([]);
+  const [lowStockItems, setLowStockItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Date picker state with default values (last 30 days)
+  const [value, setValue] = useState({
+    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0],
+    endDate: new Date().toISOString().split("T")[0],
+  });
+
+  const [nTopProductsPage, setTopProductsPage] = useState(1);
   const [nSelectedProduct, setSelectedProduct] = useState(null);
   const [bShowProductModal, setShowProductModal] = useState(false);
 
+  const paginatedTopProducts = topProducts;
+
+  // Format currency
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  // Format number
+  const formatNumber = (num) => {
+    return new Intl.NumberFormat("en-US").format(num);
+  };
+
+  // Calculate the comparison period text based on date range
+  const getComparisonText = (startDate, endDate) => {
+  if (!startDate || !endDate) return "vs last period";
+
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  
+  const startStr = start.toISOString().split('T')[0];
+  const endStr = end.toISOString().split('T')[0];
+  
+  // Single day selections
+  if (startStr === endStr) {
+    const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    
+    if (startStr === today) return "vs yesterday";
+    if (startStr === yesterday) return "vs day before yesterday";
+    return "vs previous day";
+  }
+  
+  // Date ranges
+  const diffTime = Math.abs(end - start);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+  switch (diffDays) {
+    case 1: return "vs previous day";
+    case 7: return "vs last week";
+    case 30:
+    case 31: return "vs last month";
+    case 90: return "vs last quarter";
+    case 365:
+    case 366: return "vs last year";
+    default: return `vs last ${diffDays} days`;
+  }
+};
+  // Calculate percentage change and trend
+  const calculateMetrics = (current, previous, title, comparisonText) => {
+    if (!current || !previous)
+      return { value: "0", change: "0%", trend: "neutral", comparisonText };
+
+    const currentNum =
+      typeof current === "string"
+        ? parseFloat(current.replace(/[^0-9.-]+/g, ""))
+        : current;
+    const previousNum =
+      typeof previous === "string"
+        ? parseFloat(previous.replace(/[^0-9.-]+/g, ""))
+        : previous;
+
+    if (previousNum === 0) {
+      return {
+        value:
+          title.includes("Revenue") || title.includes("Average")
+            ? formatCurrency(currentNum)
+            : formatNumber(currentNum),
+        change: "N/A",
+        trend: "neutral",
+        comparisonText,
+      };
+    }
+
+    const percentageChange = ((currentNum - previousNum) / previousNum) * 100;
+    const trend =
+      percentageChange > 0 ? "up" : percentageChange < 0 ? "down" : "neutral";
+
+    return {
+      value:
+        title.includes("Revenue") || title.includes("Average")
+          ? formatCurrency(currentNum)
+          : formatNumber(currentNum),
+      change: `${percentageChange > 0 ? "+" : ""}${percentageChange.toFixed(
+        2
+      )}%`,
+      trend,
+      comparisonText,
+    };
+  };
+
+  // Fetch all dashboard data using promises
+  const fetchDashboardData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const { startDate, endDate } = value;
+
+      // Calculate comparison text based on date range
+      const comparisonText = getComparisonText(startDate, endDate);
+
+      // Prepare query parameters for date range
+      const dateParams =
+        startDate && endDate
+          ? {
+              startDate: new Date(startDate).toISOString(),
+              endDate: new Date(endDate).toISOString(),
+            }
+          : {};
+
+      // Get token from localStorage
+      const token = localStorage.getItem("token");
+
+      // Create all API promises
+      const promises = [
+        // Total Revenue - uses query params
+        apiGet(GET_TOTAL_REVENUE, dateParams, token)
+          .then((response) => ({
+            data: response?.data?.data || {},
+            type: "revenue",
+          }))
+          .catch((error) => {
+            return {
+              type: "revenue",
+              data: {
+                totalCurrentRevenue: 0,
+                previousRevenue: 0,
+                totalRevenuePercentageChange: "0%",
+              },
+            };
+          }),
+
+        // Total Orders - uses query params
+        apiGet(GET_TOTAL_ORDERS, dateParams, token)
+          .then((response) => ({
+            data: response?.data?.data || {},
+            type: "orders",
+          }))
+          .catch((error) => {
+            return {
+              type: "orders",
+              data: {
+                currentTotalOrders: 0,
+                previousTotalOrders: 0,
+                totalOrderPercentageChange: "0%",
+              },
+            };
+          }),
+
+        // Total Customers - uses query params
+        apiGet(GET_TOTAL_CUSTOMERS, dateParams, token)
+          .then((response) => ({
+            data: response?.data?.data || {},
+            type: "customers",
+          }))
+          .catch((error) => {
+            return {
+              type: "customers",
+              data: {
+                currentRegisteredTotalCutomers: 0,
+                previousRegisteredTotalCustomers: 0,
+                totalCustomerPercentageChange: "0%",
+              },
+            };
+          }),
+
+        // Recent Orders - uses request body for limit
+        apiGet(GET_RECENT_ORDERS, { limit: 7 }, token)
+          .then((response) => ({
+            data: response?.data?.data || {},
+            type: "recentOrders",
+          }))
+          .catch((error) => {
+            return { type: "recentOrders", data: [] };
+          }),
+
+        // Top Products - uses query params for dates and request body for limit
+        apiGet(GET_TOP_PRODUCTS, { ...dateParams, limit: 5 }, token)
+          .then((response) => ({
+            data: response?.data?.data || {},
+            type: "topProducts",
+          }))
+          .catch((error) => {
+            return { type: "topProducts", data: [] };
+          }),
+      ];
+
+      // Execute all API calls in parallel
+      const results = await Promise.all(promises);
+
+      // Process results
+      let revenueData = {
+        totalCurrentRevenue: 0,
+        previousRevenue: 0,
+        totalRevenuePercentageChange: "0%",
+      };
+      let ordersData = {
+        currentTotalOrders: 0,
+        previousTotalOrders: 0,
+        totalOrderPercentageChange: "0%",
+      };
+      let customersData = {
+        currentRegisteredTotalCutomers: 0,
+        previousRegisteredTotalCustomers: 0,
+        totalCustomerPercentageChange: "0%",
+      };
+      let recentOrdersData = [];
+      let topProductsData = [];
+
+      results.forEach((result) => {
+        switch (result.type) {
+          case "revenue":
+            revenueData = result.data;
+            break;
+          case "orders":
+            ordersData = result.data;
+            break;
+          case "customers":
+            customersData = result.data;
+            break;
+          case "recentOrders":
+            recentOrdersData = Array.isArray(result.data)
+              ? result.data
+              : result.data.recentOrders || [];
+            break;
+          case "topProducts":
+            topProductsData = Array.isArray(result.data)
+              ? result.data
+              : result.data.topProducts || [];
+            break;
+        }
+      });
+
+      // Calculate metrics using actual API data
+      const revenueMetrics = calculateMetrics(
+        revenueData.totalCurrentRevenue,
+        revenueData.previousRevenue,
+        "Total Revenue",
+        comparisonText
+      );
+      const ordersMetrics = calculateMetrics(
+        ordersData.currentTotalOrders,
+        ordersData.previousTotalOrders,
+        "Total Orders",
+        comparisonText
+      );
+
+      const customersMetrics = calculateMetrics(
+        customersData.currentRegisteredTotalCutomers,
+        customersData.previousRegisteredTotalCustomers,
+        "Total Customers",
+        comparisonText
+      );
+
+      // Calculate average order value
+      const averageOrderValue =
+        ordersData.currentTotalOrders > 0
+          ? revenueData.totalCurrentRevenue / ordersData.currentTotalOrders
+          : 0;
+
+      const previousAverageOrderValue =
+        ordersData.previousTotalOrders > 0
+          ? revenueData.previousRevenue / ordersData.previousTotalOrders
+          : 0;
+
+      const averageOrderMetrics = calculateMetrics(
+        averageOrderValue,
+        previousAverageOrderValue,
+        "Average Order",
+        comparisonText
+      );
+
+      // Update metrics state with actual API data
+      setMetrics([
+        {
+          title: "Total Revenue",
+          value: revenueMetrics.value,
+          change: revenueMetrics.change,
+          trend: revenueMetrics.trend,
+          icon: DollarSign,
+          color: "bg-green-100 text-green-600",
+          comparisonText: revenueMetrics.comparisonText,
+        },
+        {
+          title: "Total Orders",
+          value: ordersMetrics.value,
+          change: ordersMetrics.change,
+          trend: ordersMetrics.trend,
+          icon: ShoppingCart,
+          color: "bg-blue-100 text-blue-600",
+          comparisonText: ordersMetrics.comparisonText,
+        },
+        {
+          title: "Total Customers",
+          value: customersMetrics.value,
+          change: customersMetrics.change,
+          trend: customersMetrics.trend,
+          icon: Users,
+          color: "bg-purple-100 text-purple-600",
+          comparisonText: customersMetrics.comparisonText,
+        },
+        {
+          title: "Average Order",
+          value: averageOrderMetrics.value,
+          change: averageOrderMetrics.change,
+          trend: averageOrderMetrics.trend,
+          icon: TrendingUp,
+          color: "bg-orange-100 text-orange-600",
+          comparisonText: averageOrderMetrics.comparisonText,
+        },
+      ]);
+
+      // Update recent orders
+      setRecentOrders(
+        recentOrdersData.map((order) => ({
+          id: order.OrderID || `ORD-${Math.random().toString(36).substr(2, 9)}`,
+          customer: order.Customer
+            ? `${order.Customer.FirstName} ${order.Customer.LastName}`
+            : "Unknown Customer",
+          date: order.OrderDate
+            ? new Date(order.OrderDate).toISOString().split("T")[0]
+            : new Date().toISOString().split("T")[0],
+          amount: formatCurrency(order.TotalAmount || 0),
+          status:
+            order.OrderItem?.[0]?.OrderItemStatus?.OrderStatus || "Pending",
+          items: order.OrderItem?.length || 1,
+        }))
+      );
+
+      // Update top products with actual API response structure
+      setTopProducts(
+        topProductsData.map((item) => {
+          const product = item.ProductVariant?.Product || {};
+          const variantImages = item.variantImages || [];
+
+          return {
+            name: product.ProductName || "Unknown Product",
+            sales: parseInt(item.totalOrderItemQuantity) || 0,
+            revenue: formatCurrency(parseInt(item.totalPrice) || 0),
+            rating: item.averageRating || 0,
+            stock: item.totalStock || 0,
+            image:
+              variantImages[0]?.documentUrl ||
+              "https://images.pexels.com/photos/3394665/pexels-photo-3394665.jpeg?auto=compress&cs=tinysrgb&w=300",
+            category: product.Category || "General",
+            // Store the original item for modal details
+            originalData: item,
+          };
+        })
+      );
+
+      // Generate low stock items from top products with low stock
+      const lowStock = topProductsData
+        .filter((item) => (item.totalStock || 0) < 10)
+        .map((item) => {
+          const product = item.ProductVariant?.Product || {};
+          return {
+            name: product.ProductName || "Unknown Product",
+            stock: item.totalStock || 0,
+            threshold: 10,
+          };
+        });
+
+      setLowStockItems(lowStock);
+    } catch (err) {
+      setError("Failed to load dashboard data. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle date change
+  const handleDateChange = (newValue) => {
+    setValue(newValue);
+  };
+
+  // Set title and fetch data on component mount
   useEffect(() => {
-    setTitle(t('DASHBOARD.TITLE'));
-    return () => setTitle('');
+    setTitle(t("DASHBOARD.TITLE"));
+    fetchDashboardData();
+
+    return () => setTitle("");
   }, [setTitle, t]);
+
+  // Fetch data when date range changes
+  useEffect(() => {
+    if (value.startDate && value.endDate) {
+      fetchDashboardData();
+    }
+  }, [value]);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-2">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-center">
+            <Loader className="h-8 w-8 animate-spin text-indigo-600 mx-auto mb-4" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-2">
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center">
+          <AlertCircle className="h-5 w-5 text-red-500 mr-3" />
+          <span className="text-red-700">{error}</span>
+          <button
+            onClick={fetchDashboardData}
+            className="ml-auto px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition"
+          >
+            {t("COMMON.RETRY")}
+          </button>
+        </div>
+      )}
+
+      {/* Product Modal */}
       {bShowProductModal && nSelectedProduct && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 animate-fade-in">
           <div className="bg-white rounded-xl shadow-2xl max-w-xs w-full p-0 relative animate-fade-in-up overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-indigo-50 via-white to-gray-50">
-              <h2 className="text-base font-bold text-gray-900">Product Details</h2>
+              <h2 className="text-base font-bold text-gray-900">
+                {t("PRODUCTS.PRODUCTS_DETAILS")}
+              </h2>
               <button
                 className="text-gray-400 hover:text-indigo-600 text-xl font-bold transition-colors"
                 onClick={() => setShowProductModal(false)}
@@ -167,7 +530,10 @@ const Dashboard = () => {
             </div>
             <div className="flex flex-col items-center px-4 py-4">
               <img
-                src={nSelectedProduct.image || 'https://via.placeholder.com/96x96?text=Img'}
+                src={
+                  nSelectedProduct.image ||
+                  "https://via.placeholder.com/96x96?text=Img"
+                }
                 alt={nSelectedProduct.name}
                 className="h-28 w-28 rounded-lg object-cover border-2 border-indigo-100 shadow mb-2"
               />
@@ -175,50 +541,69 @@ const Dashboard = () => {
                 {nSelectedProduct.name}
               </h3>
               <span className="inline-block mb-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                {nSelectedProduct.category || t('DASHBOARD.PRODUCT_MODAL.CATEGORY_DEFAULT')}
+                {nSelectedProduct.category ||
+                  t("DASHBOARD.PRODUCT_MODAL.CATEGORY_DEFAULT")}
               </span>
-
               <div className="flex items-center gap-0.5 mb-2">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Star
                     key={star}
-                    className={`h-4 w-4 ${nSelectedProduct.rating >= star ? 'text-yellow-400' : 'text-gray-300'}`}
-                    fill={nSelectedProduct.rating >= star ? '#facc15' : 'none'}
+                    className={`h-4 w-4 ${
+                      nSelectedProduct.rating >= star
+                        ? "text-yellow-400"
+                        : "text-gray-300"
+                    }`}
+                    fill={nSelectedProduct.rating >= star ? "#facc15" : "none"}
                   />
                 ))}
-                <span className="ml-1 text-xs text-gray-500">{nSelectedProduct.rating}</span>
+                <span className="ml-1 text-xs text-gray-500">
+                  {nSelectedProduct.rating}
+                </span>
               </div>
-
               <hr className="w-full border-t border-gray-200 my-2" />
-
               <div className="grid grid-cols-2 gap-2 w-full mt-1 mb-1">
                 <div className="flex flex-col items-center">
                   <DollarSign className="h-4 w-4 text-green-500 mb-0.5" />
-                  <span className="text-[11px] text-gray-500">{t('DASHBOARD.PRODUCT_MODAL.REVENUE')}</span>
-                  <span className="font-semibold text-gray-800 text-sm">{nSelectedProduct.revenue}</span>
+                  <span className="text-[11px] text-gray-500">
+                    {t("DASHBOARD.PRODUCT_MODAL.REVENUE")}
+                  </span>
+                  <span className="font-semibold text-gray-800 text-sm">
+                    {nSelectedProduct.revenue}
+                  </span>
                 </div>
-
                 <div className="flex flex-col items-center">
                   <TrendingUp className="h-4 w-4 text-blue-500 mb-0.5" />
-                  <span className="text-[11px] text-gray-500">{t('DASHBOARD.PRODUCT_MODAL.SALES')}</span>
-                  <span className="font-semibold text-gray-800 text-sm">{nSelectedProduct.sales}</span>
+                  <span className="text-[11px] text-gray-500">
+                    {t("DASHBOARD.PRODUCT_MODAL.SALES")}
+                  </span>
+                  <span className="font-semibold text-gray-800 text-sm">
+                    {formatNumber(nSelectedProduct.sales)}
+                  </span>
                 </div>
-
                 <div className="flex flex-col items-center">
                   <Package className="h-4 w-4 text-gray-500 mb-0.5" />
-                  <span className="text-[11px] text-gray-500">{t('DASHBOARD.PRODUCT_MODAL.STOCK')}</span>
-                  <span className={`font-semibold text-sm ${nSelectedProduct.stock < 10 ? 'text-red' : 'text-gray-800'}`}>
+                  <span className="text-[11px] text-gray-500">
+                    {t("DASHBOARD.PRODUCT_MODAL.STOCK")}
+                  </span>
+                  <span
+                    className={`font-semibold text-sm ${
+                      nSelectedProduct.stock < 10
+                        ? "text-red-600"
+                        : "text-gray-800"
+                    }`}
+                  >
                     {nSelectedProduct.stock}
                   </span>
                 </div>
-
                 <div className="flex flex-col items-center">
                   <Clock className="h-4 w-4 text-indigo-400 mb-0.5" />
-                  <span className="text-[11px] text-gray-500">{t('COMMON.STATUS')}</span>
+                  <span className="text-[11px] text-gray-500">
+                    {t("COMMON.STATUS")}
+                  </span>
                   <span className="font-semibold text-sm text-gray-800">
                     {nSelectedProduct.stock < 10
-                      ? t('DASHBOARD.PRODUCT_MODAL.LOW_STOCK')
-                      : t('DASHBOARD.PRODUCT_MODAL.IN_STOCK')}
+                      ? t("DASHBOARD.PRODUCT_MODAL.LOW_STOCK")
+                      : t("DASHBOARD.PRODUCT_MODAL.IN_STOCK")}
                   </span>
                 </div>
               </div>
@@ -226,28 +611,44 @@ const Dashboard = () => {
           </div>
         </div>
       )}
-      {/* Header */}
-      <div className="mb-4">
 
-        <p className="mt-1 text-secondary">
-          {t('DASHBOARD.DESCRIPTION')}
-        </p>
+      {/* Header with Date Picker Component */}
+      <div className="mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <p className="text-secondary">{t("DASHBOARD.DESCRIPTION")}</p>
+          </div>
+
+          {/* Using the new DatePicker component */}
+          <div className="relative w-[18rem] max-w-full">
+          <DatePicker value={value} onChange={handleDateChange}/>
+          </div>
+        </div>
       </div>
+
+      {/* Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {aMetrics.map((metric, index) => (
-          <div key={index} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        {metrics.map((metric, index) => (
+          <div
+            key={index}
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-6"
+          >
             <button
               onClick={() => {
-                if (metric.title === 'Total Orders') {
-                  navigate('/orders');
+                if (metric.title === "Total Orders") {
+                  navigate("/orders");
                 }
               }}
               className="w-full text-left"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">{metric.title}</p>
-                  <p className="mt-2 text-3xl font-semibold text-gray-900">{metric.value}</p>
+                  <p className="text-sm font-medium text-gray-500">
+                    {metric.title}
+                  </p>
+                  <p className="mt-2 text-3xl font-semibold text-gray-900">
+                    {metric.value}
+                  </p>
                 </div>
                 <div className={`p-3 rounded-lg ${metric.color}`}>
                   <metric.icon className="h-6 w-6" />
@@ -255,16 +656,27 @@ const Dashboard = () => {
               </div>
             </button>
             <div className="mt-4 flex items-center">
-              {metric.trend === 'up' ? (
+              {metric.trend === "up" ? (
                 <ArrowUp className="h-4 w-4 text-green-500" />
-              ) : (
+              ) : metric.trend === "down" ? (
                 <ArrowDown className="h-4 w-4 text-red-500" />
+              ) : (
+                <span className="h-4 w-4 text-gray-500">-</span>
               )}
-              <span className={`ml-2 text-sm font-medium ${metric.trend === 'up' ? 'text-green-500' : 'text-red-500'
-                }`}>
+              <span
+                className={`ml-2 text-sm font-medium ${
+                  metric.trend === "up"
+                    ? "text-green-500"
+                    : metric.trend === "down"
+                    ? "text-red-500"
+                    : "text-gray-500"
+                }`}
+              >
                 {metric.change}
               </span>
-              <span className="ml-2 text-secondary">vs last month</span>
+              <span className="ml-2 text-secondary">
+                {metric.comparisonText}
+              </span>
             </div>
           </div>
         ))}
@@ -272,184 +684,177 @@ const Dashboard = () => {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Recent Orders */}
-        <div className="mb-6 md:mb-0">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col">
-            <div className="px-6 py-4 border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900">
-                {t('DASHBOARD.RECENT_ORDERS.RECENT_ORDERS')}
-              </h2>
-            </div>
-            <div className="flex-1 w-full overflow-x-auto">
-              <table className="w-full min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50 sticky top-0 z-10">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider align-middle">
-                      {t('DASHBOARD.RECENT_ORDERS.CUSTOMER')}
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider align-middle">
-                      {t('DASHBOARD.RECENT_ORDERS.ORDER_ID')}
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider align-middle">
-                      {t('DASHBOARD.RECENT_ORDERS.AMOUNT')}
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider align-middle">
-                      {t('COMMON.STATUS')}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-100">
-                  {aRecentOrders.map((order) => (
-                    <tr key={order.id} className="hover:bg-gray-50 transition h-12">
-                      <td className="px-4 py-3 align-middle whitespace-nowrap">
-                        <span className="inline-block align-middle h-8 w-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-sm text-center leading-8 mr-2" style={{ minWidth: '2rem' }}>
-                          {order.customer.split(' ').map(n => n[0]).join('')}
-                        </span>
-                        <span className="inline-block align-middle text-sm text-gray-900 max-w-[8rem] truncate">
-                          {order.customer}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-700 align-middle whitespace-nowrap">
-                        {order.id}
-                      </td>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right align-middle whitespace-nowrap">
-                        {order.amount}
-                      </td>
-                      <td className="px-4 py-3 align-middle whitespace-nowrap">
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-xs font-semibold 
-                      ${order.status === 'Delivered' ? 'status-delivered' : ''}
-                      ${order.status === 'Processing' ? 'status-processing' : ''}
-                      ${order.status === 'Shipped' ? 'status-shipped' : ''}
-                      ${order.status === 'Pending' ? 'status-pendding' : ''}
-                    `}
-                        >
-                          {t(`DASHBOARD.STATUSES.${order.status.toUpperCase()}`)}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
         {/* Top Products */}
         <div>
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col mt-6 md:mt-0">
             <div className="px-6 py-4 border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900">{t('DASHBOARD.TOP_PRODUCTS.TOP_PRODUCTS')}</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                {t("DASHBOARD.TOP_PRODUCTS.TOP_PRODUCTS")}
+              </h2>
             </div>
-
             <div className="flex flex-col gap-3 p-4 flex-1">
-              {paginatedTopProducts.map((product, index) => (
-                <div key={index} className="flex flex-col md:flex-row items-center bg-white rounded-lg shadow-sm px-4 py-3 hover:shadow-md transition min-h-[80px]">
-                  {/* Product Image */}
-                  <div className="flex-shrink-0 mb-2 md:mb-0 md:mr-4">
-                    <img
-                      src={product.image || 'https://via.placeholder.com/48x48?text=Img'}
-                      alt={product.name}
-                      className="h-12 w-12 rounded object-cover border"
-                    />
-                  </div>
-
-                  {/* Product Info */}
-                  <div className="flex-1 min-w-0 w-full">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-gray-900 truncate max-w-[10rem]">{product.name}</span>
-                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">{product.category || 'General'}</span>
+              {paginatedTopProducts.length > 0 ? (
+                paginatedTopProducts.map((product, index) => (
+                  <div
+                    key={index}
+                    className="flex flex-col md:flex-row items-center bg-white rounded-lg shadow-sm px-4 py-3 hover:shadow-md transition min-h-[80px]"
+                  >
+                    <div className="flex-shrink-0 mb-2 md:mb-0 md:mr-4">
+                      <img
+                        src={
+                          product.image ||
+                          "https://via.placeholder.com/48x48?text=Img"
+                        }
+                        alt={product.name}
+                        className="h-12 w-12 rounded object-cover border"
+                      />
                     </div>
-
-                    <div className="flex items-center gap-2 mt-1">
-                      {[1, 2, 3, 4, 5].map(star => (
-                        <Star key={star} className={`h-4 w-4 ${product.rating >= star ? 'text-yellow-400' : 'text-gray-300'}`} fill={product.rating >= star ? '#facc15' : 'none'} />
-                      ))}
-                      <span className="ml-1 text-xs text-gray-500">{product.rating}</span>
-                    </div>
-
-                    <div className="flex flex-wrap gap-4 mt-1 text-xs text-gray-500">
-                      <span className="flex items-center">
-                        <DollarSign className="inline h-4 w-4 mr-1 text-green-400" />{product.revenue}
-                      </span>
-                      <span className="flex items-center">
-                        <TrendingUp className="inline h-4 w-4 mr-1 text-blue-400" />
-                        {t('DASHBOARD.TOP_PRODUCTS.SALES', { count: product.sales })}
-                      </span>
-                      <span className="flex items-center">
-                        <Package className="inline h-4 w-4 mr-1 text-gray-400" />
-                        {t('DASHBOARD.TOP_PRODUCTS.IN_STOCK', { count: product.stock })}
-                      </span>
-                      {product.stock < 10 && (
-                        <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">
-                          {t('DASHBOARD.TOP_PRODUCTS.LOW_STOCK')}
+                    <div className="flex-1 min-w-0 w-full">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-gray-900 truncate max-w-[10rem]">
+                          {product.name}
                         </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="w-full md:w-auto mt-2 md:mt-0 md:ml-4 flex flex-col items-end gap-2">
-                    <button
-                      className="w-full md:w-auto px-3 py-1 rounded bg-custom-bg text-white text-xs font-medium hover:bg-bg-hover transition"
-                      onClick={() => {
-                        setSelectedProduct(product);
-                        setShowProductModal(true);
-                      }}
-                    >
-                      {t('DASHBOARD.TOP_PRODUCTS.VIEW')}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Pagination Controls */}
-            <div className="flex justify-center items-center gap-4 px-6 py-2 border-t border-gray-100 bg-gray-50">
-              <button
-                className="px-3 py-1 rounded bg-gray-200 text-gray-700 text-xs font-medium hover:bg-gray-300 transition disabled:opacity-50"
-                onClick={() => setTopProductsPage(p => Math.max(1, p - 1))}
-                disabled={nTopProductsPage === 1}
-              >
-                {t('COMMON.PREVIOUS')}
-              </button>
-              <span className="text-xs text-gray-500">
-                {t('DASHBOARD.TOP_PRODUCTS.PAGE_INFO', { current: nTopProductsPage, total: totalTopProductsPages })}
-              </span>
-              <button
-                className="px-3 py-1 rounded bg-gray-200 text-gray-700 text-xs font-medium hover:bg-gray-300 transition disabled:opacity-50"
-                onClick={() => setTopProductsPage(p => Math.min(totalTopProductsPages, p + 1))}
-                disabled={nTopProductsPage === totalTopProductsPages}
-              >
-                {t('COMMON.NEXT')}
-              </button>
-            </div>
-          </div>
-
-          {/* Low Stock Alert */}
-          <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-100">
-            <div className="px-6 py-4 border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900">{t('DASHBOARD.LOW_STOCK_ALERT.LOW_STOCK_ALERT')}</h2>
-            </div>
-            <div className="divide-y divide-gray-100">
-              {aLowStockItems.map((item, index) => (
-                <div key={index} className="px-6 py-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <AlertCircle className="h-5 w-5 text-red-500" />
-                      <div className="ml-3">
-                        <p className="text-sm font-medium text-gray-900">{item.name}</p>
-                        <p className="text-secondary">
-                          {item.stock} left (min: {item.threshold})
-                        </p>
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                          {product.category || t("DASHBOARD.PRODUCT_MODAL.CATEGORY_DEFAULT")}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            className={`h-4 w-4 ${
+                              product.rating >= star
+                                ? "text-yellow-400"
+                                : "text-gray-300"
+                            }`}
+                            fill={product.rating >= star ? "#facc15" : "none"}
+                          />
+                        ))}
+                        <span className="ml-1 text-xs text-gray-500">
+                          {product.rating}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-4 mt-1 text-xs text-gray-500">
+                        <span className="flex items-center">
+                          <DollarSign className="inline h-4 w-4 mr-1 text-green-400" />
+                          {product.revenue}
+                        </span>
+                        <span className="flex items-center">
+                          <TrendingUp className="inline h-4 w-4 mr-1 text-blue-400" />
+                          {t("DASHBOARD.TOP_PRODUCTS.SALES", {
+                            count: product.sales,
+                          })}
+                        </span>
+                        <span className="flex items-center">
+                          <Package className="inline h-4 w-4 mr-1 text-gray-400" />
+                          {t("DASHBOARD.TOP_PRODUCTS.IN_STOCK", {
+                            count: product.stock,
+                          })}
+                        </span>
+                        {product.stock < 10 && (
+                          <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                            {t("DASHBOARD.TOP_PRODUCTS.LOW_STOCK")}
+                          </span>
+                        )}
                       </div>
                     </div>
-                    <button className="text-sm text-[#5B45E0] hover:text-[#4c39c7]">
-                      {t('DASHBOARD.LOW_STOCK_ALERT.RESTOCK_BTN')}
-                    </button>
+                    <div className="w-full md:w-auto mt-2 md:mt-0 md:ml-4 flex flex-col items-end gap-2">
+                      <button
+                        className="w-full md:w-auto px-3 py-1 rounded bg-custom-bg text-white text-xs font-medium hover:bg-bg-hover transition"
+                        onClick={() => {
+                          setSelectedProduct(product);
+                          setShowProductModal(true);
+                        }}
+                      >
+                        {t("DASHBOARD.TOP_PRODUCTS.VIEW")}
+                      </button>
+                    </div>
                   </div>
+                ))
+              ) : (
+                <div className="flex justify-center items-center h-32">
+                  <p className="text-gray-500">{t("DASHBOARD.NO_TOP_PRODUCTS")}</p>
                 </div>
-              ))}
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Orders */}
+        <div className="mb-6 md:mb-0 -z-0">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-100">
+              <h2 className="text-lg font-semibold text-gray-900">
+                {t("DASHBOARD.RECENT_ORDERS.RECENT_ORDERS")}
+              </h2>
+            </div>
+            <div className="flex-1 w-full overflow-x-auto">
+              {recentOrders.length > 0 ? (
+                <table className="w-full min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50 sticky top-0 z-10">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider align-middle">
+                        {t("DASHBOARD.RECENT_ORDERS.CUSTOMER")}
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider align-middle">
+                        {t("DASHBOARD.RECENT_ORDERS.ORDER_ID")}
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider align-middle">
+                        {t("DASHBOARD.RECENT_ORDERS.AMOUNT")}
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider align-middle">
+                        {t("COMMON.STATUS")}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    {recentOrders.map((order) => (
+                      <tr
+                        key={order.id}
+                        className="hover:bg-gray-50 transition h-12"
+                      >
+                        <td className="px-4 py-3 align-middle whitespace-nowrap">
+                          <span
+                            className="inline-block align-middle h-8 w-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-sm text-center leading-8 mr-2"
+                            style={{ minWidth: "2rem" }}
+                          >
+                            {order.customer
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
+                          </span>
+                          <span className="inline-block align-middle text-sm text-gray-900 max-w-[8rem] truncate">
+                            {order.customer}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-700 align-middle whitespace-nowrap max-w-[8rem] truncate">
+                          {order.id}
+                        </td>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right align-middle whitespace-nowrap">
+                          {order.amount}
+                        </td>
+                        <td className="px-4 py-3 align-middle whitespace-nowrap">
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-xs font-semibold
+                      ${order.status === "Delivered" ? "status-delivered" : ""}
+                      ${order.status === "Processing" ? "status-processing" : "" }
+                      ${order.status === "Shipped" ? "status-shipped" : ""}
+                      ${order.status === "Cancelled" ? "status-cancelled" : ""}
+                       ${order.status === "Pending" ? "status-pending" : ""}
+                    `}
+                          >
+                            {order.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="flex justify-center items-center h-32">
+                  <p className="text-gray-500">{t("DASHBOARD.NO_RECENT_ORDERS")}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -458,4 +863,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard; 
+export default Dashboard;
