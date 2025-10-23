@@ -1,21 +1,23 @@
-
 import { toast } from "react-toastify";
 
 export const showEmsg = (
   message,
-  type,
-  duration = 3000,
+  type = "info",
+  duration = 1400,
   onCloseCallback = null
 ) => {
+  const safeDuration =
+    typeof duration === "number" && duration > 0 ? duration : 3000;
+
   const options = {
     position: "top-right",
-    autoClose: duration,
+    autoClose: safeDuration,
     hideProgressBar: false,
     closeOnClick: true,
     pauseOnHover: true,
     draggable: true,
     progress: undefined,
-    onClose: onCloseCallback,
+    onClose: onCloseCallback || undefined,
   };
 
   switch (type) {

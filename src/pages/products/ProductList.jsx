@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import Toolbar from "../../components/Toolbar";
+import ExportPanel from "../../components/ExportPanel";
 import Pagination from "../../components/Pagination";
 import ActionButtons from "../../components/ActionButtons";
 import { useTranslation } from "react-i18next";
@@ -20,6 +21,7 @@ import {
 } from "../../store/slices/allDataSlice.jsx";
 import FullscreenErrorPopup from "../../components/FullscreenErrorPopup";
 import { ToastContainer } from "react-toastify";
+import { exportProductReport } from "../../store/slices/exportSlice";
 import noImage from "../../../assets/images/missing-pictur.jpg";
 import { showEmsg } from "../../utils/ShowEmsg.jsx";
 import Loader from "../../components/Loader";
@@ -142,13 +144,13 @@ const ProductList = () => {
         params.IsActive = oFilters.status.toLowerCase();
       }
       if (oFilters.category && oFilters.category !== "all") {
-        params.categoryId = oFilters.category;
+        params.categoryName = oFilters.category;
       }
       if (oFilters.brand && oFilters.brand !== "all") {
-        params.brandId = oFilters.brand;
+        params.brandName = oFilters.brand;
       }
       if (oFilters.store && oFilters.store !== "all") {
-        params.storeId = oFilters.store;
+        params.storeName = oFilters.store;
       }
 
       const oResponse = await apiGet(GETPRODUCTDETAILS, params, token);
@@ -216,7 +218,7 @@ const ProductList = () => {
   const categoryOptions = [
     { value: "all", label: t("COMMON.ALL") },
     ...categories.map((cat) => ({
-      value: cat.CategoryID,
+      value: cat.CategoryName,
       label: cat.CategoryName,
     })),
   ];
@@ -224,7 +226,7 @@ const ProductList = () => {
   const brandOptions = [
     { value: "all", label: t("COMMON.ALL") },
     ...brands.map((brand) => ({
-      value: brand.BrandID,
+      value: brand.BrandName,
       label: brand.BrandName,
     })),
   ];
@@ -232,7 +234,7 @@ const ProductList = () => {
   const storeOptions = [
     { value: "all", label: t("COMMON.ALL") },
     ...stores.map((store) => ({
-      value: store.StoreID,
+      value: store.StoreName,
       label: store.StoreName,
     })),
   ];
@@ -323,12 +325,28 @@ const ProductList = () => {
     if (initialLoadComplete) {
       setFilterLoading(true);
     }
+
     setFilters({
       ...oFilters,
       [filterName]: e.target.value,
     });
     setCurrentPage(1);
   };
+
+  const [bShowExportPanel, setShowExportPanel] = useState(false);
+  const [oExportDate, setExportDate] = useState({ startDate: null, endDate: null });
+
+  const handleExportProducts = useCallback(() => {
+    setShowExportPanel(true);
+  }, []);
+
+  const handleConfirmExportProducts = useCallback(() => {
+    dispatch(exportProductReport({
+      startDate: oExportDate.startDate,
+      endDate: oExportDate.endDate,
+    }));
+    setShowExportPanel(false);
+  }, [dispatch, oExportDate]);
 
   const handlePrevPage = () => {
     setCurrentPage((prev) => Math.max(prev - 1, 1));
@@ -408,7 +426,18 @@ const ProductList = () => {
         searchPlaceholder={t("PRODUCTS.SEARCH_PLACEHOLDER")}
         onClearFilters={handleClearFilters}
         onCreate={() => navigate("/Addproduct")}
+        onExport={handleExportProducts}
       />
+
+      {bShowExportPanel && (
+        <ExportPanel
+          title={t("PRODUCTS.TITLE") + " – Date Range"}
+          value={oExportDate}
+          onChange={(val) => setExportDate(val)}
+          onCancel={() => setShowExportPanel(false)}
+          onConfirm={handleConfirmExportProducts}
+        />
+      )}
       {bLoading ? (
         <div className="text-center py-8 text-gray-500">
           {t("COMMON.LOADING")}
@@ -449,62 +478,36 @@ const ProductList = () => {
                   </tr>
                 ) : (
                   aProducts.map((product) => (
-                    <tr key={product.ProductID} className={`table-row text-left ${!product.IsActive ? 'bg-gray-50' : ''}`}>
+                    <tr key={product.ProductID} className="table-row text-left">
                       <td className="table-cell">
-                        {product.IsActive ? (
-                          <Link
-                            to={`/productdetails/${product.ProductID}`}
-                            className="flex items-center justify-left hover:bg-gray-50 p-2 rounded transition"
-                          >
-                            <div className="flex items-center justify-left">
-                              <div className="h-10 w-10 flex-shrink-0">
-                                <img
-                                  className="h-10 w-10 rounded object-cover"
-                                  src={product.firstImage}
-                                  alt={product.ProductName}
-                                  onError={(e) => {
-                                    e.target.onerror = null;
-                                    e.target.src = noImage;
-                                  }}
-                                />
-                              </div>
-                              <div className="ml-3">
-                                <div
-                                  className="font-medium text-sm text-gray-900 ellipsis-text"
-                                  title={product.ProductName}
-                                >
-                                  {product.ProductName}
-                                </div>
-                              </div>
+                        <Link
+                          to={`/productdetails/${product.ProductID}`}
+                          className="flex items-center justify-left hover:bg-gray-50 p-2 rounded transition"
+                        >
+                          <div className="flex items-center justify-left">
+                            <div className="h-10 w-10 flex-shrink-0">
+                              <img
+                                className="h-10 w-10 rounded object-cover"
+                                src={product.firstImage}
+                                alt={product.ProductName}
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.src = noImage;
+                                }}
+                              />
                             </div>
-                          </Link>
-                        ) : (
-                          <div className="flex items-center justify-left p-2">
-                            <div className="flex items-center justify-left">
-                              <div className="h-10 w-10 flex-shrink-0">
-                                <img
-                                  className="h-10 w-10 rounded object-cover opacity-60"
-                                  src={product.firstImage}
-                                  alt={product.ProductName}
-                                  onError={(e) => {
-                                    e.target.onerror = null;
-                                    e.target.src = noImage;
-                                  }}
-                                />
-                              </div>
-                              <div className="ml-3">
-                                <div
-                                  className="font-medium text-sm text-gray-500 ellipsis-text cursor-not-allowed"
-                                  title={t("PRODUCTS.EDIT_DISABLED_TOOLTIP")}
-                                >
-                                  {product.ProductName}
-                                </div>
+                            <div className="ml-3">
+                              <div
+                                className="font-medium text-sm text-gray-900 ellipsis-text"
+                                title={product.ProductName}
+                              >
+                                {product.ProductName}
                               </div>
                             </div>
                           </div>
-                        )}
+                        </Link>
                       </td>
-                      <td className={`table-cell table-cell-text ${!product.IsActive ? 'text-gray-400' : ''}`}>
+                      <td className="table-cell table-cell-text">
                         <div
                           className="ellipsis-text"
                           title={product.subCategory}
@@ -512,10 +515,10 @@ const ProductList = () => {
                           {product.subCategory}
                         </div>
                       </td>
-                      <td className={`table-cell text-left table-cell-text ${!product.IsActive ? 'text-gray-400' : ''}`}>
+                      <td className="table-cell text-left table-cell-text">
                         ₹{parseFloat(product.MRP).toFixed(2)}
                       </td>
-                      <td className={`table-cell text-center table-cell-text ${!product.IsActive ? 'text-gray-400' : ''}`}>
+                      <td className="table-cell text-center table-cell-text">
                         {product.quantity || 0}
                       </td>
                       <td className="table-cell">
@@ -529,7 +532,7 @@ const ProductList = () => {
                           }
                         />
                       </td>
-                      <td className={`table-cell text-left table-cell-text ${!product.IsActive ? 'text-gray-400' : ''}`}>
+                      <td className="table-cell text-left table-cell-text">
                         <div
                           className="ellipsis-text"
                           title={product.storeName}
@@ -542,8 +545,6 @@ const ProductList = () => {
                           <ActionButtons
                             id={product.ProductID}
                             onEdit={handleEdit}
-                            disableEdit={!product.IsActive}
-                            viewLink={`/productdetails/${product.ProductID}`} 
                           />
                         </div>
                       </td>
@@ -568,9 +569,7 @@ const ProductList = () => {
             aProducts.map((product) => (
               <div
                 key={product.ProductID}
-                className={`bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col gap-4 hover:shadow-lg transition-shadow duration-200 ${
-                  !product.IsActive ? 'bg-gray-50' : ''
-                }`}
+                className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col gap-4 hover:shadow-lg transition-shadow duration-200"
               >
                 <div className="flex items-center justify-between">
                   <span
@@ -590,15 +589,11 @@ const ProductList = () => {
                   />
                 </div>
                 <div className="flex items-center gap-4 mt-2">
-                  <div className={`flex-shrink-0 h-16 w-16 rounded-lg flex items-center justify-center overflow-hidden ${
-                    !product.IsActive ? 'bg-gray-100' : 'bg-gray-100'
-                  }`}>
+                  <div className="flex-shrink-0 h-16 w-16 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
                     <img
                       src={product.firstImage}
                       alt={product.ProductName}
-                      className={`h-full w-full object-cover ${
-                        !product.IsActive ? 'opacity-60' : ''
-                      }`}
+                      className="h-full w-full object-cover"
                       onError={(e) => {
                         e.target.onerror = null;
                         e.target.src = noImage;
@@ -609,27 +604,21 @@ const ProductList = () => {
                   </div>
                   <div className="flex-1">
                     <div
-                      className={`text-sm font-medium ellipsis-text ${
-                        !product.IsActive ? 'text-gray-500 cursor-not-allowed' : 'text-gray-900'
-                      }`}
-                      title={!product.IsActive ? t("PRODUCTS.EDIT_DISABLED_TOOLTIP") : product.ProductName}
+                      className="text-sm font-medium text-gray-900 ellipsis-text"
+                      title={product.ProductName}
                     >
                       {product.ProductName}
                     </div>
                   </div>
                 </div>
                 <div
-                  className={`text-sm mt-2 ellipsis-text ${
-                    !product.IsActive ? 'text-gray-400' : 'text-gray-900'
-                  }`}
+                  className="text-sm text-gray-900 mt-2 ellipsis-text"
                   title={product.subCategory}
                 >
                   <span className="font-medium">{t("COMMON.CATEGORY")}</span>{" "}
                   {product.subCategory}
                 </div>
-                <div className={`flex items-center justify-between border-t pt-2 mt-2 ${
-                  !product.IsActive ? 'text-gray-400' : ''
-                }`}>
+                <div className="flex items-center justify-between border-t pt-2 mt-2">
                   <div>
                     {t("PRODUCTS.STOCK")}: {product.quantity || 0}
                   </div>
@@ -637,12 +626,7 @@ const ProductList = () => {
                     {t("COMMON.PRICE")} ₹{parseFloat(product.MRP).toFixed(2)}
                   </div>
                 </div>
-                <ActionButtons 
-                  id={product.ProductID} 
-                  onEdit={handleEdit} 
-                  disableEdit={!product.IsActive}
-                  viewLink={`/productdetails/${product.ProductID}`} 
-                />
+                <ActionButtons id={product.ProductID} onEdit={handleEdit} />
               </div>
             ))
           )}

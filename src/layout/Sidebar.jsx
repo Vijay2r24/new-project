@@ -13,7 +13,8 @@ import {
   Shield,
   AlignLeft,
   LayoutDashboard,
-  UserRound
+  UserRound,
+  CreditCard // Add CreditCard icon for Payments
 } from 'lucide-react';
 import { getPermissionCode } from '../utils/permissionUtils';
 
@@ -42,7 +43,7 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
       section: 'Product Management',
       subItems: [
         { name: t('SIDEBAR.PRODUCT_SETUP'), href: '/browse', icon: Settings },
-        { name: t('SIDEBAR.PRODUCTS'), href: '/productList', icon: Package, relatedPaths: ['/Addproduct','/edit-product','/productdetails'] },
+        { name: t('SIDEBAR.PRODUCTS'), href: '/productList', icon: Package, relatedPaths: ['/Addproduct','/edit-product'] },
       ]
     },
     { 
@@ -71,6 +72,13 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
         { name: t('SIDEBAR.NOTIFICATIONS'), href: '/notifications', icon: Bell },
       ]
     },
+    // Add Payments menu item
+    { 
+      name: t('SIDEBAR.PAYMENTS'), 
+      href: '/payments', 
+      icon: CreditCard,
+      relatedPaths: ['/payment-details']
+    },
     {
       name: t('SIDEBAR.SETTINGS'),
       href: '#',
@@ -81,6 +89,7 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
       ]
     },
   ], [t]);
+  
   const userPermissionIDs = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem('PermissionIDs')) || [];
@@ -88,19 +97,23 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
       return [];
     }
   }, []);
-  const allPermissions = useMemo(() => {
-    try {
-      const perms = JSON.parse(localStorage.getItem('AllPermissions'));
-      return perms?.data?.rows || [];
-    } catch {
-      return [];
-    }
-  }, []);
-  const allowedPermissionCodes = useMemo(() => {
-    return allPermissions
-      .filter(perm => userPermissionIDs.includes(perm.ID))
-      .map(perm => perm.Code);
-  }, [allPermissions, userPermissionIDs]);
+  
+ const allPermissions = useMemo(() => {
+  try {
+    // Direct array — not nested under data.rows
+    return JSON.parse(localStorage.getItem('AllPermissions')) || [];
+  } catch {
+    return [];
+  }
+}, []);
+
+const allowedPermissionCodes = useMemo(() => {
+  // Match PermissionID instead of ID/Code
+  return allPermissions
+    .filter(perm => userPermissionIDs.includes(perm.PermissionID))
+    .map(perm => perm.PermissionID);
+}, [allPermissions, userPermissionIDs]);
+
 
   const menuPermissionCode = useMemo(() => ({
     '/dashboard': getPermissionCode('Menu Management', 'Dashboard'),
@@ -113,6 +126,8 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
     '/pages': getPermissionCode('Menu Management', 'Pages'),
     '/browse': getPermissionCode('Menu Management', 'Products'),
     '/productList': getPermissionCode('Menu Management', 'Products'),
+    // Add Payments permission code
+    '/payments': getPermissionCode('Menu Management', 'Payments'),
   }), []);
 
   const filteredNavigation = useMemo(() => {
@@ -121,6 +136,7 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
       if (!code) return true;
       return allowedPermissionCodes.includes(code);
     };
+    
     return aNavigation
       .map(item => {
         if (item.subItems) {
@@ -251,12 +267,7 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
                 );
               })}
             </ul>
-
-
           )}
-
-
-
         </div>
       );
     }
