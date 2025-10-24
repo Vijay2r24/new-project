@@ -6,9 +6,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchResource, clearResourceError } from "../../../store/slices/allDataSlice";
 import {
   GET_CATEGORY_BY_ID,
-  CREATE_OR_URDATE_CATEGORY,
+  CREATE_CATEGORY,
+  UPDATE_CATEGORY,
 } from "../../../contants/apiRoutes";
-import { apiPost, apiGet } from "../../../utils/ApiUtils";
+import { apiPost, apiGet, apiPut } from "../../../utils/ApiUtils";
 import { showEmsg } from "../../../utils/ShowEmsg";
 import { STATUS } from "../../../contants/constants";
 import { hideLoaderWithDelay } from "../../../utils/loaderUtils";
@@ -193,92 +194,107 @@ const CreateCategory = () => {
     return errors;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Clear previous errors
-    setErrors({});
-    
-    const newErrors = validateForm();
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  // Clear previous errors
+  setErrors({});
+  
+  const newErrors = validateForm();
 
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
+  if (Object.keys(newErrors).length > 0) {
+    setErrors(newErrors);
+    return;
+  }
 
-    setSubmitting(true);
-    const dataToSend = new FormData();
-    const documentMetadata = [];
+  setSubmitting(true);
+  const dataToSend = new FormData();
+  const documentMetadata = [];
 
-    // Add image to documentMetadata if exists
-    if (oFormData.CategoryImage) {
-      documentMetadata.push({ 
-        image: "category1", 
-        sortOrder: 1,
-        ...(isEditing && oFormData.existingImageDocumentId && { 
-          DocumentID: oFormData.existingImageDocumentId 
-        })
-      });
-    } else if (isEditing && !sImagePreview && oFormData.existingImageDocumentId) {
-      // Editing and image removed - send remove action with stored documentId
-      documentMetadata.push({ 
-        action: "remove",
+  // Handle image scenarios
+  if (oFormData.CategoryImage) {
+    // New image uploaded
+    documentMetadata.push({ 
+      image: "category1", 
+      sortOrder: 1,
+      ...(isEditing && oFormData.existingImageDocumentId && { 
         DocumentID: oFormData.existingImageDocumentId 
-      });
-    } else if (isEditing && sImagePreview && !oFormData.CategoryImage && oFormData.existingImageDocumentId) {
-      // Editing but keeping existing image - include documentId for reference
-      documentMetadata.push({ 
-        image: "category1", 
-        sortOrder: 1,
-        DocumentID: oFormData.existingImageDocumentId 
-      });
-    }
+      })
+    });
+  } else if (isEditing && !sImagePreview && oFormData.existingImageDocumentId) {
+    // Editing and image removed - send remove action
+    documentMetadata.push({ 
+      action: "remove",
+      DocumentID: oFormData.existingImageDocumentId 
+    });
+  } else if (isEditing && sImagePreview && !oFormData.CategoryImage && oFormData.existingImageDocumentId) {
+    // Editing but keeping existing image - don't include documentMetadata at all
+    // This is the key change: don't push anything to documentMetadata array
+    // So the array remains empty and won't be included in the payload
+  }
 
-    // Prepare the JSON payload
-    const jsonPayload = {
-      CategoryID: isEditing ? categoryId : undefined,
-      TenantID: oFormData.TenantID,
-      CategoryName: oFormData.CategoryName,
-      CategoryDescription: oFormData.CategoryDescription,
-      IsActive: oFormData.IsActive,
-      ParentCategoryID: oFormData.ParentCategoryID || undefined,
-      ...(documentMetadata.length > 0 && { documentMetadata }),
-      CreatedBy: isEditing ? undefined : localStorage.getItem("userId"),
-      UpdatedBy: isEditing ? localStorage.getItem("userId") : undefined,
-    };
+  // Prepare the JSON payload
+  const jsonPayload = {
+    TenantID: oFormData.TenantID,
+    CategoryName: oFormData.CategoryName,
+    CategoryDescription: oFormData.CategoryDescription,
+    IsActive: oFormData.IsActive,
+    ParentCategoryID: oFormData.ParentCategoryID || undefined,
+    // Only include documentMetadata if the array is not empty
+    ...(documentMetadata.length > 0 && { documentMetadata }),
+    ...(isEditing ? {
+      CategoryID: categoryId,
+      UpdatedBy: localStorage.getItem("userId")
+    } : {
+      CreatedBy: localStorage.getItem("userId")
+    })
+  };
 
-    // Append the JSON payload
-    dataToSend.append("data", JSON.stringify(jsonPayload));
+  // Append the JSON payload
+  dataToSend.append("data", JSON.stringify(jsonPayload));
 
-    // Append the image file if exists
-    if (oFormData.CategoryImage) {
-      dataToSend.append("category1", oFormData.CategoryImage);
-    }
+  // Append the image file only if a new image was uploaded
+  if (oFormData.CategoryImage) {
+    dataToSend.append("category1", oFormData.CategoryImage);
+  }
 
-    try {
-      const token = localStorage.getItem("token");
-      const oResponse = await apiPost(
-        CREATE_OR_URDATE_CATEGORY,
+  try {
+    const token = localStorage.getItem("token");
+    let oResponse;
+
+    if (isEditing) {
+      // Use PUT for update with updateCategory endpoint
+      oResponse = await apiPut(
+        UPDATE_CATEGORY,
         dataToSend,
         token,
         true // multipart/form-data
       );
-
-      if (oResponse.data.status === STATUS.SUCCESS.toUpperCase()) {
-        showEmsg(oResponse.data.message, STATUS.SUCCESS, 3000, () => {
-          navigate("/browse", { state: { fromCategoryEdit: true } });
-        });
-      } else {
-        showEmsg(oResponse.data.message, STATUS.WARNING);
-        setErrors((prev) => ({ ...prev, api: oResponse.data.message }));
-      }
-    } catch (err) {
-      const errorMessage = err?.response?.data?.message || t("COMMON.API_ERROR");
-      showEmsg(errorMessage, STATUS.ERROR);
-    } finally {
-      hideLoaderWithDelay(setSubmitting);
+    } else {
+      // Use POST for create with createCategory endpoint
+      oResponse = await apiPost(
+        CREATE_CATEGORY,
+        dataToSend,
+        token,
+        true // multipart/form-data
+      );
     }
-  };
+
+    if (oResponse.data.status === STATUS.SUCCESS.toUpperCase()) {
+      showEmsg(oResponse.data.message, STATUS.SUCCESS, 3000, () => {
+        navigate("/browse", { state: { fromCategoryEdit: true } });
+      });
+    } else {
+      showEmsg(oResponse.data.message, STATUS.WARNING);
+      setErrors((prev) => ({ ...prev, api: oResponse.data.message }));
+    }
+  } catch (err) {
+    const errorMessage = err?.response?.data?.message || t("COMMON.API_ERROR");
+    showEmsg(errorMessage, STATUS.ERROR);
+  } finally {
+    hideLoaderWithDelay(setSubmitting);
+  }
+};
 
   // Filter categories to only include parent categories (ParentCategoryID is null)
   const parentCategories = [

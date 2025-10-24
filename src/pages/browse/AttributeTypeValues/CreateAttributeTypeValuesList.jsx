@@ -6,10 +6,11 @@ import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchResource, clearResourceError } from "../../../store/slices/allDataSlice";
-import { apiGet, apiPost } from "../../../utils/ApiUtils";
+import { apiGet, apiPost, apiPut } from "../../../utils/ApiUtils";
 import {
   GET_ATTRIBUTE_BY_ID,
-  CREATE_OR_UPDATE_ATTRIBUTE_VALUE,
+  UPDATE_ATTRIBUTE_VALUE,
+  CREATE_ATTRIBUTE_VALUE,
 } from "../../../contants/apiRoutes";
 import { showEmsg } from "../../../utils/ShowEmsg";
 import { STATUS, STATUS_VALUES, STATUS_OPTIONS } from "../../../contants/constants";
@@ -130,43 +131,52 @@ const CreateAttribute = () => {
   };
 
   /** Submit */
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const errors = validateForm();
-    if (Object.keys(errors).length > 0) {
-      setErrors(errors);
-      return;
-    }
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  const errors = validateForm();
+  if (Object.keys(errors).length > 0) {
+    setErrors(errors);
+    return;
+  }
 
-    setSubmitting(true);
+  setSubmitting(true);
 
-    const payload = {
-      TenantID: tenantID,
-      Value: oFormData.Value,
-      Unit: oFormData.Unit,
-      AttributeTypeID: oFormData.AttributeTypeID,
-      IsActive: oFormData.IsActive,
-      ...(isEditing
-        ? { AttributeValueID: attributeValueId, UpdatedBy: userId }
-        : { CreatedBy: userId }),
-    };
-
-    try {
-      const response = await apiPost(CREATE_OR_UPDATE_ATTRIBUTE_VALUE, payload, token);
-      if (response.data.status === STATUS.SUCCESS.toUpperCase()) {
-        showEmsg(response.data.message, STATUS.SUCCESS, 3000, goBackToBrowse);
-      } else {
-        showEmsg(response.data.message || t("COMMON.ERROR"), STATUS.ERROR);
-      }
-    } catch (err) {
-      showEmsg(
-        err?.response?.data?.message || t("COMMON.API_ERROR"),
-        STATUS.ERROR
-      );
-    } finally {
-      hideLoaderWithDelay(setSubmitting);
-    }
+  const payload = {
+    TenantID: tenantID,
+    Value: oFormData.Value,
+    Unit: oFormData.Unit,
+    AttributeTypeID: oFormData.AttributeTypeID,
+    IsActive: oFormData.IsActive,
+    ...(isEditing
+      ? { AttributeValueID: attributeValueId, UpdatedBy: userId }
+      : { CreatedBy: userId }),
   };
+
+  try {
+    let response;
+    
+    if (isEditing) {
+      // Use PUT for update with updateAttributeValue endpoint
+      response = await apiPut(UPDATE_ATTRIBUTE_VALUE, payload, token);
+    } else {
+      // Use POST for create with createAttributeValue endpoint
+      response = await apiPost(CREATE_ATTRIBUTE_VALUE, payload, token);
+    }
+
+    if (response.data.status === STATUS.SUCCESS.toUpperCase()) {
+      showEmsg(response.data.message, STATUS.SUCCESS, 3000, goBackToBrowse);
+    } else {
+      showEmsg(response.data.message || t("COMMON.ERROR"), STATUS.ERROR);
+    }
+  } catch (err) {
+    showEmsg(
+      err?.response?.data?.message || t("COMMON.API_ERROR"),
+      STATUS.ERROR
+    );
+  } finally {
+    hideLoaderWithDelay(setSubmitting);
+  }
+};
 
   // Prepare attribute types options with proper field mapping
   const attributeTypeOptions = [

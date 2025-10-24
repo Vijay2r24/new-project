@@ -22,8 +22,8 @@ import SelectWithIcon from "../components/SelectWithIcon";
 import { useTranslation } from "react-i18next";
 import { FaCamera, FaTimes } from "react-icons/fa";
 import { useParams, useNavigate } from "react-router-dom";
-import { apiGet, apiPost } from "../utils/ApiUtils";
-import { GET_USER_BY_ID, USER_CREATE_OR_UPDATE } from "../contants/apiRoutes";
+import { apiGet, apiPost, apiPut } from "../utils/ApiUtils";
+import { CREATE_USER, GET_USER_BY_ID, UPDATE_USER} from "../contants/apiRoutes";
 import { showEmsg } from "../utils/ShowEmsg";
 import { useTitle } from "../context/TitleContext";
 import { STATUS } from "../contants/constants";
@@ -75,6 +75,7 @@ const AddUser = () => {
     stateName: "",
     cityName: "",
     documentIds: [],
+    IsActive: true,
   });
   const [nProfileImage, setProfileImage] = useState(null);
   const [nProfileImagePreview, setProfileImagePreview] = useState(null);
@@ -84,6 +85,7 @@ const AddUser = () => {
   const { id } = useParams();
   const [bImgLoading, setImgLoading] = useState(true);
   const [bImgError, setImgError] = useState(false);
+  const [fetchUserError, setFetchUserError] = useState("");
 
   // Redux hooks
   const dispatch = useDispatch();
@@ -180,15 +182,16 @@ const AddUser = () => {
       errors.stores = t("ADD_USER.VALIDATION.STORES_REQUIRED");
     }
 
-    // Use imported password validation
-    const passwordErrors = validateFormPassword(
-      oFormData.password, 
-      oFormData.confirmPassword, 
-      t, 
-      !id // isNewUser = true when creating new user
-    );
-    
-    Object.assign(errors, passwordErrors);
+    // Password validation only for new users
+    if (!id) {
+      const passwordErrors = validateFormPassword(
+        oFormData.password, 
+        oFormData.confirmPassword, 
+        t, 
+        true // isNewUser = true when creating new user
+      );
+      Object.assign(errors, passwordErrors);
+    }
 
     if (!oFormData.streetAddress?.trim()) {
       errors.streetAddress = t("ADD_USER.VALIDATION.ADDRESS_REQUIRED");
@@ -212,34 +215,34 @@ const AddUser = () => {
 
     return errors;
   }, [oFormData, t, id]);
-useEffect(() => {
-  if (!hasFetchedInitialData.current) {
-    hasFetchedInitialData.current = true;
-    if (!countries.length && !countriesLoading) {
-      hasFetchedCountries.current = true;
-      dispatch(fetchResource({ key: "countries" }));
-    }
-    if (!roles.length && !rolesLoading && !hasFetchedRoles.current) {
-      hasFetchedRoles.current = true;
-      dispatch(
-        fetchResource({
-          key: "roles",
-          params: { searchText: "" },
-        })
-      );
-    }
-    if (!stores.length && !storesLoading && !hasFetchedStores.current) {
-      hasFetchedStores.current = true;
-      dispatch(
-        fetchResource({
-          key: "stores",
-          params: { searchText: "" },
-        })
-      );
-    }
-  }
-}, [dispatch, countries, countriesLoading, roles, rolesLoading, stores, storesLoading]);
 
+  useEffect(() => {
+    if (!hasFetchedInitialData.current) {
+      hasFetchedInitialData.current = true;
+      if (!countries.length && !countriesLoading) {
+        hasFetchedCountries.current = true;
+        dispatch(fetchResource({ key: "countries" }));
+      }
+      if (!roles.length && !rolesLoading && !hasFetchedRoles.current) {
+        hasFetchedRoles.current = true;
+        dispatch(
+          fetchResource({
+            key: "roles",
+            params: { searchText: "" },
+          })
+        );
+      }
+      if (!stores.length && !storesLoading && !hasFetchedStores.current) {
+        hasFetchedStores.current = true;
+        dispatch(
+          fetchResource({
+            key: "stores",
+            params: { searchText: "" },
+          })
+        );
+      }
+    }
+  }, [dispatch, countries, countriesLoading, roles, rolesLoading, stores, storesLoading]);
 
   useEffect(() => {
     if (oFormData.country) {
@@ -262,8 +265,10 @@ useEffect(() => {
       dispatch(fetchCitiesByStateId(oFormData.state))
         .unwrap()
         .then((result) => {
+          // Cities loaded successfully
         })
         .catch((error) => {
+          console.error("Error fetching cities:", error);
         });
     } else {
       dispatch(clearCities());
@@ -293,14 +298,14 @@ useEffect(() => {
           email: user.Email || "",
           phone: user.PhoneNumber || "",
           role: user.RoleID || "",
-          IsActive: true,
+          IsActive: user.IsActive !== undefined ? user.IsActive : true,
           stores: user.Stores ? user.Stores.map((store) => store.StoreId) : [],
           streetAddress: user.AddressLine || "",
           pincode: user.Zipcode || "",
           countryName: user.CountryName || "",
           stateName: user.StateName || "",
           cityName: user.CityName || "",
-          documentId: user.ProfileImageUrl
+          documentIds: user.ProfileImageUrl
             ? user.ProfileImageUrl.map((doc) => doc.documentId)
             : [],
         }));
@@ -356,6 +361,7 @@ useEffect(() => {
       setFetchUserError(backendMessage || t("COMMON.ERROR_MESSAGE"));
     }
   }, [id, t, countries]);
+
   useEffect(() => {
     const populateStateAndCity = async () => {
       if (!id || !oFormData.country || !oFormData.stateName || !oFormData.countryName) return;
@@ -373,6 +379,7 @@ useEffect(() => {
           }));
         }
       } catch (error) {
+        console.error("Error populating state:", error);
       }
     };
 
@@ -396,6 +403,7 @@ useEffect(() => {
           }));
         }
       } catch (error) {
+        console.error("Error populating city:", error);
       }
     };
 
@@ -464,118 +472,141 @@ useEffect(() => {
   }, []);
 
   const handleSubmit = useCallback(
-    async (e) => {
-      e.preventDefault();
-      const validationErrors = validate();
-      setErrors(validationErrors);
-      if (Object.keys(validationErrors).length > 0) return;
+  async (e) => {
+    e.preventDefault();
+    const validationErrors = validate();
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
 
-      setSubmitting(true);
-      const token = localStorage.getItem("token");
-      const userId = localStorage.getItem("userId");
-      const formData = new FormData();
+    setSubmitting(true);
+    const token = localStorage.getItem("token");
+    const userId = localStorage.getItem("userId");
+    const formData = new FormData();
 
-      let documentMetadata = [];
-      if (nProfileImage) {
-        if (existingDocuments.length > 0 && existingDocuments[0]?.documentId) {
-          documentMetadata.push({
-            image: "profile-image",
-            sortOrder: 1,
-            DocumentID: existingDocuments[0].documentId,
-          });
-        } else {
-          documentMetadata.push({
-            image: "profile-image",
-            sortOrder: 1,
-          });
-        }
-      } else if (removedDocumentIds.length > 0) {
-        const remainingDocuments = existingDocuments.filter(
-          (doc) => !removedDocumentIds.includes(doc.documentId)
-        );
-        documentMetadata = remainingDocuments.map((doc, index) => ({
+    let documentMetadata = [];
+    if (nProfileImage) {
+      if (existingDocuments.length > 0 && existingDocuments[0]?.documentId) {
+        documentMetadata.push({
           image: "profile-image",
-          sortOrder: doc.sortOrder || index + 1,
-          DocumentID: doc.documentId,
-        }));
+          sortOrder: 1,
+          DocumentID: existingDocuments[0].documentId,
+        });
+      } else {
+        documentMetadata.push({
+          image: "profile-image",
+          sortOrder: 1,
+        });
       }
+    } else if (removedDocumentIds.length > 0) {
+      const remainingDocuments = existingDocuments.filter(
+        (doc) => !removedDocumentIds.includes(doc.documentId)
+      );
+      documentMetadata = remainingDocuments.map((doc, index) => ({
+        image: "profile-image",
+        sortOrder: doc.sortOrder || index + 1,
+        DocumentID: doc.documentId,
+      }));
+    }
 
-      const userData = {
-        UserID: id || "",
-        FirstName: oFormData.firstName || "",
-        LastName: oFormData.lastName || "",
-        Email: oFormData.email || "",
-        Password: oFormData.password ? md5(oFormData.password) : "",
-        PhoneNumber: oFormData.phone || "",
-        AddressLine: oFormData.streetAddress || "",
-        CityID: oFormData.city ? parseInt(oFormData.city, 10) : 0,
-        StateID: oFormData.state ? parseInt(oFormData.state, 10) : 0,
-        CountryID: oFormData.country ? parseInt(oFormData.country, 10) : 0,
-        Zipcode: oFormData.pincode || "",
-        RoleID: oFormData.role || "",
-        StoreIDs: oFormData.stores || [],
-        IsActive: oFormData.status,
-        documentMetadata: documentMetadata,
-      };
+    // Base user data structure
+    const userData = {
+      FirstName: oFormData.firstName || "",
+      LastName: oFormData.lastName || "",
+      Email: oFormData.email || "",
+      PhoneNumber: oFormData.phone || "",
+      AddressLine: oFormData.streetAddress || "",
+      CityID: oFormData.city ? parseInt(oFormData.city, 10) : 0,
+      StateID: oFormData.state ? parseInt(oFormData.state, 10) : 0,
+      CountryID: oFormData.country ? parseInt(oFormData.country, 10) : 0,
+      Zipcode: oFormData.pincode || "",
+      RoleID: oFormData.role || "",
+      StoreIDs: oFormData.stores || [],
+      IsActive: oFormData.IsActive !== undefined ? oFormData.IsActive : true,
+      documentMetadata: documentMetadata,
+    };
+
+    // Add UserID for update and handle password differently
+    if (id) {
+      // Update operation - hide password field
+      userData.UserID = id;
+      userData.UpdatedBy = userId;
+      
+      // Only include password if provided during update (optional field)
+      if (oFormData.password && oFormData.password.trim() !== "") {
+        userData.Password = md5(oFormData.password);
+      }
+      // If password is not provided, don't include it in the payload
+    } else {
+      // Create operation - password is required
+      userData.Password = oFormData.password ? md5(oFormData.password) : "";
+      userData.CreatedBy = userId;
+    }
+
+    formData.append("data", JSON.stringify(userData));
+
+    if (nProfileImage) {
+      formData.append("profile-image", nProfileImage);
+    }
+
+    try {
+      let oResponse;
 
       if (id) {
-        userData.UpdatedBy = userId;
-      } else {
-        userData.CreatedBy = userId;
-      }
-
-      formData.append("data", JSON.stringify(userData));
-
-      if (nProfileImage) {
-        formData.append("profile-image", nProfileImage);
-      }
-
-      try {
-        const oResponse = await apiPost(
-          USER_CREATE_OR_UPDATE,
+        // Use PUT for update with updateUser endpoint
+        oResponse = await apiPut(
+          UPDATE_USER,
           formData,
           token,
-          true
+          true // multipart/form-data
         );
-        const resData = oResponse?.data;
-
-        if (resData?.status === STATUS.SUCCESS.toUpperCase()) {
-          setRemovedDocumentIds([]);
-          showEmsg(resData?.message, STATUS.SUCCESS, 3000, async () => {
-            navigate("/users");
-          });
-        } else {
-          showEmsg(
-            resData?.message || t("COMMON.FAILED_OPERATION"),
-            STATUS.WARNING
-          );
-        }
-      } catch (error) {
-        console.error("API Error:", error);
-        const backendMessage = error?.response?.data?.message;
-        showEmsg(backendMessage || t("COMMON.ERROR_MESSAGE"), STATUS.ERROR);
-      } finally {
-        hideLoaderWithDelay(setSubmitting);
+      } else {
+        // Use POST for create with createUser endpoint
+        oResponse = await apiPost(
+          CREATE_USER,
+          formData,
+          token,
+          true // multipart/form-data
+        );
       }
-    },
-    [
-      validate,
-      id,
-      oFormData,
-      nProfileImage,
-      existingDocuments,
-      removedDocumentIds,
-      t,
-      navigate,
-    ]
-  );
+
+      const resData = oResponse?.data;
+
+      if (resData?.status === STATUS.SUCCESS.toUpperCase()) {
+        setRemovedDocumentIds([]);
+        showEmsg(resData?.message, STATUS.SUCCESS, 3000, async () => {
+          navigate("/users");
+        });
+      } else {
+        showEmsg(
+          resData?.message || t("COMMON.FAILED_OPERATION"),
+          STATUS.WARNING
+        );
+      }
+    } catch (error) {
+      console.error("API Error:", error);
+      const backendMessage = error?.response?.data?.message;
+      showEmsg(backendMessage || t("COMMON.ERROR_MESSAGE"), STATUS.ERROR);
+    } finally {
+      hideLoaderWithDelay(setSubmitting);
+    }
+  },
+  [
+    validate,
+    id,
+    oFormData,
+    nProfileImage,
+    existingDocuments,
+    removedDocumentIds,
+    t,
+    navigate,
+  ]
+);
 
   const loaderOverlay = bSubmitting && <Loader />;
 
   return (
     <div className="max-w-8xl mx-auto">
       <ToastContainer />
-      {loaderOverlay}
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-4">
           <p className="text-gray-500">
@@ -763,100 +794,103 @@ useEffect(() => {
                 }}
               />
 
-              <div className="col-span-1 md:col-span-2">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <TextInputWithIcon
-                    label={t("COMMON.PASSWORD")}
-                    id="password"
-                    name="password"
-                    value={oFormData.password}
-                    onChange={handleChange}
-                    placeholder={t("COMMON.ENTER_PASSWORD")}
-                    Icon={Lock}
-                    type="password"
-                    error={oErrors.password}
-                  />
-                  <TextInputWithIcon
-                    label={t("COMMON.CONFIRM_PASSWORD")}
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    value={oFormData.confirmPassword}
-                    onChange={handleChange}
-                    placeholder={t("COMMON.CONFIRM_PASSWORD")}
-                    Icon={Lock}
-                    type="password"
-                    error={oErrors.confirmPassword}
-                  />
-                </div>
-              </div>
+              {/* Password Section - Only show for new users */}
+              {!id && (
+                <div className="col-span-1 md:col-span-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <TextInputWithIcon
+                      label={t("COMMON.PASSWORD")}
+                      id="password"
+                      name="password"
+                      value={oFormData.password}
+                      onChange={handleChange}
+                      placeholder={t("COMMON.ENTER_PASSWORD")}
+                      Icon={Lock}
+                      type="password"
+                      error={oErrors.password}
+                    />
+                    <TextInputWithIcon
+                      label={t("COMMON.CONFIRM_PASSWORD")}
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      value={oFormData.confirmPassword}
+                      onChange={handleChange}
+                      placeholder={t("COMMON.CONFIRM_PASSWORD")}
+                      Icon={Lock}
+                      type="password"
+                      error={oErrors.confirmPassword}
+                    />
+                  </div>
 
-              {typeof oFormData.password === "string" &&
-                oFormData.password.length > 0 && (
-                  <div
-                    className="col-span-1 md:col-span-2"
-                    style={{ marginTop: 4 }}
-                  >
-                    <span
-                      style={{
-                        color:
-                          passwordStrength === "strong"
-                            ? "#16a34a"
-                            : passwordStrength === "medium"
-                            ? "#f59e42"
-                            : "#dc2626",
-                        fontWeight: 600,
-                        fontSize: 13,
-                      }}
-                    >
-                      {passwordStrengthText}
-                    </span>
-                    <ul
-                      style={{
-                        margin: "8px 0 0 0",
-                        padding: 0,
-                        listStyle: "none",
-                      }}
-                    >
-                      {passwordRequirements(t).map((req, idx) => {
-                        const passed = req.test(oFormData.password);
-                        return (
-                          <li
-                            key={idx}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              color: passed ? "#16a34a" : "#dc2626",
-                              fontSize: 13,
-                              marginBottom: 2,
-                            }}
-                          >
-                            {passed ? (
-                              <CheckCircle
-                                size={16}
-                                color="#16a34a"
-                                style={{ marginRight: 6 }}
-                              />
-                            ) : (
-                              <XCircle
-                                size={16}
-                                color="#dc2626"
-                                style={{ marginRight: 6 }}
-                              />
-                            )}
-                            {req.label}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                    {passwordStrength !== "strong" && (
+                  {typeof oFormData.password === "string" &&
+                    oFormData.password.length > 0 && (
                       <div
-                        style={{ color: "#dc2626", fontSize: 12, marginTop: 2 }}
+                        className="col-span-1 md:col-span-2"
+                        style={{ marginTop: 4 }}
                       >
-                        {t("COMMON.PASSWORD_SUGGESTION")}
+                        <span
+                          style={{
+                            color:
+                              passwordStrength === "strong"
+                                ? "#16a34a"
+                                : passwordStrength === "medium"
+                                ? "#f59e42"
+                                : "#dc2626",
+                            fontWeight: 600,
+                            fontSize: 13,
+                          }}
+                        >
+                          {passwordStrengthText}
+                        </span>
+                        <ul
+                          style={{
+                            margin: "8px 0 0 0",
+                            padding: 0,
+                            listStyle: "none",
+                          }}
+                        >
+                          {passwordRequirements(t).map((req, idx) => {
+                            const passed = req.test(oFormData.password);
+                            return (
+                              <li
+                                key={idx}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  color: passed ? "#16a34a" : "#dc2626",
+                                  fontSize: 13,
+                                  marginBottom: 2,
+                                }}
+                              >
+                                {passed ? (
+                                  <CheckCircle
+                                    size={16}
+                                    color="#16a34a"
+                                    style={{ marginRight: 6 }}
+                                  />
+                                ) : (
+                                  <XCircle
+                                    size={16}
+                                    color="#dc2626"
+                                    style={{ marginRight: 6 }}
+                                  />
+                                )}
+                                {req.label}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                        {passwordStrength !== "strong" && (
+                          <div
+                            style={{ color: "#dc2626", fontSize: 12, marginTop: 2 }}
+                          >
+                            {t("COMMON.PASSWORD_SUGGESTION")}
+                          </div>
+                        )}
                       </div>
                     )}
-                  </div>
-                )}
+                </div>
+              )}
             </div>
           </div>
         </div>
