@@ -251,14 +251,18 @@ const Notifications = () => {
                           {t("PUSH_NOTIFICATION.APP_NAME")}
                         </span>
                         <div className="ml-auto flex items-center text-xs text-gray-400 gap-1">
-                      <Clock className="h-3 w-3" /> {t("PUSH_NOTIFICATION.TIME_AGO")}
+                          <Clock className="h-3 w-3" /> {t("PUSH_NOTIFICATION.TIME_AGO")}
                         </div>
                       </div>
 
                       {/* Content */}
                       <div className="space-y-1">
-                        <p className="text-sm font-semibold">{oPushFormData.title || "Notification Title"}</p>
-                        <p className="text-xs text-gray-300">{oPushFormData.message || "Notification message will appear here."}</p>
+                        <p className="text-sm font-semibold">
+                          {oPushFormData.title || t("PUSH_NOTIFICATION.TITLE")}
+                        </p>
+                        <p className="text-xs text-gray-300">
+                          {oPushFormData.message || t("PUSH_NOTIFICATION.MESSAGE")}
+                        </p>
                       </div>
 
                       {/* Image if present */}

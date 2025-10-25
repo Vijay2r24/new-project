@@ -79,3 +79,12 @@ export const REPORT_FILE_NAMES = {
   PRODUCTS: `products-report-${getTodayDate()}.xlsx`,
   PAYMENTS: `payments-report-${getTodayDate()}.xlsx`,
 };
+export const PASSWORD_VISIBILITY = {
+  SHOW: "text",
+  HIDE: "password"
+};
+
+export const PASSWORD_LABELS = {
+  SHOW: "Hide",
+  HIDE: "Show"
+};

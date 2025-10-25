@@ -24,7 +24,7 @@ import { useNavigate } from "react-router-dom";
 import { apiPost } from "../utils/ApiUtils";
 import { UPDATEUSERPASSWORD } from "../contants/apiRoutes";
 import md5 from "md5";
-import { STATUS } from "../contants/constants";
+import { PASSWORD_LABELS, PASSWORD_VISIBILITY, STATUS } from "../contants/constants";
 import { showEmsg } from "../utils/ShowEmsg";
 import { ToastContainer } from "react-toastify";
 import { useTitle } from "../context/TitleContext";
@@ -307,7 +307,7 @@ const ProfileDetails = () => {
               label={t("PROFILE.CONFIRM_NEW_PASSWORD")}
               id="confirmNewPassword"
               name="confirmNewPassword"
-              type={showPasswords.confirm ? "text" : "password"}
+              type={showPasswords.confirm ? PASSWORD_LABELS.SHOW : PASSWORD_LABELS.HIDE}
               placeholder={t("PROFILE.CONFIRM_NEW_PASSWORD_PLACEHOLDER")}
               Icon={Lock}
               value={passwordForm.confirmNewPassword}
@@ -318,7 +318,7 @@ const ProfileDetails = () => {
                   onClick={() => setShowPasswords(prev => ({ ...prev, confirm: !prev.confirm }))}
                   className="text-gray-500 hover:text-custom-bg"
                 >
-                  {showPasswords.confirm ? "Hide" : "Show"}
+                  {showPasswords.confirm ? PASSWORD_VISIBILITY.HIDE : PASSWORD_VISIBILITY.SHOW}
                 </button>
               }
             />

@@ -9,7 +9,7 @@ import { useTranslation } from "react-i18next";
 import { apiGet } from "../../utils/ApiUtils";
 import { GETALLORDERS_API } from "../../contants/apiRoutes";
 import { useTitle } from "../../context/TitleContext";
-import { STATUS } from "../../contants/constants";
+import { DATE_FORMAT_OPTIONS, STATUS } from "../../contants/constants";
 import Loader from "../../components/Loader";
 import { fetchResource } from "../../store/slices/allDataSlice";
 import { exportOrderReport } from "../../store/slices/exportSlice";
@@ -130,9 +130,9 @@ const OrderList = () => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+      year: DATE_FORMAT_OPTIONS.year,
+      month: DATE_FORMAT_OPTIONS.month,
+      day: DATE_FORMAT_OPTIONS.day
     });
   };
 
