@@ -1,15 +1,15 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Download } from "lucide-react";
+import { Download } from "lucide-react"
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import Toolbar from "../../components/Toolbar";
 import ExportPanel from "../../components/ExportPanel";
 import Pagination from "../../components/Pagination";
 import { useTranslation } from "react-i18next";
-import { apiGet} from "../../utils/ApiUtils";
-import { GETALLORDERS_API} from "../../contants/apiRoutes";
+import { apiGet } from "../../utils/ApiUtils";
+import { GETALLORDERS_API } from "../../contants/apiRoutes";
 import { useTitle } from "../../context/TitleContext";
-import { STATUS } from "../../contants/constants";
+import { DATE_FORMAT_OPTIONS, LOCALES, STATUS } from "../../contants/constants";
 import Loader from "../../components/Loader";
 import { fetchResource } from "../../store/slices/allDataSlice";
 import { exportOrderReport } from "../../store/slices/exportSlice";
@@ -23,7 +23,7 @@ const OrderList = () => {
   const [bShowFilterDropdown, setShowFilterDropdown] = useState(false);
   const [sViewMode, setViewMode] = useState("table");
   const [nCurrentPage, setCurrentPage] = useState(1);
-  const [aProductRows, setProductRows] = useState([]);
+  const [aOrders, setOrders] = useState([]); // Changed from aProductRows to aOrders
   const [nTotalRecords, setTotalRecords] = useState(0);
   const [sTotalPages, setTotalPages] = useState("");
   const [nProductsPerPage, setProductsPerPage] = useState(10);
@@ -67,7 +67,7 @@ const OrderList = () => {
       if (initialLoadComplete) {
         setFilterLoading(true);
       }
-      
+
       if (filterName === 'dateRange') {
         // Handle date range picker
         const dateValue = e.target.value;
@@ -100,7 +100,7 @@ const OrderList = () => {
         value: status.PaymentStatusName,
         label: status.PaymentStatusName
       }));
-      
+
       return [
         { value: "all", label: t("COMMON.ALL") },
         ...options
@@ -126,6 +126,24 @@ const OrderList = () => {
     },
   ];
 
+  const formatOrderDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString(LOCALES.ENGLISH_US, {
+      year: DATE_FORMAT_OPTIONS.year,
+      month: DATE_FORMAT_OPTIONS.month,
+      day: DATE_FORMAT_OPTIONS.day
+    });
+  };
+
+  const formatCurrency = (amount) => {
+    if (!amount) return "N/A";
+    return new Intl.NumberFormat(LOCALES.ENGLISH_INDIA, {
+      style: 'currency',
+      currency: 'INR'
+    }).format(amount);
+  };
+
   const fetchData = useCallback(async () => {
     try {
       if (initialLoadComplete) {
@@ -148,34 +166,31 @@ const OrderList = () => {
       const oResponse = await apiGet(GETALLORDERS_API, params, token);
 
       if (oResponse.data.status !== STATUS.SUCCESS.toLocaleUpperCase()) {
-        setProductRows([]);
+        setOrders([]);
         setTotalPages(0);
         setTotalRecords(0);
         setError(oResponse.data.message || t("ORDERS.NO_ORDERS_FOUND"));
       } else {
         const orders = oResponse.data.data || [];
-        const allProductItems = orders.flatMap((order) => {
-          if (Array.isArray(order.orderItems)) {
-            return order.orderItems.map((item) => ({
-              orderItemId: item.OrderItemID,
-              quantity: item.Quantity,
-              orderStatus: item.OrderStatus,
-              productName: item.ProductName,
-              orderId: order.OrderID,
-              orderDate: order.OrderDate,
-              totalAmount: order.TotalAmount,
-              totalOrderItems: order.totalOrderItems,
-              paymentStatus: order.payment?.[0]?.PaymentStatusName || "N/A",
-              customerName: `${order.FirstName} ${order.LastName}`.trim(),
-              email: order.Email,
-              phoneNumber: order.PhoneNumber,
-              order: order,
-            }));
-          }
-          return [];
-        });
+        
+        // Map orders directly without flattening order items
+        const formattedOrders = orders.map((order) => ({
+          orderId: order.OrderID,
+          orderDate: order.OrderDate,
+          formattedOrderDate: formatOrderDate(order.OrderDate),
+          totalAmount: order.TotalAmount,
+          formattedTotalAmount: formatCurrency(order.TotalAmount),
+          totalQuantity: order.totalQuantity,
+          totalOrderItems: order.totalOrderItems,
+          paymentStatus: order.payment?.[0]?.PaymentStatusName || "N/A",
+          customerName: `${order.FirstName} ${order.LastName}`.trim(),
+          email: order.Email,
+          phoneNumber: order.PhoneNumber,
+          orderItems: order.orderItems || [], // Keep order items for reference if needed
+          order: order, // Keep the full order object
+        }));
 
-        setProductRows(allProductItems);
+        setOrders(formattedOrders);
         setTotalPages(oResponse.data.pagination?.totalPages || 0);
         setTotalRecords(oResponse.data.pagination?.totalRecords || 0);
         setError(null);
@@ -234,12 +249,11 @@ const OrderList = () => {
   }, []);
 
   const handleViewOrder = useCallback(
-    (orderItem) => {
-      // Pass the entire order item as state when navigating
-      navigate(`/orders/${orderItem.orderId}`, {
+    (order) => {
+      // Navigate to order details with the full order data
+      navigate(`/orders/${order.orderId}`, {
         state: {
-          orderItem: orderItem,
-          order: orderItem.order, // This contains the full order data
+          order: order.order, // This contains the full order data
         },
       });
     },
@@ -315,7 +329,13 @@ const OrderList = () => {
                     {t("ORDERS.TABLE.ORDER_NUMBER")}
                   </th>
                   <th className="table-head-cell">
+                    {t("ORDERS.TABLE.ORDER_DATE")}
+                  </th>
+                  <th className="table-head-cell">
                     {t("ORDERS.TABLE.CUSTOMER_NAME")}
+                  </th>
+                  <th className="table-head-cell">
+                    {t("ORDERS.TABLE.PHONE_NUMBER")}
                   </th>
                   <th className="table-head-cell">
                     {t("ORDERS.TABLE.PAYMENT_STATUS")}
@@ -327,7 +347,7 @@ const OrderList = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {bFilterLoading ? (
                   <tr>
-                    <td colSpan={5} className="py-8 text-center">
+                    <td colSpan={8} className="py-8 text-center">
                       <div className="flex justify-center">
                         <Loader size="small" />
                       </div>
@@ -335,52 +355,62 @@ const OrderList = () => {
                   </tr>
                 ) : sError ? (
                   <tr>
-                    <td colSpan="5" className="text-center py-8 text-gray-600">
+                    <td colSpan="8" className="text-center py-8 text-gray-600">
                       {sError}
                     </td>
                   </tr>
-                ) : aProductRows.length === 0 ? (
+                ) : aOrders.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="text-center py-8 text-gray-600">
+                    <td colSpan="8" className="text-center py-8 text-gray-600">
                       {t("ORDERS.NO_ORDERS_FOUND")}
                     </td>
                   </tr>
                 ) : (
-                  aProductRows.map((productRow) => (
+                  aOrders.map((order) => (
                     <tr
-                      key={productRow.orderItemId}
+                      key={order.orderId}
                       className="hover:bg-gray-50 transition-colors duration-150"
                     >
                       <td className="table-cell">
                         <div className="text-caption font-semibold truncate max-w-[150px]">
-                          {productRow.orderId}
+                          {order.orderId}
+                        </div>
+                      </td>
+                      <td className="table-cell">
+                        <div className="text-sm text-gray-700">
+                          {order.formattedOrderDate}
                         </div>
                       </td>
                       <td className="table-cell">
                         <div className="text-sm text-gray-700 truncate max-w-[200px]">
-                          {productRow.customerName || "Unknown Customer"}
+                          {order.customerName || "Unknown Customer"}
                         </div>
                         <div className="text-xs text-gray-500 truncate max-w-[200px]">
-                          {productRow.email}
+                          {order.email}
                         </div>
                       </td>
                       <td className="table-cell">
+                        <div className="text-sm text-gray-700">
+                          {order.phoneNumber || "N/A"}
+                        </div>
+                      </td>
+                      <td className="table-cell text-center">
                         <span
                           className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getPaymentStatusColor(
-                            productRow.paymentStatus
+                            order.paymentStatus
                           )}`}
                         >
-                          {productRow.paymentStatus}
+                          {order.paymentStatus}
                         </span>
                       </td>
                       <td className="table-cell">
                         <div className="text-sm text-gray-900 text-center">
-                          {productRow.totalOrderItems}
+                          {order.totalOrderItems}
                         </div>
                       </td>
                       <td className="table-cell">
                         <button
-                          onClick={() => handleViewOrder(productRow)}
+                          onClick={() => handleViewOrder(order)}
                           className="text-[#5B45E0] hover:text-[#4c39c7] font-medium transition-colors duration-150"
                         >
                           {t("ORDERS.VIEW_DETAILS")}
@@ -407,44 +437,55 @@ const OrderList = () => {
             <div className="col-span-full text-center py-8 text-gray-600">
               {sError}
             </div>
-          ) : aProductRows.length === 0 ? (
+          ) : aOrders.length === 0 ? (
             <div className="col-span-full text-center py-8 text-gray-600">
               {t("ORDERS.NO_ORDERS_FOUND")}
             </div>
           ) : (
-            aProductRows.map((productRow) => (
+            aOrders.map((order) => (
               <div
-                key={productRow.orderItemId}
+                key={order.orderId}
                 className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col gap-4 hover:shadow-lg transition-shadow duration-200"
               >
                 <div className="flex items-center justify-between">
                   <div className="text-xs font-semibold px-3 py-1 rounded-full border bg-gray-50 text-gray-700 border-gray-200">
-                    {productRow.orderId.split("-")[0]}
+                    {order.orderId.split("-")[0]}
                   </div>
                   <span
                     className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full border ${getPaymentStatusColor(
-                      productRow.paymentStatus
+                      order.paymentStatus
                     )}`}
                   >
-                    {productRow.paymentStatus}
+                    {order.paymentStatus}
                   </span>
                 </div>
-                <div className="mt-4">
+
+                <div className="text-sm text-gray-600">
+                  <strong>{t("ORDERS.TABLE.ORDER_DATE")}</strong> {order.formattedOrderDate}
+                </div>
+
+                <div className="mt-2">
                   <div className="text-base font-bold text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis">
-                    {productRow.customerName}
+                    {order.customerName}
                   </div>
                   <div className="text-sm text-caption mt-1">
-                    {productRow.email}
+                    {order.email}
+                  </div>
+                  <div className="text-sm text-gray-600 mt-1">
+                    <strong>  {t("ORDERS.TABLE.PHONE_NUMBER")}</strong> {order.phoneNumber || "N/A"}
                   </div>
                   <div className="flex items-center justify-between mt-2">
+                    <div className="text-sm font-semibold text-gray-900">
+                      {order.formattedTotalAmount}
+                    </div>
                     <div className="text-sm text-gray-600">
-                      {t("COMMON.TOTAL_ORDER_ITEMS")}: {productRow.totalOrderItems}
+                      {t("COMMON.TOTAL_ORDER_ITEMS")}: {order.totalOrderItems}
                     </div>
                   </div>
                 </div>
 
                 <button
-                  onClick={() => handleViewOrder(productRow)}
+                  onClick={() => handleViewOrder(order)}
                   className="mt-3 w-full inline-flex justify-center items-center px-4 py-2 border border-[#5B45E0] text-[#5B45E0] rounded-lg font-medium hover:bg-[#5B45E0]/10 transition-colors duration-150"
                 >
                   {t("ORDERS.VIEW_DETAILS")}
@@ -455,7 +496,7 @@ const OrderList = () => {
         </div>
       )}
 
-      {aProductRows.length > 0 && (
+      {aOrders.length > 0 && (
         <Pagination
           currentPage={nCurrentPage}
           totalPages={sTotalPages}

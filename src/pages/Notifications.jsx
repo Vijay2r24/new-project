@@ -149,7 +149,8 @@ const Notifications = () => {
           </div>
 
           <div className="p-6 space-y-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Title and Message Inputs - Full Width */}
+            <div className="space-y-6">
               <TextInputWithIcon
                 label={t("PUSH_NOTIFICATION.TITLE_LABEL")}
                 id="title"
@@ -174,104 +175,109 @@ const Notifications = () => {
               />
             </div>
 
-            {/* Image Upload */}
-            <div className="space-y-4">
-              <label className="block text-sm font-medium text-gray-700">
-                {t("PUSH_NOTIFICATION.IMAGE_LABEL")}
-              </label>
-              <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-[#5B45E0] transition-colors duration-200">
-                <div className="space-y-3 text-center">
-                  {nPreviewUrl ? (
-                    <div className="relative inline-block">
-                      <img
-                        src={nPreviewUrl}
-                        alt={t("PUSH_NOTIFICATION.IMAGE_PREVIEW_ALT")}
-                        className="mx-auto h-32 w-auto object-contain rounded-lg shadow-sm"
-                      />
-                      <button
-                        type="button"
-                        onClick={removeImage}
-                        className="absolute -top-2 -right-2 p-1 bg-red-500 rounded-full text-white hover:bg-red-600 transition-colors duration-200 shadow-lg"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
+            {/* Image Upload and Preview Side by Side */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Image Upload Section */}
+              <div className="space-y-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  {t("PUSH_NOTIFICATION.IMAGE_LABEL")}
+                </label>
+                <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-[#5B45E0] transition-colors duration-200 min-h-[200px]">
+                  <div className="space-y-3 text-center flex flex-col justify-center">
+                    {nPreviewUrl ? (
+                      <div className="relative inline-block">
+                        <img
+                          src={nPreviewUrl}
+                          alt={t("PUSH_NOTIFICATION.IMAGE_PREVIEW_ALT")}
+                          className="mx-auto h-32 w-auto object-contain rounded-lg shadow-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={removeImage}
+                          className="absolute -top-2 -right-2 p-1 bg-red-500 rounded-full text-white hover:bg-red-600 transition-colors duration-200 shadow-lg"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                        <div className="flex flex-col sm:flex-row text-sm text-gray-600 justify-center items-center gap-1">
+                          <label
+                            htmlFor="image-upload"
+                            className="relative cursor-pointer bg-white rounded-md font-medium text-[#5B45E0] hover:text-[#4c39c7] focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-[#5B45E0] transition-colors duration-200"
+                          >
+                            <span>{t("COMMON.UPLOAD_A_FILE")}</span>
+                            <input
+                              id="image-upload"
+                              name="image"
+                              type="file"
+                              className="sr-only"
+                              accept="image/*"
+                              onChange={handleImageChange}
+                            />
+                          </label>
+                          <p className="text-gray-500">
+                            {t("COMMON.OR_DRAG_AND_DROP")}
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Mobile Notification Preview */}
+              <div className="space-y-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  {t("PUSH_NOTIFICATION.PREVIEW_TITLE")}
+                </label>
+                <div className="flex justify-center items-center h-300">
+                  {(!oPushFormData.title && !oPushFormData.message && !nPreviewUrl) ? (
+                    <div className="w-full h-full flex flex-col justify-center items-center bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                      <Bell className="h-12 w-12 text-gray-400 mb-4" />
+                      <p className="text-gray-400 italic">
+                        {t("PUSH_NOTIFICATION.NO_PREVIEW")}
+                      </p>
                     </div>
                   ) : (
-                    <>
-                      <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                      <div className="flex flex-col sm:flex-row text-sm text-gray-600 justify-center items-center gap-1">
-                        <label
-                          htmlFor="image-upload"
-                          className="relative cursor-pointer bg-white rounded-md font-medium text-[#5B45E0] hover:text-[#4c39c7] focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-[#5B45E0] transition-colors duration-200"
-                        >
-                          <span>{t("COMMON.UPLOAD_A_FILE")}</span>
-                          <input
-                            id="image-upload"
-                            name="image"
-                            type="file"
-                            className="sr-only"
-                            accept="image/*"
-                            onChange={handleImageChange}
-                          />
-                        </label>
-                        <p className="text-gray-500">
-                          {t("COMMON.OR_DRAG_AND_DROP")}
+                    <div className="w-full max-w-xs bg-[#1E1E1E] text-white rounded-xl p-3 shadow-lg border border-gray-700">
+                      {/* Header */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="bg-[#5B45E0] p-1 rounded-md">
+                          <Bell className="h-4 w-4 text-white" />
+                        </div>
+                        <span className="font-medium text-sm">
+                          {t("PUSH_NOTIFICATION.APP_NAME")}
+                        </span>
+                        <div className="ml-auto flex items-center text-xs text-gray-400 gap-1">
+                          <Clock className="h-3 w-3" /> {t("PUSH_NOTIFICATION.TIME_AGO")}
+                        </div>
+                      </div>
+
+                      {/* Content */}
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold">
+                          {oPushFormData.title || t("PUSH_NOTIFICATION.TITLE")}
+                        </p>
+                        <p className="text-xs text-gray-300">
+                          {oPushFormData.message || t("PUSH_NOTIFICATION.MESSAGE")}
                         </p>
                       </div>
-                      <p className="text-xs text-gray-500">
-                        PNG, JPG, GIF up to 10MB
-                      </p>
-                    </>
+
+                      {/* Image if present */}
+                      {nPreviewUrl && (
+                        <img
+                          src={nPreviewUrl}
+                          alt="Notification"
+                          className="mt-2 w-full rounded-lg object-cover max-h-32 border border-gray-600"
+                        />
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Mobile Notification Preview */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <Bell className="h-5 w-5 text-custom-bg" />
-              {t("PUSH_NOTIFICATION.PREVIEW_TITLE")}
-            </h2>
-          </div>
-
-          <div className="p-6 flex justify-center">
-            {(!oPushFormData.title && !oPushFormData.message && !nPreviewUrl) ? (
-              <p className="text-gray-400 text-center italic">
-                {t("PUSH_NOTIFICATION.NO_PREVIEW")}
-              </p>
-            ) : (
-              <div className="w-full max-w-xs bg-[#1E1E1E] text-white rounded-xl p-3 shadow-lg border border-gray-700 relative">
-                {/* Header */}
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="bg-[#5B45E0] p-1 rounded-md">
-                    <Bell className="h-4 w-4 text-white" />
-                  </div>
-                  <span className="font-medium text-sm">My App</span>
-                  <div className="ml-auto flex items-center text-xs text-gray-400 gap-1">
-                    <Clock className="h-3 w-3" /> 1m ago
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold">{oPushFormData.title || "Notification Title"}</p>
-                  <p className="text-xs text-gray-300">{oPushFormData.message || "Notification message will appear here."}</p>
-                </div>
-
-                {/* Image if present */}
-                {nPreviewUrl && (
-                  <img
-                    src={nPreviewUrl}
-                    alt="Notification"
-                    className="mt-2 w-full rounded-lg object-cover max-h-32 border border-gray-600"
-                  />
-                )}
-              </div>
-            )}
           </div>
         </div>
 
@@ -284,8 +290,8 @@ const Notifications = () => {
           >
             {t("COMMON.CANCEL")}
           </button>
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="btn-primary order-1 sm:order-2 flex items-center justify-center"
           >
             <Send className="h-4 w-4 mr-2" />

@@ -480,32 +480,27 @@ const ProductList = () => {
                   aProducts.map((product) => (
                     <tr key={product.ProductID} className="table-row text-left">
                       <td className="table-cell">
-                        <Link
-                          to={`/productdetails/${product.ProductID}`}
-                          className="flex items-center justify-left hover:bg-gray-50 p-2 rounded transition"
-                        >
-                          <div className="flex items-center justify-left">
-                            <div className="h-10 w-10 flex-shrink-0">
-                              <img
-                                className="h-10 w-10 rounded object-cover"
-                                src={product.firstImage}
-                                alt={product.ProductName}
-                                onError={(e) => {
-                                  e.target.onerror = null;
-                                  e.target.src = noImage;
-                                }}
-                              />
-                            </div>
-                            <div className="ml-3">
-                              <div
-                                className="font-medium text-sm text-gray-900 ellipsis-text"
-                                title={product.ProductName}
-                              >
-                                {product.ProductName}
-                              </div>
+                        <div className="flex items-center justify-left p-2">
+                          <div className="h-10 w-10 flex-shrink-0">
+                            <img
+                              className="h-10 w-10 rounded object-cover"
+                              src={product.firstImage}
+                              alt={product.ProductName}
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = noImage;
+                              }}
+                            />
+                          </div>
+                          <div className="ml-3">
+                            <div
+                              className="font-medium text-sm text-gray-900 ellipsis-text"
+                              title={product.ProductName}
+                            >
+                              {product.ProductName}
                             </div>
                           </div>
-                        </Link>
+                        </div>
                       </td>
                       <td className="table-cell table-cell-text">
                         <div
@@ -545,6 +540,7 @@ const ProductList = () => {
                           <ActionButtons
                             id={product.ProductID}
                             onEdit={handleEdit}
+                            viewLink={`/productdetails/${product.ProductID}`}
                           />
                         </div>
                       </td>
@@ -626,7 +622,11 @@ const ProductList = () => {
                     {t("COMMON.PRICE")} ₹{parseFloat(product.MRP).toFixed(2)}
                   </div>
                 </div>
-                <ActionButtons id={product.ProductID} onEdit={handleEdit} />
+                <ActionButtons 
+                  id={product.ProductID} 
+                  onEdit={handleEdit}
+                  viewLink={`/productdetails/${product.ProductID}`}
+                />
               </div>
             ))
           )}

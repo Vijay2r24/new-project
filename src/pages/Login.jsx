@@ -38,6 +38,8 @@ import {
   validateNewPassword, 
   validateConfirmPassword 
 } from "../utils/passwordUtils";
+import Loader from "../components/Loader";
+import { hideLoaderWithDelay } from "../utils/loaderUtils";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -65,6 +67,7 @@ const Login = () => {
   const [sConfirmPassword, setConfirmPassword] = useState("");
   const [bShowNewPassword, setShowNewPassword] = useState(false);
   const [bShowConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   
   const { fetchUserDetails } = useUserDetails();
 
@@ -142,6 +145,7 @@ const Login = () => {
     }
 
     setError((prev) => ({ ...prev, email: "", password: "" }));
+    setSubmitting(true);
 
     try {
       const hashedPassword = md5(oFormData.password);
@@ -206,6 +210,8 @@ const Login = () => {
         error?.response?.data?.message || t("LOGIN.ERRORS.INVALID_CREDENTIALS");
       setError((prev) => ({ ...prev, submit: errorMessage }));
       showEmsg(errorMessage, STATUS.ERROR);
+    } finally {
+      hideLoaderWithDelay(setSubmitting);
     }
   };
 
@@ -227,6 +233,7 @@ const Login = () => {
       setError((prev) => ({ ...prev, email: emailError }));
       return;
     }
+    setSubmitting(true);
     try {
       const oPayload = { email: sForgotPasswordEmail };
       const oResponse = await apiPost(
@@ -250,6 +257,8 @@ const Login = () => {
     } catch (error) {
       const errMsg = error?.response?.data?.message;
       showEmsg(errMsg || t("OTP.ERROR"), STATUS.ERROR);
+    } finally {
+      hideLoaderWithDelay(setSubmitting);
     }
   };
 
@@ -266,6 +275,7 @@ const Login = () => {
       return;
     }
 
+    setSubmitting(true);
     try {
       const oPayload = {
         email: sForgotPasswordEmail,
@@ -302,6 +312,8 @@ const Login = () => {
       showEmsg(errMsg, STATUS.ERROR);
       setError((prev) => ({ ...prev, otp: errMsg }));
       setOtp("");
+    } finally {
+      hideLoaderWithDelay(setSubmitting);
     }
   };
 
@@ -342,6 +354,7 @@ const Login = () => {
       }));
       return;
     }
+    setSubmitting(true);
     try {
       const hashedNewPassword = md5(sNewPassword);
       const hashedConfirmPassword = md5(sConfirmPassword);
@@ -383,6 +396,8 @@ const Login = () => {
     } catch (error) {
       const errMsg = error?.response?.data?.message;
       showEmsg(errMsg || t("LOGIN.ERRORS.PASSWORD_RESET_FAILED"), STATUS.ERROR);
+    } finally {
+      hideLoaderWithDelay(setSubmitting);
     }
   };
 
@@ -667,6 +682,11 @@ const Login = () => {
   return (
     <>
       <ToastContainer />
+      {submitting && (
+        <div className="global-loader-overlay">
+          <Loader />
+        </div>
+      )}
       <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-gradient-to-br from-custom-bg to-blue-100">
         <div className="hidden lg:flex flex-col justify-center items-center px-12 bg-custom-bg/50 text-white relative overflow-hidden">
           <div
