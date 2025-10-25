@@ -23,12 +23,21 @@ export const STATUS_OPTIONS = [
   { value: STATUS_VALUES.BOOLEAN_INACTIVE, labelKey: "COMMON.INACTIVE" },
 ];
 export const ITEMS_PER_PAGE = 10;
-
+export const LOCALE = "en-US";
+export const ORDER_STATUS = {
+  DELIVERED: "Delivered",
+  PENDING: "Pending",
+  CANCELLED: "Cancelled",
+  SHIPPED: "Shipped",
+  RETURNED: "Returned",
+  PROCESSING:"Processing",
+};
 export const STATUS_DROPDOWN_OPTIONS = [
   { value: "true", labelKey: "COMMON.ACTIVE" },
   { value: "false", labelKey: "COMMON.INACTIVE" },
 ];
 export const DEFAULT_PAGE =1;
+export const DASHBOARD_DEFAULT_LIMIT = 7;
 export const BANNER_WIDTH = 1200;
 export const BANNER_HEIGHT = 600;
 

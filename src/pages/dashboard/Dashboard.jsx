@@ -24,6 +24,7 @@ import {
 } from "../../contants/apiRoutes";
 import { apiGet } from "../../utils/ApiUtils";
 import Loader from "../../components/Loader";
+import { LOCALE, ORDER_STATUS,DASHBOARD_DEFAULT_LIMIT } from "../../contants/constants";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -33,40 +34,40 @@ const Dashboard = () => {
   // State for API data
   const [metrics, setMetrics] = useState([
     {
-      title: "Total Revenue",
+      title: t("DASHBOARD.TOTALREVENUE"),
       value: "$0",
       change: "+0%",
       trend: "up",
       icon: DollarSign,
       color: "bg-green-100 text-green-600",
-      comparisonText: "vs last period",
+      comparisonText: t("DASHBOARD.COMPARISONTEXT"),
     },
     {
-      title: "Total Orders",
+      title: t("DASHBOARD.TOTALORDERS"),
       value: "0",
       change: "+0%",
       trend: "up",
       icon: ShoppingCart,
       color: "bg-blue-100 text-blue-600",
-      comparisonText: "vs last period",
+      comparisonText: t("DASHBOARD.COMPARISONTEXT"),
     },
     {
-      title: "Total Customers",
+      title: t("DASHBOARD.TOTALCUSTOMERS"),
       value: "0",
       change: "+0%",
       trend: "up",
       icon: Users,
       color: "bg-purple-100 text-purple-600",
-      comparisonText: "vs last period",
+      comparisonText: t("DASHBOARD.COMPARISONTEXT"),
     },
     {
-      title: "Average Order",
+      title: t("DASHBOARD.AVERAGEORDERS"),
       value: "$0",
       change: "+0%",
       trend: "up",
       icon: TrendingUp,
       color: "bg-orange-100 text-orange-600",
-      comparisonText: "vs last period",
+      comparisonText: t("DASHBOARD.COMPARISONTEXT"),
     },
   ]);
   const [recentOrders, setRecentOrders] = useState([]);
@@ -91,7 +92,7 @@ const Dashboard = () => {
 
   // Format currency
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat(LOCALE, {
       style: "currency",
       currency: "USD",
       minimumFractionDigits: 0,
@@ -101,12 +102,12 @@ const Dashboard = () => {
 
   // Format number
   const formatNumber = (num) => {
-    return new Intl.NumberFormat("en-US").format(num);
+    return new Intl.NumberFormat(LOCALE).format(num);
   };
 
   // Calculate the comparison period text based on date range
   const getComparisonText = (startDate, endDate) => {
-  if (!startDate || !endDate) return "vs last period";
+  if (!startDate || !endDate) return t("DASHBOARD.COMPARISONTEXT");
 
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -119,9 +120,9 @@ const Dashboard = () => {
     const today = new Date().toISOString().split('T')[0];
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     
-    if (startStr === today) return "vs yesterday";
-    if (startStr === yesterday) return "vs day before yesterday";
-    return "vs previous day";
+    if (startStr === today) return t("DASHBOARD.VSYESTERDAY");
+    if (startStr === yesterday) return t("DASHBOARD.VSDAYBEFOREYESTERDAY");
+    return t("DASHBOARD.VSPREVIOUSDAY");
   }
   
   // Date ranges
@@ -129,14 +130,14 @@ const Dashboard = () => {
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
   switch (diffDays) {
-    case 1: return "vs previous day";
-    case 7: return "vs last week";
+    case 1: return t("DASHBOARD.VSPREVIOUSDAY");
+    case 7: return t("DASHBOARD.VSLASTWEEK");
     case 30:
-    case 31: return "vs last month";
-    case 90: return "vs last quarter";
+    case 31: return t("DASHBOARD.VSLASTMONTH");
+    case 90: return t("DASHBOARD.VSLAST3MONTHS");
     case 365:
-    case 366: return "vs last year";
-    default: return `vs last ${diffDays} days`;
+    case 366: return t("DASHBOARD.VSLASTYEAR");
+    default: return  t("DASHBOARD.VSLASTXDAYS", { count: diffDays });
   }
 };
   // Calculate percentage change and trend
@@ -259,7 +260,7 @@ const Dashboard = () => {
           }),
 
         // Recent Orders - uses request body for limit
-        apiGet(GET_RECENT_ORDERS, { limit: 7 }, token)
+        apiGet(GET_RECENT_ORDERS, { limit: DASHBOARD_DEFAULT_LIMIT }, token)
           .then((response) => ({
             data: response?.data?.data || {},
             type: "recentOrders",
@@ -367,7 +368,7 @@ const Dashboard = () => {
       // Update metrics state with actual API data
       setMetrics([
         {
-          title: "Total Revenue",
+          title: t("DASHBOARD.TOTALREVENUE"),
           value: revenueMetrics.value,
           change: revenueMetrics.change,
           trend: revenueMetrics.trend,
@@ -376,7 +377,7 @@ const Dashboard = () => {
           comparisonText: revenueMetrics.comparisonText,
         },
         {
-          title: "Total Orders",
+          title: t("DASHBOARD.TOTALORDERS"),
           value: ordersMetrics.value,
           change: ordersMetrics.change,
           trend: ordersMetrics.trend,
@@ -385,7 +386,7 @@ const Dashboard = () => {
           comparisonText: ordersMetrics.comparisonText,
         },
         {
-          title: "Total Customers",
+          title: t("DASHBOARD.TOTALCUSTOMERS"),
           value: customersMetrics.value,
           change: customersMetrics.change,
           trend: customersMetrics.trend,
@@ -394,7 +395,7 @@ const Dashboard = () => {
           comparisonText: customersMetrics.comparisonText,
         },
         {
-          title: "Average Order",
+          title: t("DASHBOARD.AVERAGEORDERS"),
           value: averageOrderMetrics.value,
           change: averageOrderMetrics.change,
           trend: averageOrderMetrics.trend,
@@ -836,11 +837,11 @@ const Dashboard = () => {
                         <td className="px-4 py-3 align-middle whitespace-nowrap">
                           <span
                             className={`px-2 py-0.5 rounded-full text-xs font-semibold
-                      ${order.status === "Delivered" ? "status-delivered" : ""}
-                      ${order.status === "Processing" ? "status-processing" : "" }
-                      ${order.status === "Shipped" ? "status-shipped" : ""}
-                      ${order.status === "Cancelled" ? "status-cancelled" : ""}
-                       ${order.status === "Pending" ? "status-pending" : ""}
+                      ${order.status === ORDER_STATUS.DELIVERED ? "status-delivered" : ""}
+                      ${order.status === ORDER_STATUS.PROCESSING ? "status-processing" : "" }
+                      ${order.status === ORDER_STATUS.SHIPPED ? "status-shipped" : ""}
+                      ${order.status === ORDER_STATUS.CANCELLED ? "status-cancelled" : ""}
+                       ${order.status === ORDER_STATUS.PENDING ? "status-pending" : ""}
                     `}
                           >
                             {order.status}
