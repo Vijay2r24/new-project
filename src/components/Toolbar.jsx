@@ -38,6 +38,11 @@ const OrderToolbar = ({
     return isEndDate;
   });
 
+  // Toggle between table and grid view
+  const toggleViewMode = () => {
+    setViewMode(viewMode === 'table' ? 'grid' : 'table');
+  };
+
   return (
     <div className="mb-6">
       <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
@@ -59,25 +64,23 @@ const OrderToolbar = ({
         )}
 
         {showViewToggle && (
-          <div className="flex gap-2">
-            <button
-              onClick={() => setViewMode('table')}
-              className={`btn-toggle-view ${viewMode === 'table' ? 'btn-highlighted' : 'btn-default'}`}
-              title={t('TOOLBAR.TABLE_VIEW')}
-            >
-              <List className="w-4 h-4 mr-1" />
-              {t('TOOLBAR.TABLE')}
-            </button>
-
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`btn-toggle-view ${viewMode === 'grid' ? 'btn-highlighted' : 'btn-default'}`}
-              title={t('TOOLBAR.GRID_VIEW')}
-            >
-              <LayoutGrid className="w-4 h-4 mr-1" />
-              {t('TOOLBAR.GRID')}
-            </button>
-          </div>
+          <button
+            onClick={toggleViewMode}
+            className={`btn-toggle-view flex items-center ${viewMode === 'table' ? 'btn-highlighted' : 'btn-default'}`}
+            title={viewMode === 'table' ? t('TOOLBAR.SWITCH_TO_GRID') : t('TOOLBAR.SWITCH_TO_TABLE')}
+          >
+            {viewMode === 'table' ? (
+              <>
+                <LayoutGrid className="w-4 h-4 mr-1" />
+                {t('TOOLBAR.GRID')}
+              </>
+            ) : (
+              <>
+                <List className="w-4 h-4 mr-1" />
+                {t('TOOLBAR.TABLE')}
+              </>
+            )}
+          </button>
         )}
 
         {showFilterButton && (
