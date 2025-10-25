@@ -102,6 +102,21 @@
   "DASHBOARD": {
     "TITLE": "Dashboard",
     "DESCRIPTION": "Overview of your store's performance and recent activity",
+    "NO_TOP_PRODUCTS":"No Products found",
+    "TOTALREVENUE": "Total Revenue",
+    "TOTALORDERS": "Total Orders",
+    "TOTALCUSTOMERS": "Total Customers",
+    "AVERAGEORDERS": "Average Order",
+    "COMPARISONTEXT":"vs last period",
+    "VSYESTERDAY": "vs yesterday",
+    "VSDAYBEFOREYESTERDAY": "vs day before yesterday",
+    "VSPREVIOUSDAY": "vs previous day",
+    "VSLASTWEEK": "vs last week",
+    "VSLASTMONTH": "vs last month",
+    "VSLAST3MONTHS": "vs last 3 months",
+    "VSLASTYEAR": "vs last year",
+    "VSLASTXDAYS": "vs last {{count}} days",
+    "FAILED_TO_LOAD": "Failed to load dashboard data. Please try again.",
     "PRODUCT_MODAL": {
       "CATEGORY_DEFAULT": "General",
       "REVENUE": "Revenue",
@@ -128,7 +143,8 @@
       "PAGE_INFO": "Page {{current}} of {{total}}",
       "LOW_STOCK": "Low",
       "SALES": "{{count}} sales",
-      "IN_STOCK": "{{count}} in stock"
+      "IN_STOCK": "{{count}} in stock",
+      "UNKNOWN_PRODUCT": "Unknown Product"
     },
     "LOW_STOCK_ALERT": {
       "LOW_STOCK_ALERT": "Low Stock Alert",
