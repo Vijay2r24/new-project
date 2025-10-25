@@ -24,6 +24,7 @@ export const STATUS_OPTIONS = [
 ];
 export const ITEMS_PER_PAGE = 10;
 export const LOCALE = "en-US";
+export const CURRENCY = "INR";  
 export const ORDER_STATUS = {
   DELIVERED: "Delivered",
   PENDING: "Pending",

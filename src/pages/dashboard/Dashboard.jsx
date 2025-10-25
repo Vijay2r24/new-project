@@ -3,13 +3,13 @@ import {
   TrendingUp,
   ShoppingCart,
   Users,
-  DollarSign,
   Package,
   ArrowUp,
   ArrowDown,
   Star,
   Clock,
   AlertCircle,
+ IndianRupee,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -24,7 +24,7 @@ import {
 } from "../../contants/apiRoutes";
 import { apiGet } from "../../utils/ApiUtils";
 import Loader from "../../components/Loader";
-import { LOCALE, ORDER_STATUS,DASHBOARD_DEFAULT_LIMIT } from "../../contants/constants";
+import { LOCALE, ORDER_STATUS,DASHBOARD_DEFAULT_LIMIT,CURRENCY,STATUS } from "../../contants/constants";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -35,10 +35,10 @@ const Dashboard = () => {
   const [metrics, setMetrics] = useState([
     {
       title: t("DASHBOARD.TOTALREVENUE"),
-      value: "$0",
+      value: "₹0",
       change: "+0%",
       trend: "up",
-      icon: DollarSign,
+      icon:  IndianRupee,
       color: "bg-green-100 text-green-600",
       comparisonText: t("DASHBOARD.COMPARISONTEXT"),
     },
@@ -62,7 +62,7 @@ const Dashboard = () => {
     },
     {
       title: t("DASHBOARD.AVERAGEORDERS"),
-      value: "$0",
+      value: "₹0",
       change: "+0%",
       trend: "up",
       icon: TrendingUp,
@@ -94,7 +94,7 @@ const Dashboard = () => {
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat(LOCALE, {
       style: "currency",
-      currency: "USD",
+      currency: CURRENCY,
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
@@ -372,7 +372,7 @@ const Dashboard = () => {
           value: revenueMetrics.value,
           change: revenueMetrics.change,
           trend: revenueMetrics.trend,
-          icon: DollarSign,
+          icon: IndianRupee,
           color: "bg-green-100 text-green-600",
           comparisonText: revenueMetrics.comparisonText,
         },
@@ -417,7 +417,7 @@ const Dashboard = () => {
             : new Date().toISOString().split("T")[0],
           amount: formatCurrency(order.TotalAmount || 0),
           status:
-            order.OrderItem?.[0]?.OrderItemStatus?.OrderStatus || "Pending",
+            order.OrderItem?.[0]?.OrderItemStatus?.OrderStatus || STATUS.PENDING,
           items: order.OrderItem?.length || 1,
         }))
       );
@@ -429,15 +429,13 @@ const Dashboard = () => {
           const variantImages = item.variantImages || [];
 
           return {
-            name: product.ProductName || "Unknown Product",
+            name: product.ProductName || t("DASHBOARD.TOP_PRODUCTS.UNKNOWN_PRODUCT"),
             sales: parseInt(item.totalOrderItemQuantity) || 0,
             revenue: formatCurrency(parseInt(item.totalPrice) || 0),
             rating: item.averageRating || 0,
             stock: item.totalStock || 0,
-            image:
-              variantImages[0]?.documentUrl ||
-              "https://images.pexels.com/photos/3394665/pexels-photo-3394665.jpeg?auto=compress&cs=tinysrgb&w=300",
-            category: product.Category || "General",
+            image: variantImages[0]?.documentUrl,
+            category: product.Category || t("DASHBOARD.PRODUCT_MODAL.CATEGORY_DEFAULT"),
             // Store the original item for modal details
             originalData: item,
           };
@@ -450,7 +448,7 @@ const Dashboard = () => {
         .map((item) => {
           const product = item.ProductVariant?.Product || {};
           return {
-            name: product.ProductName || "Unknown Product",
+            name: product.ProductName || t("DASHBOARD.TOP_PRODUCTS.UNKNOWN_PRODUCT"),
             stock: item.totalStock || 0,
             threshold: 10,
           };
@@ -458,7 +456,7 @@ const Dashboard = () => {
 
       setLowStockItems(lowStock);
     } catch (err) {
-      setError("Failed to load dashboard data. Please try again.");
+      setError(t("DASHBOARD.FAILED_TO_LOAD"));
     } finally {
       setIsLoading(false);
     }
@@ -564,7 +562,7 @@ const Dashboard = () => {
               <hr className="w-full border-t border-gray-200 my-2" />
               <div className="grid grid-cols-2 gap-2 w-full mt-1 mb-1">
                 <div className="flex flex-col items-center">
-                  <DollarSign className="h-4 w-4 text-green-500 mb-0.5" />
+                  <IndianRupee className="h-4 w-4 text-green-500 mb-0.5" />
                   <span className="text-[11px] text-gray-500">
                     {t("DASHBOARD.PRODUCT_MODAL.REVENUE")}
                   </span>
@@ -737,7 +735,7 @@ const Dashboard = () => {
                       </div>
                       <div className="flex flex-wrap gap-4 mt-1 text-xs text-gray-500">
                         <span className="flex items-center">
-                          <DollarSign className="inline h-4 w-4 mr-1 text-green-400" />
+                          <IndianRupee className="inline h-4 w-4 mr-1 text-green-400" />
                           {product.revenue}
                         </span>
                         <span className="flex items-center">

@@ -116,6 +116,7 @@
     "VSLAST3MONTHS": "vs last 3 months",
     "VSLASTYEAR": "vs last year",
     "VSLASTXDAYS": "vs last {{count}} days",
+    "FAILED_TO_LOAD": "Failed to load dashboard data. Please try again.",
     "PRODUCT_MODAL": {
       "CATEGORY_DEFAULT": "General",
       "REVENUE": "Revenue",
@@ -142,7 +143,8 @@
       "PAGE_INFO": "Page {{current}} of {{total}}",
       "LOW_STOCK": "Low",
       "SALES": "{{count}} sales",
-      "IN_STOCK": "{{count}} in stock"
+      "IN_STOCK": "{{count}} in stock",
+      "UNKNOWN_PRODUCT": "Unknown Product"
     },
     "LOW_STOCK_ALERT": {
       "LOW_STOCK_ALERT": "Low Stock Alert",
