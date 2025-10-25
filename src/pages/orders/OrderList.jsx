@@ -9,7 +9,7 @@ import { useTranslation } from "react-i18next";
 import { apiGet } from "../../utils/ApiUtils";
 import { GETALLORDERS_API } from "../../contants/apiRoutes";
 import { useTitle } from "../../context/TitleContext";
-import { DATE_FORMAT_OPTIONS, STATUS } from "../../contants/constants";
+import { DATE_FORMAT_OPTIONS, LOCALES, STATUS } from "../../contants/constants";
 import Loader from "../../components/Loader";
 import { fetchResource } from "../../store/slices/allDataSlice";
 import { exportOrderReport } from "../../store/slices/exportSlice";
@@ -129,7 +129,7 @@ const OrderList = () => {
   const formatOrderDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(LOCALES.ENGLISH_US, {
       year: DATE_FORMAT_OPTIONS.year,
       month: DATE_FORMAT_OPTIONS.month,
       day: DATE_FORMAT_OPTIONS.day
@@ -138,7 +138,7 @@ const OrderList = () => {
 
   const formatCurrency = (amount) => {
     if (!amount) return "N/A";
-    return new Intl.NumberFormat('en-IN', {
+    return new Intl.NumberFormat(LOCALES.ENGLISH_INDIA, {
       style: 'currency',
       currency: 'INR'
     }).format(amount);

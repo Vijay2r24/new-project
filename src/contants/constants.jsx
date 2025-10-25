@@ -88,3 +88,7 @@ export const PASSWORD_LABELS = {
   SHOW: "Hide",
   HIDE: "Show"
 };
+export const LOCALES = {
+  ENGLISH_US: 'en-US',
+  ENGLISH_INDIA: 'en-IN'
+};
