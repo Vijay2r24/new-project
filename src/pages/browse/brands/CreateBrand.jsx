@@ -8,12 +8,13 @@ import TextAreaWithIcon from "../../../components/TextAreaWithIcon";
 import Loader from "../../../components/Loader";
 import SelectWithIcon from "../../../components/SelectWithIcon";
 
-import { apiPost, apiGet } from "../../../utils/ApiUtils";
+import { apiPost, apiGet, apiPut } from "../../../utils/ApiUtils";
 import { showEmsg } from "../../../utils/ShowEmsg";
 import { hideLoaderWithDelay } from "../../../utils/loaderUtils";
 import {
-  CREATE_OR_UPDATE_BRAND,
+  CREATE_BRAND,
   GET_BRAND_BY_ID,
+  UPDATE_BRAND,
 } from "../../../contants/apiRoutes";
 import { STATUS, STATUS_VALUES, STATUS_OPTIONS } from "../../../contants/constants";
 
@@ -143,8 +144,8 @@ const CreateBrand = () => {
       return;
     }
 
-    setFormData((prev) => ({ 
-      ...prev, 
+    setFormData((prev) => ({
+      ...prev,
       BrandLogo: file,
       existingLogo: null, // Clear existing logo when new file is uploaded
     }));
@@ -208,6 +209,7 @@ const CreateBrand = () => {
 
     // Handle logo upload / update / removal
     if (oFormData.BrandLogo) {
+      // New image uploaded
       documentMetadata.push({
         image: "brand_image",
         sortOrder: 1,
@@ -222,11 +224,9 @@ const CreateBrand = () => {
         DocumentID: oFormData.existingLogoDocumentId,
       });
     } else if (isEditing && sImagePreview && !oFormData.BrandLogo && oFormData.existingLogoDocumentId) {
-      documentMetadata.push({
-        image: "brand_image",
-        sortOrder: 1,
-        DocumentID: oFormData.existingLogoDocumentId,
-      });
+      // Editing but keeping existing image - don't include documentMetadata at all
+      // This is the key change: don't push anything to documentMetadata array
+      // So the array remains empty and won't be included in the payload
     }
 
     // Construct payload depending on Create or Edit mode
@@ -239,7 +239,8 @@ const CreateBrand = () => {
         BrandCode: oFormData.BrandCode,
         IsActive: oFormData.IsActive,
         BrandDescription: oFormData.description,
-        documentMetadata: documentMetadata.length > 0 ? documentMetadata : undefined,
+        // Only include documentMetadata if the array is not empty
+        ...(documentMetadata.length > 0 && { documentMetadata }),
         UpdatedBy: userId,
       };
     } else {
@@ -249,7 +250,8 @@ const CreateBrand = () => {
         BrandCode: oFormData.BrandCode,
         IsActive: oFormData.IsActive,
         BrandDescription: oFormData.description,
-        documentMetadata: documentMetadata.length > 0 ? documentMetadata : undefined,
+        // Only include documentMetadata if the array is not empty
+        ...(documentMetadata.length > 0 && { documentMetadata }),
         CreatedBy: userId,
       };
     }
@@ -261,13 +263,25 @@ const CreateBrand = () => {
     }
 
     try {
-      // API call
-      const response = await apiPost(
-        CREATE_OR_UPDATE_BRAND,
-        dataToSend,
-        token,
-        true // multipart/form-data
-      );
+      let response;
+
+      if (isEditing) {
+        // Use PUT for update with updateBrand endpoint
+        response = await apiPut(
+          UPDATE_BRAND,
+          dataToSend,
+          token,
+          true // multipart/form-data
+        );
+      } else {
+        // Use POST for create with createBrand endpoint
+        response = await apiPost(
+          CREATE_BRAND,
+          dataToSend,
+          token,
+          true // multipart/form-data
+        );
+      }
 
       const responseStatus = response.data.STATUS || response.data.status;
       const responseMessage = response.data.MESSAGE || response.data.message;
@@ -395,9 +409,8 @@ const CreateBrand = () => {
               {t("PRODUCT_SETUP.CREATE_BRAND.LOGO_LABEL")}
             </label>
             <div
-              className={`relative group rounded-xl border-2 ${
-                oErrors.BrandLogo ? "border-red-300" : "border-gray-200"
-              } border-dashed transition-all duration-200 hover:border-custom-bg bg-gray-50 hover:bg-gray-50/50`}
+              className={`relative group rounded-xl border-2 ${oErrors.BrandLogo ? "border-red-300" : "border-gray-200"
+                } border-dashed transition-all duration-200 hover:border-custom-bg bg-gray-50 hover:bg-gray-50/50`}
             >
               <div className="p-6">
                 <div className="space-y-3 text-center">

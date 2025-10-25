@@ -5,10 +5,11 @@ import TextAreaWithIcon from "../../../components/TextAreaWithIcon";
 import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { apiPost, apiGet } from "../../../utils/ApiUtils";
+import { apiPost, apiGet, apiPut } from "../../../utils/ApiUtils";
 import {
   GET_ATTRIBUTE_TYPE_BY_ID,
-  CREATE_OR_UPDATE_ATTRIBUTE_TYPE,
+  UPDATE_ATTRIBUTE_TYPE,
+  CREATE_ATTRIBUTE_TYPE,
 } from "../../../contants/apiRoutes";
 import { showEmsg } from "../../../utils/ShowEmsg";
 import {
@@ -119,66 +120,77 @@ const CreateAttributeType = () => {
     return newErrors;
   };
 
-  const handleSubmit = useCallback(
-    async (e) => {
-      e.preventDefault();
-      const validationErrors = validateForm();
-      if (Object.keys(validationErrors).length > 0) {
-        setErrors(validationErrors);
-        return;
-      }
+const handleSubmit = useCallback(
+  async (e) => {
+    e.preventDefault();
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
 
-      setSubmitting(true);
+    setSubmitting(true);
 
-      try {
-        // Create the payload according to the API requirements
-        const payload = {
-          Name: formData.Name,
-          AttributeTypeDescription: formData.AttributeTypeDescription,
-          IsActive: formData.IsActive,
-          TenantID: tenantID,
-          ...(isEditing && {
-            AttributeTypeID: AttributeTypeID,
-            UpdatedBy: userId,
-          }),
-          ...(!isEditing && {
-            CreatedBy: userId,
-          }),
-        };
+    try {
+      // Create the payload according to the API requirements
+      const payload = {
+        Name: formData.Name,
+        AttributeTypeDescription: formData.AttributeTypeDescription,
+        IsActive: formData.IsActive,
+        TenantID: tenantID,
+        ...(isEditing && {
+          AttributeTypeID: AttributeTypeID,
+          UpdatedBy: userId,
+        }),
+        ...(!isEditing && {
+          CreatedBy: userId,
+        }),
+      };
 
-        const response = await apiPost(
-          CREATE_OR_UPDATE_ATTRIBUTE_TYPE,
+      let response;
+
+      if (isEditing) {
+        // Use PUT for update operations
+        response = await apiPut(
+          UPDATE_ATTRIBUTE_TYPE, // Your update endpoint constant
           payload,
           token
         );
-
-        if (response.data.status === STATUS.SUCCESS.toUpperCase()) {
-          showEmsg(response.data.message, STATUS.SUCCESS, 3000, navigateBack);
-        } else {
-          showEmsg(response.data.message, STATUS.WARNING);
-        }
-      } catch (err) {
-        console.error(err);
-        showEmsg(
-          err?.response?.data?.message || t("COMMON.API_ERROR"),
-          STATUS.ERROR
+      } else {
+        // Use POST for create operations
+        response = await apiPost(
+          CREATE_ATTRIBUTE_TYPE, // Your create endpoint constant
+          payload,
+          token
         );
-      } finally {
-        hideLoaderWithDelay(setSubmitting);
       }
-    },
-    [
-      formData,
-      isEditing,
-      AttributeTypeID,
-      t,
-      navigateBack,
-      tenantID,
-      token,
-      userId,
-    ]
-  );
 
+      if (response.data.status === STATUS.SUCCESS.toUpperCase()) {
+        showEmsg(response.data.message, STATUS.SUCCESS, 3000, navigateBack);
+      } else {
+        showEmsg(response.data.message, STATUS.WARNING);
+      }
+    } catch (err) {
+      console.error(err);
+      showEmsg(
+        err?.response?.data?.message || t("COMMON.API_ERROR"),
+        STATUS.ERROR
+      );
+    } finally {
+      hideLoaderWithDelay(setSubmitting);
+    }
+  },
+  [
+    formData,
+    isEditing,
+    AttributeTypeID,
+    t,
+    navigateBack,
+    tenantID,
+    token,
+    userId,
+  ]
+);
   // Filter STATUS_OPTIONS to exclude the "ALL" option and map to component format
   const statusOptions = STATUS_OPTIONS.filter(
     (option) => option.value !== STATUS_VALUES.ALL
