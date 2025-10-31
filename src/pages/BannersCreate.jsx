@@ -12,9 +12,18 @@ import ImageCropperModal from "../components/ImageCropperModal";
 import { useTitle } from "../context/TitleContext";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchResource } from "../store/slices/allDataSlice";
-import { apiPost, apiGet } from "../utils/ApiUtils";
-import { CREATE_UPDATE_BANNERS, GET_BANNERS_BY_ID } from "../contants/apiRoutes";
-import { STATUS,DEFAULT_PAGE,BANNER_WIDTH,BANNER_HEIGHT } from "../contants/constants";
+import { apiPost, apiGet, apiPut } from "../utils/ApiUtils";
+import {
+  CREATE_BANNER,
+  GET_BANNERS_BY_ID,
+  UPDATE_BANNER,
+} from "../contants/apiRoutes";
+import {
+  STATUS,
+  DEFAULT_PAGE,
+  BANNER_WIDTH,
+  BANNER_HEIGHT,
+} from "../contants/constants";
 import { ToastContainer } from "react-toastify";
 import Loader from "../components/Loader";
 
@@ -54,7 +63,11 @@ const BannerForm = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await apiGet(`${GET_BANNERS_BY_ID}/${bannerId}`, {}, token);
+      const response = await apiGet(
+        `${GET_BANNERS_BY_ID}/${bannerId}`,
+        {},
+        token
+      );
 
       if (response?.data?.status === STATUS.SUCCESS.toUpperCase()) {
         const bannerData = response.data.data;
@@ -68,7 +81,8 @@ const BannerForm = () => {
           discount: bannerData.Discount || "",
           price: bannerData.Price?.toString() || "",
           file: null,
-          isActive: bannerData.IsActive !== undefined ? bannerData.IsActive : true,
+          isActive:
+            bannerData.IsActive !== undefined ? bannerData.IsActive : true,
         });
 
         setExistingImageData(firstImage);
@@ -86,7 +100,7 @@ const BannerForm = () => {
       bannerId ? t("BANNER_FORM.EDIT_BANNER") : t("BANNER_FORM.UPLOAD_BANNER")
     );
     setBackButton(<BackButton onClick={() => navigate("/banners")} />);
-    
+
     if (bannerId) {
       fetchBanner();
     }
@@ -104,7 +118,7 @@ const BannerForm = () => {
   const handleBannerUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
+
     if (!file.type.match("image.*")) {
       toast.error(t("BANNER_FORM.INVALID_IMAGE_TYPE"));
       return;
@@ -152,15 +166,16 @@ const BannerForm = () => {
     let isValid = true;
 
     if (!formData.BannerName) {
-      errors.BannerName = t("BANNER_FORM.BANNER_NAME") + " " + t("COMMON.REQUIRED");
+      errors.BannerName =
+        t("BANNER_FORM.BANNER_NAME") + " " + t("COMMON.REQUIRED");
       isValid = false;
     }
 
     if (!formData.preview) {
-      errors.preview = t("BANNER_FORM.CHOOSE_IMAGE") + " " + t("COMMON.REQUIRED");
+      errors.preview =
+        t("BANNER_FORM.CHOOSE_IMAGE") + " " + t("COMMON.REQUIRED");
       isValid = false;
     }
-
 
     if (!formData.category || formData.category.length === 0) {
       errors.category = t("COMMON.CATEGORY") + " " + t("COMMON.REQUIRED");
@@ -172,7 +187,8 @@ const BannerForm = () => {
       isValid = false;
     }
     if (!formData.discount) {
-      errors.discount = t("BANNER_FORM.DISCOUNT_PERCENTAGE") + " " + t("COMMON.REQUIRED");
+      errors.discount =
+        t("BANNER_FORM.DISCOUNT_PERCENTAGE") + " " + t("COMMON.REQUIRED");
       isValid = false;
     }
 
@@ -199,40 +215,70 @@ const BannerForm = () => {
       IsActive: formData.isActive,
       CategoryIDs: formData.category || [],
       BrandIDs: formData.brand || [],
-      Discount: formData.discount,
-      SortOrder: DEFAULT_PAGE,
-      Price: parseFloat(formData.price) || 0,
-      CreatedBy: localStorage.getItem("userId") || "admin",
+      DiscountPercentage: formData.discount,
+      SortOrder: formData.sequence || DEFAULT_PAGE,
+      SellingPrice: parseFloat(formData.price) || 0,
+      ...(bannerId
+        ? {
+            BannerID: bannerId,
+            UpdatedBy: localStorage.getItem("userId") || "admin",
+          }
+        : {
+            CreatedBy: localStorage.getItem("userId") || "admin",
+          }),
     };
 
+    // Handle document metadata for different scenarios
     if (bannerId) {
-      mainData.BannerID = bannerId;
-      mainData.UpdatedBy = localStorage.getItem("userId") || "admin";
+      // Update scenario
+      if (formData.file) {
+        // New image uploaded - include document metadata with new file
+        mainData.documentMetadata = [
+          {
+            image: "image_0",
+            sortOrder: parseInt(formData.sequence) || 1,
+            ...(existingImageData?.documentId
+              ? { DocumentID: existingImageData.documentId }
+              : {}),
+          },
+        ];
+      } else {
+        // No new image uploaded - send empty documentMetadata array
+        mainData.documentMetadata = [];
+      }
+    } else {
+      // Create scenario - only include document metadata if there's a file
+      if (formData.file) {
+        mainData.documentMetadata = [
+          {
+            image: "image_0",
+            sortOrder: parseInt(formData.sequence) || 1,
+          },
+        ];
+      } else {
+        // For create without image, send empty array
+        mainData.documentMetadata = [];
+      }
     }
-  
-    //  Add document metadata only if new image is uploaded
-    if (formData.file) {
-      mainData.documentMetadata = [
-        {
-          image: "image_0",
-          sortOrder: parseInt(formData.sequence) || 1,
-          ...(bannerId && existingImageData?.documentId
-            ? { DocumentID: existingImageData.documentId } // keep DocumentID if updating existing image
-            : {}),
-        },
-      ];
-    }
-  
+
     data.append("data", JSON.stringify(mainData));
-  
-    //  Append file only if user selected a new one
+
+    // Append file only if user selected a new one
     if (formData.file) {
       data.append("image_0", formData.file);
     }
 
     try {
-      const response = await apiPost(CREATE_UPDATE_BANNERS, data, token, true);
-  
+      let response;
+
+      if (bannerId) {
+        // Use PUT for update with updateBanner endpoint
+        response = await apiPut(UPDATE_BANNER, data, token, true);
+      } else {
+        // Use POST for create with createBanner endpoint
+        response = await apiPost(CREATE_BANNER, data, token, true);
+      }
+
       if (response?.data?.status === STATUS.SUCCESS.toUpperCase()) {
         toast.success(response?.data?.message || t("BANNER_FORM.SAVE_SUCCESS"));
         setTimeout(() => navigate("/banners"), 2000);
@@ -381,7 +427,10 @@ const BannerForm = () => {
                     dispatch(
                       fetchResource({
                         key: "categories",
-                        params: value && value.trim() !== "" ? { searchText: value } : {},
+                        params:
+                          value && value.trim() !== ""
+                            ? { searchText: value }
+                            : {},
                       })
                     )
                   }
@@ -417,7 +466,10 @@ const BannerForm = () => {
                     dispatch(
                       fetchResource({
                         key: "brands",
-                        params: value && value.trim() !== "" ? { searchText: value } : {},
+                        params:
+                          value && value.trim() !== ""
+                            ? { searchText: value }
+                            : {},
                       })
                     )
                   }
@@ -463,7 +515,10 @@ const BannerForm = () => {
                   }}
                   placeholder={t("BANNER_FORM.ENTER_PRICE")}
                   Icon={() => (
-                    <span className="text-lg font-bold text-gray-400" style={{ fontFamily: "inherit" }}>
+                    <span
+                      className="text-lg font-bold text-gray-400"
+                      style={{ fontFamily: "inherit" }}
+                    >
                       ₹
                     </span>
                   )}
@@ -498,11 +553,7 @@ const BannerForm = () => {
         </div>
 
         <div className="flex justify-end mt-8 gap-4">
-          <button
-            type="submit"
-            className="btn-primary"
-            disabled={isLoading}
-          >
+          <button type="submit" className="btn-primary" disabled={isLoading}>
             {t("COMMON.SUBMIT")}
           </button>
           <button

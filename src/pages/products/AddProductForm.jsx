@@ -8,10 +8,12 @@ import { STATUS } from "../../contants/constants.jsx";
 import { Tab } from "@headlessui/react";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchResource } from "../../store/slices/allDataSlice.jsx";
-import { apiPost, apiGet } from "../../utils/ApiUtils.jsx";
+import { apiPost, apiGet, apiPut } from "../../utils/ApiUtils.jsx";
 import {
   CREATE_OR_UPDATE_PRODUCT,
+  CREATE_PRODUCT,
   GET_PRODUCT_BY_ID,
+  UPDATE_PRODUCT,
 } from "../../contants/apiRoutes";
 import { showEmsg } from "../../utils/ShowEmsg";
 import ReactQuill from "react-quill";
@@ -48,7 +50,7 @@ const AddProductForm = () => {
       attributes: [],
       Quantity: "",
       MRP: "",
-      ProductDiscount: "",
+      DiscountPercentage: "",
       SellingPrice: "",
       StoreID: "",
       images: [],
@@ -124,7 +126,7 @@ const AddProductForm = () => {
     dispatch(fetchResource({ key: "specificationType" }));
   }, [dispatch]);
 
-  // Calculate SellingPrice based on MRP and ProductDiscount for a specific variant
+  // Calculate SellingPrice based on MRP and DiscountPercentage for a specific variant
   const calculateSellingPrice = (mrp, discount) => {
     const mrpValue = parseFloat(mrp) || 0;
     const discountValue = parseFloat(discount) || 0;
@@ -132,13 +134,13 @@ const AddProductForm = () => {
     return (mrpValue - (mrpValue * discountValue) / 100).toFixed(2);
   };
 
-  // Update SellingPrice when MRP or ProductDiscount changes for a specific variant
-  const updateVariantSellingPrice = (variantIndex, mrp, productDiscount) => {
+  // Update SellingPrice when MRP or DiscountPercentage changes for a specific variant
+  const updateVariantSellingPrice = (variantIndex, mrp, discountPercentage) => {
     setVariants((prevVariants) => {
       const newVariants = [...prevVariants];
       newVariants[variantIndex] = {
         ...newVariants[variantIndex],
-        SellingPrice: calculateSellingPrice(mrp, productDiscount),
+        SellingPrice: calculateSellingPrice(mrp, discountPercentage),
       };
       return newVariants;
     });
@@ -215,7 +217,7 @@ const AddProductForm = () => {
                 : [{ SpecificationTypeID: "", Value: "" }]
             );
 
-            // Set variants with MRP, SellingPrice, Inventory, and Images
+            // Set variants with MRP, SellingPrice, DiscountPercentage, Inventory, and Images
             const variants = product.Variants.map((variant, idx) => ({
               VariantID: variant.VariantID,
               attributes:
@@ -225,7 +227,9 @@ const AddProductForm = () => {
                 })) || [],
               Quantity: variant.Inventory[0]?.Quantity?.toString() || "",
               MRP: variant.MRP || "",
-              SellingPrice: variant.SellingPrice || "",
+              SellingPrice: variant.Inventory[0]?.SellingPrice || "",
+              DiscountPercentage:
+                variant.Inventory[0]?.DiscountPercentage || "",
               StoreID: variant.Inventory[0]?.StoreID || "",
               images: variant.ProductVariantImages.map((image, imgIdx) => ({
                 id: `${image.documentId}-${imgIdx}`,
@@ -245,11 +249,13 @@ const AddProductForm = () => {
                       Quantity: "",
                       MRP: "",
                       SellingPrice: "",
+                      DiscountPercentage: "",
                       StoreID: "",
                       images: [],
                     },
                   ]
             );
+
             // Fetch attributes for each unique AttributeTypeID after setting attributes
             const uniqueTypeIDs = new Set(
               transformedAttributes.map((attr) => attr.AttributeTypeID)
@@ -328,7 +334,7 @@ const AddProductForm = () => {
           attributes: [],
           Quantity: "",
           MRP: "",
-          ProductDiscount: "",
+          DiscountPercentage: "",
           SellingPrice: "",
           StoreID: oFormData.StoreID,
           images: [],
@@ -350,7 +356,7 @@ const AddProductForm = () => {
       attributes: combo,
       Quantity: "",
       MRP: "",
-      ProductDiscount: "",
+      DiscountPercentage: "",
       SellingPrice: "",
       StoreID: oFormData.StoreID,
       images: [],
@@ -373,10 +379,10 @@ const AddProductForm = () => {
     setVariants((prevVariants) => {
       const newVariants = [...prevVariants];
       newVariants[index][field] = value;
-      if (field === "MRP" || field === "ProductDiscount") {
+      if (field === "MRP" || field === "DiscountPercentage") {
         newVariants[index].SellingPrice = calculateSellingPrice(
           newVariants[index].MRP,
-          newVariants[index].ProductDiscount
+          newVariants[index].DiscountPercentage
         );
       }
       return newVariants;
@@ -556,6 +562,7 @@ const AddProductForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
+
     // Basic validation
     const errors = {};
     if (!oFormData.ProductName)
@@ -582,21 +589,25 @@ const AddProductForm = () => {
           "PRODUCT_CREATION.IMAGE_REQUIRED"
         );
     });
+
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       setSubmitting(false);
       return;
     }
+
     const specificationsData = aSpecifications
       .filter((spec) => spec.SpecificationTypeID && spec.Value)
       .map((spec) => ({
         SpecificationTypeID: spec.SpecificationTypeID,
         Value: spec.Value,
       }));
+
     const variantsData = aVariants.map((variant, variantIndex) => ({
       ...(productId &&
         variant.VariantID && { ProductVariantID: variant.VariantID }),
       MRP: parseFloat(variant.MRP) || 0,
+      DiscountPercentage: parseFloat(variant.DiscountPercentage) || 0,
       SellingPrice: parseFloat(variant.SellingPrice) || 0,
       StoreID: variant.StoreID || oFormData.StoreID,
       Quantity: parseInt(variant.Quantity) || 0,
@@ -624,6 +635,8 @@ const AddProductForm = () => {
         })),
       ],
     }));
+
+    const userId = localStorage.getItem("userId");
     const payload = {
       TenantID: oFormData.TenantID,
       ProductName: oFormData.ProductName,
@@ -633,10 +646,19 @@ const AddProductForm = () => {
       IsActive: true,
       Specifications: specificationsData,
       Variants: variantsData,
-      ...(productId && { ProductID: productId }),
+      ...(productId
+        ? {
+            ProductID: productId,
+            UpdatedBy: userId,
+          }
+        : {
+            CreatedBy: userId,
+          }),
     };
+
     const data = new FormData();
     data.append("data", JSON.stringify(payload));
+
     aVariants.forEach((variant, variantIndex) => {
       variant.images.forEach((img) => {
         if (img.file) {
@@ -644,14 +666,29 @@ const AddProductForm = () => {
         }
       });
     });
+
     try {
       const token = localStorage.getItem("token");
-      const response = await apiPost(
-        CREATE_OR_UPDATE_PRODUCT,
-        data,
-        token,
-        true
-      );
+      let response;
+
+      if (productId) {
+        // Use PUT for update with updateProduct endpoint
+        response = await apiPut(
+          UPDATE_PRODUCT,
+          data,
+          token,
+          true // multipart/form-data
+        );
+      } else {
+        // Use POST for create with createProduct endpoint
+        response = await apiPost(
+          CREATE_PRODUCT,
+          data,
+          token,
+          true // multipart/form-data
+        );
+      }
+
       const resData = response?.data;
       if (resData?.status === STATUS.SUCCESS.toUpperCase()) {
         showEmsg(
@@ -1251,13 +1288,13 @@ const AddProductForm = () => {
                       <div>
                         <TextInputWithIcon
                           label={t("PRODUCT_CREATION.PRODUCT_DISCOUNT")}
-                          id={`ProductDiscount-${index}`}
-                          name="ProductDiscount"
-                          value={variant.ProductDiscount}
+                          id={`DiscountPercentage-${index}`}
+                          name="DiscountPercentage"
+                          value={variant.DiscountPercentage}
                           onChange={(e) =>
                             handleVariantChange(
                               index,
-                              "ProductDiscount",
+                              "DiscountPercentage",
                               e.target.value
                             )
                           }
@@ -1269,11 +1306,11 @@ const AddProductForm = () => {
                           Icon={Tag}
                           error={
                             oValidationErrors[
-                              `variant_${index}_ProductDiscount`
+                              `variant_${index}_DiscountPercentage`
                             ]
                           }
                           ref={(el) =>
-                            addVariantRef(`ProductDiscount-${index}`, el)
+                            addVariantRef(`DiscountPercentage-${index}`, el)
                           }
                         />
                       </div>

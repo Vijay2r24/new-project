@@ -4,8 +4,8 @@ import TextInputWithIcon from "../components/TextInputWithIcon";
 import SelectWithIcon from "../components/SelectWithIcon";
 import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
-import { apiGet, apiPost } from "../utils/ApiUtils";
-import { GET_STORE_BY_ID, CREATE_OR_UPDATE_STORE } from "../contants/apiRoutes";
+import { apiGet, apiPost, apiPut } from "../utils/ApiUtils";
+import { GET_STORE_BY_ID, UPDATE_STORE, CREATE_STORE } from "../contants/apiRoutes";
 import { showEmsg } from "../utils/ShowEmsg";
 import { useTitle } from "../context/TitleContext";
 import { STATUS } from "../contants/constants";
@@ -298,75 +298,88 @@ const AddStore = () => {
     return isValid;
   }, [oFormData, t]);
 
-  const handleSubmit = useCallback(
-    async (e) => {
-      e.preventDefault();
-      if (!validateForm()) return;
+const handleSubmit = useCallback(
+  async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
 
-      setbSubmitting(true);
-      const token = localStorage.getItem("token");
-      const userId = localStorage.getItem("userId");
+    setbSubmitting(true);
+    const token = localStorage.getItem("token");
+    const userId = localStorage.getItem("userId");
 
-      // Get selected country, state, and city names
-      const selectedCountry = getArray(countriesData.data).find(
-        (c) => String(c.CountryID) === String(oFormData.country)
-      );
-      const selectedState = getArray(statesData.data).find(
-        (s) => String(s.StateID) === String(oFormData.state)
-      );
-      const selectedCity = getArray(citiesData.data).find(
-        (c) => String(c.CityID) === String(oFormData.city)
-      );
+    // Get selected country, state, and city names
+    const selectedCountry = getArray(countriesData.data).find(
+      (c) => String(c.CountryID) === String(oFormData.country)
+    );
+    const selectedState = getArray(statesData.data).find(
+      (s) => String(s.StateID) === String(oFormData.state)
+    );
+    const selectedCity = getArray(citiesData.data).find(
+      (c) => String(c.CityID) === String(oFormData.city)
+    );
 
-      const payload = {
+    const payload = {
+      TenantID: localStorage.getItem("tenantID"),
+      StoreName: oFormData.name,
+      Email: oFormData.email,
+      PhoneNumber: oFormData.phone,
+      AddressLine1: oFormData.address,
+      AddressLine2: oFormData.addressLine2 || "", // Include AddressLine2
+      CityID: parseInt(oFormData.city, 10),
+      StateID: parseInt(oFormData.state, 10),
+      CountryID: parseInt(oFormData.country, 10),
+      Zipcode: oFormData.zipCode,
+      IsActive: status,
+      CountryName: selectedCountry ? selectedCountry.CountryName : "",
+      StateName: selectedState ? selectedState.StateName : "",
+      CityName: selectedCity ? selectedCity.CityName : "",
+      ...(id ? { 
         StoreID: oFormData.StoreID || 0,
-        TenantID: localStorage.getItem("tenantID"),
-        StoreName: oFormData.name,
-        Email: oFormData.email,
-        PhoneNumber: oFormData.phone,
-        AddressLine1: oFormData.address,
-        AddressLine2: "",
-        CityID: parseInt(oFormData.city, 10),
-        StateID: parseInt(oFormData.state, 10),
-        CountryID: parseInt(oFormData.country, 10),
-        Zipcode: oFormData.zipCode,
-        IsActive: status,
-        CountryName: selectedCountry ? selectedCountry.CountryName : "",
-        StateName: selectedState ? selectedState.StateName : "",
-        CityName: selectedCity ? selectedCity.CityName : "",
-        ...(id ? { UpdatedBy: userId } : { CreatedBy: userId }),
-      };
+        UpdatedBy: userId 
+      } : { 
+        CreatedBy: userId 
+      }),
+    };
 
-      try {
-        const oResponse = await apiPost(CREATE_OR_UPDATE_STORE, payload, token);
-        if (oResponse.data.status === STATUS.SUCCESS.toUpperCase()) {
-          showEmsg(oResponse.data?.message, STATUS.SUCCESS, 3000, async () => {
-            navigate("/stores");
-          });
-        } else {
-          showEmsg(oResponse.data?.message, STATUS.WARNING);
-        }
-      } catch (err) {
-        showEmsg(
-          err?.response?.data?.message || t("COMMON.API_ERROR"),
-          STATUS.ERROR
-        );
-      } finally {
-        hideLoaderWithDelay(setbSubmitting);
+    try {
+      let oResponse;
+
+      if (id) {
+        // Use PUT for update with updateStore endpoint
+        oResponse = await apiPut(UPDATE_STORE, payload, token);
+      } else {
+        // Use POST for create with createStore endpoint
+        oResponse = await apiPost(CREATE_STORE, payload, token);
       }
-    },
-    [
-      validateForm,
-      oFormData,
-      id,
-      navigate,
-      t,
-      status,
-      countriesData.data,
-      statesData.data,
-      citiesData.data,
-    ]
-  );
+
+      if (oResponse.data.status === STATUS.SUCCESS.toUpperCase()) {
+        showEmsg(oResponse.data?.message, STATUS.SUCCESS, 3000, async () => {
+          navigate("/stores");
+        });
+      } else {
+        showEmsg(oResponse.data?.message, STATUS.WARNING);
+      }
+    } catch (err) {
+      showEmsg(
+        err?.response?.data?.message || t("COMMON.API_ERROR"),
+        STATUS.ERROR
+      );
+    } finally {
+      hideLoaderWithDelay(setbSubmitting);
+    }
+  },
+  [
+    validateForm,
+    oFormData,
+    id,
+    navigate,
+    t,
+    status,
+    countriesData.data,
+    statesData.data,
+    citiesData.data,
+  ]
+);
 
   const loaderOverlay = bSubmitting ? (
     <div className="global-loader-overlay">
