@@ -20,6 +20,7 @@ export const UPDATE_ORDER_ITEM_STATUS=`/updateOrderItemStatus`;
 export const CREATE_PRODUCT_WITH_IMAGES=`/productWithImages`;
 export const ATTRIBUTE_TYPE =`/getAllAttributeTypes`;
 export const deleteAttributeTypeAPI=`/deleteAttributeType`;
+export const CREATE_OR_UPDATE_PRODUCT_GROUP=`/createOrUpdateProductGroup`;
 export const getAllSizesAPI=`/getAllSizes`;
 export const deleteSizeAPI=`/deleteSize`;
 export const GET_All_COLORSAPI=`/getAllColours`;
