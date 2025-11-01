@@ -24,7 +24,13 @@ import {
 } from "../../contants/apiRoutes";
 import { apiGet } from "../../utils/ApiUtils";
 import Loader from "../../components/Loader";
-import { LOCALE, ORDER_STATUS, DASHBOARD_DEFAULT_LIMIT, CURRENCY, STATUS } from "../../contants/constants";
+import {
+  LOCALE,
+  ORDER_STATUS,
+  DASHBOARD_DEFAULT_LIMIT,
+  CURRENCY,
+  STATUS,
+} from "../../contants/constants";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -81,10 +87,10 @@ const Dashboard = () => {
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(endDate.getDate() - 6); // 7 days including today
-    
+
     return {
       startDate,
-      endDate
+      endDate,
     };
   };
 
@@ -101,7 +107,7 @@ const Dashboard = () => {
   const formatDateToAPI = (date) => {
     if (!date) return null;
     const dateObj = new Date(date);
-    return dateObj.toISOString().split('T')[0];
+    return dateObj.toISOString(); // This includes time
   };
 
   // Format currency
@@ -120,72 +126,107 @@ const Dashboard = () => {
   };
 
   // Improved comparison text calculation
-  const getComparisonText = (startDate, endDate) => {
-    if (!startDate || !endDate) return t("DASHBOARD.COMPARISONTEXT");
+  // Improved comparison text calculation that handles both date and time ranges
+ // Improved comparison text calculation that handles both date and time ranges
+const getComparisonText = (startDate, endDate) => {
+  if (!startDate || !endDate) return t("DASHBOARD.COMPARISONTEXT");
 
-    try {
-      // Convert to Date objects if they're strings
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      
-      // Calculate the difference in days
-      const diffTime = Math.abs(end - start);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end dates
+  try {
+    // Convert to Date objects if they're strings
+    const start = new Date(startDate);
+    const end = new Date(endDate);
 
-      // Get today and yesterday for single day comparisons
-      const today = new Date();
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
+    // Calculate the difference in milliseconds
+    const diffTime = Math.abs(end - start);
+    
+    // Calculate differences in various units
+    const diffMinutes = Math.floor(diffTime / (1000 * 60));
+    const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-      // Format dates for comparison (YYYY-MM-DD)
-      const startStr = start.toISOString().split('T')[0];
-      const endStr = end.toISOString().split('T')[0];
-      const todayStr = today.toISOString().split('T')[0];
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
+    // Check if it's a single day selection with time range
+    const isSameDay = start.toDateString() === end.toDateString();
 
-      // Single day selections
-      if (startStr === endStr) {
-        if (startStr === todayStr) return t("DASHBOARD.VSYESTERDAY");
-        if (startStr === yesterdayStr) return t("DASHBOARD.VSDAYBEFOREYESTERDAY");
-        return t("DASHBOARD.VSPREVIOUSDAY");
+    if (isSameDay || diffDays === 0) {
+      // Time-based comparisons for same day or less than 24 hours
+      switch (diffHours) {
+        case 0:
+          // Less than 1 hour - show minutes
+          if (diffMinutes === 0) {
+            return t("DASHBOARD.VSLASTMINUTES", { count: 0 });
+          }
+          return t("DASHBOARD.VSLASTMINUTES", { count: diffMinutes });
+        case 1:
+          return t("DASHBOARD.VSLASTHOUR");
+        case 2:
+          return t("DASHBOARD.VSLAST2HOURS");
+        case 3:
+          return t("DASHBOARD.VSLAST3HOURS");
+        case 6:
+          return t("DASHBOARD.VSLAST6HOURS");
+        case 12:
+          return t("DASHBOARD.VSLAST12HOURS");
+        case 24:
+          return t("DASHBOARD.VSLAST24HOURS");
+        default:
+          if (diffHours < 24) {
+            return t("DASHBOARD.VSLASTHOURS", { count: diffHours });
+          }
       }
-
-      // Date ranges - use exact day counts for more accurate matching
-      switch (diffDays) {
-        case 1: return t("DASHBOARD.VSPREVIOUSDAY");
-        case 7: return t("DASHBOARD.VSLASTWEEK");
-        case 30:
-        case 31: return t("DASHBOARD.VSLASTMONTH");
-        case 90: return t("DASHBOARD.VSLAST3MONTHS");
-        case 365:
-        case 366: return t("DASHBOARD.VSLASTYEAR");
-        default: 
-          // For custom ranges, use the exact number of days
-          return t("DASHBOARD.VSLASTXDAYS", { count: diffDays });
-      }
-    } catch (error) {
-      return t("DASHBOARD.COMPARISONTEXT");
     }
-  };
+
+    // Date-based comparisons for multiple days
+    switch (diffDays) {
+      case 1:
+        return t("DASHBOARD.VSPREVIOUSDAY");
+      case 6:
+        return t("DASHBOARD.VSLASTWEEK");
+      case 7:
+        return t("DASHBOARD.VSLASTWEEK");
+      case 30:
+      case 31:
+        return t("DASHBOARD.VSLASTMONTH");
+      case 90:
+        return t("DASHBOARD.VSLAST3MONTHS");
+      case 365:
+      case 366:
+        return t("DASHBOARD.VSLASTYEAR");
+      default:
+        return t("DASHBOARD.VSLASTXDAYS", { count: diffDays });
+    }
+  } catch (error) {
+    return t("DASHBOARD.COMPARISONTEXT");
+  }
+};
 
   // Calculate percentage change and trend
   const calculateMetrics = (current, previous, title, comparisonText) => {
-    if (current === undefined || current === null || previous === undefined || previous === null) {
-      return { 
-        value: title.includes("Revenue") || title.includes("Average") ? formatCurrency(0) : formatNumber(0), 
-        change: "0%", 
-        trend: "neutral", 
-        comparisonText 
+    if (
+      current === undefined ||
+      current === null ||
+      previous === undefined ||
+      previous === null
+    ) {
+      return {
+        value:
+          title.includes("Revenue") || title.includes("Average")
+            ? formatCurrency(0)
+            : formatNumber(0),
+        change: "0%",
+        trend: "neutral",
+        comparisonText,
       };
     }
 
-    const currentNum = typeof current === "string" ? 
-      parseFloat(current.replace(/[^0-9.-]+/g, "")) || 0 : 
-      Number(current) || 0;
-    
-    const previousNum = typeof previous === "string" ? 
-      parseFloat(previous.replace(/[^0-9.-]+/g, "")) || 0 : 
-      Number(previous) || 0;
+    const currentNum =
+      typeof current === "string"
+        ? parseFloat(current.replace(/[^0-9.-]+/g, "")) || 0
+        : Number(current) || 0;
+
+    const previousNum =
+      typeof previous === "string"
+        ? parseFloat(previous.replace(/[^0-9.-]+/g, "")) || 0
+        : Number(previous) || 0;
 
     if (previousNum === 0) {
       return {
@@ -208,7 +249,9 @@ const Dashboard = () => {
         title.includes("Revenue") || title.includes("Average")
           ? formatCurrency(currentNum)
           : formatNumber(currentNum),
-      change: `${percentageChange > 0 ? "+" : ""}${percentageChange.toFixed(2)}%`,
+      change: `${percentageChange > 0 ? "+" : ""}${percentageChange.toFixed(
+        2
+      )}%`,
       trend,
       comparisonText,
     };
@@ -445,7 +488,8 @@ const Dashboard = () => {
             : new Date().toISOString().split("T")[0],
           amount: formatCurrency(order.TotalAmount || 0),
           status:
-            order.OrderItem?.[0]?.OrderItemStatus?.OrderStatus || STATUS.PENDING,
+            order.OrderItem?.[0]?.OrderItemStatus?.OrderStatus ||
+            STATUS.PENDING,
           items: order.OrderItem?.length || 1,
         }))
       );
@@ -457,13 +501,16 @@ const Dashboard = () => {
           const variantImages = item.variantImages || [];
 
           return {
-            name: product.ProductName || t("DASHBOARD.TOP_PRODUCTS.UNKNOWN_PRODUCT"),
+            name:
+              product.ProductName ||
+              t("DASHBOARD.TOP_PRODUCTS.UNKNOWN_PRODUCT"),
             sales: parseInt(item.totalOrderItemQuantity) || 0,
             revenue: formatCurrency(parseInt(item.totalPrice) || 0),
             rating: item.averageRating || 0,
             stock: item.totalStock || 0,
             image: variantImages[0]?.documentUrl,
-            category: product.Category || t("DASHBOARD.PRODUCT_MODAL.CATEGORY_DEFAULT"),
+            category:
+              product.Category || t("DASHBOARD.PRODUCT_MODAL.CATEGORY_DEFAULT"),
             // Store the original item for modal details
             originalData: item,
           };
@@ -476,7 +523,9 @@ const Dashboard = () => {
         .map((item) => {
           const product = item.ProductVariant?.Product || {};
           return {
-            name: product.ProductName || t("DASHBOARD.TOP_PRODUCTS.UNKNOWN_PRODUCT"),
+            name:
+              product.ProductName ||
+              t("DASHBOARD.TOP_PRODUCTS.UNKNOWN_PRODUCT"),
             stock: item.totalStock || 0,
             threshold: 10,
           };
@@ -648,7 +697,7 @@ const Dashboard = () => {
 
           {/* Using the new DatePicker component */}
           <div className="relative w-[18rem] max-w-full">
-            <DatePicker value={value} onChange={handleDateChange}/>
+            <DatePicker value={value} onChange={handleDateChange} />
           </div>
         </div>
       </div>
@@ -742,7 +791,8 @@ const Dashboard = () => {
                           {product.name}
                         </span>
                         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                          {product.category || t("DASHBOARD.PRODUCT_MODAL.CATEGORY_DEFAULT")}
+                          {product.category ||
+                            t("DASHBOARD.PRODUCT_MODAL.CATEGORY_DEFAULT")}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 mt-1">
@@ -800,7 +850,9 @@ const Dashboard = () => {
                 ))
               ) : (
                 <div className="flex justify-center items-center h-32">
-                  <p className="text-gray-500">{t("DASHBOARD.NO_TOP_PRODUCTS")}</p>
+                  <p className="text-gray-500">
+                    {t("DASHBOARD.NO_TOP_PRODUCTS")}
+                  </p>
                 </div>
               )}
             </div>
@@ -808,7 +860,7 @@ const Dashboard = () => {
         </div>
 
         {/* Recent Orders */}
-        <div className="mb-6 md:mb-0 -z-0">
+        <div className="mb-6 md:mb-0 z-2">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col">
             <div className="px-6 py-4 border-b border-gray-100">
               <h2 className="text-lg font-semibold text-gray-900">
@@ -863,11 +915,31 @@ const Dashboard = () => {
                         <td className="px-4 py-3 align-middle whitespace-nowrap">
                           <span
                             className={`px-2 py-0.5 rounded-full text-xs font-semibold
-                      ${order.status === ORDER_STATUS.DELIVERED ? "status-delivered" : ""}
-                      ${order.status === ORDER_STATUS.PROCESSING ? "status-processing" : "" }
-                      ${order.status === ORDER_STATUS.SHIPPED ? "status-shipped" : ""}
-                      ${order.status === ORDER_STATUS.CANCELLED ? "status-cancelled" : ""}
-                       ${order.status === ORDER_STATUS.PENDING ? "status-pending" : ""}
+                      ${
+                        order.status === ORDER_STATUS.DELIVERED
+                          ? "status-delivered"
+                          : ""
+                      } 
+                      ${
+                        order.status === ORDER_STATUS.PROCESSING
+                          ? "status-processing"
+                          : ""
+                      }
+                      ${
+                        order.status === ORDER_STATUS.SHIPPED
+                          ? "status-shipped"
+                          : ""
+                      }
+                      ${
+                        order.status === ORDER_STATUS.CANCELLED
+                          ? "status-cancelled"
+                          : ""
+                      }
+                       ${
+                         order.status === ORDER_STATUS.PENDING
+                           ? "status-pending"
+                           : ""
+                       }
                     `}
                           >
                             {order.status}
@@ -879,7 +951,9 @@ const Dashboard = () => {
                 </table>
               ) : (
                 <div className="flex justify-center items-center h-32">
-                  <p className="text-gray-500">{t("DASHBOARD.NO_RECENT_ORDERS")}</p>
+                  <p className="text-gray-500">
+                    {t("DASHBOARD.NO_RECENT_ORDERS")}
+                  </p>
                 </div>
               )}
             </div>
