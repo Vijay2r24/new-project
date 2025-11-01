@@ -4,10 +4,11 @@ import { useNavigate, useParams,useLocation } from "react-router-dom";
 import TextwithIcone from "../components/TextInputWithIcon";
 import { Shield } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { apiGet, apiPost } from "../utils/ApiUtils";
+import { apiGet, apiPost, apiPut } from "../utils/ApiUtils";
 import {
   GET_ALL_PERMISSIONS,
-  CREATE_OR_UPDATE_ROLE,
+  CREATE_ROLE_PERMISSION,
+  UPDATE_ROLE_PERMISSION,
   GET_ALL_PERMISSIONS_BY_ROLE_ID,
 } from "../contants/apiRoutes";
 import { showEmsg } from "../utils/ShowEmsg";
@@ -17,6 +18,7 @@ import BackButton from "../components/BackButton";
 import { ToastContainer } from "react-toastify";
 import SelectWithIcon from "../components/SelectWithIcon";
 import { Tag } from "lucide-react";
+
 const AddUserRole = () => {
   const [sRoleName, setRoleName] = useState("");
   const [oPermissionsByModule, setPermissionsByModule] = useState({});
@@ -50,6 +52,7 @@ const AddUserRole = () => {
       setTitle("");
     };
   }, [setTitle, setBackButton, t, roleId]);
+  
   useEffect(() => {
     if (roleName) {
       setRoleName(roleName);
@@ -86,7 +89,6 @@ const AddUserRole = () => {
           } else if (Array.isArray(roleData.data)) {
             permissionsArr = roleData.data;
           }
-        
           else if (Array.isArray(roleData.data?.permissions)) {
             permissionsArr = roleData.data.permissions;
             setRoleName(roleData.data.roleName || "");
@@ -189,6 +191,7 @@ const AddUserRole = () => {
   const handleClose = useCallback(() => {
     navigate("/userRoles");
   }, [navigate]);
+  
   const validateRoleDataSubmit = useCallback(() => {
     const newErrors = {};
     if (!sRoleName) {
@@ -218,75 +221,87 @@ const AddUserRole = () => {
     }));
   };
 
-  const handleSave = useCallback(
-    async (event) => {
-      event.preventDefault();
-      if (!validateRoleDataSubmit()) {
-        setSubmitting(true);
-        const permissions = Object.values(oPermissionsByModule)
-          .flat()
-          .map((permission) => ({ 
-            permissionId: permission.ID, 
-            isChecked: permission.IsChecked 
-          }));
-
-        const userId = localStorage.getItem("userId");
-        const tenantID = localStorage.getItem("tenantID");
+ const handleSave = useCallback(
+  async (event) => {
+    event.preventDefault();
+    if (!validateRoleDataSubmit()) {
+      setSubmitting(true);
       
-        const roleData = {
-          RoleName: sRoleName,
-          IsActive: bIsActive,
-          Permissions: permissions
-        };
-  
-        // Add additional fields based on create vs update
-        if (roleId) {
-          // For update - include RoleID and UpdatedBy
-          roleData.RoleID = roleId;
-          roleData.UpdatedBy = userId;
-        } else {
-          // For create - include CreatedBy and TenantID
-          roleData.CreatedBy = userId;
-          roleData.TenantID = tenantID;
-        }
-  
-        try {
-          const token = localStorage.getItem("token");
-          const res = await apiPost(CREATE_OR_UPDATE_ROLE, roleData, token);
-          const resData = res?.data;
-          if (resData?.status === STATUS.SUCCESS.toUpperCase()) {
-            showEmsg(
-              resData.message|| t("CREATE_USER_ROLE.SAVE_SUCCESS"),
-              STATUS.SUCCESS,
-              3000,
-              () => {
-                navigate("/userRoles");
-              }
-            );
-          } else {
-            showEmsg(resData?.message || t("COMMON.API_ERROR"), STATUS.ERROR);
-          }
-        } catch (err) {
-          showEmsg(
-            err.response?.data?.message || t("COMMON.API_ERROR"), 
-            STATUS.ERROR
-          );
-        } finally {
-          setSubmitting(false);
-        }
+      // Extract permissions in the required format
+      const permissions = Object.values(oPermissionsByModule)
+        .flat()
+        .map(permission => ({
+          permissionId: permission.ID,
+          isChecked: permission.IsChecked
+        }));
+
+      const userId = localStorage.getItem("userId");
+      const tenantID = localStorage.getItem("tenantID");
+    
+      // Base role data
+      const roleData = {
+        RoleName: sRoleName,
+        IsActive: bIsActive,
+        Permissions: permissions // Send array of permission objects with permissionId and isChecked
+      };
+
+      // Add additional fields based on create vs update
+      if (roleId) {
+        // For update - include RoleID and UpdatedBy
+        roleData.RoleID = roleId;
+        roleData.UpdatedBy = userId;
+      } else {
+        // For create - include CreatedBy and TenantID
+        roleData.CreatedBy = userId;
+        roleData.TenantID = tenantID;
       }
-    },
-    [
-      validateRoleDataSubmit,
-      oPermissionsByModule,
-      roleId,
-      sRoleName,
-      bIsActive,
-      t,
-      navigate,
-      isAdminRole
-    ]
-  );
+
+      try {
+        const token = localStorage.getItem("token");
+        let res;
+
+        if (roleId) {
+          // Use PUT for update with updateRolePermission endpoint
+          res = await apiPut(UPDATE_ROLE_PERMISSION, roleData, token);
+        } else {
+          // Use POST for create with createRolePermission endpoint
+          res = await apiPost(CREATE_ROLE_PERMISSION, roleData, token);
+        }
+
+        const resData = res?.data;
+        if (resData?.status === STATUS.SUCCESS.toUpperCase()) {
+          showEmsg(
+            resData.message|| t("CREATE_USER_ROLE.SAVE_SUCCESS"),
+            STATUS.SUCCESS,
+            3000,
+            () => {
+              navigate("/userRoles");
+            }
+          );
+        } else {
+          showEmsg(resData?.message || t("COMMON.API_ERROR"), STATUS.ERROR);
+        }
+      } catch (err) {
+        showEmsg(
+          err.response?.data?.message || t("COMMON.API_ERROR"), 
+          STATUS.ERROR
+        );
+      } finally {
+        setSubmitting(false);
+      }
+    }
+  },
+  [
+    validateRoleDataSubmit,
+    oPermissionsByModule,
+    roleId,
+    sRoleName,
+    bIsActive,
+    t,
+    navigate,
+    isAdminRole
+  ]
+);
 
   if (nError) {
     return <div>{t("CREATE_USER_ROLE.FAILED_TO_FETCH_PERMISSIONS")}</div>;
