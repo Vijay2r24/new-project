@@ -860,7 +860,7 @@ const getComparisonText = (startDate, endDate) => {
         </div>
 
         {/* Recent Orders */}
-        <div className="mb-6 md:mb-0 -z-0">
+        <div className="mb-6 md:mb-0 z-2">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col">
             <div className="px-6 py-4 border-b border-gray-100">
               <h2 className="text-lg font-semibold text-gray-900">
