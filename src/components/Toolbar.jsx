@@ -11,6 +11,7 @@ import {
 import { Combobox } from "@headlessui/react";
 import { useTranslation } from "react-i18next";
 import CustomDatePicker from "./CustomDatePicker";
+import { VIEW_MODES } from "../contants/constants";
 
 const OrderToolbar = ({
   searchTerm,
@@ -43,7 +44,7 @@ const OrderToolbar = ({
 
   // Toggle between table and grid view
   const toggleViewMode = () => {
-    setViewMode(viewMode === "table" ? "grid" : "table");
+    setViewMode(viewMode === VIEW_MODES.TABLE ? VIEW_MODES.GRID : VIEW_MODES.TABLE);
   };
 
   return (

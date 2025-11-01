@@ -1,10 +1,4 @@
-import {
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-  useMemo,
-} from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
   User,
@@ -24,22 +18,26 @@ import { useTranslation } from "react-i18next";
 import { FaCamera, FaTimes } from "react-icons/fa";
 import { useParams, useNavigate } from "react-router-dom";
 import { apiGet, apiPost, apiPut } from "../utils/ApiUtils";
-import { CREATE_USER, GET_USER_BY_ID, UPDATE_USER} from "../contants/apiRoutes";
+import {
+  CREATE_USER,
+  GET_USER_BY_ID,
+  UPDATE_USER,
+} from "../contants/apiRoutes";
 import { showEmsg } from "../utils/ShowEmsg";
 import { useTitle } from "../context/TitleContext";
-import { STATUS } from "../contants/constants";
+import { GENDER_OPTIONS, STATUS } from "../contants/constants";
 import md5 from "md5";
 import BackButton from "../components/BackButton";
 import { ToastContainer } from "react-toastify";
 import userProfile from "../../assets/images/userProfile.svg";
 import Loader from "../components/Loader";
 import { hideLoaderWithDelay } from "../utils/loaderUtils";
-import { 
-  fetchResource, 
-  fetchStatesByCountryId, 
+import {
+  fetchResource,
+  fetchStatesByCountryId,
   fetchCitiesByStateId,
   clearStates,
-  clearCities 
+  clearCities,
 } from "../store/slices/allDataSlice";
 
 // Import password utilities
@@ -47,7 +45,7 @@ import {
   passwordRequirements,
   calculatePasswordStrength,
   getPasswordStrengthText,
-  validateFormPassword
+  validateFormPassword,
 } from "../utils/passwordUtils";
 
 const getArray = (data) =>
@@ -94,23 +92,31 @@ const AddUser = () => {
 
   // Get data from the allDataSlice
   const rolesData = useSelector((state) => state.allData.resources.roles || {});
-  const storesData = useSelector((state) => state.allData.resources.stores || {});
-  const countriesData = useSelector((state) => state.allData.resources.countries || {});
-  const statesData = useSelector((state) => state.allData.resources.states || {});
-  const citiesData = useSelector((state) => state.allData.resources.cities || {});
+  const storesData = useSelector(
+    (state) => state.allData.resources.stores || {}
+  );
+  const countriesData = useSelector(
+    (state) => state.allData.resources.countries || {}
+  );
+  const statesData = useSelector(
+    (state) => state.allData.resources.states || {}
+  );
+  const citiesData = useSelector(
+    (state) => state.allData.resources.cities || {}
+  );
 
   const roles = rolesData.data || [];
   const stores = storesData.data || [];
   const countries = countriesData.data || [];
   const states = statesData.data || [];
   const cities = citiesData.data || [];
-  
+
   const rolesLoading = rolesData.loading || false;
   const storesLoading = storesData.loading || false;
   const countriesLoading = countriesData.loading || false;
   const statesLoading = statesData.loading || false;
   const citiesLoading = citiesData.loading || false;
-  
+
   const rolesError = rolesData.error || null;
   const storesError = storesData.error || null;
   const countriesError = countriesData.error || null;
@@ -123,11 +129,14 @@ const AddUser = () => {
   const [bSubmitting, setSubmitting] = useState(false);
 
   // Gender options
-  const genderOptions = useMemo(() => [
-    { value: "male", label: t("ADD_USER.GENDER_MALE") },
-    { value: "female", label: t("ADD_USER.GENDER_FEMALE") },
-    { value: "other", label: t("ADD_USER.GENDER_OTHER") },
-  ], [t]);
+  const genderOptions = useMemo(
+    () =>
+      GENDER_OPTIONS.map((option) => ({
+        value: option.value,
+        label: t(option.labelKey),
+      })),
+    [t]
+  );
 
   // Refs to track if data has been fetched to prevent multiple API calls
   const hasFetchedRoles = useRef(false);
@@ -137,14 +146,14 @@ const AddUser = () => {
   const hasFetchedInitialData = useRef(false);
 
   // Password strength calculation using the imported utility
-  const passwordStrength = useMemo(() => 
-    calculatePasswordStrength(oFormData.password), 
+  const passwordStrength = useMemo(
+    () => calculatePasswordStrength(oFormData.password),
     [oFormData.password]
   );
 
   // Get password strength text using the imported utility
-  const passwordStrengthText = useMemo(() => 
-    getPasswordStrengthText(passwordStrength, t), 
+  const passwordStrengthText = useMemo(
+    () => getPasswordStrengthText(passwordStrength, t),
     [passwordStrength, t]
   );
 
@@ -199,9 +208,9 @@ const AddUser = () => {
     // Password validation only for new users
     if (!id) {
       const passwordErrors = validateFormPassword(
-        oFormData.password, 
-        oFormData.confirmPassword, 
-        t, 
+        oFormData.password,
+        oFormData.confirmPassword,
+        t,
         true // isNewUser = true when creating new user
       );
       Object.assign(errors, passwordErrors);
@@ -256,7 +265,15 @@ const AddUser = () => {
         );
       }
     }
-  }, [dispatch, countries, countriesLoading, roles, rolesLoading, stores, storesLoading]);
+  }, [
+    dispatch,
+    countries,
+    countriesLoading,
+    roles,
+    rolesLoading,
+    stores,
+    storesLoading,
+  ]);
 
   useEffect(() => {
     if (oFormData.country) {
@@ -270,7 +287,7 @@ const AddUser = () => {
         });
     } else {
       dispatch(clearStates());
-      setFormData(prev => ({ ...prev, state: "", city: "" }));
+      setFormData((prev) => ({ ...prev, state: "", city: "" }));
     }
   }, [dispatch, oFormData.country]);
 
@@ -286,7 +303,7 @@ const AddUser = () => {
         });
     } else {
       dispatch(clearCities());
-      setFormData(prev => ({ ...prev, city: "" }));
+      setFormData((prev) => ({ ...prev, city: "" }));
     }
   }, [dispatch, oFormData.state]);
 
@@ -296,7 +313,7 @@ const AddUser = () => {
 
     hasFetchedUser.current = true;
     const token = localStorage.getItem("token");
-    
+
     try {
       const oResponse = await apiGet(`${GET_USER_BY_ID}/${id}`, {}, token);
       const resData = oResponse.data;
@@ -305,7 +322,7 @@ const AddUser = () => {
         const user = resData.data;
 
         // Set basic form data immediately
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           firstName: user.FirstName || "",
           lastName: user.LastName || "",
@@ -339,7 +356,7 @@ const AddUser = () => {
         const locationData = {
           countryName: user.CountryName,
           stateName: user.StateName,
-          cityName: user.CityName
+          cityName: user.CityName,
         };
 
         // Find and set country ID if available
@@ -349,19 +366,19 @@ const AddUser = () => {
             (c) => c.CountryName === user.CountryName
           );
           if (foundCountry) {
-            setFormData(prev => ({
+            setFormData((prev) => ({
               ...prev,
-              country: foundCountry.CountryID
+              country: foundCountry.CountryID,
             }));
           }
         } else {
           // If countries aren't loaded yet, store the names for later
           setTimeout(() => {
-            setFormData(prev => ({
+            setFormData((prev) => ({
               ...prev,
               countryName: user.CountryName,
               stateName: user.StateName,
-              cityName: user.CityName
+              cityName: user.CityName,
             }));
           }, 100);
         }
@@ -379,7 +396,13 @@ const AddUser = () => {
 
   useEffect(() => {
     const populateStateAndCity = async () => {
-      if (!id || !oFormData.country || !oFormData.stateName || !oFormData.countryName) return;
+      if (
+        !id ||
+        !oFormData.country ||
+        !oFormData.stateName ||
+        !oFormData.countryName
+      )
+        return;
 
       try {
         const statesArray = getArray(states);
@@ -388,9 +411,9 @@ const AddUser = () => {
         );
 
         if (foundState && !oFormData.state) {
-          setFormData(prev => ({
+          setFormData((prev) => ({
             ...prev,
-            state: foundState.StateID
+            state: foundState.StateID,
           }));
         }
       } catch (error) {
@@ -399,7 +422,13 @@ const AddUser = () => {
     };
 
     populateStateAndCity();
-  }, [id, oFormData.country, oFormData.stateName, oFormData.countryName, states]);
+  }, [
+    id,
+    oFormData.country,
+    oFormData.stateName,
+    oFormData.countryName,
+    states,
+  ]);
 
   useEffect(() => {
     const populateCity = async () => {
@@ -412,9 +441,9 @@ const AddUser = () => {
         );
 
         if (foundCity && !oFormData.city) {
-          setFormData(prev => ({
+          setFormData((prev) => ({
             ...prev,
-            city: foundCity.CityID
+            city: foundCity.CityID,
           }));
         }
       } catch (error) {
@@ -430,7 +459,7 @@ const AddUser = () => {
       const timer = setTimeout(() => {
         fetchUser();
       }, 100);
-      
+
       return () => clearTimeout(timer);
     }
   }, [id, countries.length, fetchUser]);
@@ -438,7 +467,7 @@ const AddUser = () => {
   const handleChange = useCallback(
     (e) => {
       const { name, value } = e.target;
-    
+
       if (name === "country") {
         setFormData((prev) => ({
           ...prev,
@@ -448,8 +477,7 @@ const AddUser = () => {
           stateName: "",
           cityName: "",
         }));
-      }
-      else if (name === "state") {
+      } else if (name === "state") {
         setFormData((prev) => ({
           ...prev,
           [name]: value,
@@ -464,7 +492,7 @@ const AddUser = () => {
           [name]: value,
         }));
       }
-      
+
       // Clear error when user starts typing
       if (oErrors[name]) {
         setErrors((prev) => ({ ...prev, [name]: "" }));
@@ -487,136 +515,136 @@ const AddUser = () => {
   }, []);
 
   const handleSubmit = useCallback(
-  async (e) => {
-    e.preventDefault();
-    const validationErrors = validate();
-    setErrors(validationErrors);
-    if (Object.keys(validationErrors).length > 0) return;
+    async (e) => {
+      e.preventDefault();
+      const validationErrors = validate();
+      setErrors(validationErrors);
+      if (Object.keys(validationErrors).length > 0) return;
 
-    setSubmitting(true);
-    const token = localStorage.getItem("token");
-    const userId = localStorage.getItem("userId");
-    const formData = new FormData();
+      setSubmitting(true);
+      const token = localStorage.getItem("token");
+      const userId = localStorage.getItem("userId");
+      const formData = new FormData();
 
-    let documentMetadata = [];
-    if (nProfileImage) {
-      if (existingDocuments.length > 0 && existingDocuments[0]?.documentId) {
-        documentMetadata.push({
+      let documentMetadata = [];
+      if (nProfileImage) {
+        if (existingDocuments.length > 0 && existingDocuments[0]?.documentId) {
+          documentMetadata.push({
+            image: "profile-image",
+            sortOrder: 1,
+            DocumentID: existingDocuments[0].documentId,
+          });
+        } else {
+          documentMetadata.push({
+            image: "profile-image",
+            sortOrder: 1,
+          });
+        }
+      } else if (removedDocumentIds.length > 0) {
+        const remainingDocuments = existingDocuments.filter(
+          (doc) => !removedDocumentIds.includes(doc.documentId)
+        );
+        documentMetadata = remainingDocuments.map((doc, index) => ({
           image: "profile-image",
-          sortOrder: 1,
-          DocumentID: existingDocuments[0].documentId,
-        });
-      } else {
-        documentMetadata.push({
-          image: "profile-image",
-          sortOrder: 1,
-        });
+          sortOrder: doc.sortOrder || index + 1,
+          DocumentID: doc.documentId,
+        }));
       }
-    } else if (removedDocumentIds.length > 0) {
-      const remainingDocuments = existingDocuments.filter(
-        (doc) => !removedDocumentIds.includes(doc.documentId)
-      );
-      documentMetadata = remainingDocuments.map((doc, index) => ({
-        image: "profile-image",
-        sortOrder: doc.sortOrder || index + 1,
-        DocumentID: doc.documentId,
-      }));
-    }
 
-    // Base user data structure - updated to include gender
-    const userData = {
-      FirstName: oFormData.firstName || "",
-      LastName: oFormData.lastName || "",
-      Email: oFormData.email || "",
-      PhoneNumber: oFormData.phone || "",
-      AddressLine: oFormData.streetAddress || "",
-      CityID: oFormData.city ? parseInt(oFormData.city, 10) : 0,
-      StateID: oFormData.state ? parseInt(oFormData.state, 10) : 0,
-      CountryID: oFormData.country ? parseInt(oFormData.country, 10) : 0,
-      Zipcode: oFormData.pincode || "",
-      RoleID: oFormData.role || "",
-      StoreIDs: oFormData.stores || [],
-      IsActive: oFormData.IsActive !== undefined ? oFormData.IsActive : true,
-      documentMetadata: documentMetadata,
-      Gender: oFormData.gender || "", // Include gender in API payload
-    };
+      // Base user data structure - updated to include gender
+      const userData = {
+        FirstName: oFormData.firstName || "",
+        LastName: oFormData.lastName || "",
+        Email: oFormData.email || "",
+        PhoneNumber: oFormData.phone || "",
+        AddressLine: oFormData.streetAddress || "",
+        CityID: oFormData.city ? parseInt(oFormData.city, 10) : 0,
+        StateID: oFormData.state ? parseInt(oFormData.state, 10) : 0,
+        CountryID: oFormData.country ? parseInt(oFormData.country, 10) : 0,
+        Zipcode: oFormData.pincode || "",
+        RoleID: oFormData.role || "",
+        StoreIDs: oFormData.stores || [],
+        IsActive: oFormData.IsActive !== undefined ? oFormData.IsActive : true,
+        documentMetadata: documentMetadata,
+        Gender: oFormData.gender || "", // Include gender in API payload
+      };
 
-    // Add UserID for update and handle password differently
-    if (id) {
-      // Update operation - hide password field
-      userData.UserID = id;
-      userData.UpdatedBy = userId;
-      
-      // Only include password if provided during update (optional field)
-      if (oFormData.password && oFormData.password.trim() !== "") {
-        userData.Password = md5(oFormData.password);
-      }
-      // If password is not provided, don't include it in the payload
-    } else {
-      // Create operation - password is required
-      userData.Password = oFormData.password ? md5(oFormData.password) : "";
-      userData.CreatedBy = userId;
-    }
-
-    formData.append("data", JSON.stringify(userData));
-
-    if (nProfileImage) {
-      formData.append("profile-image", nProfileImage);
-    }
-
-    try {
-      let oResponse;
-
+      // Add UserID for update and handle password differently
       if (id) {
-        // Use PUT for update with updateUser endpoint
-        oResponse = await apiPut(
-          UPDATE_USER,
-          formData,
-          token,
-          true // multipart/form-data
-        );
+        // Update operation - hide password field
+        userData.UserID = id;
+        userData.UpdatedBy = userId;
+
+        // Only include password if provided during update (optional field)
+        if (oFormData.password && oFormData.password.trim() !== "") {
+          userData.Password = md5(oFormData.password);
+        }
+        // If password is not provided, don't include it in the payload
       } else {
-        // Use POST for create with createUser endpoint
-        oResponse = await apiPost(
-          CREATE_USER,
-          formData,
-          token,
-          true // multipart/form-data
-        );
+        // Create operation - password is required
+        userData.Password = oFormData.password ? md5(oFormData.password) : "";
+        userData.CreatedBy = userId;
       }
 
-      const resData = oResponse?.data;
+      formData.append("data", JSON.stringify(userData));
 
-      if (resData?.status === STATUS.SUCCESS.toUpperCase()) {
-        setRemovedDocumentIds([]);
-        showEmsg(resData?.message, STATUS.SUCCESS, 3000, async () => {
-          navigate("/users");
-        });
-      } else {
-        showEmsg(
-          resData?.message || t("COMMON.FAILED_OPERATION"),
-          STATUS.WARNING
-        );
+      if (nProfileImage) {
+        formData.append("profile-image", nProfileImage);
       }
-    } catch (error) {
-      console.error("API Error:", error);
-      const backendMessage = error?.response?.data?.message;
-      showEmsg(backendMessage || t("COMMON.ERROR_MESSAGE"), STATUS.ERROR);
-    } finally {
-      hideLoaderWithDelay(setSubmitting);
-    }
-  },
-  [
-    validate,
-    id,
-    oFormData,
-    nProfileImage,
-    existingDocuments,
-    removedDocumentIds,
-    t,
-    navigate,
-  ]
-);
+
+      try {
+        let oResponse;
+
+        if (id) {
+          // Use PUT for update with updateUser endpoint
+          oResponse = await apiPut(
+            UPDATE_USER,
+            formData,
+            token,
+            true // multipart/form-data
+          );
+        } else {
+          // Use POST for create with createUser endpoint
+          oResponse = await apiPost(
+            CREATE_USER,
+            formData,
+            token,
+            true // multipart/form-data
+          );
+        }
+
+        const resData = oResponse?.data;
+
+        if (resData?.status === STATUS.SUCCESS.toUpperCase()) {
+          setRemovedDocumentIds([]);
+          showEmsg(resData?.message, STATUS.SUCCESS, 3000, async () => {
+            navigate("/users");
+          });
+        } else {
+          showEmsg(
+            resData?.message || t("COMMON.FAILED_OPERATION"),
+            STATUS.WARNING
+          );
+        }
+      } catch (error) {
+        console.error("API Error:", error);
+        const backendMessage = error?.response?.data?.message;
+        showEmsg(backendMessage || t("COMMON.ERROR_MESSAGE"), STATUS.ERROR);
+      } finally {
+        hideLoaderWithDelay(setSubmitting);
+      }
+    },
+    [
+      validate,
+      id,
+      oFormData,
+      nProfileImage,
+      existingDocuments,
+      removedDocumentIds,
+      t,
+      navigate,
+    ]
+  );
 
   return (
     <div className="max-w-8xl mx-auto">
@@ -907,7 +935,11 @@ const AddUser = () => {
                         </ul>
                         {passwordStrength !== "strong" && (
                           <div
-                            style={{ color: "#dc2626", fontSize: 12, marginTop: 2 }}
+                            style={{
+                              color: "#dc2626",
+                              fontSize: 12,
+                              marginTop: 2,
+                            }}
                           >
                             {t("COMMON.PASSWORD_SUGGESTION")}
                           </div>
@@ -952,7 +984,9 @@ const AddUser = () => {
                   Icon={Building}
                   error={oErrors.country || countriesError}
                   placeholder={
-                    countriesLoading ? t("COMMON.LOADING") : t("COMMON.SELECT_COUNTRY")
+                    countriesLoading
+                      ? t("COMMON.LOADING")
+                      : t("COMMON.SELECT_COUNTRY")
                   }
                   disabled={countriesLoading}
                 />
@@ -964,11 +998,16 @@ const AddUser = () => {
                   name="state"
                   value={oFormData.state}
                   onChange={handleChange}
-                  options={states.map((s) => ({ value: s.StateID, label: s.StateName }))}
+                  options={states.map((s) => ({
+                    value: s.StateID,
+                    label: s.StateName,
+                  }))}
                   Icon={Building}
                   error={oErrors.state || statesError}
                   placeholder={
-                    statesLoading ? t("COMMON.LOADING") : t("COMMON.SELECT_STATE")
+                    statesLoading
+                      ? t("COMMON.LOADING")
+                      : t("COMMON.SELECT_STATE")
                   }
                   disabled={statesLoading || !oFormData.country}
                 />
@@ -980,11 +1019,16 @@ const AddUser = () => {
                   name="city"
                   value={oFormData.city}
                   onChange={handleChange}
-                  options={cities.map((c) => ({ value: c.CityID, label: c.CityName }))}
+                  options={cities.map((c) => ({
+                    value: c.CityID,
+                    label: c.CityName,
+                  }))}
                   Icon={Building}
                   error={oErrors.city || citiesError}
                   placeholder={
-                    citiesLoading ? t("COMMON.LOADING") : t("COMMON.SELECT_CITY")
+                    citiesLoading
+                      ? t("COMMON.LOADING")
+                      : t("COMMON.SELECT_CITY")
                   }
                   disabled={citiesLoading || !oFormData.state}
                 />

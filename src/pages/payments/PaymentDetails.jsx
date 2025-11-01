@@ -20,7 +20,7 @@ import { useTranslation } from "react-i18next";
 import BackButton from "../../components/BackButton";
 import { apiGet } from "../../utils/ApiUtils";
 import { GET_PAYMENT_BYID } from "../../contants/apiRoutes";
-import { DATE_FORMAT_OPTIONS, STATUS } from "../../contants/constants";
+import { DATE_FORMAT_OPTIONS, LOCALE, STATUS } from "../../contants/constants";
 
 const PaymentDetails = () => {
   const { id } = useParams();
@@ -69,7 +69,7 @@ const PaymentDetails = () => {
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString(
-      "en-US",
+      LOCALE,
       DATE_FORMAT_OPTIONS
     );
   };
@@ -133,9 +133,7 @@ const PaymentDetails = () => {
   const getPaymentMethodDisplayName = (method) => {
     return (
       method?.PaymentMethodName ||
-      t("PAYMENTS.METHOD_NOT_SPECIFIED") ||
-      "Payment Method Not Specified"
-    );
+      t("PAYMENTS.METHOD_NOT_SPECIFIED"));
   };
 
   const getPaymentMethodDescription = (method) => {

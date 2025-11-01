@@ -164,7 +164,6 @@ const Dashboard = () => {
           return t("DASHBOARD.VSLASTXDAYS", { count: diffDays });
       }
     } catch (error) {
-      console.error("Error calculating comparison text:", error);
       return t("DASHBOARD.COMPARISONTEXT");
     }
   };
@@ -232,13 +231,6 @@ const Dashboard = () => {
         endDate: formatDateToAPI(endDate),
       };
 
-      // Debug logging
-      console.log('Dashboard date params:', {
-        rawDates: value,
-        apiDates: dateParams,
-        comparisonText
-      });
-
       // Get token from localStorage
       const token = localStorage.getItem("token");
 
@@ -251,7 +243,6 @@ const Dashboard = () => {
             type: "revenue",
           }))
           .catch((error) => {
-            console.error("Revenue API error:", error);
             return {
               type: "revenue",
               data: {
@@ -269,7 +260,6 @@ const Dashboard = () => {
             type: "orders",
           }))
           .catch((error) => {
-            console.error("Orders API error:", error);
             return {
               type: "orders",
               data: {
@@ -287,7 +277,6 @@ const Dashboard = () => {
             type: "customers",
           }))
           .catch((error) => {
-            console.error("Customers API error:", error);
             return {
               type: "customers",
               data: {
@@ -305,7 +294,6 @@ const Dashboard = () => {
             type: "recentOrders",
           }))
           .catch((error) => {
-            console.error("Recent orders API error:", error);
             return { type: "recentOrders", data: [] };
           }),
 
@@ -316,7 +304,6 @@ const Dashboard = () => {
             type: "topProducts",
           }))
           .catch((error) => {
-            console.error("Top products API error:", error);
             return { type: "topProducts", data: [] };
           }),
       ];
@@ -497,7 +484,6 @@ const Dashboard = () => {
 
       setLowStockItems(lowStock);
     } catch (err) {
-      console.error("Dashboard data fetch error:", err);
       setError(t("DASHBOARD.FAILED_TO_LOAD"));
     } finally {
       setIsLoading(false);
@@ -506,7 +492,6 @@ const Dashboard = () => {
 
   // Handle date change - ensure proper date objects
   const handleDateChange = (newValue) => {
-    console.log('Date picker new value:', newValue);
     setValue(newValue);
   };
 

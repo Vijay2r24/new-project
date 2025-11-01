@@ -17,7 +17,12 @@ import {
   GET_BRAND_BY_ID,
   UPDATE_BRAND,
 } from "../../../contants/apiRoutes";
-import { STATUS, STATUS_VALUES, STATUS_OPTIONS } from "../../../contants/constants";
+import {
+  STATUS,
+  STATUS_VALUES,
+  STATUS_OPTIONS,
+  FILE_CONSTANTS,
+} from "../../../contants/constants";
 
 import { ToastContainer } from "react-toastify";
 
@@ -54,6 +59,9 @@ const CreateBrand = () => {
   // Cropper modal state
   const [bShowCropper, setShowCropper] = useState(false);
   const [oImageToCrop, setImageToCrop] = useState(null);
+  const croppedFileName = `${
+    FILE_CONSTANTS.BRAND_LOGO_PREFIX
+  }-${Date.now()}.jpg`;
 
   /**
    * Fetch brand details if editing
@@ -144,7 +152,7 @@ const CreateBrand = () => {
     }
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
+    if (!file.type.startsWith("image/")) {
       setErrors((prev) => ({
         ...prev,
         BrandLogo: t("PRODUCT_SETUP.CREATE_BRAND.IMAGE_TYPE_ERROR"),
@@ -169,10 +177,10 @@ const CreateBrand = () => {
 
     // Create preview URL from cropped blob
     const croppedImageUrl = URL.createObjectURL(croppedBlob);
-    
+
     // Create a File object from the blob for form submission
-    const croppedFile = new File([croppedBlob], `brand-logo-${Date.now()}.jpg`, {
-      type: "image/jpeg",
+    const croppedFile = new File([croppedBlob], croppedFileName, {
+      type: FILE_CONSTANTS.FILE_TYPE,
       lastModified: Date.now(),
     });
 
@@ -185,13 +193,13 @@ const CreateBrand = () => {
 
     // Set preview
     setImagePreview(croppedImageUrl);
-    
+
     // Clear any existing errors
     setErrors((prev) => ({ ...prev, BrandLogo: "" }));
-    
+
     // Close cropper
     setShowCropper(false);
-    
+
     // Clean up the original image URL
     if (oImageToCrop) {
       URL.revokeObjectURL(oImageToCrop);
@@ -204,13 +212,13 @@ const CreateBrand = () => {
    */
   const handleCropCancel = () => {
     setShowCropper(false);
-    
+
     // Clean up the image URL
     if (oImageToCrop) {
       URL.revokeObjectURL(oImageToCrop);
       setImageToCrop(null);
     }
-    
+
     // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -235,7 +243,7 @@ const CreateBrand = () => {
     }));
     setImagePreview(null);
     setErrors((prev) => ({ ...prev, BrandLogo: "" }));
-    
+
     // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -283,17 +291,27 @@ const CreateBrand = () => {
       documentMetadata.push({
         image: "brand_image",
         sortOrder: 1,
-        ...(isEditing && oFormData.existingLogoDocumentId && {
-          DocumentID: oFormData.existingLogoDocumentId,
-        }),
+        ...(isEditing &&
+          oFormData.existingLogoDocumentId && {
+            DocumentID: oFormData.existingLogoDocumentId,
+          }),
       });
-    } else if (isEditing && !sImagePreview && oFormData.existingLogoDocumentId) {
+    } else if (
+      isEditing &&
+      !sImagePreview &&
+      oFormData.existingLogoDocumentId
+    ) {
       // Editing and image removed - send remove action with documentId
       documentMetadata.push({
         action: "remove",
         DocumentID: oFormData.existingLogoDocumentId,
       });
-    } else if (isEditing && sImagePreview && !oFormData.BrandLogo && oFormData.existingLogoDocumentId) {
+    } else if (
+      isEditing &&
+      sImagePreview &&
+      !oFormData.BrandLogo &&
+      oFormData.existingLogoDocumentId
+    ) {
       // Editing but keeping existing image - don't include documentMetadata at all
     }
 
@@ -332,19 +350,9 @@ const CreateBrand = () => {
       let response;
 
       if (isEditing) {
-        response = await apiPut(
-          UPDATE_BRAND,
-          dataToSend,
-          token,
-          true
-        );
+        response = await apiPut(UPDATE_BRAND, dataToSend, token, true);
       } else {
-        response = await apiPost(
-          CREATE_BRAND,
-          dataToSend,
-          token,
-          true
-        );
+        response = await apiPost(CREATE_BRAND, dataToSend, token, true);
       }
 
       const responseStatus = response.data.STATUS || response.data.status;
@@ -374,11 +382,12 @@ const CreateBrand = () => {
   };
 
   // Prepare status options
-  const statusOptions = STATUS_OPTIONS.filter(option => option.value !== STATUS_VALUES.ALL)
-    .map(option => ({
-      value: option.value.toString(),
-      label: t(option.labelKey)
-    }));
+  const statusOptions = STATUS_OPTIONS.filter(
+    (option) => option.value !== STATUS_VALUES.ALL
+  ).map((option) => ({
+    value: option.value.toString(),
+    label: t(option.labelKey),
+  }));
 
   // Show loader overlay while submitting
   const loaderOverlay = bSubmitting && (
@@ -391,7 +400,7 @@ const CreateBrand = () => {
     <div className="bg-gray-50 min-h-screen">
       {loaderOverlay}
       {isEditing && <ToastContainer />}
-      
+
       {/* Image Cropper Modal */}
       {bShowCropper && (
         <ImageCropperModal
@@ -490,7 +499,7 @@ const CreateBrand = () => {
               <div
                 className={`relative group rounded-xl border-2 ${
                   oErrors.BrandLogo ? "border-red-300" : "border-gray-200"
-                } border-dashed transition-all duration-200 hover:border-[#5B45E0] bg-gray-50 hover:bg-gray-50/50`}
+                } border-dashed transition-all duration-200 hover:border-bg-hover bg-gray-50 hover:bg-gray-50/50`}
               >
                 <div className="p-6">
                   <div className="space-y-3 text-center">
@@ -498,7 +507,7 @@ const CreateBrand = () => {
                     {!sImagePreview && (
                       <div className="flex justify-center">
                         <div className="p-3 rounded-full bg-white shadow-sm border border-gray-100">
-                          <Image className="h-8 w-8 text-gray-400 group-hover:text-[#5B45E0] transition-colors duration-200" />
+                          <Image className="h-8 w-8 text-gray-400 group-hover:text-custom-bg transition-colors duration-200" />
                         </div>
                       </div>
                     )}
@@ -510,7 +519,7 @@ const CreateBrand = () => {
                           <div className="flex text-sm text-gray-600 justify-center">
                             <label
                               htmlFor="file-upload"
-                              className="relative cursor-pointer rounded-md font-medium text-[#5B45E0] hover:text-[#4c39c7] underline"
+                              className="relative cursor-pointer rounded-md font-medium text-custom-bg hover:text-[#4c39c7] underline"
                             >
                               <span>{t("COMMON.UPLOAD")}</span>
                               <input
@@ -548,7 +557,7 @@ const CreateBrand = () => {
                             </button>
                           </div>
                           <p className="text-xs text-gray-500 mt-2">
-                            Click the X to remove or upload a different image
+                           {t("COMMON.REMOVE_OR_UPLOAD_IMAGE")}
                           </p>
                         </>
                       )}

@@ -151,17 +151,6 @@ const SelectWithIcon = forwardRef(({
     };
   }, []);
 
-  // Checkbox component for options
-  const Checkbox = ({ checked, isHighlighted }) => (
-    <div className={`flex items-center justify-center w-4 h-4 border rounded ${checked ? 'bg-custom-bg border-custom-bg' : 'border-gray-300'} ${isHighlighted ? 'border-white' : ''}`}>
-      {checked && (
-        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-        </svg>
-      )}
-    </div>
-  );
-
   return (
     <div className="w-full mt-4 md:mt-0">
       <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-2">
@@ -271,7 +260,7 @@ const SelectWithIcon = forwardRef(({
               <div className="text-center py-4 text-gray-500">{t('COMMON.NO_OPTIONS_FOUND')}</div>
             ) : (
               <ul tabIndex="-1" role="listbox" className="py-1" ref={optionsRef}>
-                {/* Select All Button */}
+                {/* Select All Button - Only for multiple selection */}
                 {shouldShowSelectAll && (
                   <li
                     className={`cursor-default select-none relative py-2 pl-4 pr-4 ${nHighlightedIndex === -1 ? 'bg-custom-bg text-white' : 'text-gray-900'} border-b border-gray-100`}
@@ -295,30 +284,46 @@ const SelectWithIcon = forwardRef(({
                   </li>
                 )}
                 
-                {/* Regular Options with Checkboxes */}
+                {/* Options */}
                 {filteredOptions.map((opt, index) => {
                   const displayIndex = index + (shouldShowSelectAll ? 1 : 0);
-                  const isSelected = multiple && Array.isArray(value) && value.includes(opt.value);
+                  const isSelected = multiple 
+                    ? Array.isArray(value) && value.includes(opt.value)
+                    : value === opt.value;
                   const isHighlighted = displayIndex === nHighlightedIndex;
                   
                   return (
                     <li
                       key={opt.value}
-                      className={`cursor-default select-none relative py-2 pl-12 pr-4 ${isHighlighted ? 'bg-custom-bg text-white' : 'text-gray-900'} ${isSelected ? 'bg-blue-50' : ''}`}
+                      className={`cursor-default select-none relative py-2 ${multiple ? 'pl-12 pr-4' : 'pl-4 pr-4'} ${isHighlighted ? 'bg-custom-bg text-white' : 'text-gray-900'} ${isSelected ? 'bg-blue-50' : ''}`}
                       onClick={() => handleSelect(opt.value)}
                       onMouseEnter={() => setHighlightedIndex(displayIndex)}
                       role="option"
                       aria-selected={isSelected}
                     >
                       <div className="flex items-center">
-                        {/* Checkbox */}
-                        <div className="absolute left-0 flex items-center pl-3">
-                          <Checkbox 
-                            checked={isSelected} 
-                            isHighlighted={isHighlighted}
-                          />
-                        </div>
+                        {/* Checkbox - Only for multiple selection */}
+                        {multiple && (
+                          <div className="absolute left-0 flex items-center pl-3">
+                            <div className={`flex items-center justify-center w-4 h-4 border rounded ${isSelected ? 'bg-custom-bg border-custom-bg' : 'border-gray-300'} ${isHighlighted ? 'border-white' : ''}`}>
+                              {isSelected && (
+                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </div>
+                          </div>
+                        )}
                         <span className="block truncate">{opt.label}</span>
+                        
+                        {/* Checkmark for single selection */}
+                        {!multiple && isSelected && (
+                          <span className="absolute inset-y-0 right-0 flex items-center pr-3">
+                            <svg className="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          </span>
+                        )}
                       </div>
                     </li>
                   );

@@ -226,7 +226,6 @@ const Payments = () => {
   };
 
   const handlePageClick = (page) => {
-    console.log("Page clicked:", page); // Debug log
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
       // Scroll to top when page changes
@@ -270,7 +269,6 @@ const Payments = () => {
         setTotalPages(response.data.pagination?.totalPages || 1);
       }
     } catch (err) {
-      console.error("Error fetching payments:", err);
     } finally {
       setPaymentsLoading(false);
     }
@@ -283,7 +281,6 @@ const Payments = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    console.log("Current page changed:", currentPage); // Debug log
     const loadPayments = async () => {
       setFilterLoading(true);
       await fetchPaymentsData();

@@ -176,3 +176,17 @@ export const TIME_PERIODS = {
     LAST_24_HOURS: -24
   }
 };
+export const GENDER_OPTIONS = [
+  { value: "Male", labelKey: "ADD_USER.GENDER_MALE" },
+  { value: "Female", labelKey: "ADD_USER.GENDER_FEMALE" },
+  { value: "Other", labelKey: "ADD_USER.GENDER_OTHER" },
+];
+export const VIEW_MODES = {
+  TABLE: "table",
+  GRID: "grid",
+};
+export const FILE_CONSTANTS = {
+  BRAND_LOGO_PREFIX: "brand-logo",
+  CATEGORY_IMAGE_PREFIX: "category-image",
+  FILE_TYPE: "image/jpeg",
+};

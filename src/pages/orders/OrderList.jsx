@@ -124,7 +124,7 @@ const OrderList = () => {
       options: getPaymentStatusOptions(),
     },
     {
-      label: "Date Range",
+      label: t("ORDERS.FILTERS.DATE_RANGE"),
       name: "dateRange",
       value: { startDate: oFilters.startDate, endDate: oFilters.endDate },
       type: "date",
@@ -196,7 +196,6 @@ const OrderList = () => {
         // Map orders directly without flattening order items
         const formattedOrders = orders.map((order) => ({
           orderId: order.OrderID,
-          // orderDate: order.OrderDate,
           formattedOrderDate: formatOrderDateTime(order.OrderDate),
           totalAmount: order.TotalAmount,
           formattedTotalAmount: formatCurrency(order.TotalAmount),
@@ -351,12 +350,12 @@ const OrderList = () => {
 
       {bShowExportPanel && (
         <ExportPanel
-          title={t("ORDERS.TITLE") + " – Date Range"}
+          title={t("ORDERS.TITLE") + " – " + t("ORDERS.FILTERS.DATE_RANGE")}
           value={oExportDate}
           onChange={(val) => setExportDate(val)}
           onCancel={() => setShowExportPanel(false)}
           onConfirm={handleConfirmExportOrders}
-          confirmLabel="Download"
+          confirmLabel={t("COMMON.DOWNLOAD")}
         />
       )}
 
@@ -440,7 +439,7 @@ const OrderList = () => {
                         </td>
                         <td className="table-cell">
                           <div className="text-sm text-gray-700 truncate max-w-[200px]">
-                            {order.customerName || "Unknown Customer"}
+                            {order.customerName || t("COMMON.UNKNOWN_CUSTOMER")}
                           </div>
                           <div className="text-xs text-gray-500 truncate max-w-[200px]">
                             {order.email}
@@ -479,7 +478,7 @@ const OrderList = () => {
                           <td colSpan="8" className="px-6 py-4">
                             <div className="mb-3">
                               <div className="text-sm font-semibold text-gray-700 mb-2">
-                                Order Items ({order.totalOrderItems}):
+                                {t("COMMON.ORDER_ITEMS")} ({order.totalOrderItems}):
                               </div>
                               <div className="space-y-3">
                                 {order.orderItems.map((item) => (
@@ -492,12 +491,12 @@ const OrderList = () => {
                                         {item.ProductName}
                                       </div>
                                       <div className="text-xs text-gray-600 mt-1">
-                                        Order Item ID: {item.OrderItemID}
+                                        {t("ORDERS.TABLE.ORDER_NUMBER")}: {item.OrderItemID}
                                       </div>
                                     </div>
                                     <div className="flex items-center space-x-4 ml-4">
                                       <div className="text-sm font-medium text-gray-700">
-                                        Qty: {item.Quantity}
+                                        {t("COMMON.QUANTITY")}: {item.Quantity}
                                       </div>
                                       <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getOrderItemStatusColor(item.OrderStatus)}`}>
                                         {item.OrderStatus}
@@ -560,7 +559,7 @@ const OrderList = () => {
                 </div>
 
                 <div className="text-sm text-gray-600">
-                  <strong>Payment Date:</strong> {order.formattedPaymentDate}
+                  <strong>{t("ORDERS.TABLE.PAYMENT_DATE")}</strong> {order.formattedPaymentDate}
                 </div>
 
                 <div className="mt-2">
@@ -576,7 +575,7 @@ const OrderList = () => {
                   {/* Order Items Section - Each item on separate line */}
                   <div className="mt-3">
                     <div className="text-sm font-semibold text-gray-700 mb-2">
-                      Order Items ({order.totalOrderItems}):
+                      {t("COMMON.ORDER_ITEMS")} ({order.totalOrderItems}):
                     </div>
                     <div className="space-y-2">
                       {order.orderItems.map((item) => (
@@ -588,7 +587,7 @@ const OrderList = () => {
                             {item.ProductName}
                           </div>
                           <div className="flex justify-between items-center text-xs text-gray-600 mt-1">
-                            <span>Quantity: {item.Quantity}</span>
+                            <span>{t("COMMON.QUANTITY")}: {item.Quantity}</span>
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getOrderItemStatusColor(item.OrderStatus)}`}>
                               {item.OrderStatus}
                             </span>
@@ -603,7 +602,7 @@ const OrderList = () => {
                       {order.formattedTotalAmount}
                     </div>
                     <div className="text-sm text-gray-600">
-                      Total Items: {order.totalQuantity}
+                      {t("COMMON.TOTAL_ITEMS")}: {order.totalQuantity}
                     </div>
                   </div>
                 </div>
