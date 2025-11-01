@@ -6,7 +6,6 @@ import LocationDataProvider from "./context/LocationDataProvider";
 import ProtectedRoute from './components/ProtectedRoute';
 import NotAuthorized from './pages/NotAuthorized';
 import { getPermissionCode } from './utils/permissionUtils';
-import Loader from './components/Loader';
 import { Provider } from "react-redux";            // glue to connect Redux store to React
 import { store } from "./store/index";             // the store we made
 
@@ -75,25 +74,13 @@ const updateProductGroupPermission = getPermissionCode('Product Management', 'Up
 
 const App = () => {
   const location = useLocation();
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    setLoading(true);
-    const timer = setTimeout(() => setLoading(false), 600);
-    return () => clearTimeout(timer);
-  }, [location]);
 
   return (
     <Provider store={store}>
     <AllDataProvider>
       <TitleProvider>
         <LocationDataProvider>
-          {loading && (
-            <div className="global-loader-overlay">
-              <Loader />
-            </div>
-          )}
-          <Suspense fallback={<div className="global-loader-overlay"><Loader /></div>}>
+          <Suspense>
             <Routes>
               <Route path="/" element={<Login />} />
 

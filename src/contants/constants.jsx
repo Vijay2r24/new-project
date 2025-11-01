@@ -102,3 +102,91 @@ export const LOCALES = {
   ENGLISH_US: 'en-US',
   ENGLISH_INDIA: 'en-IN'
 };
+export const customShortcuts = [
+  {
+    label: 'Today',
+    getValue: () => {
+      const today = new Date();
+      return [today, today];
+    },
+  },
+  {
+    label: 'Yesterday',
+    getValue: () => {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      return [yesterday, yesterday];
+    },
+  },
+  {
+    label: 'Last 7 Days',
+    getValue: () => {
+      const end = new Date();
+      const start = new Date();
+      start.setDate(start.getDate() - 6);
+      return [start, end];
+    },
+  },
+  {
+    label: 'This Month',
+    getValue: () => {
+      const start = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+      const end = new Date();
+      return [start, end];
+    },
+  },
+  {
+    label: 'Last Month',
+    getValue: () => {
+      const now = new Date();
+      const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const end = new Date(now.getFullYear(), now.getMonth(), 0);
+      return [start, end];
+    },
+  },
+];
+// datePickerConstants.js
+export const SHORTCUT_LABELS = {
+  TODAY: "Today",
+  YESTERDAY: "Yesterday",
+  LAST_7_DAYS: "Last 7 days",
+  LAST_30_DAYS: "Last 30 days",
+  THIS_MONTH: "This month",
+  LAST_HOUR: "Last 1 hour",
+  LAST_2_HOURS: "Last 2 hours",
+  LAST_3_HOURS: "Last 3 hours",
+  LAST_6_HOURS: "Last 6 hours",
+  LAST_12_HOURS: "Last 12 hours",
+  LAST_24_HOURS: "Last 24 hours"
+};
+
+export const TIME_PERIODS = {
+  DAYS: {
+    TODAY: 0,
+    YESTERDAY: -1,
+    LAST_7_DAYS: -6,
+    LAST_30_DAYS: -29
+  },
+  HOURS: {
+    LAST_HOUR: -1,
+    LAST_2_HOURS: -2,
+    LAST_3_HOURS: -3,
+    LAST_6_HOURS: -6,
+    LAST_12_HOURS: -12,
+    LAST_24_HOURS: -24
+  }
+};
+export const GENDER_OPTIONS = [
+  { value: "Male", labelKey: "ADD_USER.GENDER_MALE" },
+  { value: "Female", labelKey: "ADD_USER.GENDER_FEMALE" },
+  { value: "Other", labelKey: "ADD_USER.GENDER_OTHER" },
+];
+export const VIEW_MODES = {
+  TABLE: "table",
+  GRID: "grid",
+};
+export const FILE_CONSTANTS = {
+  BRAND_LOGO_PREFIX: "brand-logo",
+  CATEGORY_IMAGE_PREFIX: "category-image",
+  FILE_TYPE: "image/jpeg",
+};

@@ -1,9 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Tag, Info, Image, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchResource, clearResourceError } from "../../../store/slices/allDataSlice";
+import {
+  fetchResource,
+  clearResourceError,
+} from "../../../store/slices/allDataSlice";
 import {
   GET_CATEGORY_BY_ID,
   CREATE_CATEGORY,
@@ -18,6 +21,7 @@ import TextInputWithIcon from "../../../components/TextInputWithIcon";
 import SelectWithIcon from "../../../components/SelectWithIcon";
 import TextAreaWithIcon from "../../../components/TextAreaWithIcon";
 import BackButton from "../../../components/BackButton";
+import ImageCropperModal from "../../../components/ImageCropperModal"; // Import the cropper modal
 import { ToastContainer } from "react-toastify";
 import Loader from "../../../components/Loader";
 
@@ -31,7 +35,7 @@ const defaultFormData = {
   CreatedBy: "",
   UpdatedBy: "",
   existingImage: null,
-  existingImageDocumentId: null, 
+  existingImageDocumentId: null,
 };
 
 const CreateCategory = () => {
@@ -40,14 +44,20 @@ const CreateCategory = () => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const isEditing = !!categoryId;
+  const fileInputRef = useRef(null);
 
   const [oFormData, setFormData] = useState(defaultFormData);
   const [oErrors, setErrors] = useState({});
   const [sImagePreview, setImagePreview] = useState(null);
   const [bSubmitting, setSubmitting] = useState(false);
+  // Cropper modal state
+  const [bShowCropper, setShowCropper] = useState(false);
+  const [oImageToCrop, setImageToCrop] = useState(null);
 
   // Redux state for categories
-  const categoriesState = useSelector((state) => state.allData.resources.categories);
+  const categoriesState = useSelector(
+    (state) => state.allData.resources.categories
+  );
   const aCategories = categoriesState?.data || [];
   const bLoadingCategories = categoriesState?.loading || false;
   const categoriesError = categoriesState?.error;
@@ -63,11 +73,19 @@ const CreateCategory = () => {
       if (categoriesError) {
         dispatch(clearResourceError("categories"));
       }
-      if (sImagePreview && typeof sImagePreview === "string" && sImagePreview.startsWith("blob:")) {
+      if (
+        sImagePreview &&
+        typeof sImagePreview === "string" &&
+        sImagePreview.startsWith("blob:")
+      ) {
         URL.revokeObjectURL(sImagePreview);
       }
+      // Cleanup cropper image URL
+      if (oImageToCrop) {
+        URL.revokeObjectURL(oImageToCrop);
+      }
     };
-  }, [categoriesError, sImagePreview, dispatch]);
+  }, [categoriesError, sImagePreview, oImageToCrop, dispatch]);
 
   // Fetch category by ID (for edit)
   useEffect(() => {
@@ -75,7 +93,11 @@ const CreateCategory = () => {
       try {
         setSubmitting(true);
         const token = localStorage.getItem("token");
-        const { data } = await apiGet(`${GET_CATEGORY_BY_ID}/${categoryId}`, {}, token);
+        const { data } = await apiGet(
+          `${GET_CATEGORY_BY_ID}/${categoryId}`,
+          {},
+          token
+        );
 
         if (data.status === STATUS.SUCCESS.toUpperCase()) {
           const categoryData = data.data;
@@ -96,7 +118,10 @@ const CreateCategory = () => {
             let existingImageData = null;
             let existingDocumentId = null;
 
-            if (categoryData.documentMetadata && categoryData.documentMetadata.length > 0) {
+            if (
+              categoryData.documentMetadata &&
+              categoryData.documentMetadata.length > 0
+            ) {
               existingImageData = categoryData.documentMetadata[0];
               existingDocumentId = categoryData.documentMetadata[0].documentId;
             } else if (categoryData.CategoryImages?.length > 0) {
@@ -105,10 +130,10 @@ const CreateCategory = () => {
             }
 
             if (existingImageData) {
-              setFormData(prev => ({
+              setFormData((prev) => ({
                 ...prev,
                 existingImage: existingImageData,
-                existingImageDocumentId: existingDocumentId // Store documentId separately
+                existingImageDocumentId: existingDocumentId, // Store documentId separately
               }));
               setImagePreview(existingImageData.documentUrl);
             }
@@ -116,7 +141,8 @@ const CreateCategory = () => {
         }
       } catch (err) {
         const errorMsg =
-          err?.response?.data?.message || t("PRODUCT_SETUP.CREATE_CATEGORY.UNEXPECTED_ERROR");
+          err?.response?.data?.message ||
+          t("PRODUCT_SETUP.CREATE_CATEGORY.UNEXPECTED_ERROR");
         setErrors((prev) => ({ ...prev, api: errorMsg }));
       } finally {
         hideLoaderWithDelay(setSubmitting);
@@ -140,10 +166,14 @@ const CreateCategory = () => {
     }
   };
 
+  /**
+   * File upload handler - opens cropper instead of directly setting
+   */
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       setErrors((prev) => ({
         ...prev,
@@ -152,149 +182,245 @@ const CreateCategory = () => {
       return;
     }
 
-    // Clear image error when valid file is selected
-    setErrors((prev) => ({ ...prev, CategoryImage: "" }));
-    setFormData((prev) => ({ 
-      ...prev, 
-      CategoryImage: file,
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      setErrors((prev) => ({
+        ...prev,
+        CategoryImage: t("PRODUCT_SETUP.CREATE_CATEGORY.IMAGE_TYPE_ERROR"),
+      }));
+      return;
+    }
+
+    // Create object URL and open cropper
+    const imageUrl = URL.createObjectURL(file);
+    setImageToCrop(imageUrl);
+    setShowCropper(true);
+  };
+
+  /**
+   * Handle crop completion
+   */
+  const handleCropComplete = (croppedBlob) => {
+    if (!croppedBlob) {
+      setShowCropper(false);
+      return;
+    }
+
+    // Create preview URL from cropped blob
+    const croppedImageUrl = URL.createObjectURL(croppedBlob);
+
+    // Create a File object from the blob for form submission
+    const croppedFile = new File(
+      [croppedBlob],
+      `${FILE_CONSTANTS.CATEGORY_IMAGE_PREFIX}-${Date.now()}.jpg`,
+      {
+        type: FILE_CONSTANTS.FILE_TYPE,
+        lastModified: Date.now(),
+      }
+    );
+
+    // Update form data with cropped image
+    setFormData((prev) => ({
+      ...prev,
+      CategoryImage: croppedFile,
       existingImage: null, // Clear existing image when new file is uploaded
     }));
-    setImagePreview(URL.createObjectURL(file));
+
+    // Set preview
+    setImagePreview(croppedImageUrl);
+
+    // Clear any existing errors
+    setErrors((prev) => ({ ...prev, CategoryImage: "" }));
+
+    // Close cropper
+    setShowCropper(false);
+
+    // Clean up the original image URL
+    if (oImageToCrop) {
+      URL.revokeObjectURL(oImageToCrop);
+      setImageToCrop(null);
+    }
+  };
+
+  /**
+   * Handle crop cancellation
+   */
+  const handleCropCancel = () => {
+    setShowCropper(false);
+
+    // Clean up the image URL
+    if (oImageToCrop) {
+      URL.revokeObjectURL(oImageToCrop);
+      setImageToCrop(null);
+    }
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const handleRemoveImage = () => {
-    if (sImagePreview && typeof sImagePreview === "string" && sImagePreview.startsWith("blob:")) {
+    if (
+      sImagePreview &&
+      typeof sImagePreview === "string" &&
+      sImagePreview.startsWith("blob:")
+    ) {
       URL.revokeObjectURL(sImagePreview);
     }
-    setFormData((prev) => ({ 
-      ...prev, 
+    setFormData((prev) => ({
+      ...prev,
       CategoryImage: null,
-      existingImage: null
+      existingImage: null,
     }));
     setImagePreview(null);
     setErrors((prev) => ({ ...prev, CategoryImage: "" }));
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const validateForm = () => {
     const errors = {};
-    
+
     // Category Name validation
     if (!oFormData.CategoryName?.trim()) {
-      errors.CategoryName = t("PRODUCT_SETUP.CREATE_CATEGORY.NAME_ERROR") || "Category name is required";
+      errors.CategoryName =
+        t("PRODUCT_SETUP.CREATE_CATEGORY.NAME_ERROR") ||
+        "Category name is required";
     }
 
     // Category Description validation
     const descLength = oFormData.CategoryDescription?.trim().length || 0;
     if (descLength < 10 && descLength > 0) {
-      errors.CategoryDescription = t("PRODUCT_SETUP.CREATE_CATEGORY.DESCRIPTION_MIN_LENGTH") || "Description must be at least 10 characters long";
-    } 
+      errors.CategoryDescription =
+        t("PRODUCT_SETUP.CREATE_CATEGORY.DESCRIPTION_MIN_LENGTH") ||
+        "Description must be at least 10 characters long";
+    }
     if (descLength > 500) {
-      errors.CategoryDescription = t("PRODUCT_SETUP.CREATE_CATEGORY.DESCRIPTION_MAX_LENGTH") || "Description cannot exceed 500 characters";
+      errors.CategoryDescription =
+        t("PRODUCT_SETUP.CREATE_CATEGORY.DESCRIPTION_MAX_LENGTH") ||
+        "Description cannot exceed 500 characters";
     }
     return errors;
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  // Clear previous errors
-  setErrors({});
-  
-  const newErrors = validateForm();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  if (Object.keys(newErrors).length > 0) {
-    setErrors(newErrors);
-    return;
-  }
+    // Clear previous errors
+    setErrors({});
 
-  setSubmitting(true);
-  const dataToSend = new FormData();
-  const documentMetadata = [];
+    const newErrors = validateForm();
 
-  // Handle image scenarios
-  if (oFormData.CategoryImage) {
-    // New image uploaded
-    documentMetadata.push({ 
-      image: "category1", 
-      sortOrder: 1,
-      ...(isEditing && oFormData.existingImageDocumentId && { 
-        DocumentID: oFormData.existingImageDocumentId 
-      })
-    });
-  } else if (isEditing && !sImagePreview && oFormData.existingImageDocumentId) {
-    // Editing and image removed - send remove action
-    documentMetadata.push({ 
-      action: "remove",
-      DocumentID: oFormData.existingImageDocumentId 
-    });
-  } else if (isEditing && sImagePreview && !oFormData.CategoryImage && oFormData.existingImageDocumentId) {
-    // Editing but keeping existing image - don't include documentMetadata at all
-    // This is the key change: don't push anything to documentMetadata array
-    // So the array remains empty and won't be included in the payload
-  }
-
-  // Prepare the JSON payload
-  const jsonPayload = {
-    TenantID: oFormData.TenantID,
-    CategoryName: oFormData.CategoryName,
-    CategoryDescription: oFormData.CategoryDescription,
-    IsActive: oFormData.IsActive,
-    ParentCategoryID: oFormData.ParentCategoryID || undefined,
-    // Only include documentMetadata if the array is not empty
-    ...(documentMetadata.length > 0 && { documentMetadata }),
-    ...(isEditing ? {
-      CategoryID: categoryId,
-      UpdatedBy: localStorage.getItem("userId")
-    } : {
-      CreatedBy: localStorage.getItem("userId")
-    })
-  };
-
-  // Append the JSON payload
-  dataToSend.append("data", JSON.stringify(jsonPayload));
-
-  // Append the image file only if a new image was uploaded
-  if (oFormData.CategoryImage) {
-    dataToSend.append("category1", oFormData.CategoryImage);
-  }
-
-  try {
-    const token = localStorage.getItem("token");
-    let oResponse;
-
-    if (isEditing) {
-      // Use PUT for update with updateCategory endpoint
-      oResponse = await apiPut(
-        UPDATE_CATEGORY,
-        dataToSend,
-        token,
-        true // multipart/form-data
-      );
-    } else {
-      // Use POST for create with createCategory endpoint
-      oResponse = await apiPost(
-        CREATE_CATEGORY,
-        dataToSend,
-        token,
-        true // multipart/form-data
-      );
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
     }
 
-    if (oResponse.data.status === STATUS.SUCCESS.toUpperCase()) {
-      showEmsg(oResponse.data.message, STATUS.SUCCESS, 3000, () => {
-        navigate("/browse", { state: { fromCategoryEdit: true } });
+    setSubmitting(true);
+    const dataToSend = new FormData();
+    const documentMetadata = [];
+
+    // Handle image scenarios
+    if (oFormData.CategoryImage) {
+      // New image uploaded
+      documentMetadata.push({
+        image: "category1",
+        sortOrder: 1,
+        ...(isEditing &&
+          oFormData.existingImageDocumentId && {
+            DocumentID: oFormData.existingImageDocumentId,
+          }),
       });
-    } else {
-      showEmsg(oResponse.data.message, STATUS.WARNING);
-      setErrors((prev) => ({ ...prev, api: oResponse.data.message }));
+    } else if (
+      isEditing &&
+      !sImagePreview &&
+      oFormData.existingImageDocumentId
+    ) {
+      // Editing and image removed - send remove action
+      documentMetadata.push({
+        action: "remove",
+        DocumentID: oFormData.existingImageDocumentId,
+      });
+    } else if (
+      isEditing &&
+      sImagePreview &&
+      !oFormData.CategoryImage &&
+      oFormData.existingImageDocumentId
+    ) {
+      // Editing but keeping existing image - don't include documentMetadata at all
+      // This is the key change: don't push anything to documentMetadata array
+      // So the array remains empty and won't be included in the payload
     }
-  } catch (err) {
-    const errorMessage = err?.response?.data?.message || t("COMMON.API_ERROR");
-    showEmsg(errorMessage, STATUS.ERROR);
-  } finally {
-    hideLoaderWithDelay(setSubmitting);
-  }
-};
+
+    // Prepare the JSON payload
+    const jsonPayload = {
+      TenantID: oFormData.TenantID,
+      CategoryName: oFormData.CategoryName,
+      CategoryDescription: oFormData.CategoryDescription,
+      IsActive: oFormData.IsActive,
+      ParentCategoryID: oFormData.ParentCategoryID || undefined,
+      // Only include documentMetadata if the array is not empty
+      ...(documentMetadata.length > 0 && { documentMetadata }),
+      ...(isEditing
+        ? {
+            CategoryID: categoryId,
+            UpdatedBy: localStorage.getItem("userId"),
+          }
+        : {
+            CreatedBy: localStorage.getItem("userId"),
+          }),
+    };
+
+    // Append the JSON payload
+    dataToSend.append("data", JSON.stringify(jsonPayload));
+
+    // Append the image file only if a new image was uploaded
+    if (oFormData.CategoryImage) {
+      dataToSend.append("category1", oFormData.CategoryImage);
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      let oResponse;
+
+      if (isEditing) {
+        // Use PUT for update with updateCategory endpoint
+        oResponse = await apiPut(
+          UPDATE_CATEGORY,
+          dataToSend,
+          token,
+          true // multipart/form-data
+        );
+      } else {
+        // Use POST for create with createCategory endpoint
+        oResponse = await apiPost(
+          CREATE_CATEGORY,
+          dataToSend,
+          token,
+          true // multipart/form-data
+        );
+      }
+
+      if (oResponse.data.status === STATUS.SUCCESS.toUpperCase()) {
+        showEmsg(oResponse.data.message, STATUS.SUCCESS, 3000, () => {
+          navigate("/browse", { state: { fromCategoryEdit: true } });
+        });
+      } else {
+        showEmsg(oResponse.data.message, STATUS.WARNING);
+        setErrors((prev) => ({ ...prev, api: oResponse.data.message }));
+      }
+    } catch (err) {
+      const errorMessage =
+        err?.response?.data?.message || t("COMMON.API_ERROR");
+      showEmsg(errorMessage, STATUS.ERROR);
+    } finally {
+      hideLoaderWithDelay(setSubmitting);
+    }
+  };
 
   // Filter categories to only include parent categories (ParentCategoryID is null)
   const parentCategories = [
@@ -303,7 +429,10 @@ const handleSubmit = async (e) => {
       label: t("PRODUCT_SETUP.CREATE_CATEGORY.SELECT_PARENT"),
     },
     ...aCategories
-      .filter((cat) => cat.ParentCategoryID === null || cat.ParentCategoryID === undefined)
+      .filter(
+        (cat) =>
+          cat.ParentCategoryID === null || cat.ParentCategoryID === undefined
+      )
       .map((cat) => ({
         value: cat.CategoryID,
         label: cat.CategoryName,
@@ -323,14 +452,6 @@ const handleSubmit = async (e) => {
     );
   };
 
-  // Helper function to render form field with error
-  const renderFormField = (fieldName, fieldComponent, error = null) => (
-    <div className="flex-1">
-      {fieldComponent}
-      {renderErrorMessage(error)}
-    </div>
-  );
-
   return (
     <div className="w-full min-h-screen">
       {bSubmitting && (
@@ -338,8 +459,23 @@ const handleSubmit = async (e) => {
           <Loader />
         </div>
       )}
-      
-      <ToastContainer 
+
+      {/* Image Cropper Modal */}
+      {bShowCropper && (
+        <ImageCropperModal
+          image={oImageToCrop}
+          onCropComplete={handleCropComplete}
+          onClose={handleCropCancel}
+          aspectRatio={1} // Square aspect ratio for category images
+          minWidth={200}
+          minHeight={200}
+          title={t("PRODUCT_SETUP.CREATE_CATEGORY.CROP_TITLE")}
+          cancelText={t("COMMON.CANCEL")}
+          saveText={t("COMMON.CROP_IMAGE")}
+        />
+      )}
+
+      <ToastContainer
         position="top-right"
         autoClose={3000}
         hideProgressBar={false}
@@ -351,9 +487,13 @@ const handleSubmit = async (e) => {
         pauseOnHover
         theme="light"
       />
-      
+
       <div className="flex items-center mb-6">
-        <BackButton onClick={() => navigate("/browse", { state: { fromCategoryEdit: true } })} />
+        <BackButton
+          onClick={() =>
+            navigate("/browse", { state: { fromCategoryEdit: true } })
+          }
+        />
         <h2 className="text-xl font-bold text-gray-900">
           {isEditing
             ? t("PRODUCT_SETUP.CREATE_CATEGORY.EDIT_TITLE")
@@ -365,7 +505,7 @@ const handleSubmit = async (e) => {
       <form className="space-y-6" onSubmit={handleSubmit}>
         {/* Category Name and Status Row */}
         <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0">
-         <div className="flex-1">
+          <div className="flex-1">
             <TextInputWithIcon
               label={t("PRODUCT_SETUP.CREATE_CATEGORY.NAME_LABEL")}
               id="CategoryName"
@@ -376,8 +516,8 @@ const handleSubmit = async (e) => {
               error={oErrors.CategoryName}
               Icon={Tag}
             />
-         </div>
-          
+          </div>
+
           <div className="flex-1">
             <SelectWithIcon
               label={t("PRODUCT_SETUP.CREATE_CATEGORY.STATUS_LABEL")}
@@ -385,7 +525,10 @@ const handleSubmit = async (e) => {
               name="IsActive"
               value={String(oFormData.IsActive)}
               onChange={(e) =>
-                setFormData((prev) => ({ ...prev, IsActive: e.target.value === "true" }))
+                setFormData((prev) => ({
+                  ...prev,
+                  IsActive: e.target.value === "true",
+                }))
               }
               options={[
                 { value: "true", label: t("COMMON.ACTIVE") },
@@ -423,56 +566,80 @@ const handleSubmit = async (e) => {
             <div
               className={`relative group rounded-xl border-2 ${
                 oErrors.CategoryImage ? "border-red-300" : "border-gray-200"
-              } border-dashed transition-all duration-200 hover:border-custom-bg bg-gray-50 hover:bg-gray-50/50`}
+              } border-dashed transition-all duration-200 hover:border-bg-hover bg-gray-50 hover:bg-gray-50/50`}
             >
-              <div className="p-6 space-y-3 text-center">
-                <div className="flex justify-center">
-                  <div className="p-3 rounded-full bg-white shadow-sm border border-gray-100">
-                    <Image className="h-8 w-8 text-gray-400 group-hover:text-[#5B45E0] transition-colors duration-200" />
+              <div className="p-6">
+                <div className="space-y-3 text-center">
+                  {/* Upload Icon - Only show when no image */}
+                  {!sImagePreview && (
+                    <div className="flex justify-center">
+                      <div className="p-3 rounded-full bg-white shadow-sm border border-gray-100">
+                        <Image className="h-8 w-8 text-gray-400 group-hover:text-custom-bg transition-colors duration-200" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Upload input area */}
+                  <div className="flex flex-col items-center gap-2">
+                    {!sImagePreview ? (
+                      <>
+                        <div className="flex text-sm text-gray-600 justify-center">
+                          <label
+                            htmlFor="file-upload"
+                            className="relative cursor-pointer rounded-md font-medium text-custom-bg hover:text-[#4c39c7] underline"
+                          >
+                            <span>{t("COMMON.UPLOAD")}</span>
+                            <input
+                              id="file-upload"
+                              ref={fileInputRef}
+                              name="CategoryImage"
+                              type="file"
+                              accept="image/*"
+                              onChange={handleFileChange}
+                              className="sr-only"
+                            />
+                          </label>
+                          <p className="pl-1">{t("COMMON.DRAG_DROP_TEXT")}</p>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          PNG, JPG, JPEG up to 10MB
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        {/* Image preview with better styling */}
+                        <div className="relative">
+                          <img
+                            src={sImagePreview}
+                            alt="Category Preview"
+                            className="h-32 w-32 object-contain rounded-lg border-2 border-gray-200 bg-white p-2 shadow-sm mx-auto"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleRemoveImage}
+                            className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-all duration-200"
+                            title="Remove image"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">
+                         {t("COMMON.REMOVE_OR_UPLOAD_IMAGE")}
+                        </p>
+                      </>
+                    )}
                   </div>
+
+                  {/* Logo errors */}
+                  {oErrors.CategoryImage && (
+                    <p className="text-sm text-red-600 flex items-center justify-center mt-2">
+                      <span className="mr-1">⚠️</span>
+                      {oErrors.CategoryImage}
+                    </p>
+                  )}
                 </div>
-                <div className="flex text-sm text-muted justify-center">
-                  <label
-                    htmlFor="file-upload"
-                    className="relative cursor-pointer rounded-md font-medium text-[#5B45E0] hover:text-[#4c39c7]"
-                  >
-                    <span>{t("COMMON.UPLOAD")}</span>
-                    <input
-                      id="file-upload"
-                      name="CategoryImage"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="sr-only"
-                    />
-                  </label>
-                  <p className="pl-1">{t("COMMON.DRAG_DROP_TEXT")}</p>
-                </div>
-                {sImagePreview && (
-                  <div className="mt-4 flex justify-center relative">
-                    <img
-                      src={sImagePreview}
-                      alt="Category Preview"
-                      className="max-h-32 max-w-full rounded-md border border-gray-200 shadow"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleRemoveImage}
-                      className="absolute -top-3 -right-3 p-1.5 bg-white border border-gray-300 text-gray-600 rounded-full shadow hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors duration-200 z-10"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                )}
-                {oErrors.CategoryImage && (
-                  <p className="text-sm text-red flex items-center justify-center">
-                    <span className="mr-1">⚠️</span>
-                    {oErrors.CategoryImage}
-                  </p>
-                )}
               </div>
             </div>
-            {renderErrorMessage(oErrors.CategoryImage)}
           </div>
 
           {/* Description */}
@@ -482,10 +649,16 @@ const handleSubmit = async (e) => {
               name="CategoryDescription"
               value={oFormData.CategoryDescription}
               onChange={handleInputChange}
-              placeholder={t("PRODUCT_SETUP.CREATE_CATEGORY.DESCRIPTION_PLACEHOLDER")}
+              placeholder={t(
+                "PRODUCT_SETUP.CREATE_CATEGORY.DESCRIPTION_PLACEHOLDER"
+              )}
               error={oErrors.CategoryDescription}
               icon={Info}
-              className={oErrors.CategoryDescription ? "border-red-300 focus:border-red-500" : ""}
+              className={
+                oErrors.CategoryDescription
+                  ? "border-red-300 focus:border-red-500"
+                  : ""
+              }
               rows={4}
             />
             {renderErrorMessage(oErrors.CategoryDescription)}
@@ -501,9 +674,7 @@ const handleSubmit = async (e) => {
               </div>
               <div className="ml-3">
                 <h3 className="text-sm font-medium text-red-800">Error</h3>
-                <div className="mt-2 text-sm text-red-700">
-                  {oErrors.api}
-                </div>
+                <div className="mt-2 text-sm text-red-700">{oErrors.api}</div>
               </div>
             </div>
           </div>
@@ -514,13 +685,19 @@ const handleSubmit = async (e) => {
           <button
             type="button"
             className="btn-cancel"
-            onClick={() => navigate("/browse", { state: { fromCategoryEdit: true } })}
+            onClick={() =>
+              navigate("/browse", { state: { fromCategoryEdit: true } })
+            }
             disabled={bSubmitting}
           >
             {t("COMMON.CANCEL")}
           </button>
           <button type="submit" className="btn-primary" disabled={bSubmitting}>
-            {bSubmitting ? t("COMMON.LOADING") : (isEditing ? t("COMMON.SAVE_BUTTON") : t("PRODUCT_SETUP.CREATE_CATEGORY.CREATE_BUTTON"))}
+            {bSubmitting
+              ? t("COMMON.LOADING")
+              : isEditing
+              ? t("COMMON.SAVE_BUTTON")
+              : t("PRODUCT_SETUP.CREATE_CATEGORY.CREATE_BUTTON")}
           </button>
         </div>
       </form>

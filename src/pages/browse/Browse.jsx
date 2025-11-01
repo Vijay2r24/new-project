@@ -12,8 +12,6 @@ import AttributeList from "./AttributeTypeValues/AttributeTypeValuesList";
 import AttributeCreate from "./AttributeTypeValues/CreateAttributeTypeValuesList";
 import ProductGroupList from "./productGroups/ProductGroupList";
 import CreateProductGroup from "./productGroups/CreateProductGroup";
-import Loader from "../../components/Loader";
-import { hideLoaderWithDelay } from "../../utils/loaderUtils";
 import {
   Package,
   Tag,
@@ -27,7 +25,8 @@ import { useLocation } from "react-router-dom";
 import { useTitle } from "../../context/TitleContext";
 import { ToastContainer } from "react-toastify";
 import SpecificationTypeList from "./productSpecification/SpecificationTypeList";
-import { VIEW_TYPES,FORM_MODES } from "../../contants/constants";
+import { VIEW_TYPES, FORM_MODES } from "../../contants/constants";
+
 function classNames(...classes) {
   return classes.filter(Boolean).join(" ");
 }
@@ -35,7 +34,6 @@ function classNames(...classes) {
 const Browse = () => {
   const [nSelectedTab, setSelectedTab] = useState(0);
   const [sViewMode, setViewMode] = useState(VIEW_TYPES.LIST);
-  const [submitting, setSubmitting] = useState(false);
 
   const { t } = useTranslation();
   const location = useLocation();
@@ -73,14 +71,14 @@ const Browse = () => {
       icon: Layers,
     },
     {
-        name: t("PRODUCT_SETUP.TABS.SPECIFICATION_TYPE"),
-        list: SpecificationTypeList,
-        create: CreateProductGroup,
-        icon: Boxes,
-      },
+      name: t("PRODUCT_SETUP.TABS.SPECIFICATION_TYPE"),
+      list: SpecificationTypeList,
+      create: CreateProductGroup,
+      icon: Boxes,
+    },
   ];
 
- useEffect(() => {
+  useEffect(() => {
     if (location.state && location.state.fromCategoryEdit) {
       const categoryTabIndex = aTabs.findIndex(
         (tab) => tab.name === t("PRODUCT_SETUP.TABS.CATEGORIES")
@@ -142,12 +140,6 @@ const Browse = () => {
     setTitle(t("PRODUCT_SETUP.PRODUCT_SETUP"));
   }, [setTitle, t]);
 
-  const loaderOverlay = submitting ? (
-    <div className="global-loader-overlay">
-      <Loader />
-    </div>
-  ) : null;
-
   return (
     <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-2">
       {/* Tabs Section */}
@@ -155,10 +147,8 @@ const Browse = () => {
         <Tab.Group
           selectedIndex={nSelectedTab}
           onChange={(index) => {
-            setSubmitting(true);
             setSelectedTab(index);
             setViewMode(VIEW_TYPES.LIST);
-            hideLoaderWithDelay(setSubmitting, 500);
           }}
         >
           <div className="overflow-x-auto">
@@ -191,12 +181,10 @@ const Browse = () => {
                 {sViewMode === VIEW_TYPES.LIST ? (
                   <tab.list
                     onCreate={() => setViewMode(FORM_MODES.CREATE)}
-                    setSubmitting={setSubmitting}
                   />
                 ) : (
                   <tab.create
                     setViewMode={setViewMode}
-                    setSubmitting={setSubmitting}
                   />
                 )}
               </Tab.Panel>
@@ -205,7 +193,6 @@ const Browse = () => {
         </Tab.Group>
       </div>
       <ToastContainer />
-      {loaderOverlay}
     </div>
   );
 };

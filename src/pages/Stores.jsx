@@ -32,8 +32,12 @@ const Stores = () => {
   );
 
   const aStores = storesData.data || [];
-  // Fix: Get totalItems from the correct path in the response
-  const totalItems = storesData.pagination?.totalRecords || 0;
+  
+  // FIX: Updated pagination extraction to match actual API response structure
+  const totalItems = storesData.totalRecords || storesData.total || 0;
+  const currentPageFromAPI = storesData.currentPage || 1;
+  const totalPagesFromAPI = storesData.totalPages || Math.ceil(totalItems / ITEMS_PER_PAGE) || 1;
+  
   const storesLoading = storesData.loading;
 
   const [sSearchTerm, setSearchTerm] = useState("");
@@ -50,10 +54,11 @@ const Stores = () => {
   const permissionIdForDelete = getPermissionCode("Store Management", "Delete User");
   const hasDeletePermission = hasPermissionId(permissionIdForDelete);
  
-  const statusOptions = STATUS_OPTIONS.map((opt) => ({
-    value: opt.value,
-    label: t(opt.labelKey),
-  }));
+  const statusOptions = [
+    { value: "", label: t("COMMON.ALL") },
+    { value: "true", label: t("COMMON.ACTIVE") },
+    { value: "false", label: t("COMMON.INACTIVE") }
+  ];
 
   const aAdditionalFilters = [
     {
@@ -76,10 +81,13 @@ const Stores = () => {
   });
 
   const itemsPerPage = ITEMS_PER_PAGE;
-  // Fix: Calculate totalPages directly from the API response or totalItems
-  const totalPages = storesData.pagination?.totalPages || Math.ceil(totalItems / itemsPerPage) || 1;
+  
+  // FIX: Use pagination data from API or calculate fallback
+  const totalPages = totalPagesFromAPI;
   const [viewMode, setViewMode] = useState("table");
-  const [currentPage, setCurrentPage] = useState(1);
+  
+  // FIX: Sync currentPage with API response or use local state
+  const [currentPage, setCurrentPage] = useState(currentPageFromAPI);
 
   const handleEdit = (StoreID) => {
     navigate(`/editStore/${StoreID}`);
@@ -104,7 +112,6 @@ const Stores = () => {
     }
     
     if (filterName === 'dateRange') {
-      // Handle date range picker
       const dateValue = e.target.value;
       setFilters((prevFilters) => ({
         ...prevFilters,
@@ -112,17 +119,10 @@ const Stores = () => {
         endDate: dateValue?.endDate || '',
       }));
     } else {
-      // Handle other filters
       const { name, value } = e.target;
-      
-      let processedValue = value;
-      if ((filterName || name) === "status" && value !== "") {
-        processedValue = value === "true";
-      }
-      
       setFilters((prev) => ({
         ...prev,
-        [filterName || name]: processedValue,
+        [filterName || name]: value,
       }));
     }
     setCurrentPage(1);
@@ -162,7 +162,7 @@ const Stores = () => {
       showEmsg(result.message, STATUS.SUCCESS);
       setStatusPopup({ open: false, storeId: null, newStatus: null });
       
-      const isActiveFilter = oFilters.status === "" ? undefined : oFilters.status;
+      const isActiveFilter = oFilters.status === "" ? undefined : oFilters.status === "true";
       
       // Refresh the stores list after status update
       dispatch(fetchResource({
@@ -195,7 +195,7 @@ const Stores = () => {
       const backendMessage = oResponse.data.MESSAGE;
       showEmsg(backendMessage, STATUS.SUCCESS);
       
-      const isActiveFilter = oFilters.status === "" ? undefined : oFilters.status;
+      const isActiveFilter = oFilters.status === "" ? undefined : oFilters.status === "true";
       
       // Refresh the stores list after deletion
       dispatch(fetchResource({
@@ -229,10 +229,12 @@ const Stores = () => {
   };
 
   const handleConfirmExportStores = () => {
+    const isActiveFilter = oFilters.status === "" ? undefined : oFilters.status === "true";
+    
     dispatch(exportStoreReport({
       startDate: oExportDate.startDate,
       endDate: oExportDate.endDate,
-      isActive: oFilters.status !== "" ? oFilters.status : undefined
+      isActive: isActiveFilter
     }));
     setShowExportPanel(false);
   };
@@ -240,7 +242,7 @@ const Stores = () => {
   useEffect(() => {
     const fetchStoresData = async () => {
       try {
-        const isActiveFilter = oFilters.status === "" ? undefined : oFilters.status;
+        const isActiveFilter = oFilters.status === "" ? undefined : oFilters.status === "true";
         
         await dispatch(fetchResource({
           key: "stores",
@@ -285,7 +287,7 @@ const Stores = () => {
 
   // Helper function to get status text
   const getStatusText = (isActive) => {
-    return isActive ? "Active" : "Inactive";
+    return isActive ? t("COMMON.ACTIVE") : t("COMMON.INACTIVE");
   };
 
   return (
@@ -505,7 +507,7 @@ const Stores = () => {
         />
       )}
 
-      {/* Fix: Pass the correct totalPages value */}
+      {/* FIX: Pass correct pagination props */}
       <Pagination
         currentPage={currentPage}
         totalPages={totalPages}

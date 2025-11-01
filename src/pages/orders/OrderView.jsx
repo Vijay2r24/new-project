@@ -168,15 +168,12 @@ const OrderView = () => {
         );
         const data = oResponse.data.data;
 
-        // Take first payment if exists
-        const payment = data.payment?.[0] || {};
-
-        // Map API response
+        // Map API response to match your component's expected structure
         const mappedOrder = {
           orderId: data.OrderID,
           orderRefId: data.OrderRefID,
           orderDate: data.OrderDate,
-          totalAmount: parseFloat(payment.Amount || 0),
+          totalAmount: parseFloat(data.Amount || 0),
           customer: {
             name: `${data.CustomerDetails?.FirstName || ""} ${
               data.CustomerDetails?.LastName || ""
@@ -193,22 +190,29 @@ const OrderView = () => {
             city: data.address?.CityName,
             state: data.address?.StateName,
             country: data.address?.CountryName,
-            zipCode: data.address?.ZipCode || "",
+            zipCode: data.address?.Zipcode || "",
+            recipientName: data.address?.RecipientName,
+            phoneNumber: data.address?.PhoneNumber,
+            addressType: data.address?.AddressType, // Added this
+            isDefault: data.address?.IsDefault, // Added this
           },
           orderItems: data.orderItems.map((item, index) => ({
             id: item.OrderItemID || `item-${index}`,
-            OrderItemID: item.OrderItemID, // Make sure this is included
+            OrderItemID: item.OrderItemID,
             name: item.ProductName,
             sku: item.SKU,
             image: item.orderItemImage?.[0]?.documentUrl || null,
             price: parseFloat(item.SellingPrice || item.MRP || 0),
             quantity: item.Quantity,
             status: item.OrderStatus || "Pending",
-            // Use payment data from the API response
-            paymentMethod: payment.PaymentTypeName || "N/A",
-            paymentStatus: payment.PaymentStatusName,
-            PaymentTypeName:payment.PaymentTypeName,
-            paymentDate: payment.PaymentDate || data.OrderDate,
+            orderStatusID: item.OrderStatusID,
+            paymentMethod: data.PaymentTypeName || "N/A",
+            paymentStatus: data.PaymentStatusName,
+            PaymentTypeName: data.PaymentTypeName,
+            paymentDate: data.PaymentDate || data.OrderDate,
+            mrp: parseFloat(item.MRP || 0),
+            discountPercentage: parseFloat(item.DiscountPercentage || 0),
+            isActive: item.IsActive,
           })),
           total: data.orderItems.reduce((sum, item) => {
             return (
@@ -217,8 +221,16 @@ const OrderView = () => {
                 parseInt(item.Quantity || 1)
             );
           }, 0),
-          // Also include payment array at root level for backward compatibility
-          payment: data.payment || [],
+          payment: {
+            paymentId: data.PaymentID,
+            paymentRefId: data.PaymentRefId,
+            amount: parseFloat(data.Amount || 0),
+            paymentDate: data.PaymentDate,
+            paymentStatusId: data.PaymentStatusID,
+            paymentStatusName: data.PaymentStatusName,
+            paymentTypeId: data.PaymentTypeID,
+            paymentTypeName: data.PaymentTypeName,
+          },
         };
 
         setOrder(mappedOrder);
@@ -451,32 +463,26 @@ const OrderView = () => {
                     {t("VIEW_ORDER.DELIVERY_INFORMATION")}
                   </h4>
                 </div>
-                <div className="space-y-3 text-gray-700 print:space-y-2 print:text-gray-800">
-                  <div className="flex items-start space-x-3">
-                    <Building className="h-4 w-4 text-gray-500 mt-1 print:hidden" />
-                    <div>
-                      <p className="text-caption print:text-[10px]">
-                        {nOrder.delivery
-                          ? `${nOrder.delivery.city || ""}, ${
-                              nOrder.delivery.state || ""
-                            } ${nOrder.delivery.zipCode || ""}`
-                          : "N/A"}
+                <div className="flex items-start space-x-3">
+                  <Building className="h-4 w-4 text-gray-500 mt-1 print:hidden" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 print:text-xs">
+                      {nOrder.delivery?.address}
+                    </p>
+                    <p className="text-caption print:text-[10px]">
+                      {nOrder.delivery?.city && `${nOrder.delivery.city}, `}
+                      {nOrder.delivery?.state && `${nOrder.delivery.state} `}
+                      {nOrder.delivery?.zipCode && `${nOrder.delivery.zipCode}`}
+                    </p>
+                    <p className="text-caption print:text-[10px]">
+                      {nOrder.delivery?.country}
+                    </p>
+                    {nOrder.delivery?.addressType && (
+                      <p className="text-caption print:text-[10px] text-gray-500">
+                        {nOrder.delivery.addressType} Address
+                        {nOrder.delivery?.isDefault && " • Default"}
                       </p>
-                      <p className="text-caption print:text-[10px]">
-                        {nOrder.delivery?.country || ""}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-3">
-                    <Truck className="h-4 w-4 text-gray-500 mt-1 print:hidden" />
-                    <div>
-                      <p className="text-sm print:text-xs">
-                        {t("VIEW_ORDER.STANDARD_DELIVERY")}
-                      </p>
-                      <p className="text-caption print:text-[10px]">
-                        2-4 Business Days
-                      </p>
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>

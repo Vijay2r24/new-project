@@ -149,85 +149,88 @@ const Notifications = () => {
           </div>
 
           <div className="p-6 space-y-8">
-            {/* Title and Message Inputs - Full Width */}
-            <div className="space-y-6">
-              <TextInputWithIcon
-                label={t("PUSH_NOTIFICATION.TITLE_LABEL")}
-                id="title"
-                name="title"
-                value={oPushFormData.title}
-                onChange={handlePushChange}
-                placeholder={t("PUSH_NOTIFICATION.TITLE_PLACEHOLDER")}
-                Icon={Send}
-                error={pushValidationErrors.title}
-                required
-              />
+            {/* Main Content Grid - Inputs on left, Preview on right */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Left Column - Form Inputs (2/3 width on large screens) */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Title and Message in separate rows */}
+                <div className="space-y-6">
+                  <TextInputWithIcon
+                    label={t("PUSH_NOTIFICATION.TITLE_LABEL")}
+                    id="title"
+                    name="title"
+                    value={oPushFormData.title}
+                    onChange={handlePushChange}
+                    placeholder={t("PUSH_NOTIFICATION.TITLE_PLACEHOLDER")}
+                    Icon={Send}
+                    error={pushValidationErrors.title}
+                    required
+                  />
 
-              <TextAreaWithIcon
-                label={t("PUSH_NOTIFICATION.MESSAGE_LABEL")}
-                name="message"
-                value={oPushFormData.message}
-                onChange={handlePushChange}
-                placeholder={t("PUSH_NOTIFICATION.MESSAGE_PLACEHOLDER")}
-                icon={MapPin}
-                error={pushValidationErrors.message}
-                required
-              />
-            </div>
+                  <TextAreaWithIcon
+                    label={t("PUSH_NOTIFICATION.MESSAGE_LABEL")}
+                    name="message"
+                    value={oPushFormData.message}
+                    onChange={handlePushChange}
+                    placeholder={t("PUSH_NOTIFICATION.MESSAGE_PLACEHOLDER")}
+                    icon={MapPin}
+                    error={pushValidationErrors.message}
+                    required
+                  />
+                </div>
 
-            {/* Image Upload and Preview Side by Side */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Image Upload Section */}
-              <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  {t("PUSH_NOTIFICATION.IMAGE_LABEL")}
-                </label>
-                <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-[#5B45E0] transition-colors duration-200 min-h-[200px]">
-                  <div className="space-y-3 text-center flex flex-col justify-center">
-                    {nPreviewUrl ? (
-                      <div className="relative inline-block">
-                        <img
-                          src={nPreviewUrl}
-                          alt={t("PUSH_NOTIFICATION.IMAGE_PREVIEW_ALT")}
-                          className="mx-auto h-32 w-auto object-contain rounded-lg shadow-sm"
-                        />
-                        <button
-                          type="button"
-                          onClick={removeImage}
-                          className="absolute -top-2 -right-2 p-1 bg-red-500 rounded-full text-white hover:bg-red-600 transition-colors duration-200 shadow-lg"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                        <div className="flex flex-col sm:flex-row text-sm text-gray-600 justify-center items-center gap-1">
-                          <label
-                            htmlFor="image-upload"
-                            className="relative cursor-pointer bg-white rounded-md font-medium text-[#5B45E0] hover:text-[#4c39c7] focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-[#5B45E0] transition-colors duration-200"
+                {/* Image Upload Section */}
+                <div className="space-y-4">
+                  <label className="block text-sm font-medium text-gray-700">
+                    {t("PUSH_NOTIFICATION.IMAGE_LABEL")}
+                  </label>
+                  <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-[#5B45E0] transition-colors duration-200 min-h-[200px]">
+                    <div className="space-y-3 text-center flex flex-col justify-center">
+                      {nPreviewUrl ? (
+                        <div className="relative inline-block">
+                          <img
+                            src={nPreviewUrl}
+                            alt={t("PUSH_NOTIFICATION.IMAGE_PREVIEW_ALT")}
+                            className="mx-auto h-32 w-auto object-contain rounded-lg shadow-sm"
+                          />
+                          <button
+                            type="button"
+                            onClick={removeImage}
+                            className="absolute -top-2 -right-2 p-1 bg-red-500 rounded-full text-white hover:bg-red-600 transition-colors duration-200 shadow-lg"
                           >
-                            <span>{t("COMMON.UPLOAD_A_FILE")}</span>
-                            <input
-                              id="image-upload"
-                              name="image"
-                              type="file"
-                              className="sr-only"
-                              accept="image/*"
-                              onChange={handleImageChange}
-                            />
-                          </label>
-                          <p className="text-gray-500">
-                            {t("COMMON.OR_DRAG_AND_DROP")}
-                          </p>
+                            <X className="h-4 w-4" />
+                          </button>
                         </div>
-                      </>
-                    )}
+                      ) : (
+                        <>
+                          <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                          <div className="flex flex-col sm:flex-row text-sm text-gray-600 justify-center items-center gap-1">
+                            <label
+                              htmlFor="image-upload"
+                              className="relative cursor-pointer bg-white rounded-md font-medium text-[#5B45E0] hover:text-[#4c39c7] focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-[#5B45E0] transition-colors duration-200"
+                            >
+                              <span>{t("COMMON.UPLOAD_A_FILE")}</span>
+                              <input
+                                id="image-upload"
+                                name="image"
+                                type="file"
+                                className="sr-only"
+                                accept="image/*"
+                                onChange={handleImageChange}
+                              />
+                            </label>
+                            <p className="text-gray-500">
+                              {t("COMMON.OR_DRAG_AND_DROP")}
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Mobile Notification Preview */}
+              {/* Right Column - Mobile Notification Preview (1/3 width on large screens) */}
               <div className="space-y-4">
                 <label className="block text-sm font-medium text-gray-700">
                   {t("PUSH_NOTIFICATION.PREVIEW_TITLE")}

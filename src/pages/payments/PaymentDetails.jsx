@@ -11,14 +11,16 @@ import {
   XCircle,
   Building2,
   Smartphone,
+  Truck,
+  Wallet,
 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTitle } from "../../context/TitleContext";
 import { useTranslation } from "react-i18next";
 import BackButton from "../../components/BackButton";
-import { apiGet } from "../../utils/ApiUtils"; 
+import { apiGet } from "../../utils/ApiUtils";
 import { GET_PAYMENT_BYID } from "../../contants/apiRoutes";
-import { DATE_FORMAT_OPTIONS, STATUS } from "../../contants/constants";
+import { DATE_FORMAT_OPTIONS, LOCALE, STATUS } from "../../contants/constants";
 
 const PaymentDetails = () => {
   const { id } = useParams();
@@ -47,7 +49,7 @@ const PaymentDetails = () => {
         setLoading(true);
         const response = await apiGet(`${GET_PAYMENT_BYID}/${id}`, {}, token);
 
-        if (response?.data?.status === "SUCCESS") {
+        if (response?.data?.status === STATUS.SUCCESS.toUpperCase()) {
           setPayment(response.data.data);
         } else {
           setError(t("PAYMENTS.API_ERROR"));
@@ -66,8 +68,11 @@ const PaymentDetails = () => {
   }, [id, token, t]);
 
   const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleDateString("en-US", DATE_FORMAT_OPTIONS);
-};
+    return new Date(dateString).toLocaleDateString(
+      LOCALE,
+      DATE_FORMAT_OPTIONS
+    );
+  };
 
   const formatAmount = (amount) => {
     return `₹${parseFloat(amount).toLocaleString("en-IN", {
@@ -95,7 +100,6 @@ const PaymentDetails = () => {
       case STATUS.PENDING:
         return <Clock className="w-4 h-4" />;
       case STATUS.SUCCESS:
-      case STATUS:
         return <CheckCircle className="w-4 h-4" />;
       case STATUS.FAILURE:
       case STATUS.CANCELLED:
@@ -106,8 +110,10 @@ const PaymentDetails = () => {
   };
 
   const getPaymentMethodIcon = (method) => {
-    if (!method) return <DollarSign className="w-5 h-5 text-gray-500" />;
-    switch (method.toLowerCase()) {
+    if (!method?.PaymentMethodName)
+      return <Wallet className="w-5 h-5 text-gray-500" />;
+
+    switch (method.PaymentMethodName.toLowerCase()) {
       case "netbanking":
         return <Building2 className="w-5 h-5 text-blue-600" />;
       case "upi":
@@ -116,8 +122,49 @@ const PaymentDetails = () => {
       case "credit card":
       case "debit card":
         return <CreditCard className="w-5 h-5 text-gray-600" />;
+      case "cash on delivery":
+      case "cod":
+        return <Truck className="w-5 h-5 text-orange-600" />;
       default:
-        return <DollarSign className="w-5 h-5 text-green-600" />;
+        return <Wallet className="w-5 h-5 text-green-600" />;
+    }
+  };
+
+  const getPaymentMethodDisplayName = (method) => {
+    return (
+      method?.PaymentMethodName ||
+      t("PAYMENTS.METHOD_NOT_SPECIFIED"));
+  };
+
+  const getPaymentMethodDescription = (method) => {
+    const methodName = method?.PaymentMethodName;
+
+    if (!methodName) {
+      return (
+        t("PAYMENTS.DEFAULT_DESCRIPTION") ||
+        "Payment information will be updated"
+      );
+    }
+
+    switch (methodName.toLowerCase()) {
+      case "cash on delivery":
+      case "cod":
+        return (
+          t("PAYMENTS.COD_DESCRIPTION") || "Pay when you receive your order"
+        );
+      case "netbanking":
+        return (
+          t("PAYMENTS.NETBANKING_DESCRIPTION") ||
+          "Payment through internet banking"
+        );
+      case "upi":
+        return t("PAYMENTS.UPI_DESCRIPTION") || "Unified Payments Interface";
+      case "card":
+      case "credit card":
+      case "debit card":
+        return t("PAYMENTS.CARD_DESCRIPTION") || "Credit/Debit card payment";
+      default:
+        return t("PAYMENTS.DEFAULT_DESCRIPTION") || "Payment method";
     }
   };
 
@@ -166,9 +213,7 @@ const PaymentDetails = () => {
             )}`}
           >
             {getStatusIcon(payment.PaymentStatus.PaymentStatusName)}
-            {t(
-              `PAYMENTS.STATUS.${payment.PaymentStatus.PaymentStatusName.toUpperCase()}`
-            )}
+            {payment.PaymentStatus.PaymentStatusName}
           </div>
         </div>
 
@@ -278,39 +323,67 @@ const PaymentDetails = () => {
         {/* Payment Method */}
         <div className="bg-white rounded-xl border border-gray-100 p-4">
           <h2 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-            {getPaymentMethodIcon(payment.PaymentMethod?.PaymentMethodName)}
+            {getPaymentMethodIcon(payment.PaymentMethod)}
             {t("PAYMENTS.PAYMENT_METHOD")}
           </h2>
 
           <div className="space-y-3">
-            {/* Method Name (if available) */}
-            <div className="p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-md border border-purple-100">
-              <div className="flex items-center gap-2 mb-1">
-                {getPaymentMethodIcon(payment.PaymentMethod?.PaymentMethodName)}
+            {/* Method Name with Description */}
+            <div
+              className={`p-3 rounded-md border ${
+                payment.PaymentMethod
+                  ? "bg-gradient-to-r from-purple-50 to-pink-50 border-purple-100"
+                  : "bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200"
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                {getPaymentMethodIcon(payment.PaymentMethod)}
                 <p className="text-sm font-medium text-gray-700">
                   {t("PAYMENTS.PAYMENT_METHOD")}
                 </p>
               </div>
-              <p className="text-base font-medium text-gray-900">
-                {payment.PaymentMethod?.PaymentMethodName}
+              <p className="text-base font-medium text-gray-900 mb-1">
+                {getPaymentMethodDisplayName(payment.PaymentMethod)}
+              </p>
+              <p className="text-sm text-gray-600">
+                {getPaymentMethodDescription(payment.PaymentMethod)}
               </p>
             </div>
 
-            {/* Provider */}
-            <div className="p-3 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-md border border-blue-100">
-              <div className="flex items-center gap-2 mb-1">
-                <Building2 className="w-5 h-5 text-blue-600" />
-                <p className="text-sm font-medium text-gray-700">
-                  {t("PAYMENTS.PAYMENT_PROVIDER")}
+            {/* Provider - Only show if PaymentType exists */}
+            {payment.PaymentType?.PaymentTypeName && (
+              <div className="p-3 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-md border border-blue-100">
+                <div className="flex items-center gap-2 mb-1">
+                  <Building2 className="w-5 h-5 text-blue-600" />
+                  <p className="text-sm font-medium text-gray-700">
+                    {t("PAYMENTS.PAYMENT_PROVIDER")}
+                  </p>
+                </div>
+                <p className="text-base font-medium text-gray-900">
+                  {payment.PaymentType.PaymentTypeName}
                 </p>
               </div>
-              <p className="text-base font-medium text-gray-900">
-                {payment.PaymentType?.PaymentTypeName ||
-                  t("PAYMENTS.NOT_AVAILABLE")}
-              </p>
-            </div>
+            )}
 
-            {/* Masked Card Number */}
+            {/* Additional Info for Cash on Delivery */}
+            {payment.PaymentMethod?.PaymentMethodName?.toLowerCase().includes(
+              "cash on delivery"
+            ) && (
+              <div className="p-3 bg-gradient-to-r from-orange-50 to-amber-50 rounded-md border border-orange-100">
+                <div className="flex items-center gap-2 mb-1">
+                  <Truck className="w-5 h-5 text-orange-600" />
+                  <p className="text-sm font-medium text-gray-700">
+                    {t("PAYMENTS.DELIVERY_INFO") || "Delivery Information"}
+                  </p>
+                </div>
+                <p className="text-sm text-gray-600">
+                  {t("PAYMENTS.COD_INSTRUCTIONS") ||
+                    "Payment will be collected when your order is delivered"}
+                </p>
+              </div>
+            )}
+
+            {/* Masked Card Number - Only show if available */}
             {payment.MaskedCardNumber && (
               <div className="p-3 bg-gradient-to-r from-gray-50 to-slate-50 rounded-md border border-gray-100">
                 <div className="flex items-center gap-2 mb-1">
