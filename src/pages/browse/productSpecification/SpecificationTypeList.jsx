@@ -24,6 +24,7 @@ import {
   FORM_MODES,
   STATUS_VALUES,
   STATUS_OPTIONS,
+  DATE_FORMAT_OPTIONS,
 } from "../../../contants/constants";
 import { hideLoaderWithDelay } from "../../../utils/loaderUtils";
 import { apiPost, apiGet, apiPut } from "../../../utils/ApiUtils";
@@ -496,11 +497,11 @@ const SpecificationTypeList = ({ setSubmitting }) => {
                           ? new Date(specType.CreatedAt).toLocaleString(
                               undefined,
                               {
-                                year: "numeric",
-                                month: "2-digit",
-                                day: "2-digit",
-                                hour: "2-digit",
-                                minute: "2-digit",
+                                year:DATE_FORMAT_OPTIONS.year,
+                                month: DATE_FORMAT_OPTIONS.month,
+                                day: DATE_FORMAT_OPTIONS.day,
+                                hour: DATE_FORMAT_OPTIONS.hour,
+                                minute: DATE_FORMAT_OPTIONS.minute,
                                 hour12: true,
                               }
                             )
