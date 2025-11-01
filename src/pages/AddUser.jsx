@@ -16,6 +16,7 @@ import {
   CheckCircle,
   XCircle,
   Store,
+  Users,
 } from "lucide-react";
 import TextInputWithIcon from "../components/TextInputWithIcon";
 import SelectWithIcon from "../components/SelectWithIcon";
@@ -76,6 +77,7 @@ const AddUser = () => {
     cityName: "",
     documentIds: [],
     IsActive: true,
+    gender: "", // Added gender field
   });
   const [nProfileImage, setProfileImage] = useState(null);
   const [nProfileImagePreview, setProfileImagePreview] = useState(null);
@@ -120,6 +122,13 @@ const AddUser = () => {
   const navigate = useNavigate();
   const [bSubmitting, setSubmitting] = useState(false);
 
+  // Gender options
+  const genderOptions = useMemo(() => [
+    { value: "male", label: t("ADD_USER.GENDER_MALE") },
+    { value: "female", label: t("ADD_USER.GENDER_FEMALE") },
+    { value: "other", label: t("ADD_USER.GENDER_OTHER") },
+  ], [t]);
+
   // Refs to track if data has been fetched to prevent multiple API calls
   const hasFetchedRoles = useRef(false);
   const hasFetchedStores = useRef(false);
@@ -148,7 +157,7 @@ const AddUser = () => {
     };
   }, [setTitle, setBackButton, t, id, navigate]);
 
-  // Validation function - simplified using imported utilities
+  // Validation function - updated to include gender validation
   const validate = useCallback(() => {
     const errors = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -172,6 +181,11 @@ const AddUser = () => {
       errors.phone = t("ADD_USER.PHONE_REQUIRED");
     } else if (!phoneRegex.test(oFormData.phone)) {
       errors.phone = t("ADD_USER.VALIDATION.PHONE_INVALID");
+    }
+
+    // Gender validation
+    if (!oFormData.gender) {
+      errors.gender = t("ADD_USER.VALIDATION.GENDER_REQUIRED");
     }
 
     if (!oFormData.role) {
@@ -276,7 +290,7 @@ const AddUser = () => {
     }
   }, [dispatch, oFormData.state]);
 
-  // Optimized fetchUser function without circular dependencies
+  // Optimized fetchUser function - updated to handle gender field
   const fetchUser = useCallback(async () => {
     if (!id || hasFetchedUser.current) return;
 
@@ -308,6 +322,7 @@ const AddUser = () => {
           documentIds: user.ProfileImageUrl
             ? user.ProfileImageUrl.map((doc) => doc.documentId)
             : [],
+          gender: user.Gender || "", // Set gender from API response
         }));
 
         // For the profile image
@@ -508,7 +523,7 @@ const AddUser = () => {
       }));
     }
 
-    // Base user data structure
+    // Base user data structure - updated to include gender
     const userData = {
       FirstName: oFormData.firstName || "",
       LastName: oFormData.lastName || "",
@@ -523,6 +538,7 @@ const AddUser = () => {
       StoreIDs: oFormData.stores || [],
       IsActive: oFormData.IsActive !== undefined ? oFormData.IsActive : true,
       documentMetadata: documentMetadata,
+      Gender: oFormData.gender || "", // Include gender in API payload
     };
 
     // Add UserID for update and handle password differently
@@ -601,8 +617,6 @@ const AddUser = () => {
     navigate,
   ]
 );
-
-  const loaderOverlay = bSubmitting && <Loader />;
 
   return (
     <div className="max-w-8xl mx-auto">
@@ -696,6 +710,17 @@ const AddUser = () => {
                 placeholder={t("ADD_USER.ENTER_LAST_NAME")}
                 Icon={User}
                 error={oErrors.lastName}
+              />
+              <SelectWithIcon
+                label={t("ADD_USER.GENDER")}
+                id="gender"
+                name="gender"
+                value={oFormData.gender}
+                onChange={handleChange}
+                options={genderOptions}
+                Icon={Users}
+                error={oErrors.gender}
+                placeholder={t("ADD_USER.SELECT_GENDER")}
               />
               <TextInputWithIcon
                 label={t("COMMON.EMAIL_ADDRESS")}

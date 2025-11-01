@@ -158,79 +158,89 @@ const OrderView = () => {
 
   const fetchDataRef = useRef();
   const fetchOrderDetails = useCallback(
-    async (orderId, setOrder, setLoading, t) => {
-      const token = localStorage.getItem("token");
-      try {
-        const oResponse = await apiGet(
-          `${GETORDER_BYID_API}/${orderId}`,
-          {},
-          token
-        );
-        const data = oResponse.data.data;
+  async (orderId, setOrder, setLoading, t) => {
+    const token = localStorage.getItem("token");
+    try {
+      const oResponse = await apiGet(
+        `${GETORDER_BYID_API}/${orderId}`,
+        {},
+        token
+      );
+      const data = oResponse.data.data;
 
-        // Take first payment if exists
-        const payment = data.payment?.[0] || {};
+      // Map API response to match your component's expected structure
+      const mappedOrder = {
+        orderId: data.OrderID,
+        orderRefId: data.OrderRefID,
+        orderDate: data.OrderDate,
+        totalAmount: parseFloat(data.Amount || 0),
+        customer: {
+          name: `${data.CustomerDetails?.FirstName || ""} ${
+            data.CustomerDetails?.LastName || ""
+          }`.trim(),
+          email: data.CustomerDetails?.Email,
+          phone: data.CustomerDetails?.PhoneNumber,
+        },
+        delivery: {
+          address: data.address
+            ? `${data.address.AddressLine1 || ""} ${
+                data.address.AddressLine2 || ""
+              }`.trim() || "N/A"
+            : "N/A",
+          city: data.address?.CityName,
+          state: data.address?.StateName,
+          country: data.address?.CountryName,
+          zipCode: data.address?.Zipcode || "",
+          recipientName: data.address?.RecipientName,
+          phoneNumber: data.address?.PhoneNumber,
+        },
+        orderItems: data.orderItems.map((item, index) => ({
+          id: item.OrderItemID || `item-${index}`,
+          OrderItemID: item.OrderItemID,
+          name: item.ProductName,
+          sku: item.SKU,
+          image: item.orderItemImage?.[0]?.documentUrl || null,
+          price: parseFloat(item.SellingPrice || item.MRP || 0),
+          quantity: item.Quantity,
+          status: item.OrderStatus || "Pending",
+          orderStatusID: item.OrderStatusID,
+          paymentMethod: data.PaymentTypeName || "N/A",
+          paymentStatus: data.PaymentStatusName,
+          PaymentTypeName: data.PaymentTypeName,
+          paymentDate: data.PaymentDate || data.OrderDate,
+          mrp: parseFloat(item.MRP || 0),
+          discountPercentage: parseFloat(item.DiscountPercentage || 0),
+          isActive: item.IsActive,
+        })),
+        total: data.orderItems.reduce((sum, item) => {
+          return (
+            sum +
+            parseFloat(item.SellingPrice || item.MRP || 0) *
+              parseInt(item.Quantity || 1)
+          );
+        }, 0),
+        payment: {
+          paymentId: data.PaymentID,
+          paymentRefId: data.PaymentRefId,
+          amount: parseFloat(data.Amount || 0),
+          paymentDate: data.PaymentDate,
+          paymentStatusId: data.PaymentStatusID,
+          paymentStatusName: data.PaymentStatusName,
+          paymentTypeId: data.PaymentTypeID,
+          paymentTypeName: data.PaymentTypeName,
+        },
+      };
 
-        // Map API response
-        const mappedOrder = {
-          orderId: data.OrderID,
-          orderRefId: data.OrderRefID,
-          orderDate: data.OrderDate,
-          totalAmount: parseFloat(payment.Amount || 0),
-          customer: {
-            name: `${data.CustomerDetails?.FirstName || ""} ${
-              data.CustomerDetails?.LastName || ""
-            }`.trim(),
-            email: data.CustomerDetails?.Email,
-            phone: data.CustomerDetails?.PhoneNumber,
-          },
-          delivery: {
-            address: data.address
-              ? `${data.address.AddressLine1 || ""} ${
-                  data.address.AddressLine2 || ""
-                }`.trim() || "N/A"
-              : "N/A",
-            city: data.address?.CityName,
-            state: data.address?.StateName,
-            country: data.address?.CountryName,
-            zipCode: data.address?.ZipCode || "",
-          },
-          orderItems: data.orderItems.map((item, index) => ({
-            id: item.OrderItemID || `item-${index}`,
-            OrderItemID: item.OrderItemID, // Make sure this is included
-            name: item.ProductName,
-            sku: item.SKU,
-            image: item.orderItemImage?.[0]?.documentUrl || null,
-            price: parseFloat(item.SellingPrice || item.MRP || 0),
-            quantity: item.Quantity,
-            status: item.OrderStatus || "Pending",
-            // Use payment data from the API response
-            paymentMethod: payment.PaymentTypeName || "N/A",
-            paymentStatus: payment.PaymentStatusName,
-            PaymentTypeName:payment.PaymentTypeName,
-            paymentDate: payment.PaymentDate || data.OrderDate,
-          })),
-          total: data.orderItems.reduce((sum, item) => {
-            return (
-              sum +
-              parseFloat(item.SellingPrice || item.MRP || 0) *
-                parseInt(item.Quantity || 1)
-            );
-          }, 0),
-          // Also include payment array at root level for backward compatibility
-          payment: data.payment || [],
-        };
-
-        setOrder(mappedOrder);
-      } catch (error) {
-        console.error("Failed to fetch data:", error);
-        setError(error);
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
-  );
+      setOrder(mappedOrder);
+    } catch (error) {
+      console.error("Failed to fetch data:", error);
+      setError(error);
+    } finally {
+      setLoading(false);
+    }
+  },
+  []
+);
   const fetchOrderItemHistory = useCallback(
     async (orderItemId, setHistory, setLoading, setError) => {
       const token = localStorage.getItem("token");

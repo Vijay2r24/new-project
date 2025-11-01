@@ -275,6 +275,7 @@
     },
     "CREATE_BRAND": {
       "CREATE_TITLE": "Create Brand",
+       "CROP_TITLE": "Crop Brand Logo",
       "NAME_LABEL": "Brand Name",
       "NAME_PLACEHOLDER": "Enter brand name",
       "HEADING_PLACEHOLDER": "Enter heading (e.g., Top Indian Brand)",
@@ -314,6 +315,7 @@
     },
     "CREATE_CATEGORY": {
       "CREATE_TITLE": "Create Category",
+      "CROP_TITLE": "Crop Category Image",
       "NAME_LABEL": "Category Name",
       "EDIT_TITLE": "Edit Category",
       "HEADING_PLACE": "Enter heading",
@@ -382,6 +384,8 @@
   "PAYMENTS": {
     "HEADING": "Payments",
     "SEARCH_PLACEHOLDER": "Search by Payment Ref ID, Order ID, Customer ID...",
+    "METHOD_NOT_SPECIFIED": "Payment Method Not Specified",
+    "DEFAULT_DESCRIPTION": "Payment information will be updated soon",
     "PAYMENT_DETAILS": "Payment Details",
     "ORDER_INFO": "Order Info",
     "AMOUNT": "Amount",
@@ -414,7 +418,7 @@
     "PAYMENT_ATTEMPTS": "Payment Attempts",
     "ATTEMPTS": "attempt(s)",
     "PAYMENT_METHOD": "Payment Method",
-    "PAYMENT_PROVIDER": "Payment Provider",
+    "PAYMENT_PROVIDER": "Payment Type",
     "CARD_NUMBER": "Card Number"
   },
   "ORDERS": {
@@ -425,7 +429,7 @@
     "EXPORT_ERROR": "Failed to export orders. Please try again.",
     "EXPORT_ERROR_NO_DATE_RANGE": "Please select a date range to export orders.",
     "NO_ORDERS_FOUND": "No Orders Found",
-    "VIEW_DETAILS": "View Details",
+    "VIEW_DETAILS": "View",
     "DELIVERY": "Delivery",
     "SEARCH_PLACEHOLDER": "Search by Order Number, Product",
     "TABLE": {
@@ -917,6 +921,7 @@
     "INACTIVE": "Inactive",
     "PREVIOUS": "Previous",
     "DOWNLOAD": "Download",
+    "DATE_RANGE":"Date Range",
     "NEXT": "Next",
     "ALL": "All",
     "EDIT": "Edit",

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Download } from "lucide-react"
+import { Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import Toolbar from "../../components/Toolbar";
@@ -23,18 +23,20 @@ const OrderList = () => {
   const [bShowFilterDropdown, setShowFilterDropdown] = useState(false);
   const [sViewMode, setViewMode] = useState("table");
   const [nCurrentPage, setCurrentPage] = useState(1);
-  const [aOrders, setOrders] = useState([]); // Changed from aProductRows to aOrders
+  const [aOrders, setOrders] = useState([]);
   const [nTotalRecords, setTotalRecords] = useState(0);
   const [sTotalPages, setTotalPages] = useState("");
   const [nProductsPerPage, setProductsPerPage] = useState(10);
   const [bFilterLoading, setFilterLoading] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [expandedRows, setExpandedRows] = useState(new Set());
 
   // Redux hooks
   const dispatch = useDispatch();
   const { paymentStatus, loadingPaymentStatus } = useSelector((state) => ({
     paymentStatus: state.allData.resources.paymentStatus?.data || [],
-    loadingPaymentStatus: state.allData.resources.paymentStatus?.loading || false,
+    loadingPaymentStatus:
+      state.allData.resources.paymentStatus?.loading || false,
   }));
 
   const defaultFilters = {
@@ -68,13 +70,13 @@ const OrderList = () => {
         setFilterLoading(true);
       }
 
-      if (filterName === 'dateRange') {
+      if (filterName === "dateRange") {
         // Handle date range picker
         const dateValue = e.target.value;
         setFilters((prevFilters) => ({
           ...prevFilters,
-          startDate: dateValue?.startDate || '',
-          endDate: dateValue?.endDate || '',
+          startDate: dateValue?.startDate || "",
+          endDate: dateValue?.endDate || "",
         }));
       } else {
         // Handle other filters
@@ -96,19 +98,22 @@ const OrderList = () => {
 
     // Use Redux data when available
     if (paymentStatus && paymentStatus.length > 0) {
-      const options = paymentStatus.map(status => ({
+      const options = paymentStatus.map((status) => ({
         value: status.PaymentStatusName,
-        label: status.PaymentStatusName
+        label: status.PaymentStatusName,
       }));
 
-      return [
-        { value: "all", label: t("COMMON.ALL") },
-        ...options
-      ];
+      return [{ value: "all", label: t("COMMON.ALL") }, ...options];
     }
 
     // Empty state if no data available
-    return [{ value: "no-data", label: t("COMMON.NO_DATA_AVAILABLE"), disabled: true }];
+    return [
+      {
+        value: "no-data",
+        label: t("COMMON.NO_DATA_AVAILABLE"),
+        disabled: true,
+      },
+    ];
   };
 
   const additionalFilters = [
@@ -126,22 +131,37 @@ const OrderList = () => {
     },
   ];
 
-  const formatOrderDate = (dateString) => {
+  const formatOrderDateTime = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
     return date.toLocaleDateString(LOCALES.ENGLISH_US, {
       year: DATE_FORMAT_OPTIONS.year,
       month: DATE_FORMAT_OPTIONS.month,
-      day: DATE_FORMAT_OPTIONS.day
+      day: DATE_FORMAT_OPTIONS.day,
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
     });
   };
 
   const formatCurrency = (amount) => {
     if (!amount) return "N/A";
     return new Intl.NumberFormat(LOCALES.ENGLISH_INDIA, {
-      style: 'currency',
-      currency: 'INR'
+      style: "currency",
+      currency: "INR",
     }).format(amount);
+  };
+
+  const toggleRowExpansion = (orderId) => {
+    setExpandedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(orderId)) {
+        newSet.delete(orderId);
+      } else {
+        newSet.add(orderId);
+      }
+      return newSet;
+    });
   };
 
   const fetchData = useCallback(async () => {
@@ -172,22 +192,26 @@ const OrderList = () => {
         setError(oResponse.data.message || t("ORDERS.NO_ORDERS_FOUND"));
       } else {
         const orders = oResponse.data.data || [];
-        
+
         // Map orders directly without flattening order items
         const formattedOrders = orders.map((order) => ({
           orderId: order.OrderID,
-          orderDate: order.OrderDate,
-          formattedOrderDate: formatOrderDate(order.OrderDate),
+          // orderDate: order.OrderDate,
+          formattedOrderDate: formatOrderDateTime(order.OrderDate),
           totalAmount: order.TotalAmount,
           formattedTotalAmount: formatCurrency(order.TotalAmount),
           totalQuantity: order.totalQuantity,
           totalOrderItems: order.totalOrderItems,
-          paymentStatus: order.payment?.[0]?.PaymentStatusName || "N/A",
+          paymentStatus: order.PaymentStatusName || "N/A",
+          paymentDate: order.PaymentDate,
+          formattedPaymentDate: order.PaymentDate
+            ? formatOrderDateTime(order.PaymentDate)
+            : "N/A",
           customerName: `${order.FirstName} ${order.LastName}`.trim(),
           email: order.Email,
           phoneNumber: order.PhoneNumber,
-          orderItems: order.orderItems || [], // Keep order items for reference if needed
-          order: order, // Keep the full order object
+          orderItems: order.orderItems || [],
+          order: order, // keep full order data for view details
         }));
 
         setOrders(formattedOrders);
@@ -248,6 +272,18 @@ const OrderList = () => {
     return statusClasses[status] || "status-default";
   }, []);
 
+  const getOrderItemStatusColor = useCallback((status) => {
+    const statusClasses = {
+      Pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
+      Processing: "bg-blue-100 text-blue-800 border-blue-200",
+      Shipped: "bg-indigo-100 text-indigo-800 border-indigo-200",
+      Delivered: "bg-green-100 text-green-800 border-green-200",
+      Cancelled: "bg-red-100 text-red-800 border-red-200",
+      Returned: "bg-purple-100 text-purple-800 border-purple-200",
+    };
+    return statusClasses[status] || "bg-gray-100 text-gray-800 border-gray-200";
+  }, []);
+
   const handleViewOrder = useCallback(
     (order) => {
       // Navigate to order details with the full order data
@@ -277,17 +313,22 @@ const OrderList = () => {
   }, [sSearchTerm, sFilterStatus]);
 
   const [bShowExportPanel, setShowExportPanel] = useState(false);
-  const [oExportDate, setExportDate] = useState({ startDate: null, endDate: null });
+  const [oExportDate, setExportDate] = useState({
+    startDate: null,
+    endDate: null,
+  });
 
   const handleExportOrders = useCallback(() => {
     setShowExportPanel(true);
   }, []);
 
   const handleConfirmExportOrders = useCallback(() => {
-    dispatch(exportOrderReport({
-      startDate: oExportDate.startDate,
-      endDate: oExportDate.endDate
-    }));
+    dispatch(
+      exportOrderReport({
+        startDate: oExportDate.startDate,
+        endDate: oExportDate.endDate,
+      })
+    );
     setShowExportPanel(false);
   }, [dispatch, oExportDate]);
 
@@ -325,6 +366,7 @@ const OrderList = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="table-head">
                 <tr>
+                  <th className="table-head-cell w-8"></th>
                   <th className="table-head-cell">
                     {t("ORDERS.TABLE.ORDER_NUMBER")}
                   </th>
@@ -340,7 +382,9 @@ const OrderList = () => {
                   <th className="table-head-cell">
                     {t("ORDERS.TABLE.PAYMENT_STATUS")}
                   </th>
-                  <th className="table-head-cell">{t("COMMON.TOTAL_ORDER_ITEMS")}</th>
+                  <th className="table-head-cell">
+                    {t("COMMON.TOTAL_ORDER_ITEMS")}
+                  </th>
                   <th className="table-head-cell">{t("COMMON.ACTIONS")}</th>
                 </tr>
               </thead>
@@ -367,56 +411,106 @@ const OrderList = () => {
                   </tr>
                 ) : (
                   aOrders.map((order) => (
-                    <tr
-                      key={order.orderId}
-                      className="hover:bg-gray-50 transition-colors duration-150"
-                    >
-                      <td className="table-cell">
-                        <div className="text-caption font-semibold truncate max-w-[150px]">
-                          {order.orderId}
-                        </div>
-                      </td>
-                      <td className="table-cell">
-                        <div className="text-sm text-gray-700">
-                          {order.formattedOrderDate}
-                        </div>
-                      </td>
-                      <td className="table-cell">
-                        <div className="text-sm text-gray-700 truncate max-w-[200px]">
-                          {order.customerName || "Unknown Customer"}
-                        </div>
-                        <div className="text-xs text-gray-500 truncate max-w-[200px]">
-                          {order.email}
-                        </div>
-                      </td>
-                      <td className="table-cell">
-                        <div className="text-sm text-gray-700">
-                          {order.phoneNumber || "N/A"}
-                        </div>
-                      </td>
-                      <td className="table-cell text-center">
-                        <span
-                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getPaymentStatusColor(
-                            order.paymentStatus
-                          )}`}
-                        >
-                          {order.paymentStatus}
-                        </span>
-                      </td>
-                      <td className="table-cell">
-                        <div className="text-sm text-gray-900 text-center">
-                          {order.totalOrderItems}
-                        </div>
-                      </td>
-                      <td className="table-cell">
-                        <button
-                          onClick={() => handleViewOrder(order)}
-                          className="text-[#5B45E0] hover:text-[#4c39c7] font-medium transition-colors duration-150"
-                        >
-                          {t("ORDERS.VIEW_DETAILS")}
-                        </button>
-                      </td>
-                    </tr>
+                    <React.Fragment key={order.orderId}>
+                      <tr className="hover:bg-gray-50 transition-colors duration-150">
+                        <td className="table-cell px-4">
+                          {order.orderItems.length > 0 && (
+                            <button
+                              onClick={() => toggleRowExpansion(order.orderId)}
+                              className="text-gray-500 hover:text-gray-700 transition-colors"
+                            >
+                              {expandedRows.has(order.orderId) ? '▼' : '▶'}
+                            </button>
+                          )}
+                        </td>
+                        <td className="table-cell">
+                          <div className="text-caption font-semibold truncate max-w-[150px]">
+                            {order.orderId}
+                          </div>
+                        </td>
+                        <td className="table-cell">
+                          <div className="flex flex-col">
+                            <div className="text-sm text-gray-700 whitespace-nowrap">
+                              {order.formattedOrderDate.split(',')[0]}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {order.formattedOrderDate.split(',').slice(1).join(',').trim()}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="table-cell">
+                          <div className="text-sm text-gray-700 truncate max-w-[200px]">
+                            {order.customerName || "Unknown Customer"}
+                          </div>
+                          <div className="text-xs text-gray-500 truncate max-w-[200px]">
+                            {order.email}
+                          </div>
+                        </td>
+                        <td className="table-cell">
+                          <div className="text-sm text-gray-700">
+                            {order.phoneNumber || "N/A"}
+                          </div>
+                        </td>
+                        <td className="table-cell text-center">
+                          <span
+                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getPaymentStatusColor(
+                              order.paymentStatus
+                            )}`}
+                          >
+                            {order.paymentStatus}
+                          </span>
+                        </td>
+                        <td className="table-cell">
+                          <div className="text-sm text-gray-900 text-center">
+                            {order.totalOrderItems}
+                          </div>
+                        </td>
+                        <td className="table-cell">
+                          <button
+                            onClick={() => handleViewOrder(order)}
+                            className="text-[#5B45E0] hover:text-[#4c39c7] font-medium transition-colors duration-150"
+                          >
+                            {t("ORDERS.VIEW_DETAILS")}
+                          </button>
+                        </td>
+                      </tr>
+                      {expandedRows.has(order.orderId) && order.orderItems.length > 0 && (
+                        <tr className="bg-gray-50">
+                          <td colSpan="8" className="px-6 py-4">
+                            <div className="mb-3">
+                              <div className="text-sm font-semibold text-gray-700 mb-2">
+                                Order Items ({order.totalOrderItems}):
+                              </div>
+                              <div className="space-y-3">
+                                {order.orderItems.map((item) => (
+                                  <div 
+                                    key={item.OrderItemID} 
+                                    className="flex items-start justify-between p-3 bg-white rounded-lg border border-gray-200"
+                                  >
+                                    <div className="flex-1">
+                                      <div className="font-medium text-gray-900 text-sm">
+                                        {item.ProductName}
+                                      </div>
+                                      <div className="text-xs text-gray-600 mt-1">
+                                        Order Item ID: {item.OrderItemID}
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center space-x-4 ml-4">
+                                      <div className="text-sm font-medium text-gray-700">
+                                        Qty: {item.Quantity}
+                                      </div>
+                                      <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getOrderItemStatusColor(item.OrderStatus)}`}>
+                                        {item.OrderStatus}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   ))
                 )}
               </tbody>
@@ -461,25 +555,55 @@ const OrderList = () => {
                 </div>
 
                 <div className="text-sm text-gray-600">
-                  <strong>{t("ORDERS.TABLE.ORDER_DATE")}</strong> {order.formattedOrderDate}
+                  <strong>{t("ORDERS.TABLE.ORDER_DATE")}</strong>{" "}
+                  {order.formattedOrderDate}
+                </div>
+
+                <div className="text-sm text-gray-600">
+                  <strong>Payment Date:</strong> {order.formattedPaymentDate}
                 </div>
 
                 <div className="mt-2">
                   <div className="text-base font-bold text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis">
                     {order.customerName}
                   </div>
-                  <div className="text-sm text-caption mt-1">
-                    {order.email}
-                  </div>
+                  <div className="text-sm text-caption mt-1">{order.email}</div>
                   <div className="text-sm text-gray-600 mt-1">
-                    <strong>  {t("ORDERS.TABLE.PHONE_NUMBER")}</strong> {order.phoneNumber || "N/A"}
+                    <strong> {t("ORDERS.TABLE.PHONE_NUMBER")}</strong>{" "}
+                    {order.phoneNumber || "N/A"}
                   </div>
-                  <div className="flex items-center justify-between mt-2">
+                  
+                  {/* Order Items Section - Each item on separate line */}
+                  <div className="mt-3">
+                    <div className="text-sm font-semibold text-gray-700 mb-2">
+                      Order Items ({order.totalOrderItems}):
+                    </div>
+                    <div className="space-y-2">
+                      {order.orderItems.map((item) => (
+                        <div 
+                          key={item.OrderItemID} 
+                          className="text-sm border-l-2 border-blue-200 pl-3 py-2"
+                        >
+                          <div className="font-medium text-gray-800">
+                            {item.ProductName}
+                          </div>
+                          <div className="flex justify-between items-center text-xs text-gray-600 mt-1">
+                            <span>Quantity: {item.Quantity}</span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getOrderItemStatusColor(item.OrderStatus)}`}>
+                              {item.OrderStatus}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
                     <div className="text-sm font-semibold text-gray-900">
                       {order.formattedTotalAmount}
                     </div>
                     <div className="text-sm text-gray-600">
-                      {t("COMMON.TOTAL_ORDER_ITEMS")}: {order.totalOrderItems}
+                      Total Items: {order.totalQuantity}
                     </div>
                   </div>
                 </div>

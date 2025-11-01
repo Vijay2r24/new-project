@@ -119,15 +119,9 @@ const Payments = () => {
       ],
     },
     {
-      label: t("ORDERS.FILTERS.START_DATE"),
-      name: "startDate",
-      value: oFilters.startDate,
-      type: "date",
-    },
-    {
-      label: t("ORDERS.FILTERS.END_DATE"),
-      name: "endDate",
-      value: oFilters.endDate,
+      label: t("COMMON.DATE_RANGE"),
+      name: "dateRange",
+      value: { startDate: oFilters.startDate, endDate: oFilters.endDate },
       type: "date",
     },
   ];
@@ -198,24 +192,46 @@ const Payments = () => {
     if (initialLoadComplete) {
       setFilterLoading(true);
     }
-    const { name, value } = e.target;
-    setFilters((prev) => ({
-      ...prev,
-      [filterName || name]: value,
-    }));
+
+    // Handle date range filter specifically
+    if (filterName === "dateRange") {
+      const { startDate, endDate } = e.target.value || {};
+      setFilters((prev) => ({
+        ...prev,
+        startDate: startDate || "",
+        endDate: endDate || "",
+      }));
+    } else {
+      // Handle other filters
+      const { name, value } = e.target;
+      setFilters((prev) => ({
+        ...prev,
+        [filterName || name]: value,
+      }));
+    }
+
     setCurrentPage(1);
   };
 
   const handlePrevPage = () => {
-    setCurrentPage((prev) => Math.max(prev - 1, 1));
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
   };
 
   const handleNextPage = () => {
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
   };
 
   const handlePageClick = (page) => {
-    setCurrentPage(page);
+    console.log("Page clicked:", page); // Debug log
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      // Scroll to top when page changes
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   const fetchPaymentsData = async () => {
@@ -254,10 +270,7 @@ const Payments = () => {
         setTotalPages(response.data.pagination?.totalPages || 1);
       }
     } catch (err) {
-      showEmsg(
-        err?.response?.data?.MESSAGE || t("COMMON.API_ERROR"),
-        STATUS.ERROR
-      );
+      console.error("Error fetching payments:", err);
     } finally {
       setPaymentsLoading(false);
     }
@@ -270,6 +283,7 @@ const Payments = () => {
   }, [dispatch]);
 
   useEffect(() => {
+    console.log("Current page changed:", currentPage); // Debug log
     const loadPayments = async () => {
       setFilterLoading(true);
       await fetchPaymentsData();
@@ -357,19 +371,24 @@ const Payments = () => {
             <table className="table-base">
               <thead className="table-head">
                 <tr>
-                  <th scope="col" className="table-head-cell">
+                  <th scope="col" className="table-head-cell w-1/4">
                     {t("PAYMENTS.PAYMENT_DETAILS")}
                   </th>
-                  <th scope="col" className="table-head-cell">
+                  <th scope="col" className="table-head-cell w-1/5">
                     {t("PAYMENTS.ORDER_INFO")}
                   </th>
-                  <th scope="col" className="table-head-cell">
-                    {t("PAYMENTS.AMOUNT")}
+                  <th
+                    scope="col"
+                    className="table-head-cell w-1/6 text-right pr-8"
+                  >
+                    <div className="flex justify-end items-center">
+                      {t("PAYMENTS.AMOUNT")}
+                    </div>
                   </th>
-                  <th scope="col" className="table-head-cell">
+                  <th scope="col" className="table-head-cell w-1/6 pl-4">
                     {t("COMMON.STATUS")}
                   </th>
-                  <th scope="col" className="table-head-cell">
+                  <th scope="col" className="table-head-cell w-1/6">
                     {t("COMMON.ACTIONS")}
                   </th>
                 </tr>
@@ -392,17 +411,17 @@ const Payments = () => {
                 ) : (
                   payments.map((payment) => (
                     <tr key={payment.PaymentID} className="table-row">
-                      <td className="table-cell">
+                      <td className="table-cell w-1/4">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
                             <CreditCard className="h-5 w-5 text-blue-600" />
                           </div>
-                          <div className="ml-4">
+                          <div className="ml-4 min-w-0">
                             <div className="table-cell-text ellipsis-text">
                               {payment.PaymentRefID}
                             </div>
                             <div className="table-cell-subtext flex items-center">
-                              <Calendar className="h-4 w-4 mr-1" />
+                              <Calendar className="h-4 w-4 mr-1 flex-shrink-0" />
                               <span className="ellipsis-text">
                                 {formatDate(payment.PaymentDate)}
                               </span>
@@ -410,30 +429,32 @@ const Payments = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="table-cell">
+                      <td className="table-cell w-1/5">
                         <div className="table-cell-text flex items-center">
-                          <FileText className="h-4 w-4 mr-1 text-gray-400" />
-                          {payment.OrderID}
+                          <FileText className="h-4 w-4 mr-1 text-gray-400 flex-shrink-0" />
+                          <span className="truncate">{payment.OrderID}</span>
                         </div>
                         <div className="table-cell-subtext flex items-center">
-                          <User className="h-4 w-4 mr-1 text-gray-400" />
-                          <span className="ellipsis-text">
+                          <User className="h-4 w-4 mr-1 text-gray-400 flex-shrink-0" />
+                          <span className="truncate">
                             {payment.PaymentType?.PaymentTypeName || "N/A"}
                           </span>
                         </div>
                         {payment.PaymentMethod && (
                           <div className="table-cell-subtext flex items-center">
-                            <CreditCard className="h-4 w-4 mr-1 text-gray-400" />
-                            <span className="ellipsis-text">
+                            <CreditCard className="h-4 w-4 mr-1 text-gray-400 flex-shrink-0" />
+                            <span className="truncate">
                               {payment.PaymentMethod?.PaymentMethodName}
                             </span>
                           </div>
                         )}
                       </td>
-                      <td className="table-cell font-medium text-gray-900">
-                        {formatCurrency(payment.Amount)}
+                      <td className="table-cell w-1/6 text-right font-medium text-gray-900 pr-8">
+                        <div className="flex justify-end">
+                          {formatCurrency(payment.Amount)}
+                        </div>
                       </td>
-                      <td className="table-cell">
+                      <td className="table-cell w-1/6 pl-4">
                         <span
                           className={`status-badge ${
                             payment.PaymentStatus?.PaymentStatusID === 1
@@ -446,7 +467,7 @@ const Payments = () => {
                           {payment.PaymentStatus?.PaymentStatusName}
                         </span>
                       </td>
-                      <td className="table-cell text-left font-medium align-middle">
+                      <td className="table-cell w-1/6 text-left font-medium align-middle">
                         <button
                           className="flex items-center gap-1 text-blue-600 hover:text-blue-800"
                           title="View"
@@ -480,9 +501,9 @@ const Payments = () => {
                 className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col gap-4 hover:shadow-xl transition-shadow duration-200"
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <CreditCard className="h-6 w-6 text-blue-600 mr-2" />
-                    <span className="font-semibold">
+                  <div className="flex items-center min-w-0">
+                    <CreditCard className="h-6 w-6 text-blue-600 mr-2 flex-shrink-0" />
+                    <span className="font-semibold truncate">
                       {payment.PaymentRefID}
                     </span>
                   </div>
@@ -500,24 +521,30 @@ const Payments = () => {
                 </div>
                 <div className="text-sm text-gray-600">
                   <div className="flex items-center mb-1">
-                    <Calendar className="h-4 w-4 mr-1" />
-                    {formatDate(payment.PaymentDate)}
+                    <Calendar className="h-4 w-4 mr-1 flex-shrink-0" />
+                    <span className="truncate">
+                      {formatDate(payment.PaymentDate)}
+                    </span>
                   </div>
                   <div className="flex items-center mb-1">
-                    <FileText className="h-4 w-4 mr-1" />
-                    Order: {payment.OrderID}
+                    <FileText className="h-4 w-4 mr-1 flex-shrink-0" />
+                    <span className="truncate">Order: {payment.OrderID}</span>
                   </div>
                   <div className="flex items-center mb-1">
-                    <CreditCard className="h-4 w-4 mr-1" />
-                    Type: {payment.PaymentType?.PaymentTypeName || "N/A"}
+                    <CreditCard className="h-4 w-4 mr-1 flex-shrink-0" />
+                    <span className="truncate">
+                      Type: {payment.PaymentType?.PaymentTypeName || "N/A"}
+                    </span>
                   </div>
                   {payment.PaymentMethod && (
                     <div className="flex items-center mb-1">
-                      <CreditCard className="h-4 w-4 mr-1" />
-                      Method: {payment.PaymentMethod?.PaymentMethodName}
+                      <CreditCard className="h-4 w-4 mr-1 flex-shrink-0" />
+                      <span className="truncate">
+                        Method: {payment.PaymentMethod?.PaymentMethodName}
+                      </span>
                     </div>
                   )}
-                  <div className="text-lg font-bold text-gray-900">
+                  <div className="text-lg font-bold text-gray-900 text-right mt-2">
                     {formatCurrency(payment.Amount)}
                   </div>
                 </div>
@@ -543,15 +570,17 @@ const Payments = () => {
         />
       )}
 
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        totalItems={totalItems}
-        itemsPerPage={itemsPerPage}
-        onPrevPage={handlePrevPage}
-        onNextPage={handleNextPage}
-        onPageClick={handlePageClick}
-      />
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          itemsPerPage={itemsPerPage}
+          handlePrevPage={handlePrevPage} // Changed from onPrevPage
+          handleNextPage={handleNextPage} // Changed from onNextPage
+          handlePageClick={handlePageClick} // Changed from onPageClick
+        />
+      )}
     </div>
   );
 };

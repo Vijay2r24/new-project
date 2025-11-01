@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Tag, Info, Image, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useParams, useNavigate } from "react-router-dom";
@@ -18,6 +18,7 @@ import TextInputWithIcon from "../../../components/TextInputWithIcon";
 import SelectWithIcon from "../../../components/SelectWithIcon";
 import TextAreaWithIcon from "../../../components/TextAreaWithIcon";
 import BackButton from "../../../components/BackButton";
+import ImageCropperModal from "../../../components/ImageCropperModal"; // Import the cropper modal
 import { ToastContainer } from "react-toastify";
 import Loader from "../../../components/Loader";
 
@@ -40,11 +41,15 @@ const CreateCategory = () => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const isEditing = !!categoryId;
+  const fileInputRef = useRef(null);
 
   const [oFormData, setFormData] = useState(defaultFormData);
   const [oErrors, setErrors] = useState({});
   const [sImagePreview, setImagePreview] = useState(null);
   const [bSubmitting, setSubmitting] = useState(false);
+  // Cropper modal state
+  const [bShowCropper, setShowCropper] = useState(false);
+  const [oImageToCrop, setImageToCrop] = useState(null);
 
   // Redux state for categories
   const categoriesState = useSelector((state) => state.allData.resources.categories);
@@ -66,8 +71,12 @@ const CreateCategory = () => {
       if (sImagePreview && typeof sImagePreview === "string" && sImagePreview.startsWith("blob:")) {
         URL.revokeObjectURL(sImagePreview);
       }
+      // Cleanup cropper image URL
+      if (oImageToCrop) {
+        URL.revokeObjectURL(oImageToCrop);
+      }
     };
-  }, [categoriesError, sImagePreview, dispatch]);
+  }, [categoriesError, sImagePreview, oImageToCrop, dispatch]);
 
   // Fetch category by ID (for edit)
   useEffect(() => {
@@ -140,10 +149,14 @@ const CreateCategory = () => {
     }
   };
 
+  /**
+   * File upload handler - opens cropper instead of directly setting
+   */
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       setErrors((prev) => ({
         ...prev,
@@ -152,14 +165,78 @@ const CreateCategory = () => {
       return;
     }
 
-    // Clear image error when valid file is selected
-    setErrors((prev) => ({ ...prev, CategoryImage: "" }));
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setErrors((prev) => ({
+        ...prev,
+        CategoryImage: t("PRODUCT_SETUP.CREATE_CATEGORY.IMAGE_TYPE_ERROR"),
+      }));
+      return;
+    }
+
+    // Create object URL and open cropper
+    const imageUrl = URL.createObjectURL(file);
+    setImageToCrop(imageUrl);
+    setShowCropper(true);
+  };
+
+  /**
+   * Handle crop completion
+   */
+  const handleCropComplete = (croppedBlob) => {
+    if (!croppedBlob) {
+      setShowCropper(false);
+      return;
+    }
+
+    // Create preview URL from cropped blob
+    const croppedImageUrl = URL.createObjectURL(croppedBlob);
+    
+    // Create a File object from the blob for form submission
+    const croppedFile = new File([croppedBlob], `category-image-${Date.now()}.jpg`, {
+      type: "image/jpeg",
+      lastModified: Date.now(),
+    });
+
+    // Update form data with cropped image
     setFormData((prev) => ({ 
       ...prev, 
-      CategoryImage: file,
+      CategoryImage: croppedFile,
       existingImage: null, // Clear existing image when new file is uploaded
     }));
-    setImagePreview(URL.createObjectURL(file));
+
+    // Set preview
+    setImagePreview(croppedImageUrl);
+    
+    // Clear any existing errors
+    setErrors((prev) => ({ ...prev, CategoryImage: "" }));
+    
+    // Close cropper
+    setShowCropper(false);
+    
+    // Clean up the original image URL
+    if (oImageToCrop) {
+      URL.revokeObjectURL(oImageToCrop);
+      setImageToCrop(null);
+    }
+  };
+
+  /**
+   * Handle crop cancellation
+   */
+  const handleCropCancel = () => {
+    setShowCropper(false);
+    
+    // Clean up the image URL
+    if (oImageToCrop) {
+      URL.revokeObjectURL(oImageToCrop);
+      setImageToCrop(null);
+    }
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const handleRemoveImage = () => {
@@ -173,6 +250,11 @@ const CreateCategory = () => {
     }));
     setImagePreview(null);
     setErrors((prev) => ({ ...prev, CategoryImage: "" }));
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const validateForm = () => {
@@ -323,20 +405,27 @@ const handleSubmit = async (e) => {
     );
   };
 
-  // Helper function to render form field with error
-  const renderFormField = (fieldName, fieldComponent, error = null) => (
-    <div className="flex-1">
-      {fieldComponent}
-      {renderErrorMessage(error)}
-    </div>
-  );
-
   return (
     <div className="w-full min-h-screen">
       {bSubmitting && (
         <div className="global-loader-overlay">
           <Loader />
         </div>
+      )}
+      
+      {/* Image Cropper Modal */}
+      {bShowCropper && (
+        <ImageCropperModal
+          image={oImageToCrop}
+          onCropComplete={handleCropComplete}
+          onClose={handleCropCancel}
+          aspectRatio={1} // Square aspect ratio for category images
+          minWidth={200}
+          minHeight={200}
+          title={t("PRODUCT_SETUP.CREATE_CATEGORY.CROP_TITLE")}
+          cancelText={t("COMMON.CANCEL")}
+          saveText={t("COMMON.CROP_IMAGE")}
+        />
       )}
       
       <ToastContainer 
@@ -423,56 +512,80 @@ const handleSubmit = async (e) => {
             <div
               className={`relative group rounded-xl border-2 ${
                 oErrors.CategoryImage ? "border-red-300" : "border-gray-200"
-              } border-dashed transition-all duration-200 hover:border-custom-bg bg-gray-50 hover:bg-gray-50/50`}
+              } border-dashed transition-all duration-200 hover:border-[#5B45E0] bg-gray-50 hover:bg-gray-50/50`}
             >
-              <div className="p-6 space-y-3 text-center">
-                <div className="flex justify-center">
-                  <div className="p-3 rounded-full bg-white shadow-sm border border-gray-100">
-                    <Image className="h-8 w-8 text-gray-400 group-hover:text-[#5B45E0] transition-colors duration-200" />
+              <div className="p-6">
+                <div className="space-y-3 text-center">
+                  {/* Upload Icon - Only show when no image */}
+                  {!sImagePreview && (
+                    <div className="flex justify-center">
+                      <div className="p-3 rounded-full bg-white shadow-sm border border-gray-100">
+                        <Image className="h-8 w-8 text-gray-400 group-hover:text-[#5B45E0] transition-colors duration-200" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Upload input area */}
+                  <div className="flex flex-col items-center gap-2">
+                    {!sImagePreview ? (
+                      <>
+                        <div className="flex text-sm text-gray-600 justify-center">
+                          <label
+                            htmlFor="file-upload"
+                            className="relative cursor-pointer rounded-md font-medium text-[#5B45E0] hover:text-[#4c39c7] underline"
+                          >
+                            <span>{t("COMMON.UPLOAD")}</span>
+                            <input
+                              id="file-upload"
+                              ref={fileInputRef}
+                              name="CategoryImage"
+                              type="file"
+                              accept="image/*"
+                              onChange={handleFileChange}
+                              className="sr-only"
+                            />
+                          </label>
+                          <p className="pl-1">{t("COMMON.DRAG_DROP_TEXT")}</p>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          PNG, JPG, JPEG up to 10MB
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        {/* Image preview with better styling */}
+                        <div className="relative">
+                          <img
+                            src={sImagePreview}
+                            alt="Category Preview"
+                            className="h-32 w-32 object-contain rounded-lg border-2 border-gray-200 bg-white p-2 shadow-sm mx-auto"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleRemoveImage}
+                            className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-all duration-200"
+                            title="Remove image"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">
+                          Click the X to remove or upload a different image
+                        </p>
+                      </>
+                    )}
                   </div>
+
+                  {/* Logo errors */}
+                  {oErrors.CategoryImage && (
+                    <p className="text-sm text-red-600 flex items-center justify-center mt-2">
+                      <span className="mr-1">⚠️</span>
+                      {oErrors.CategoryImage}
+                    </p>
+                  )}
                 </div>
-                <div className="flex text-sm text-muted justify-center">
-                  <label
-                    htmlFor="file-upload"
-                    className="relative cursor-pointer rounded-md font-medium text-[#5B45E0] hover:text-[#4c39c7]"
-                  >
-                    <span>{t("COMMON.UPLOAD")}</span>
-                    <input
-                      id="file-upload"
-                      name="CategoryImage"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="sr-only"
-                    />
-                  </label>
-                  <p className="pl-1">{t("COMMON.DRAG_DROP_TEXT")}</p>
-                </div>
-                {sImagePreview && (
-                  <div className="mt-4 flex justify-center relative">
-                    <img
-                      src={sImagePreview}
-                      alt="Category Preview"
-                      className="max-h-32 max-w-full rounded-md border border-gray-200 shadow"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleRemoveImage}
-                      className="absolute -top-3 -right-3 p-1.5 bg-white border border-gray-300 text-gray-600 rounded-full shadow hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors duration-200 z-10"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                )}
-                {oErrors.CategoryImage && (
-                  <p className="text-sm text-red flex items-center justify-center">
-                    <span className="mr-1">⚠️</span>
-                    {oErrors.CategoryImage}
-                  </p>
-                )}
               </div>
             </div>
-            {renderErrorMessage(oErrors.CategoryImage)}
           </div>
 
           {/* Description */}

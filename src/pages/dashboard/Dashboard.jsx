@@ -9,7 +9,7 @@ import {
   Star,
   Clock,
   AlertCircle,
- IndianRupee,
+  IndianRupee,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -24,7 +24,7 @@ import {
 } from "../../contants/apiRoutes";
 import { apiGet } from "../../utils/ApiUtils";
 import Loader from "../../components/Loader";
-import { LOCALE, ORDER_STATUS,DASHBOARD_DEFAULT_LIMIT,CURRENCY,STATUS } from "../../contants/constants";
+import { LOCALE, ORDER_STATUS, DASHBOARD_DEFAULT_LIMIT, CURRENCY, STATUS } from "../../contants/constants";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -38,7 +38,7 @@ const Dashboard = () => {
       value: "₹0",
       change: "+0%",
       trend: "up",
-      icon:  IndianRupee,
+      icon: IndianRupee,
       color: "bg-green-100 text-green-600",
       comparisonText: t("DASHBOARD.COMPARISONTEXT"),
     },
@@ -76,19 +76,33 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Date picker state with default values (last 30 days)
-  const [value, setValue] = useState({
-    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .split("T")[0],
-    endDate: new Date().toISOString().split("T")[0],
-  });
+  // Calculate default date range (last 7 days)
+  const getDefaultDateRange = () => {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - 6); // 7 days including today
+    
+    return {
+      startDate,
+      endDate
+    };
+  };
+
+  // Date picker state with default 7 days
+  const [value, setValue] = useState(getDefaultDateRange());
 
   const [nTopProductsPage, setTopProductsPage] = useState(1);
   const [nSelectedProduct, setSelectedProduct] = useState(null);
   const [bShowProductModal, setShowProductModal] = useState(false);
 
   const paginatedTopProducts = topProducts;
+
+  // Format date to YYYY-MM-DD
+  const formatDateToAPI = (date) => {
+    if (!date) return null;
+    const dateObj = new Date(date);
+    return dateObj.toISOString().split('T')[0];
+  };
 
   // Format currency
   const formatCurrency = (amount) => {
@@ -105,54 +119,74 @@ const Dashboard = () => {
     return new Intl.NumberFormat(LOCALE).format(num);
   };
 
-  // Calculate the comparison period text based on date range
+  // Improved comparison text calculation
   const getComparisonText = (startDate, endDate) => {
-  if (!startDate || !endDate) return t("DASHBOARD.COMPARISONTEXT");
+    if (!startDate || !endDate) return t("DASHBOARD.COMPARISONTEXT");
 
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  
-  const startStr = start.toISOString().split('T')[0];
-  const endStr = end.toISOString().split('T')[0];
-  
-  // Single day selections
-  if (startStr === endStr) {
-    const today = new Date().toISOString().split('T')[0];
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    
-    if (startStr === today) return t("DASHBOARD.VSYESTERDAY");
-    if (startStr === yesterday) return t("DASHBOARD.VSDAYBEFOREYESTERDAY");
-    return t("DASHBOARD.VSPREVIOUSDAY");
-  }
-  
-  // Date ranges
-  const diffTime = Math.abs(end - start);
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    try {
+      // Convert to Date objects if they're strings
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      // Calculate the difference in days
+      const diffTime = Math.abs(end - start);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end dates
 
-  switch (diffDays) {
-    case 1: return t("DASHBOARD.VSPREVIOUSDAY");
-    case 7: return t("DASHBOARD.VSLASTWEEK");
-    case 30:
-    case 31: return t("DASHBOARD.VSLASTMONTH");
-    case 90: return t("DASHBOARD.VSLAST3MONTHS");
-    case 365:
-    case 366: return t("DASHBOARD.VSLASTYEAR");
-    default: return  t("DASHBOARD.VSLASTXDAYS", { count: diffDays });
-  }
-};
+      // Get today and yesterday for single day comparisons
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+
+      // Format dates for comparison (YYYY-MM-DD)
+      const startStr = start.toISOString().split('T')[0];
+      const endStr = end.toISOString().split('T')[0];
+      const todayStr = today.toISOString().split('T')[0];
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+      // Single day selections
+      if (startStr === endStr) {
+        if (startStr === todayStr) return t("DASHBOARD.VSYESTERDAY");
+        if (startStr === yesterdayStr) return t("DASHBOARD.VSDAYBEFOREYESTERDAY");
+        return t("DASHBOARD.VSPREVIOUSDAY");
+      }
+
+      // Date ranges - use exact day counts for more accurate matching
+      switch (diffDays) {
+        case 1: return t("DASHBOARD.VSPREVIOUSDAY");
+        case 7: return t("DASHBOARD.VSLASTWEEK");
+        case 30:
+        case 31: return t("DASHBOARD.VSLASTMONTH");
+        case 90: return t("DASHBOARD.VSLAST3MONTHS");
+        case 365:
+        case 366: return t("DASHBOARD.VSLASTYEAR");
+        default: 
+          // For custom ranges, use the exact number of days
+          return t("DASHBOARD.VSLASTXDAYS", { count: diffDays });
+      }
+    } catch (error) {
+      console.error("Error calculating comparison text:", error);
+      return t("DASHBOARD.COMPARISONTEXT");
+    }
+  };
+
   // Calculate percentage change and trend
   const calculateMetrics = (current, previous, title, comparisonText) => {
-    if (!current || !previous)
-      return { value: "0", change: "0%", trend: "neutral", comparisonText };
+    if (current === undefined || current === null || previous === undefined || previous === null) {
+      return { 
+        value: title.includes("Revenue") || title.includes("Average") ? formatCurrency(0) : formatNumber(0), 
+        change: "0%", 
+        trend: "neutral", 
+        comparisonText 
+      };
+    }
 
-    const currentNum =
-      typeof current === "string"
-        ? parseFloat(current.replace(/[^0-9.-]+/g, ""))
-        : current;
-    const previousNum =
-      typeof previous === "string"
-        ? parseFloat(previous.replace(/[^0-9.-]+/g, ""))
-        : previous;
+    const currentNum = typeof current === "string" ? 
+      parseFloat(current.replace(/[^0-9.-]+/g, "")) || 0 : 
+      Number(current) || 0;
+    
+    const previousNum = typeof previous === "string" ? 
+      parseFloat(previous.replace(/[^0-9.-]+/g, "")) || 0 : 
+      Number(previous) || 0;
 
     if (previousNum === 0) {
       return {
@@ -175,9 +209,7 @@ const Dashboard = () => {
         title.includes("Revenue") || title.includes("Average")
           ? formatCurrency(currentNum)
           : formatNumber(currentNum),
-      change: `${percentageChange > 0 ? "+" : ""}${percentageChange.toFixed(
-        2
-      )}%`,
+      change: `${percentageChange > 0 ? "+" : ""}${percentageChange.toFixed(2)}%`,
       trend,
       comparisonText,
     };
@@ -194,14 +226,18 @@ const Dashboard = () => {
       // Calculate comparison text based on date range
       const comparisonText = getComparisonText(startDate, endDate);
 
-      // Prepare query parameters for date range
-      const dateParams =
-        startDate && endDate
-          ? {
-              startDate: new Date(startDate).toISOString(),
-              endDate: new Date(endDate).toISOString(),
-            }
-          : {};
+      // Prepare query parameters for date range with formatted dates
+      const dateParams = {
+        startDate: formatDateToAPI(startDate),
+        endDate: formatDateToAPI(endDate),
+      };
+
+      // Debug logging
+      console.log('Dashboard date params:', {
+        rawDates: value,
+        apiDates: dateParams,
+        comparisonText
+      });
 
       // Get token from localStorage
       const token = localStorage.getItem("token");
@@ -215,6 +251,7 @@ const Dashboard = () => {
             type: "revenue",
           }))
           .catch((error) => {
+            console.error("Revenue API error:", error);
             return {
               type: "revenue",
               data: {
@@ -232,6 +269,7 @@ const Dashboard = () => {
             type: "orders",
           }))
           .catch((error) => {
+            console.error("Orders API error:", error);
             return {
               type: "orders",
               data: {
@@ -249,6 +287,7 @@ const Dashboard = () => {
             type: "customers",
           }))
           .catch((error) => {
+            console.error("Customers API error:", error);
             return {
               type: "customers",
               data: {
@@ -266,6 +305,7 @@ const Dashboard = () => {
             type: "recentOrders",
           }))
           .catch((error) => {
+            console.error("Recent orders API error:", error);
             return { type: "recentOrders", data: [] };
           }),
 
@@ -276,6 +316,7 @@ const Dashboard = () => {
             type: "topProducts",
           }))
           .catch((error) => {
+            console.error("Top products API error:", error);
             return { type: "topProducts", data: [] };
           }),
       ];
@@ -456,14 +497,16 @@ const Dashboard = () => {
 
       setLowStockItems(lowStock);
     } catch (err) {
+      console.error("Dashboard data fetch error:", err);
       setError(t("DASHBOARD.FAILED_TO_LOAD"));
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle date change
+  // Handle date change - ensure proper date objects
   const handleDateChange = (newValue) => {
+    console.log('Date picker new value:', newValue);
     setValue(newValue);
   };
 
@@ -620,7 +663,7 @@ const Dashboard = () => {
 
           {/* Using the new DatePicker component */}
           <div className="relative w-[18rem] max-w-full">
-          <DatePicker value={value} onChange={handleDateChange}/>
+            <DatePicker value={value} onChange={handleDateChange}/>
           </div>
         </div>
       </div>
