@@ -1,28 +1,47 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchResource, clearResourceError, updateStatusById } from "../../../store/slices/allDataSlice";
+import {
+  fetchResource,
+  clearResourceError,
+  updateStatusById,
+} from "../../../store/slices/allDataSlice";
 import Toolbar from "../../../components/Toolbar";
 import { useTranslation } from "react-i18next";
 import Pagination from "../../../components/Pagination";
 import { showEmsg } from "../../../utils/ShowEmsg";
 import FullscreenErrorPopup from "../../../components/FullscreenErrorPopup";
-import { CREATE_OR_UPDATE_SPECIFICATION_TYPE, GET_SPECIFICATION_TYPE_ID, UPDATE_SPECIFICATION_TYPE_STATUS } from "../../../contants/apiRoutes";
+import {
+  CREATE_SPECIFICATION_TYPE,
+  GET_SPECIFICATION_TYPE_ID,
+  UPDATE_SPECIFICATION_TYPE,
+  UPDATE_SPECIFICATION_TYPE_STATUS,
+} from "../../../contants/apiRoutes";
 import Switch from "../../../components/Switch";
-import { ITEMS_PER_PAGE, DEFAULT_PAGE, STATUS, FORM_MODES, STATUS_VALUES, STATUS_OPTIONS } from "../../../contants/constants";
+import {
+  ITEMS_PER_PAGE,
+  DEFAULT_PAGE,
+  STATUS,
+  FORM_MODES,
+  STATUS_VALUES,
+  STATUS_OPTIONS,
+  DATE_FORMAT_OPTIONS,
+} from "../../../contants/constants";
 import { hideLoaderWithDelay } from "../../../utils/loaderUtils";
-import { apiPost, apiGet } from "../../../utils/ApiUtils";
+import { apiPost, apiGet, apiPut } from "../../../utils/ApiUtils";
 import ActionButtons from "../../../components/ActionButtons";
 
 const SpecificationTypeList = ({ setSubmitting }) => {
   const { t } = useTranslation();
   const dispatch = useDispatch();
-  
+
   const [sSearchQuery, setSearchQuery] = useState(""); // Search input
   const [bShowFilters, setShowFilters] = useState(false); // Toggle filter dropdown
   const [oFilters, setFilters] = useState({ status: STATUS_VALUES.ALL }); // Filters applied on table
 
   // Redux state for specification types
-  const specificationTypesState = useSelector((state) => state.allData.resources.specificationType);
+  const specificationTypesState = useSelector(
+    (state) => state.allData.resources.specificationType
+  );
   const aSpecificationTypes = specificationTypesState?.data || [];
   const bLoading = specificationTypesState?.loading || false;
   const sError = specificationTypesState?.error;
@@ -58,7 +77,7 @@ const SpecificationTypeList = ({ setSubmitting }) => {
     if (oFilters.status !== STATUS_VALUES.ALL) {
       params.IsActive = oFilters.status;
     }
-    
+
     dispatch(fetchResource({ key: "specificationType", params }));
   }, [dispatch, nCurrentPage, iItemsPerPage, sSearchQuery, oFilters.status]);
 
@@ -75,10 +94,10 @@ const SpecificationTypeList = ({ setSubmitting }) => {
   const handleStatusChange = (specificationTypeId, currentStatus) => {
     // FIX: currentStatus is a boolean, not a string
     const isCurrentlyActive = Boolean(currentStatus);
-    setStatusPopup({ 
-      open: true, 
+    setStatusPopup({
+      open: true,
       specificationTypeId,
-      newStatus: !isCurrentlyActive 
+      newStatus: !isCurrentlyActive,
     });
   };
 
@@ -122,7 +141,7 @@ const SpecificationTypeList = ({ setSubmitting }) => {
   // Open "edit" form and fetch latest data by ID
   const handleEdit = async (specificationType) => {
     if (setSubmitting) setSubmitting(true);
-    
+
     try {
       const token = localStorage.getItem("token");
       const response = await apiGet(
@@ -130,7 +149,7 @@ const SpecificationTypeList = ({ setSubmitting }) => {
         {},
         token
       );
-      
+
       if (response?.data?.status === STATUS.SUCCESS.toUpperCase()) {
         setEditForm({
           open: true,
@@ -140,10 +159,15 @@ const SpecificationTypeList = ({ setSubmitting }) => {
           originalData: specificationType,
         });
       } else {
-        showEmsg(response?.data?.message || t("CONTEXT.ERROR_FETCHING_SPECIFICATION_TYPE"), STATUS.ERROR);
+        showEmsg(
+          response?.data?.message ||
+            t("CONTEXT.ERROR_FETCHING_SPECIFICATION_TYPE"),
+          STATUS.ERROR
+        );
       }
     } catch (err) {
-      const errorMessage = err?.response?.data?.message || t("COMMON.API_ERROR");
+      const errorMessage =
+        err?.response?.data?.message || t("COMMON.API_ERROR");
       showEmsg(errorMessage, STATUS.ERROR);
     } finally {
       hideLoaderWithDelay(setSubmitting);
@@ -153,9 +177,9 @@ const SpecificationTypeList = ({ setSubmitting }) => {
   // Handle text input change for form
   const handleFormChange = (e) => {
     const { name, value } = e.target;
-    setEditForm(prev => ({
+    setEditForm((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -163,29 +187,41 @@ const SpecificationTypeList = ({ setSubmitting }) => {
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     if (setSubmitting) setSubmitting(true);
-    
+
     try {
       const token = localStorage.getItem("token");
-      const payload = { Name: editForm.name };
-      
+      const userId = localStorage.getItem("userId"); // Get user ID for CreatedBy/UpdatedBy
+
+      // Base payload
+      const payload = {
+        Name: editForm.name,
+        IsActive: true,
+      };
+
       if (editForm.mode === FORM_MODES.EDIT) {
         payload.SpecificationTypeID = editForm.specificationTypeId;
+        payload.UpdatedBy = userId;
+      } else {
+        payload.CreatedBy = userId;
       }
 
-      const response = await apiPost(
-        CREATE_OR_UPDATE_SPECIFICATION_TYPE,
-        payload,
-        token
-      );
+      let response;
+
+      if (editForm.mode === FORM_MODES.EDIT) {
+        response = await apiPut(UPDATE_SPECIFICATION_TYPE, payload, token);
+      } else {
+        response = await apiPost(CREATE_SPECIFICATION_TYPE, payload, token);
+      }
 
       if (response?.data?.status === STATUS.SUCCESS.toUpperCase()) {
-        const successMessage = response?.data?.message || 
-          (editForm.mode === FORM_MODES.CREATE 
-            ? t("PRODUCT_SETUP.SPECIFICATION_TYPES.CREATE_SUCCESS") 
+        const successMessage =
+          response?.data?.message ||
+          (editForm.mode === FORM_MODES.CREATE
+            ? t("PRODUCT_SETUP.SPECIFICATION_TYPES.CREATE_SUCCESS")
             : t("PRODUCT_SETUP.SPECIFICATION_TYPES.UPDATE_SUCCESS"));
-      
+
         showEmsg(successMessage, STATUS.SUCCESS);
-        
+
         const params = {
           pageNumber: nCurrentPage,
           pageSize: iItemsPerPage,
@@ -195,7 +231,7 @@ const SpecificationTypeList = ({ setSubmitting }) => {
           params.status = oFilters.status;
         }
         dispatch(fetchResource({ key: "specificationType", params }));
-        
+
         setEditForm({
           open: false,
           mode: FORM_MODES.CREATE,
@@ -204,11 +240,15 @@ const SpecificationTypeList = ({ setSubmitting }) => {
           originalData: null,
         });
       } else {
-        showEmsg(response?.data?.message || t("CONTEXT.ERROR_SAVING_SPECIFICATION_TYPE"), STATUS.ERROR);
+        showEmsg(
+          response?.data?.message ||
+            t("CONTEXT.ERROR_SAVING_SPECIFICATION_TYPE"),
+          STATUS.ERROR
+        );
       }
-      
     } catch (err) {
-      const errorMessage = err?.response?.data?.message || t("COMMON.API_ERROR");
+      const errorMessage =
+        err?.response?.data?.message || t("COMMON.API_ERROR");
       showEmsg(errorMessage, STATUS.ERROR);
     } finally {
       hideLoaderWithDelay(setSubmitting);
@@ -228,7 +268,11 @@ const SpecificationTypeList = ({ setSubmitting }) => {
 
   // Check if a row is currently being edited
   const isEditing = (specificationTypeId) => {
-    return editForm.open && editForm.mode === FORM_MODES.EDIT && editForm.specificationTypeId === specificationTypeId;
+    return (
+      editForm.open &&
+      editForm.mode === FORM_MODES.EDIT &&
+      editForm.specificationTypeId === specificationTypeId
+    );
   };
 
   // Get current status for row being edited
@@ -242,7 +286,7 @@ const SpecificationTypeList = ({ setSubmitting }) => {
   const handleStatusConfirm = async () => {
     if (setSubmitting) setSubmitting(true);
     const { specificationTypeId, newStatus } = statusPopup;
-    
+
     try {
       const result = await dispatch(
         updateStatusById({
@@ -253,9 +297,9 @@ const SpecificationTypeList = ({ setSubmitting }) => {
           idField: "SpecificationTypeID",
         })
       ).unwrap();
-  
+
       showEmsg(result.message, STATUS.SUCCESS);
-  
+
       const params = {
         pageNumber: nCurrentPage,
         pageSize: iItemsPerPage,
@@ -268,15 +312,19 @@ const SpecificationTypeList = ({ setSubmitting }) => {
     } catch (err) {
       showEmsg(err?.message || t("COMMON.API_ERROR"), STATUS.ERROR);
     } finally {
-      setStatusPopup({ open: false, specificationTypeId: null, newStatus: null });
+      setStatusPopup({
+        open: false,
+        specificationTypeId: null,
+        newStatus: null,
+      });
       hideLoaderWithDelay(setSubmitting);
     }
   };
 
   // Prepare status options using STATUS_OPTIONS from constants
-  const statusFilterOptions = STATUS_OPTIONS.map(option => ({
+  const statusFilterOptions = STATUS_OPTIONS.map((option) => ({
     value: option.value,
-    label: t(option.labelKey)
+    label: t(option.labelKey),
   }));
 
   return (
@@ -287,7 +335,7 @@ const SpecificationTypeList = ({ setSubmitting }) => {
           {t("PRODUCT_SETUP.SPECIFICATION_TYPES.TITLE")}
         </h2>
       </div>
-      
+
       {/* Toolbar with search and filters */}
       <div className="mb-6">
         <Toolbar
@@ -295,7 +343,9 @@ const SpecificationTypeList = ({ setSubmitting }) => {
           setSearchTerm={setSearchQuery}
           showFilterDropdown={bShowFilters}
           setShowFilterDropdown={setShowFilters}
-          searchPlaceholder={t("PRODUCT_SETUP.SPECIFICATION_TYPES.SEARCH_PLACEHOLDER")}
+          searchPlaceholder={t(
+            "PRODUCT_SETUP.SPECIFICATION_TYPES.SEARCH_PLACEHOLDER"
+          )}
           showSearch={true}
           showViewToggle={false}
           showFilterButton={true}
@@ -332,10 +382,14 @@ const SpecificationTypeList = ({ setSubmitting }) => {
             <table className="table-base">
               <thead className="table-head">
                 <tr>
-                  <th className="table-head-cell">{t("PRODUCT_SETUP.SPECIFICATION_TYPES.TABLE.NAME")}</th>
+                  <th className="table-head-cell">
+                    {t("PRODUCT_SETUP.SPECIFICATION_TYPES.TABLE.NAME")}
+                  </th>
                   <th className="table-head-cell">{t("COMMON.CREATED_AT")}</th>
                   <th className="table-head-cell">{t("COMMON.STATUS")}</th>
-                  <th className="table-head-cell">{t("COMMON.UPDATE_STATUS")}</th>
+                  <th className="table-head-cell">
+                    {t("COMMON.UPDATE_STATUS")}
+                  </th>
                   <th className="table-head-cell">{t("COMMON.ACTIONS")}</th>
                 </tr>
               </thead>
@@ -350,7 +404,9 @@ const SpecificationTypeList = ({ setSubmitting }) => {
                         value={editForm.name}
                         onChange={handleFormChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                        placeholder={t("PRODUCT_SETUP.SPECIFICATION_TYPES.NAME_PLACEHOLDER")}
+                        placeholder={t(
+                          "PRODUCT_SETUP.SPECIFICATION_TYPES.NAME_PLACEHOLDER"
+                        )}
                         required
                       />
                     </td>
@@ -365,27 +421,42 @@ const SpecificationTypeList = ({ setSubmitting }) => {
                     </td>
                     <td className="table-cell">
                       <div className="flex items-center gap-2">
-                        <button onClick={handleFormSubmit} className="btn-primary py-1 px-3 text-sm">
+                        <button
+                          onClick={handleFormSubmit}
+                          className="btn-primary py-1 px-3 text-sm"
+                        >
                           {t("COMMON.SAVE")}
                         </button>
-                        <button onClick={handleFormCancel} className="btn-cancel py-1 px-3 text-sm">
+                        <button
+                          onClick={handleFormCancel}
+                          className="btn-cancel py-1 px-3 text-sm"
+                        >
                           {t("COMMON.CANCEL")}
                         </button>
                       </div>
                     </td>
                   </tr>
                 )}
-                
+
                 {/* List all specification types */}
                 {aSpecificationTypes.map((specType) => {
                   const editing = isEditing(specType.SpecificationTypeID);
-                  const currentStatus = editing ? getCurrentStatus(specType.SpecificationTypeID) : specType.IsActive;
+                  const currentStatus = editing
+                    ? getCurrentStatus(specType.SpecificationTypeID)
+                    : specType.IsActive;
                   const isInactive = !currentStatus;
-                  
+
                   return (
-                    <tr key={specType.SpecificationTypeID} className={`table-row ${editing ? "bg-blue-50" : ""}`}>
+                    <tr
+                      key={specType.SpecificationTypeID}
+                      className={`table-row ${editing ? "bg-blue-50" : ""}`}
+                    >
                       {/* Name column */}
-                      <td className={`table-cell ${isInactive && !editing ? 'text-gray-500' : ''}`}>
+                      <td
+                        className={`table-cell ${
+                          isInactive && !editing ? "text-gray-500" : ""
+                        }`}
+                      >
                         {editing ? (
                           <input
                             type="text"
@@ -393,13 +464,23 @@ const SpecificationTypeList = ({ setSubmitting }) => {
                             value={editForm.name}
                             onChange={handleFormChange}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                            placeholder={t("PRODUCT_SETUP.SPECIFICATION_TYPES.NAME_PLACEHOLDER")}
+                            placeholder={t(
+                              "PRODUCT_SETUP.SPECIFICATION_TYPES.NAME_PLACEHOLDER"
+                            )}
                             required
                           />
                         ) : (
-                          <div 
-                            className={`block truncate max-w-[180px] ${isInactive ? 'cursor-not-allowed' : ''}`}
-                            title={isInactive ? t("PRODUCT_SETUP.SPECIFICATION_TYPES.EDIT_DISABLED_TOOLTIP") : specType.Name}
+                          <div
+                            className={`block truncate max-w-[180px] ${
+                              isInactive ? "cursor-not-allowed" : ""
+                            }`}
+                            title={
+                              isInactive
+                                ? t(
+                                    "PRODUCT_SETUP.SPECIFICATION_TYPES.EDIT_DISABLED_TOOLTIP"
+                                  )
+                                : specType.Name
+                            }
                           >
                             {specType.Name}
                           </div>
@@ -407,21 +488,32 @@ const SpecificationTypeList = ({ setSubmitting }) => {
                       </td>
 
                       {/* Created At column */}
-                      <td className={`table-cell table-cell-text ${isInactive && !editing ? 'text-gray-400' : ''}`}>
-                        {specType.CreatedAt ? new Date(specType.CreatedAt).toLocaleString(undefined, {
-                          year: "numeric",
-                          month: "2-digit",
-                          day: "2-digit",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          hour12: true,
-                        }) : "-"}
+                      <td
+                        className={`table-cell table-cell-text ${
+                          isInactive && !editing ? "text-gray-400" : ""
+                        }`}
+                      >
+                        {specType.CreatedAt
+                          ? new Date(specType.CreatedAt).toLocaleString(
+                              undefined,
+                              {
+                                year:DATE_FORMAT_OPTIONS.year,
+                                month: DATE_FORMAT_OPTIONS.month,
+                                day: DATE_FORMAT_OPTIONS.day,
+                                hour: DATE_FORMAT_OPTIONS.hour,
+                                minute: DATE_FORMAT_OPTIONS.minute,
+                                hour12: true,
+                              }
+                            )
+                          : "-"}
                       </td>
-                   
+
                       {/* Status */}
                       <td className="table-cell">
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${currentStatus ? "status-active" : "status-inactive"}`}
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            currentStatus ? "status-active" : "status-inactive"
+                          }`}
                         >
                           {t(`COMMON.${currentStatus ? "ACTIVE" : "INACTIVE"}`)}
                         </span>
@@ -431,7 +523,12 @@ const SpecificationTypeList = ({ setSubmitting }) => {
                       <td className="table-cell table-cell-text">
                         <Switch
                           checked={Boolean(currentStatus)} // Ensure it's a boolean
-                          onChange={() => handleStatusChange(specType.SpecificationTypeID, currentStatus)}
+                          onChange={() =>
+                            handleStatusChange(
+                              specType.SpecificationTypeID,
+                              currentStatus
+                            )
+                          }
                           disabled={editing}
                         />
                       </td>
@@ -441,17 +538,23 @@ const SpecificationTypeList = ({ setSubmitting }) => {
                         <div className="flex items-center gap-2">
                           {editing ? (
                             <>
-                              <button onClick={handleFormSubmit} className="btn-primary py-1 px-3 text-sm">
+                              <button
+                                onClick={handleFormSubmit}
+                                className="btn-primary py-1 px-3 text-sm"
+                              >
                                 {t("COMMON.SAVE")}
                               </button>
-                              <button onClick={handleFormCancel} className="btn-cancel py-1 px-3 text-sm">
+                              <button
+                                onClick={handleFormCancel}
+                                className="btn-cancel py-1 px-3 text-sm"
+                              >
                                 {t("COMMON.CANCEL")}
                               </button>
                             </>
                           ) : (
                             <ActionButtons
                               id={specType.SpecificationTypeID}
-                              className="mr-10" 
+                              className="mr-10"
                               onEdit={() => handleEdit(specType)}
                               disableEdit={isInactive}
                             />
@@ -466,23 +569,26 @@ const SpecificationTypeList = ({ setSubmitting }) => {
           </div>
         </div>
       )}
-      
+
       {/* Empty state */}
-      {!bLoading && !sError && aSpecificationTypes.length === 0 && !editForm.open && (
-        <div className="text-center py-12">
-          <div className="text-gray-500">
-            {t("PRODUCT_SETUP.SPECIFICATION_TYPES.EMPTY.MESSAGE")}
+      {!bLoading &&
+        !sError &&
+        aSpecificationTypes.length === 0 &&
+        !editForm.open && (
+          <div className="text-center py-12">
+            <div className="text-gray-500">
+              {t("PRODUCT_SETUP.SPECIFICATION_TYPES.EMPTY.MESSAGE")}
+            </div>
+            {sSearchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="mt-2 text-[#5B45E0] hover:text-[#4c39c7]"
+              >
+                {t("COMMON.CLEAR_SEARCH")}
+              </button>
+            )}
           </div>
-          {sSearchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="mt-2 text-[#5B45E0] hover:text-[#4c39c7]"
-            >
-              {t("COMMON.CLEAR_SEARCH")}
-            </button>
-          )}
-        </div>
-      )}
+        )}
 
       {/* Pagination */}
       {iTotalItems > 0 && (
@@ -496,7 +602,7 @@ const SpecificationTypeList = ({ setSubmitting }) => {
           handlePageClick={handlePageClick}
         />
       )}
-      
+
       {/* Confirmation popup for status change */}
       {statusPopup.open && (
         <FullscreenErrorPopup
