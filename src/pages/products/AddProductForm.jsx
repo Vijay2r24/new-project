@@ -1,3 +1,5 @@
+
+
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Plus, X, Upload, Tag, Hash, ShoppingBag, Layers } from "lucide-react";
 import { useDropzone } from "react-dropzone";
@@ -244,16 +246,16 @@ const AddProductForm = () => {
               variants.length > 0
                 ? variants
                 : [
-                    {
-                      attributes: [],
-                      Quantity: "",
-                      MRP: "",
-                      SellingPrice: "",
-                      DiscountPercentage: "",
-                      StoreID: "",
-                      images: [],
-                    },
-                  ]
+                  {
+                    attributes: [],
+                    Quantity: "",
+                    MRP: "",
+                    SellingPrice: "",
+                    DiscountPercentage: "",
+                    StoreID: "",
+                    images: [],
+                  },
+                ]
             );
 
             // Fetch attributes for each unique AttributeTypeID after setting attributes
@@ -551,9 +553,8 @@ const AddProductForm = () => {
             (a.AttributeTypeID || a.attributeTypeID) === attr.AttributeTypeID
         );
         return att
-          ? `${att.Value || att.value}${
-              att.Unit || att.unit ? ` (${att.Unit || att.unit})` : ""
-            }`
+          ? `${att.Value || att.value}${att.Unit || att.unit ? ` (${att.Unit || att.unit})` : ""
+          }`
           : "Unknown";
       })
       .join(" - ");
@@ -648,12 +649,13 @@ const AddProductForm = () => {
       Variants: variantsData,
       ...(productId
         ? {
-            ProductID: productId,
-            UpdatedBy: userId,
-          }
+          ProductID: productId,
+          UpdatedBy: userId,
+
+        }
         : {
-            CreatedBy: userId,
-          }),
+          CreatedBy: userId,
+        }),
     };
 
     const data = new FormData();
@@ -693,9 +695,9 @@ const AddProductForm = () => {
       if (resData?.status === STATUS.SUCCESS.toUpperCase()) {
         showEmsg(
           resData.MESSAGE ||
-            (productId
-              ? t("PRODUCT_CREATION.PRODUCT_UPDATED_SUCCESS")
-              : t("PRODUCT_CREATION.PRODUCT_CREATED_SUCCESS")),
+          (productId
+            ? t("PRODUCT_CREATION.PRODUCT_UPDATED_SUCCESS")
+            : t("PRODUCT_CREATION.PRODUCT_CREATED_SUCCESS")),
           STATUS.SUCCESS,
           3000,
           () => {
@@ -705,9 +707,9 @@ const AddProductForm = () => {
       } else {
         showEmsg(
           resData?.MESSAGE ||
-            (productId
-              ? t("PRODUCT_CREATION.PRODUCT_UPDATE_FAILED")
-              : t("PRODUCT_CREATION.PRODUCT_CREATE_FAILED")),
+          (productId
+            ? t("PRODUCT_CREATION.PRODUCT_UPDATE_FAILED")
+            : t("PRODUCT_CREATION.PRODUCT_CREATE_FAILED")),
           STATUS.ERROR
         );
       }
@@ -736,10 +738,9 @@ const AddProductForm = () => {
         <div
           {...getRootProps()}
           className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-300
-            ${
-              isDragActive
-                ? "border-blue-500 bg-blue-50 scale-[1.02] shadow-lg"
-                : "border-gray-300 hover:border-blue-400 hover:bg-gray-50 hover:shadow-md"
+            ${isDragActive
+              ? "border-blue-500 bg-blue-50 scale-[1.02] shadow-lg"
+              : "border-gray-300 hover:border-blue-400 hover:bg-gray-50 hover:shadow-md"
             }`}
         >
           <input {...getInputProps()} />
@@ -903,10 +904,12 @@ const AddProductForm = () => {
                     name="BrandID"
                     value={oFormData.BrandID}
                     onChange={handleInputChange}
-                    options={brands.map((brand) => ({
-                      value: brand.BrandID,
-                      label: brand.BrandName,
-                    }))}
+                    options={brands
+                      .filter(brand => brand.IsActive) 
+                      .map((brand) => ({
+                        value: brand.BrandID,
+                        label: brand.BrandName,
+                      }))}
                     Icon={Tag}
                     error={oValidationErrors.BrandID}
                     placeholder={t("PRODUCT_CREATION.BRAND_ID_PLACEHOLDER")}
@@ -923,10 +926,10 @@ const AddProductForm = () => {
                     value={oFormData.CategoryID}
                     onChange={handleInputChange}
                     options={categories
-                      .filter(
-                        (category) =>
-                          category.ParentCategoryID !== null &&
-                          category.ParentCategoryID !== undefined
+                      .filter(category => 
+                        category.ParentCategoryID !== null && 
+                        category.ParentCategoryID !== undefined &&
+                        category.IsActive // Add IsActive check
                       )
                       .map((category) => ({
                         value: category.CategoryID,
@@ -945,10 +948,12 @@ const AddProductForm = () => {
                     name="StoreID"
                     value={oFormData.StoreID}
                     onChange={handleInputChange}
-                    options={stores.map((store) => ({
-                      value: store.StoreID,
-                      label: store.StoreName,
-                    }))}
+                    options={stores
+                      .filter(store => store.IsActive) // Add IsActive check
+                      .map((store) => ({
+                        value: store.StoreID,
+                        label: store.StoreName,
+                      }))}
                     Icon={Tag}
                     error={oValidationErrors.StoreID}
                     placeholder={
@@ -1039,11 +1044,10 @@ const AddProductForm = () => {
                               value:
                                 attribute.AttributeValueID ||
                                 attribute.attributeValueID,
-                              label: `${attribute.Value || attribute.value}${
-                                attribute.Unit || attribute.unit
+                              label: `${attribute.Value || attribute.value}${attribute.Unit || attribute.unit
                                   ? ` (${attribute.Unit || attribute.unit})`
                                   : ""
-                              }`,
+                                }`,
                             }))}
                           Icon={Layers}
                           error={
@@ -1112,14 +1116,16 @@ const AddProductForm = () => {
                               e.target.value
                             )
                           }
-                          options={specificationTypes.map((specType) => ({
-                            value: specType.SpecificationTypeID,
-                            label: specType.Name,
-                          }))}
+                          options={specificationTypes
+                            .filter(specType => specType.IsActive) // Add IsActive check
+                            .map((specType) => ({
+                              value: specType.SpecificationTypeID,
+                              label: specType.Name,
+                            }))}
                           Icon={Tag}
                           error={
                             oValidationErrors[
-                              `spec_${index}_SpecificationTypeID`
+                            `spec_${index}_SpecificationTypeID`
                             ]
                           }
                           placeholder={t(
@@ -1180,9 +1186,8 @@ const AddProductForm = () => {
                   placeholder={t(
                     "PRODUCT_CREATION.PRODUCT_DESCRIPTION_PLACEHOLDER"
                   )}
-                  className={`h-32 mb-10 ${
-                    oValidationErrors.ProductDescription ? "border-red-500" : ""
-                  }`}
+                  className={`h-32 mb-10 ${oValidationErrors.ProductDescription ? "border-red-500" : ""
+                    }`}
                   ref={productDescriptionRef}
                 />
                 {oValidationErrors.ProductDescription && (
@@ -1210,10 +1215,9 @@ const AddProductForm = () => {
                     key={index}
                     className={({ selected }) =>
                       `px-6 py-3 text-sm font-medium leading-5 border-b-2 outline-none
-                      ${
-                        selected
-                          ? "border-custom-bg text-custom-bg"
-                          : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                      ${selected
+                        ? "border-custom-bg text-custom-bg"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                       }`
                     }
                   >
@@ -1306,7 +1310,7 @@ const AddProductForm = () => {
                           Icon={Tag}
                           error={
                             oValidationErrors[
-                              `variant_${index}_DiscountPercentage`
+                            `variant_${index}_DiscountPercentage`
                             ]
                           }
                           ref={(el) =>
