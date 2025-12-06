@@ -290,7 +290,7 @@ const Employees = () => {
 
   const [aEmployees, setEmployees] = useState(dummyEmployees);
   const [bLoading, setLoading] = useState(false);
-  const [nTotalPages, setTotalPages] = useState(Math.ceil(dummyEmployees.length / itemsPerPage));
+  const [nTotalpages, setTotalpages] = useState(Math.ceil(dummyEmployees.length / itemsPerPage));
   const [nTotalRecords, setTotalRecords] = useState(dummyEmployees.length);
 
   const defaultFilters = {
@@ -481,7 +481,7 @@ const Employees = () => {
   const startIndex = (nCurrentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedEmployees = filteredEmployees.slice(startIndex, endIndex);
-  const totalFilteredPages = Math.ceil(filteredEmployees.length / itemsPerPage);
+  const totalFilteredpages = Math.ceil(filteredEmployees.length / itemsPerPage);
 
   const handleClearFilters = () => {
     setFilters(defaultFilters);
@@ -557,7 +557,7 @@ const Employees = () => {
 
   const handlePrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
   const handleNextPage = () =>
-    setCurrentPage(prev => Math.min(prev + 1, totalFilteredPages));
+    setCurrentPage(prev => Math.min(prev + 1, totalFilteredpages));
   const handlePageClick = (page) => setCurrentPage(page);
 
   const handleEdit = (employeeId) => navigate(`/editEmployee/${employeeId}`);
@@ -819,7 +819,7 @@ const Employees = () => {
       {filteredEmployees.length > 0 && (
         <Pagination
           currentPage={nCurrentPage}
-          totalPages={totalFilteredPages}
+          totalpages={totalFilteredpages}
           totalItems={filteredEmployees.length}
           itemsPerPage={itemsPerPage}
           handlePrevPage={handlePrevPage}

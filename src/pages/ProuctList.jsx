@@ -80,7 +80,7 @@ const ProductList = () => {
 
     // Calculate pagination
     const totalItems = filteredProducts.length;
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const totalpages = Math.ceil(totalItems / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const displayedProducts = filteredProducts.slice(startIndex, endIndex);
@@ -119,7 +119,7 @@ const ProductList = () => {
     };
 
     const handleNextPage = () => {
-        setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+        setCurrentPage((prev) => Math.min(prev + 1, totalpages));
     };
 
     const handlePageClick = (page) => {
@@ -380,7 +380,7 @@ const ProductList = () => {
             {!loading && !error && totalItems > 0 && (
                 <Pagination
                     currentPage={currentPage}
-                    totalPages={totalPages}
+                    totalpages={totalpages}
                     totalItems={totalItems}
                     itemsPerPage={itemsPerPage}
                     handlePrevPage={handlePrevPage}

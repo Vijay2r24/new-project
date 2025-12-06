@@ -27,7 +27,7 @@ const Payments = () => {
   const navigate = useNavigate();
   const [payments, setPayments] = useState([]);
   const [totalItems, setTotalItems] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
+  const [totalpages, setTotalpages] = useState(1);
   const [paymentsLoading, setPaymentsLoading] = useState(false);
   const [tableScrollTop, setTableScrollTop] = useState(0); // For floating header
 
@@ -257,13 +257,13 @@ const Payments = () => {
   };
 
   const handleNextPage = () => {
-    if (currentPage < totalPages) {
+    if (currentPage < totalpages) {
       setCurrentPage(currentPage + 1);
     }
   };
 
   const handlePageClick = (page) => {
-    if (page >= 1 && page <= totalPages) {
+    if (page >= 1 && page <= totalpages) {
       setCurrentPage(page);
       // Scroll to top when page changes
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -281,7 +281,7 @@ const Payments = () => {
 
       const params = {
         pageNumber: currentPage,
-        pageSize: itemsPerPage,
+        pagesize: itemsPerPage,
         ...(sSearchTerm && { searchText: sSearchTerm }),
         ...(oFilters.paymentStatus && {
           paymentStatus: oFilters.paymentStatus,
@@ -307,7 +307,7 @@ const Payments = () => {
         const list = response.data.data || [];
         setPayments(list);
         setTotalItems(response.data.pagination?.totalRecords || list.length);
-        setTotalPages(response.data.pagination?.totalPages || 1);
+        setTotalpages(response.data.pagination?.totalpages || 1);
       }
     } catch (err) {
     } finally {
@@ -605,10 +605,10 @@ const Payments = () => {
         />
       )}
 
-      {totalPages > 1 && (
+      {totalpages > 1 && (
         <Pagination
           currentPage={currentPage}
-          totalPages={totalPages}
+          totalpages={totalpages}
           totalItems={totalItems}
           itemsPerPage={itemsPerPage}
           handlePrevPage={handlePrevPage}

@@ -270,7 +270,7 @@ export const AllDataProvider = ({ children }) => {
               if (params.page !== undefined)
                 mappedParams.pageNumber = params.page;
               if (params.limit !== undefined)
-                mappedParams.pageSize = params.limit;
+                mappedParams.pagesize = params.limit;
               return fetchAll(
                 cfg.key,
                 cfg.api,

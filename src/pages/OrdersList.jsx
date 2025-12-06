@@ -202,7 +202,7 @@ const OrderList = () => {
     const [bLoading, setLoading] = useState(false);
     const [bFilterLoading, setFilterLoading] = useState(false);
     const [sError, setError] = useState(null);
-    const [sTotalPages, setTotalPages] = useState(1);
+    const [sTotalpages, setTotalpages] = useState(1);
     const [nTotalRecords, setTotalRecords] = useState(dummyOrders.length);
 
     useEffect(() => {
@@ -381,7 +381,7 @@ const OrderList = () => {
     };
 
     const handlePrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
-    const handleNextPage = () => setCurrentPage(prev => Math.min(prev + 1, sTotalPages));
+    const handleNextPage = () => setCurrentPage(prev => Math.min(prev + 1, sTotalpages));
     const handlePageClick = (page) => setCurrentPage(page);
 
     const getDeliveryStatusColor = (status) => {
@@ -678,7 +678,7 @@ const OrderList = () => {
             {aOrders.length > 0 && (
                 <Pagination
                     currentPage={nCurrentPage}
-                    totalPages={sTotalPages}
+                    totalpages={sTotalpages}
                     totalItems={nTotalRecords}
                     itemsPerPage={nProductsPerPage}
                     handlePrevPage={handlePrevPage}

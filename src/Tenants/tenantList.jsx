@@ -76,11 +76,11 @@ const TenantList = () => {
 
   // --- Pagination Logic ---
   const actualTotal = filteredTenants.length;
-  const nTotalPages = Math.ceil(actualTotal / itemsPerPage);
+  const nTotalpages = Math.ceil(actualTotal / itemsPerPage);
   const startIndex = (nCurrentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const tenantsData = filteredTenants.slice(startIndex, endIndex);
-  const currentPageSize = Math.min(itemsPerPage, filteredTenants.length - startIndex);
+  const currentpagesize = Math.min(itemsPerPage, filteredTenants.length - startIndex);
 
   // --- Event Handlers ---
   const handleTableScroll = useCallback((e) => {
@@ -102,7 +102,7 @@ const TenantList = () => {
   };
 
   const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
-  const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, nTotalPages));
+  const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, nTotalpages));
   const handlePageClick = (page) => setCurrentPage(page);
 
   // --- Status Popup Logic ---
@@ -369,9 +369,9 @@ const TenantList = () => {
       {/* Pagination */}
       <Pagination
         currentPage={nCurrentPage}
-        totalPages={nTotalPages}
+        totalpages={nTotalpages}
         totalItems={actualTotal}
-        itemsPerPage={currentPageSize}
+        itemsPerPage={currentpagesize}
         handlePrevPage={handlePrevPage}
         handleNextPage={handleNextPage}
         handlePageClick={handlePageClick}

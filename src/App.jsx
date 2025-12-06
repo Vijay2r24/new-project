@@ -1,25 +1,25 @@
 import { Routes, Route } from "react-router-dom";
 import { TenantProvider } from "./Tenants/tenantsContext";
-import Login from "./Pages/Login";
+import Login from "./pages/Login";
 import LayoutWrapper from "./layout/layoutWrapper";
 import Dashboard from "./DashBoard/dashBoard";
 import TenantList from "./Tenants/tenantList";
 import CreateTenant from "./Tenants/createTenant";
 import TenantDetails from "./Tenants/tenantDetails";
-import Users from "./Pages/Users";
-import UserRolesList from "./Pages/UserRolesList";
-import AddUser from "./Pages/AddUser";
-import AddUserRole from "./Pages/AddUserRoles";
-import ProfileDetails from "./Pages/ProfileDetails";
-import ThemeSettings from "./Pages/ThemeSettings";
+import Users from "./pages/Users";
+import UserRolesList from "./pages/UserRolesList";
+import AddUser from "./pages/AddUser";
+import AddUserRole from "./pages/AddUserRoles";
+import ProfileDetails from "./pages/ProfileDetails";
+import ThemeSettings from "./pages/ThemeSettings";
 import SubscriptionUI from "./Tenants/Subscription";
 import Subscription from "./Tenants/Subscription";
-import PaymentDetails from "./Pages/payments/PaymentDetails";
+import PaymentDetails from "./pages/payments/PaymentDetails";
 import TenantSettings from "./Tenants/tenantSettings";
-import Employees from "./Pages/EmployeeList";
-import OrderList from "./Pages/OrdersList";
-import ProductList from "./Pages/ProuctList";
-import AddProductForm from "./Pages/AddProductForm";
+import Employees from "./pages/EmployeeList";
+import OrderList from "./pages/OrdersList";
+import ProductList from "./pages/ProuctList";
+import AddProductForm from "./pages/AddProductForm";
 
 function App() {
   return (

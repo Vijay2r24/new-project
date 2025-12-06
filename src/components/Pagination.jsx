@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 const Pagination = ({
   currentPage,
-  totalPages,
+  totalpages,
   totalItems,
   itemsPerPage,
   handlePrevPage,
@@ -38,8 +38,8 @@ const Pagination = ({
             const maxVisible = 5;
             let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
             let endPage = startPage + maxVisible - 1;
-            if (endPage > totalPages) {
-              endPage = totalPages;
+            if (endPage > totalpages) {
+              endPage = totalpages;
               startPage = Math.max(1, endPage - maxVisible + 1);
             }
             if (startPage > 1) {
@@ -63,13 +63,13 @@ const Pagination = ({
                 </button>
               );
             }
-            if (endPage < totalPages) {
-              if (endPage < totalPages - 1) {
+            if (endPage < totalpages) {
+              if (endPage < totalpages - 1) {
                 pageButtons.push(<span key="end-ellipsis" className="px-2">...</span>);
               }
               pageButtons.push(
-                <button key={totalPages} className={`pagination-btn${currentPage === totalPages ? " pagination-btn-active" : ""}`} onClick={() => handlePageClick(totalPages)}>
-                  {totalPages}
+                <button key={totalpages} className={`pagination-btn${currentPage === totalpages ? " pagination-btn-active" : ""}`} onClick={() => handlePageClick(totalpages)}>
+                  {totalpages}
                 </button>
               );
             }
@@ -78,7 +78,7 @@ const Pagination = ({
           <button
             className="pagination-btn"
             onClick={handleNextPage}
-            disabled={currentPage === totalPages}
+            disabled={currentPage === totalpages}
           >
             {t("COMMON.NEXT")}
           </button>

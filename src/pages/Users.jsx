@@ -146,7 +146,7 @@ const Users = () => {
 
   const [aUsers, setUsers] = useState(dummyUsers);
   const [bLoading, setLoading] = useState(false);
-  const [nTotalPages, setTotalPages] = useState(Math.ceil(dummyUsers.length / itemsPerPage));
+  const [nTotalpages, setTotalpages] = useState(Math.ceil(dummyUsers.length / itemsPerPage));
   const [nTotalRecords, setTotalRecords] = useState(dummyUsers.length);
 
   const defaultFilters = {
@@ -199,7 +199,7 @@ const Users = () => {
   const startIndex = (nCurrentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
-  const totalFilteredPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const totalFilteredpages = Math.ceil(filteredUsers.length / itemsPerPage);
 
   const handleClearFilters = () => {
     setFilters(defaultFilters);
@@ -248,7 +248,7 @@ const Users = () => {
 
   const handlePrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
   const handleNextPage = () =>
-    setCurrentPage(prev => Math.min(prev + 1, totalFilteredPages));
+    setCurrentPage(prev => Math.min(prev + 1, totalFilteredpages));
   const handlePageClick = (page) => setCurrentPage(page);
 
   const handleEdit = (userId) => navigate(`/editUser/${userId}`);
@@ -503,7 +503,7 @@ const Users = () => {
       {filteredUsers.length > 0 && (
         <Pagination
           currentPage={nCurrentPage}
-          totalPages={totalFilteredPages}
+          totalpages={totalFilteredpages}
           totalItems={filteredUsers.length}
           itemsPerPage={itemsPerPage}
           handlePrevPage={handlePrevPage}

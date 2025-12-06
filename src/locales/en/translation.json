@@ -100,7 +100,7 @@
     "EMPLOYEE_MANAGEMENT":"Employee Management",
     "NOTIFICATIONS": "Notifications",
     "SETTINGS": "Settings",
-    "PAGES": "Profile",
+    "pages": "Profile",
     "TENANT_MANAGEMENT": "Tenant Management",
     "TENANT-LIST": "Tenant List",
     "CREATE-TENANT":"Create Tenant",

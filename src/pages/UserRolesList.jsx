@@ -55,7 +55,7 @@ const Roles = () => {
 
   const [aRoles, setRoles] = useState(dummyRoles);
   const [bLoading, setLoading] = useState(false);
-  const [nTotalPages, setTotalPages] = useState(Math.ceil(dummyRoles.length / itemsPerPage));
+  const [nTotalpages, setTotalpages] = useState(Math.ceil(dummyRoles.length / itemsPerPage));
   const [nTotalRecords, setTotalRecords] = useState(dummyRoles.length);
 
   const defaultFilters = {
@@ -123,7 +123,7 @@ const Roles = () => {
   const startIndex = (nCurrentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedRoles = filteredRoles.slice(startIndex, endIndex);
-  const totalFilteredPages = Math.ceil(filteredRoles.length / itemsPerPage);
+  const totalFilteredpages = Math.ceil(filteredRoles.length / itemsPerPage);
 
   const handleClearFilters = () => {
     setFilters(defaultFilters);
@@ -170,7 +170,7 @@ const Roles = () => {
 
   const handlePrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
   const handleNextPage = () =>
-    setCurrentPage(prev => Math.min(prev + 1, totalFilteredPages));
+    setCurrentPage(prev => Math.min(prev + 1, totalFilteredpages));
   const handlePageClick = (page) => setCurrentPage(page);
 
   const handleEdit = (roleId) => navigate(`/editRole/${roleId}`);
@@ -439,7 +439,7 @@ const Roles = () => {
       {filteredRoles.length > 0 && (
         <Pagination
           currentPage={nCurrentPage}
-          totalPages={totalFilteredPages}
+          totalpages={totalFilteredpages}
           totalItems={filteredRoles.length}
           itemsPerPage={itemsPerPage}
           handlePrevPage={handlePrevPage}
