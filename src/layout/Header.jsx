@@ -27,6 +27,8 @@ const Header = ({ onMenuClick }) => {
   const profileDropdownRef = useRef();
   const navigate = useNavigate();
 
+
+
   // Get user details from Redux store on component mount
   useEffect(() => {
     // Directly fetch user details when component mounts
@@ -99,7 +101,7 @@ const Header = ({ onMenuClick }) => {
     setTimeout(() => {
       switch (action) {
         case "profile":
-          navigate("/profile");
+          navigate("pages/profile-details");
           break;
         case "logout":
           localStorage.removeItem("token");
@@ -114,7 +116,7 @@ const Header = ({ onMenuClick }) => {
   };
 
   return (
-    <header className="sticky top-0 z-10 bg-white shadow-sm">
+    <header className="sticky top-0 z-50 bg-white shadow-sm">
       <div className="flex items-center justify-between h-14 px-4 lg:px-6">
         <div className="lg:hidden flex items-center">
           <button

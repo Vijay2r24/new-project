@@ -1,24 +1,14 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Mail, Phone, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Toolbar from "../components/Toolbar";
 import Pagination from "../components/Pagination";
 import ActionButtons from "../components/ActionButtons";
 import { useTranslation } from "react-i18next";
-import { USER_ACTIVE_STATUS } from "../contants/apiRoutes";
 import { useTitle } from "../context/TitleContext";
-import { ITEMS_PER_PAGE, STATUS, STATUS_OPTIONS } from "../contants/constants";
-import FullscreenErrorPopup from "../components/FullscreenErrorPopup";
-import { showEmsg } from "../utils/ShowEmsg";
-import { ToastContainer } from "react-toastify";
 import Switch from "../components/Switch";
 import userProfile from "../../assets/images/userProfile.svg";
 import Loader from "../components/Loader";
-import { hideLoaderWithDelay } from "../utils/loaderUtils";
-import { getPermissionCode, hasPermissionId } from "../utils/permissionUtils";
-
-import { useDispatch, useSelector } from "react-redux";
-import { fetchResource, updateStatusById } from "../store/slices/allDataSlice";
 
 const Users = () => {
   const navigate = useNavigate();
@@ -28,98 +18,188 @@ const Users = () => {
   const [sViewMode, setViewMode] = useState("table");
   const [nCurrentPage, setCurrentPage] = useState(1);
   const [sShowFilterDropdown, setShowFilterDropdown] = useState(false);
-  const [bSubmitting, setSubmitting] = useState(false);
-  const [debounceTimer, setDebounceTimer] = useState(null);
-  const itemsPerPage = ITEMS_PER_PAGE;
+  const itemsPerPage = 10;
 
-  const dispatch = useDispatch();
+  // Dummy users data with images
+ const dummyUsers = [
+  {
+    UserID: "U001",
+    FirstName: "John",
+    LastName: "Doe",
+    Email: "john.doe@example.com",
+    PhoneNumber: "+1 (555) 123-4567",
+    RoleName: "Admin",
+    IsActive: true,
+    ProfileImageUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop",
+  },
+  {
+    UserID: "U002",
+    FirstName: "Jane",
+    LastName: "Smith",
+    Email: "jane.smith@example.com",
+    PhoneNumber: "+1 (555) 987-6543",
+    RoleName: "HR",
+    IsActive: true,
+    ProfileImageUrl: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400&h=400&fit=crop",
+  },
+  {
+    UserID: "U003",
+    FirstName: "Robert",
+    LastName: "Johnson",
+    Email: "robert.j@example.com",
+    PhoneNumber: "+1 (555) 456-7890",
+    RoleName: "User",
+    IsActive: true,
+    ProfileImageUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
+  },
+  {
+    UserID: "U004",
+    FirstName: "Emily",
+    LastName: "Wilson",
+    Email: "emily.w@example.com",
+    PhoneNumber: "+1 (555) 321-6547",
+    RoleName: "User",
+    IsActive: false,
+    ProfileImageUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop",
+  },
+  {
+    UserID: "U005",
+    FirstName: "Michael",
+    LastName: "Brown",
+    Email: "michael.b@example.com",
+    PhoneNumber: "+1 (555) 654-3210",
+    RoleName: "User",
+    IsActive: true,
+    ProfileImageUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop",
+  },
+  {
+    UserID: "U006",
+    FirstName: "Sarah",
+    LastName: "Davis",
+    Email: "sarah.d@example.com",
+    PhoneNumber: "+1 (555) 789-0123",
+    RoleName: "HR",
+    IsActive: true,
+    ProfileImageUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop",
+  },
+  {
+    UserID: "U007",
+    FirstName: "David",
+    LastName: "Miller",
+    Email: "david.m@example.com",
+    PhoneNumber: "+1 (555) 012-3456",
+    RoleName: "Admin",
+    IsActive: true,
+    ProfileImageUrl: "https://images.unsplash.com/photo-1504593811423-6dd665756598?w=400&h=400&fit=crop",
+  },
+  {
+    UserID: "U008",
+    FirstName: "Lisa",
+    LastName: "Anderson",
+    Email: "lisa.a@example.com",
+    PhoneNumber: "+1 (555) 234-5678",
+    RoleName: "User",
+    IsActive: false,
+    ProfileImageUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=400&fit=crop",
+  },
+  {
+    UserID: "U009",
+    FirstName: "James",
+    LastName: "Wilson",
+    Email: "james.w@example.com",
+    PhoneNumber: "+1 (555) 345-6789",
+    RoleName: "User",
+    IsActive: true,
+    ProfileImageUrl: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=400&fit=crop",
+  },
+  {
+    UserID: "U010",
+    FirstName: "Maria",
+    LastName: "Garcia",
+    Email: "maria.g@example.com",
+    PhoneNumber: "+1 (555) 456-7891",
+    RoleName: "User",
+    IsActive: true,
+    ProfileImageUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop",
+  },
+  {
+    UserID: "U011",
+    FirstName: "Thomas",
+    LastName: "Lee",
+    Email: "thomas.l@example.com",
+    PhoneNumber: "+1 (555) 567-8901",
+    RoleName: "User",
+    IsActive: false,
+    ProfileImageUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop",
+  },
+  {
+    UserID: "U012",
+    FirstName: "Jennifer",
+    LastName: "Taylor",
+    Email: "jennifer.t@example.com",
+    PhoneNumber: "+1 (555) 678-9012",
+    RoleName: "HR",
+    IsActive: true,
+    ProfileImageUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=400&fit=crop",
+  },
+];
 
-  const usersState = useSelector(
-    (state) => state.allData.resources.users || {}
-  );
-
-  // Extract data with proper pagination handling
-  const {
-    data: usersData = [],
-    total = 0,
-    loading,
-    error,
-    pagination = {},
-  } = usersState;
-
-  // Use API pagination data when available, otherwise calculate locally
-  const actualTotal = pagination.totalRecords || total;
-  const nTotalPages =
-    pagination.totalPages || Math.ceil((actualTotal || 0) / itemsPerPage);
-  const currentPageSize = pagination.pageSize || itemsPerPage;
-
-  const rolesState = useSelector(
-    (state) => state.allData.resources.roles || {}
-  );
-  const { data: aRoles = [] } = rolesState;
-
-  const storesState = useSelector(
-    (state) => state.allData.resources.stores || {}
-  );
-  const { data: aStores = [] } = storesState;
+  const [aUsers, setUsers] = useState(dummyUsers);
+  const [bLoading, setLoading] = useState(false);
+  const [nTotalPages, setTotalPages] = useState(Math.ceil(dummyUsers.length / itemsPerPage));
+  const [nTotalRecords, setTotalRecords] = useState(dummyUsers.length);
 
   const defaultFilters = {
     role: "all",
     status: "all",
-    store: "all",
   };
   const [oFilters, setFilters] = useState(defaultFilters);
 
-  const permissionIdForDelete = getPermissionCode(
-    "User Management",
-    "Delete User"
-  );
   // Helper function to get profile image URL
   const getProfileImageUrl = (user) => {
-    if (!user.ProfileImageUrl) return userProfile;
-
-    // Handle both string and array formats
-    if (typeof user.ProfileImageUrl === "string") {
-      return user.ProfileImageUrl;
-    }
-
-    if (
-      Array.isArray(user.ProfileImageUrl) &&
-      user.ProfileImageUrl.length > 0
-    ) {
-      // Get the first image with the highest sortOrder or the first one
-      const sortedImages = [...user.ProfileImageUrl].sort(
-        (a, b) => (b.sortOrder || 0) - (a.sortOrder || 0)
-      );
-      return sortedImages[0].documentUrl || userProfile;
-    }
-
-    return userProfile;
+    return user.ProfileImageUrl || userProfile;
   };
 
-  // Helper function to get stores as comma-separated string
-  const getStoresString = (user) => {
-    if (!user.Stores || !Array.isArray(user.Stores)) return "";
-    return user.Stores.map((store) => store.StoreName).join(", ");
-  };
-
-  // Updated buildApiParams function to match Stores component
-  const buildApiParams = useCallback(() => {
-    const params = {
-      pageNumber: nCurrentPage,
-      pageSize: itemsPerPage,
-      ...(sSearchTerm ? { searchText: sSearchTerm } : {}),
-      ...(oFilters.role !== "all" ? { roleName: oFilters.role } : {}),
-      ...(oFilters.store !== "all" ? { storeName: oFilters.store } : {}),
+  // Helper function to get role color
+  const getRoleColor = (roleName) => {
+    const roleColors = {
+      Admini: "bg-purple-100 text-purple-800",
+      "HR": "bg-blue-100 text-blue-800",
+      "User": "bg-green-100 text-green-800",
+      "Inventory Manager": "bg-yellow-100 text-yellow-800",
+      "Customer Service": "bg-indigo-100 text-indigo-800",
+      "Marketing Manager": "bg-pink-100 text-pink-800",
     };
+    return roleColors[roleName] || "bg-gray-100 text-gray-800";
+  };
 
-    // only include IsActive when it's NOT "all" and NOT empty
-    if (oFilters.status && oFilters.status !== "all") {
-      params.IsActive = oFilters.status;
-    }
+  // Filter users based on search term and filters
+  const filteredUsers = aUsers.filter(user => {
+    const matchesSearch = 
+      sSearchTerm === "" ||
+      user.FirstName.toLowerCase().includes(sSearchTerm.toLowerCase()) ||
+      user.LastName.toLowerCase().includes(sSearchTerm.toLowerCase()) ||
+      user.Email.toLowerCase().includes(sSearchTerm.toLowerCase()) ||
+      user.PhoneNumber.includes(sSearchTerm) ||
+      user.RoleName.toLowerCase().includes(sSearchTerm.toLowerCase());
 
-    return params;
-  }, [nCurrentPage, itemsPerPage, sSearchTerm, oFilters]);
+    const matchesRole = 
+      oFilters.role === "all" || 
+      user.RoleName === oFilters.role;
+
+    const matchesStatus = 
+      oFilters.status === "all" || 
+      (oFilters.status === "true" && user.IsActive) ||
+      (oFilters.status === "false" && !user.IsActive);
+
+    return matchesSearch && matchesRole && matchesStatus;
+  });
+
+  // Calculate pagination
+  const startIndex = (nCurrentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+  const totalFilteredPages = Math.ceil(filteredUsers.length / itemsPerPage);
 
   const handleClearFilters = () => {
     setFilters(defaultFilters);
@@ -136,41 +216,19 @@ const Users = () => {
 
   const roleOptions = [
     { value: "all", label: t("COMMON.ALL") },
-    ...(Array.isArray(aRoles)
-      ? aRoles.map((role) => ({
-          value: role.RoleName,
-          label: role.RoleName,
-        }))
-      : []),
+    { value: "Administrator", label: "Administrator" },
+    { value: "Store Manager", label: "Store Manager" },
+    { value: "Sales Associate", label: "Sales Associate" },
+    { value: "Inventory Manager", label: "Inventory Manager" },
+    { value: "Customer Service", label: "Customer Service" },
+    { value: "Marketing Manager", label: "Marketing Manager" },
   ];
 
-  const statusOptions = STATUS_OPTIONS.map((opt) => ({
-    value: opt.value,
-    label: t(opt.labelKey),
-  }));
-
-  const storeOptions = [
+  const statusOptions = [
     { value: "all", label: t("COMMON.ALL") },
-    ...(Array.isArray(aStores)
-      ? aStores.map((store) => ({
-          value: store.StoreName,
-          label: store.StoreName,
-        }))
-      : []),
+    { value: "true", label: t("COMMON.ACTIVE") },
+    { value: "false", label: t("COMMON.INACTIVE") },
   ];
-
-  const handleDropdownInputChange = (inputValue, filterName) => {
-    if (filterName === "role") {
-      dispatch(
-        fetchResource({ key: "roles", params: { searchText: inputValue } })
-      );
-    }
-    if (filterName === "store") {
-      dispatch(
-        fetchResource({ key: "stores", params: { searchText: inputValue } })
-      );
-    }
-  };
 
   const additionalFilters = [
     {
@@ -179,10 +237,6 @@ const Users = () => {
       value: oFilters.role,
       options: roleOptions,
       placeholder: t("USERS.FILTERS.USER_ROLE"),
-      searchable: true,
-      searchPlaceholder: t("COMMON.SEARCH_ROLE") || "Search role",
-      onInputChange: (inputValue) =>
-        handleDropdownInputChange(inputValue, "role"),
     },
     {
       label: t("USERS.FILTERS.STATUS"),
@@ -190,129 +244,31 @@ const Users = () => {
       value: oFilters.status,
       options: statusOptions,
     },
-    {
-      label: t("COMMON.STORE"),
-      name: "store",
-      value: oFilters.store,
-      options: storeOptions,
-      placeholder: t("USERS.FILTERS.STORE"),
-      searchable: true,
-      searchPlaceholder: t("COMMON.SEARCH_STORE") || "Search store",
-      onInputChange: (inputValue) =>
-        handleDropdownInputChange(inputValue, "store"),
-    },
   ];
 
-  const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+  const handlePrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
   const handleNextPage = () =>
-    setCurrentPage((prev) => Math.min(prev + 1, nTotalPages));
+    setCurrentPage(prev => Math.min(prev + 1, totalFilteredPages));
   const handlePageClick = (page) => setCurrentPage(page);
 
   const handleEdit = (userId) => navigate(`/editUser/${userId}`);
 
-  const [statusPopup, setStatusPopup] = useState({
-    open: false,
-    userId: null,
-    newStatus: null,
-  });
-
   const handleStatusChange = (userId, newStatus) => {
-    setStatusPopup({ open: true, userId, newStatus });
+    setUsers(prevUsers => 
+      prevUsers.map(user => 
+        user.UserID === userId 
+          ? { ...user, IsActive: newStatus }
+          : user
+      )
+    );
   };
-
-  const handleStatusConfirm = async () => {
-    setSubmitting(true);
-    const { userId, newStatus } = statusPopup;
-    try {
-      const result = await dispatch(
-        updateStatusById({
-          key: "users",
-          id: userId,
-          newStatus,
-          apiRoute: USER_ACTIVE_STATUS,
-          idField: "UserID",
-        })
-      ).unwrap();
-
-      showEmsg(result.message, STATUS.SUCCESS);
-
-      // Re-fetch users to update table data
-      const params = buildApiParams();
-      dispatch(
-        fetchResource({
-          key: "users",
-          params: params,
-        })
-      );
-    } catch (err) {
-      showEmsg(err.message || "Failed to update status", STATUS.ERROR);
-    } finally {
-      setStatusPopup({ open: false, userId: null, newStatus: null });
-      hideLoaderWithDelay(setSubmitting);
-    }
-  };
-
-  const handleStatusPopupClose = () =>
-    setStatusPopup({ open: false, userId: null, newStatus: null });
-
-  // Debounced API call on filter changes
-  useEffect(() => {
-    if (debounceTimer) {
-      clearTimeout(debounceTimer);
-    }
-
-    const timer = setTimeout(() => {
-      const params = buildApiParams();
-      dispatch(
-        fetchResource({
-          key: "users",
-          params: params,
-        })
-      );
-    }, 300); // 300ms debounce delay
-
-    setDebounceTimer(timer);
-
-    return () => {
-      if (debounceTimer) {
-        clearTimeout(debounceTimer);
-      }
-    };
-  }, [
-    nCurrentPage,
-    itemsPerPage,
-    sSearchTerm,
-    oFilters,
-    dispatch,
-    buildApiParams,
-  ]);
 
   useEffect(() => {
     setTitle(t("USERS.TITLE"));
   }, [setTitle, t]);
 
-  // Initial fetch for roles and stores
-  useEffect(() => {
-    dispatch(fetchResource({ key: "roles" }));
-    dispatch(fetchResource({ key: "stores" }));
-  }, [dispatch]);
-
-  // Fetch roles and stores when filter dropdown is shown
-  useEffect(() => {
-    if (sShowFilterDropdown) {
-      dispatch(fetchResource({ key: "roles" }));
-      dispatch(fetchResource({ key: "stores" }));
-    }
-  }, [sShowFilterDropdown, dispatch]);
-
   return (
     <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-2 min-h-screen bg-gray-50">
-      {bSubmitting && (
-        <div className="global-loader-overlay">
-          <Loader />
-        </div>
-      )}
-      <ToastContainer />
       <Toolbar
         searchTerm={sSearchTerm}
         setSearchTerm={setSearchTerm}
@@ -324,114 +280,122 @@ const Users = () => {
         handleFilterChange={handleFilterChange}
         searchPlaceholder={t("USERS.SEARCH_PLACEHOLDER")}
         onClearFilters={handleClearFilters}
-        onCreate={() => navigate("/add-user")}
+        onCreate={() => navigate("/addUser")}
         createLabel={t("USERS.ADD_USER")}
       />
 
       {/* table view */}
       {sViewMode === "table" ? (
-        <div className="table-container">
-          <div className="table-wrapper">
-            <table className="table-base">
-              <thead className="table-head">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th className="table-head-cell">{t("COMMON.USER")}</th>
-                  <th className="table-head-cell hidden sm:table-cell">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t("COMMON.USER")}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {t("USERS.TABLE.CONTACT")}
                   </th>
-                  <th className="table-head-cell">{t("COMMON.ROLE")}</th>
-                  <th className="table-head-cell">{t("COMMON.STATUS")}</th>
-                  <th className="table-head-cell hidden sm:table-cell">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t("COMMON.ROLE")}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {t("COMMON.STATUS")}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {t("COMMON.ACTIONS")}
                   </th>
                 </tr>
               </thead>
-              <tbody className="table-body">
-                {loading ? (
+              <tbody className="bg-white divide-y divide-gray-200">
+                {bLoading ? (
                   <tr>
-                    <td colSpan="6" className="text-center py-8">
+                    <td colSpan="5" className="text-center py-8">
                       <div className="flex justify-center items-center h-32">
                         <Loader className="h-8 w-8" />
                       </div>
                     </td>
                   </tr>
-                ) : error ? (
+                ) : paginatedUsers.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="text-center py-4 text-muted">
-                      {t("USERS.FETCH_ERROR")}
-                    </td>
-                  </tr>
-                ) : usersData.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="text-center text-muted py-4">
+                    <td colSpan="5" className="text-center text-gray-500 py-4">
                       {t("USERS.NO_USERS_FOUND")}
                     </td>
                   </tr>
                 ) : (
-                  usersData.map((user) => (
-                    <tr key={user.UserID} className="table-row">
-                      <td className="table-cell">
+                  paginatedUsers.map((user) => (
+                    <tr key={user.UserID} className="hover:bg-gray-50 transition-colors duration-150">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="h-10 w-10 flex-shrink-0">
                             <img
-                              className="h-10 w-10 rounded-full object-cover"
+                              className="h-10 w-10 rounded-full object-cover border border-gray-200"
                               src={getProfileImageUrl(user)}
                               onError={(e) => {
                                 e.target.onerror = null;
                                 e.target.src = userProfile;
                               }}
-                              alt=""
+                              alt={`${user.FirstName} ${user.LastName}`}
                             />
                           </div>
                           <div className="ml-4">
-                            <div className="table-cell-text">
-                              <span className="ellipsis-text">
-                                {user.FirstName} {user.LastName}
-                              </span>
+                            <div className="text-sm font-medium text-gray-900">
+                              {user.FirstName} {user.LastName}
                             </div>
-                            <div className="table-cell-subtext sm:hidden">
+                            <div className="text-sm text-gray-500 sm:hidden">
                               {user.Email}
                             </div>
-                            <div className="table-cell-subtext lg:hidden">
-                              {getStoresString(user)}
-                            </div>
                           </div>
                         </div>
                       </td>
-                      <td className="table-cell hidden sm:table-cell">
+                      <td className="px-6 py-4">
                         <div className="flex flex-col space-y-1">
-                          <div className="table-cell-subtext flex items-center">
-                            <Mail className="h-4 w-4 mr-2" />
-                            <span className="ellipsis-text">{user.Email}</span>
+                          <div className="text-sm text-gray-900 flex items-center">
+                            <Mail className="h-4 w-4 mr-2 text-gray-400" />
+                            <a 
+                              href={`mailto:${user.Email}`}
+                              className="hover:text-blue-600 hover:underline"
+                            >
+                              {user.Email}
+                            </a>
                           </div>
-                          <div className="table-cell-subtext flex items-center">
-                            <Phone className="h-4 w-4 mr-2" />
-                            {user.PhoneNumber}
+                          <div className="text-sm text-gray-500 flex items-center">
+                            <Phone className="h-4 w-4 mr-2 text-gray-400" />
+                            <a 
+                              href={`tel:${user.PhoneNumber}`}
+                              className="hover:text-blue-600"
+                            >
+                              {user.PhoneNumber}
+                            </a>
                           </div>
                         </div>
                       </td>
-                      <td className="table-cell">
-                        <div className="flex items-center">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center justify-center">
                           <Shield className="h-4 w-4 mr-2 text-gray-400" />
-                          <span className="status-badge bg-blue-100 text-blue-800">
-                            <span className="ellipsis-text">
-                              {user.RoleName}
-                            </span>
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleColor(user.RoleName)}`}>
+                            {user.RoleName}
                           </span>
                         </div>
                       </td>
-                      <td className="table-cell">
-                        <Switch
-                          checked={user.IsActive}
-                          onChange={(e) =>
-                            handleStatusChange(user.UserID, e.target.checked)
-                          }
-                        />
-                      </td>
-                      <td className="table-cell text-left font-medium align-middle">
-                        <div className="flex justify-left items-left">
-                          <ActionButtons id={user.UserID} onEdit={handleEdit} />
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            checked={user.IsActive}
+                            onChange={(e) =>
+                              handleStatusChange(user.UserID, e.target.checked)
+                            }
+                          />
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <ActionButtons 
+                          id={user.UserID} 
+                          onEdit={handleEdit}
+                          showView={true}
+                          onView={() => navigate(`/user/${user.UserID}`)}
+                        />
                       </td>
                     </tr>
                   ))
@@ -441,81 +405,94 @@ const Users = () => {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {bLoading ? (
             <div className="col-span-full text-center py-8">
               <div className="flex justify-center items-center h-32">
                 <Loader className="h-8 w-8" />
               </div>
             </div>
-          ) : error ? (
-            <div className="col-span-full text-center py-4 text-red-500">
-              {t("USERS.FETCH_ERROR")}
-            </div>
-          ) : usersData.length === 0 ? (
+          ) : paginatedUsers.length === 0 ? (
             <div className="col-span-full text-center py-4">
               {t("USERS.NO_USERS_FOUND")}
             </div>
           ) : (
-            usersData.map((user) => (
+            paginatedUsers.map((user) => (
               <div
                 key={user.UserID}
-                className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col gap-4 hover:shadow-xl transition-shadow duration-200"
+                className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col gap-4 hover:shadow-md transition-shadow duration-200"
               >
-                <div className="flex items-center gap-4 pb-2 border-b border-gray-100">
-                  <div className="flex-shrink-0 h-12 w-12 bg-gray-100 rounded-full overflow-hidden">
-                    <img
-                      className="h-full w-full object-cover"
-                      src={getProfileImageUrl(user)}
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = userProfile;
-                      }}
-                      alt=""
-                    />
+                <div className="flex items-center gap-4 pb-3 border-b border-gray-100">
+                  <div className="relative">
+                    <div className="h-12 w-12 rounded-full overflow-hidden border border-gray-200">
+                      <img
+                        className="h-full w-full object-cover"
+                        src={getProfileImageUrl(user)}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = userProfile;
+                        }}
+                        alt={`${user.FirstName} ${user.LastName}`}
+                      />
+                    </div>
+                    <div className={`absolute -bottom-1 -right-1 h-3 w-3 rounded-full border border-white ${user.IsActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
                   </div>
-                  <div>
-                    <div className="text-title font-bold text-gray-900">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-base font-semibold text-gray-900 truncate text-center">
                       {user.FirstName} {user.LastName}
                     </div>
-                    <div className="text-secondary flex items-center mt-1">
-                      <Shield className="h-4 w-4 mr-1" />
-                      {user.RoleName}
+                    <div className="flex items-center mt-1 justify-center">
+                      <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${getRoleColor(user.RoleName)}`}>
+                        {user.RoleName}
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="text-sm text-gray-600">
-                  <div className="font-medium mb-1">{t("COMMON.STORE")}:</div>
-                  <div className="truncate">{getStoresString(user)}</div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 pt-2">
-                  <span
-                    className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      user.IsActive ? "status-active" : "status-inactive"
-                    }`}
-                  >
-                    {user.IsActive ? t("COMMON.ACTIVE") : t("COMMON.INACTIVE")}
-                  </span>
-                </div>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-xs text-gray-500 border-t border-gray-100 pt-2">
-                  <div className="flex items-center gap-1">
-                    <Mail className="h-4 w-4" />
-                    <span
-                      className="truncate max-w-[120px] block"
+                <div className="space-y-3">
+                  <div className="flex items-center text-sm text-gray-600">
+                    <Mail className="h-4 w-4 mr-2 flex-shrink-0" />
+                    <a 
+                      href={`mailto:${user.Email}`}
+                      className="truncate hover:text-blue-600 hover:underline"
                       title={user.Email}
                     >
                       {user.Email}
-                    </span>
+                    </a>
                   </div>
-                  <div className="flex items-center gap-1 sm:ml-4">
-                    <Phone className="h-4 w-4" />
-                    <span>{user.PhoneNumber}</span>
+                  <div className="flex items-center text-sm text-gray-600">
+                    <Phone className="h-4 w-4 mr-2 flex-shrink-0" />
+                    <a 
+                      href={`tel:${user.PhoneNumber}`}
+                      className="hover:text-blue-600"
+                    >
+                      {user.PhoneNumber}
+                    </a>
                   </div>
                 </div>
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100 mt-2">
-                  <ActionButtons id={user.UserID} onEdit={handleEdit} />
+
+                <div className="pt-3 border-t border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={user.IsActive}
+                        onChange={(e) =>
+                          handleStatusChange(user.UserID, e.target.checked)
+                        }
+                        size="small"
+                      />
+                      <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${user.IsActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        {user.IsActive ? t("COMMON.ACTIVE") : t("COMMON.INACTIVE")}
+                      </span>
+                    </div>
+                    <ActionButtons 
+                      id={user.UserID} 
+                      onEdit={handleEdit}
+                      size="small"
+                      showView={true}
+                      onView={() => navigate(`/user/${user.UserID}`)}
+                    />
+                  </div>
                 </div>
               </div>
             ))
@@ -523,23 +500,15 @@ const Users = () => {
         </div>
       )}
 
-      <Pagination
-        currentPage={nCurrentPage}
-        totalPages={nTotalPages}
-        totalItems={actualTotal}
-        itemsPerPage={currentPageSize}
-        handlePrevPage={handlePrevPage}
-        handleNextPage={handleNextPage}
-        handlePageClick={handlePageClick}
-      />
-
-      {statusPopup.open && (
-        <FullscreenErrorPopup
-          message={`Are you sure you want to set this user as ${
-            statusPopup.newStatus ? t("COMMON.ACTIVE") : t("COMMON.INACTIVE")
-          }?`}
-          onClose={handleStatusPopupClose}
-          onConfirm={handleStatusConfirm}
+      {filteredUsers.length > 0 && (
+        <Pagination
+          currentPage={nCurrentPage}
+          totalPages={totalFilteredPages}
+          totalItems={filteredUsers.length}
+          itemsPerPage={itemsPerPage}
+          handlePrevPage={handlePrevPage}
+          handleNextPage={handleNextPage}
+          handlePageClick={handlePageClick}
         />
       )}
     </div>

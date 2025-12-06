@@ -25,8 +25,8 @@ export default {
         'custom-blue1': '#00ACC1',
         'custom-pink': '#DA70D6',
         'sidebar-bg': '#ffff',
-        'custom-bg': '#FF5A5F',
-        'bg-hover': '#E14E52',
+        'custom-bg': '#007DE6',
+        'bg-hover': '#005CB3',
         'sd-hover': '#FFE5E7',
         primary: {
           50: '#f5f3ff',
@@ -70,6 +70,9 @@ export default {
         },
       },
     },
+    
   },
   plugins: [],
 };
+ 
+ 

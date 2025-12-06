@@ -10,26 +10,31 @@ import { showEmsg } from "../../utils/ShowEmsg";
 import { EXPORT_TYPES, REPORT_FILE_NAMES, STATUS } from "../../contants/constants";
 import i18next from "i18next"; 
 
-/**
- * Export Order Report
- */
 export const exportOrderReport = createAsyncThunk(
   "export/orderReport",
-  async ({ startDate, endDate }, { rejectWithValue }) => {
+  async ({ 
+    searchText, 
+    startDate, 
+    endDate, 
+    paymentStatus,
+    paymentType,
+    paymentMethod 
+  }, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("token");
 
       const requestData = {
-        StartDate: startDate ? new Date(startDate).toISOString() : null,
-        EndDate: endDate ? new Date(endDate).toISOString() : null,
+        searchText: searchText || null,
+        startDate: startDate ? new Date(startDate).toISOString() : null,
+        endDate: endDate ? new Date(endDate).toISOString() : null,
+        paymentStatus: paymentStatus || null,
+        paymentType: paymentType || null,
+        paymentMethod: paymentMethod || null,
       };
 
-      if (!requestData.StartDate && !requestData.EndDate) {
-        throw new Error(i18next.t("EXPORT.SELECT_DATE_RANGE_ORDERS"));
-      }
-
+      // Remove null/undefined parameters
       const filteredData = Object.fromEntries(
-        Object.entries(requestData).filter(([, value]) => value !== null)
+        Object.entries(requestData).filter(([, value]) => value !== null && value !== undefined)
       );
 
       const response = await apiPost(GENERATE_ORDER_REPORT, filteredData, token, false, "blob");
@@ -72,22 +77,25 @@ export const exportOrderReport = createAsyncThunk(
  */
 export const exportStoreReport = createAsyncThunk(
   "export/storeReport",
-  async ({ startDate, endDate, isActive }, { rejectWithValue }) => {
+  async ({ 
+    searchText, 
+    startDate, 
+    endDate, 
+    isActive 
+  }, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("token");
 
       const requestData = {
-        StartDate: startDate ? new Date(startDate).toISOString() : null,
-        EndDate: endDate ? new Date(endDate).toISOString() : null,
-        IsActive: isActive !== undefined ? isActive.toString() : null,
+        searchText: searchText || null,
+        startDate: startDate ? new Date(startDate).toISOString() : null,
+        endDate: endDate ? new Date(endDate).toISOString() : null,
+        IsActive: isActive !== undefined && isActive !== null ? isActive.toString() : null,
       };
 
-      if (!requestData.StartDate && !requestData.EndDate) {
-        throw new Error(i18next.t("EXPORT.SELECT_DATE_RANGE_STORES"));
-      }
-
+      // Remove null/undefined parameters
       const filteredData = Object.fromEntries(
-        Object.entries(requestData).filter(([, value]) => value !== null)
+        Object.entries(requestData).filter(([, value]) => value !== null && value !== undefined)
       );
 
       const response = await apiPost(GET_STORE_REPORT, filteredData, token, false, "blob");
@@ -132,20 +140,28 @@ export const exportStoreReport = createAsyncThunk(
  */
 export const exportProductReport = createAsyncThunk(
   "export/productReport",
-  async ({ startDate, endDate }, { rejectWithValue }) => {
+  async ({ 
+    searchText, 
+    startDate, 
+    endDate, 
+    isActive,
+    brandId,
+    categoryId 
+  }, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("token");
       const requestData = {
-        StartDate: startDate ? new Date(startDate).toISOString() : null,
-        EndDate: endDate ? new Date(endDate).toISOString() : null,
+        searchText: searchText || null,
+        startDate: startDate ? new Date(startDate).toISOString() : null,
+        endDate: endDate ? new Date(endDate).toISOString() : null,
+        IsActive: isActive !== undefined && isActive !== null ? isActive.toString() : null,
+        brandId: brandId || null,
+        categoryId: categoryId || null,
       };
 
-      if (!requestData.StartDate && !requestData.EndDate) {
-        throw new Error(i18next.t("EXPORT.SELECT_DATE_RANGE_PRODUCTS"));
-      }
-
+      // Remove null/undefined parameters
       const filteredData = Object.fromEntries(
-        Object.entries(requestData).filter(([, value]) => value !== null)
+        Object.entries(requestData).filter(([, value]) => value !== null && value !== undefined)
       );
 
       const response = await apiPost(GET_PRODUCT_LIST_REPORT, filteredData, token, false, "blob");
@@ -189,28 +205,36 @@ export const exportProductReport = createAsyncThunk(
  */
 export const exportPaymentReport = createAsyncThunk(
   "export/paymentReport",
-  async ({ startDate, endDate }, { rejectWithValue }) => {
+  async ({ 
+    searchText, 
+    startDate, 
+    endDate, 
+    paymentStatus,
+    paymentType,
+    paymentMethod 
+  }, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("token");
 
       const requestData = {
-        StartDate: startDate ? new Date(startDate).toISOString() : null,
-        EndDate: endDate ? new Date(endDate).toISOString() : null,
+        searchText: searchText || null,
+        startDate: startDate ? new Date(startDate).toISOString() : null,
+        endDate: endDate ? new Date(endDate).toISOString() : null,
+        paymentStatus: paymentStatus || null,
+        paymentType: paymentType || null,
+        paymentMethod: paymentMethod || null,
       };
 
-      if (!requestData.StartDate && !requestData.EndDate) {
-        throw new Error(i18next.t("EXPORT.SELECT_DATE_RANGE_PAYMENTS"));
-      }
-
+      // Remove null/undefined parameters
       const filteredData = Object.fromEntries(
-        Object.entries(requestData).filter(([, value]) => value !== null)
+        Object.entries(requestData).filter(([, value]) => value !== null && value !== undefined)
       );
 
       const response = await apiPost(GET_PAYMENT_REPORT, filteredData, token, false, "blob");
 
       if (response.data) {
         const blob = new Blob([response.data], {
-          type: REPORT_FILE_NAMES.PAYMENTS,
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -251,15 +275,16 @@ const exportSlice = createSlice({
     paymentExport: { loading: false, error: null },
   },
 
-reducers: {
-  clearExportError: (state, action) => {
-    const { exportType } = action.payload;
-    if (exportType === EXPORT_TYPES.ORDER) state.orderExport.error = null;
-    else if (exportType === EXPORT_TYPES.STORE) state.storeExport.error = null;
-    else if (exportType === EXPORT_TYPES.PRODUCT) state.productExport.error = null;
-    else if (exportType === EXPORT_TYPES.PAYMENT) state.paymentExport.error = null;
+  reducers: {
+    clearExportError: (state, action) => {
+      const { exportType } = action.payload;
+      if (exportType === EXPORT_TYPES.ORDER) state.orderExport.error = null;
+      else if (exportType === EXPORT_TYPES.STORE) state.storeExport.error = null;
+      else if (exportType === EXPORT_TYPES.PRODUCT) state.productExport.error = null;
+      else if (exportType === EXPORT_TYPES.PAYMENT) state.paymentExport.error = null;
+    },
   },
-},
+  
   extraReducers: (builder) => {
     const handlePending = (section) => {
       section.loading = true;

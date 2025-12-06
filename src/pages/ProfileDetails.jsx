@@ -44,7 +44,7 @@ const ProfileDetails = () => {
   const [nModalType, setModalType] = useState(null);
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
-  
+
   // Password states
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
@@ -61,7 +61,7 @@ const ProfileDetails = () => {
     new: false,
     confirm: false
   });
-  
+
   const [error, setError] = useState("");
   const [Ssuccess, setSuccess] = useState("");
   const { setBackButton, setTitle } = useTitle();
@@ -80,7 +80,7 @@ const ProfileDetails = () => {
         setLoading(true);
         // Clear any previous errors
         dispatch(clearUserDetailsError());
-        
+
         // Fetch user details using Redux thunk
         await dispatch(fetchUserDetails(userId)).unwrap();
       } catch (err) {
@@ -96,23 +96,23 @@ const ProfileDetails = () => {
   // Map the user data to match your component's expected structure
   const user = userDetails
     ? {
-        name: `${userDetails.FirstName} ${userDetails.LastName}`,
-        email: userDetails.Email,
-        phone: userDetails.PhoneNumber,
-        address: userDetails.AddressLine || "",
-        city: userDetails.CityName || "",
-        state: userDetails.StateName || "",
-        zipCode: userDetails.Zipcode || "",
-        joinDate: userDetails.CreatedDate || new Date().toISOString(),
-        avatar: userDetails.ProfileImageUrl && userDetails.ProfileImageUrl.length > 0 
-          ? userDetails.ProfileImageUrl[0].documentUrl 
-          : cheGuevaraImg,
-        role: userDetails.RoleName || "",
-        gender: userDetails.Gender,
-        country: userDetails.CountryName,
-        employeeId: userDetails.EmployeeID,
-        stores: userDetails.Stores || [],
-      }
+      name: `${userDetails.FirstName} ${userDetails.LastName}`,
+      email: userDetails.Email,
+      phone: userDetails.PhoneNumber,
+      address: userDetails.AddressLine || "",
+      city: userDetails.CityName || "",
+      state: userDetails.StateName || "",
+      zipCode: userDetails.Zipcode || "",
+      joinDate: userDetails.CreatedDate || new Date().toISOString(),
+      avatar: userDetails.ProfileImageUrl && userDetails.ProfileImageUrl.length > 0
+        ? userDetails.ProfileImageUrl[0].documentUrl
+        : cheGuevaraImg,
+      role: userDetails.RoleName || "",
+      gender: userDetails.Gender,
+      country: userDetails.CountryName,
+      employeeId: userDetails.EmployeeID,
+      
+    }
     : null;
 
   useEffect(() => {
@@ -138,7 +138,7 @@ const ProfileDetails = () => {
     e.preventDefault();
     setError("");
     setSuccess("");
-    
+
     // Reset errors
     setPasswordErrors({
       currentPassword: "",
@@ -217,7 +217,7 @@ const ProfileDetails = () => {
   };
 
   // Check if password form is valid
-  const isPasswordFormValid = 
+  const isPasswordFormValid =
     passwordForm.currentPassword &&
     passwordForm.newPassword &&
     passwordForm.confirmNewPassword &&
@@ -280,7 +280,7 @@ const ProfileDetails = () => {
             {passwordErrors.newPassword && (
               <p className="text-sm text-red-500 mt-1">{passwordErrors.newPassword}</p>
             )}
-            
+
             {/* Password Rules */}
             <ul className="text-xs mt-2 space-y-1">
               {passwordRules(t).map((rule, idx) => {
@@ -331,9 +331,8 @@ const ProfileDetails = () => {
             <button
               type="submit"
               disabled={!isPasswordFormValid || submitting}
-              className={`px-4 py-2 rounded-lg bg-gradient-to-r from-custom-bg to-custom-bg/80 text-white font-medium hover:from-custom-bg/90 hover:to-custom-bg/60 border border-custom-bg/20 ${
-                !isPasswordFormValid || submitting ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+              className={`px-4 py-2 rounded-lg bg-gradient-to-r from-custom-bg to-custom-bg/80 text-white font-medium hover:from-custom-bg/90 hover:to-custom-bg/60 border border-custom-bg/20 ${!isPasswordFormValid || submitting ? "opacity-50 cursor-not-allowed" : ""
+                }`}
             >
               {submitting ? t("COMMON.SAVING") : t("COMMON.SAVE")}
             </button>
@@ -361,7 +360,7 @@ const ProfileDetails = () => {
     setError("");
     setSuccess("");
   };
-  
+
   const loaderOverlay = submitting || userDetailsLoading ? (
     <div className="global-loader-overlay">
       <Loader />
@@ -410,7 +409,9 @@ const ProfileDetails = () => {
               <div className="mt-4 md:mt-0 md:ml-auto">
                 <button
                   className="flex items-center px-4 py-2 rounded-lg bg-gradient-to-r from-custom-bg to-custom-bg/80 text-white font-medium hover:from-custom-bg/90 hover:to-custom-bg/60"
-                  onClick={() => navigate(`/editUser/${userId}`)}
+                  onClick={() => navigate(`/pages/editUser/${userId}`)
+                  }
+
                 >
                   <Edit className="h-4 w-4 mr-2" />
                   {t("PROFILE.EDIT_PROFILE")}
@@ -571,67 +572,7 @@ const ProfileDetails = () => {
         </div>
         <div className="space-y-8">
 
-          {/* Store Details Section - Replaced Preferences */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900">
-                {t("PROFILE.STORE_DETAILS")}
-              </h2>
-            </div>
-            <div className="p-6">
-              {user?.stores && user.stores.length > 0 ? (
-                <div 
-                  className={`space-y-4 ${
-                    user.stores.length > 5 
-                      ? 'max-h-80 overflow-y-auto pr-2' 
-                      : ''
-                  }`}
-                >
-                  {/* Custom scrollbar styling */}
-                  <style jsx>{`
-                    .max-h-80::-webkit-scrollbar {
-                      width: 6px;
-                    }
-                    .max-h-80::-webkit-scrollbar-track {
-                      background: #f1f5f9;
-                      border-radius: 3px;
-                    }
-                    .max-h-80::-webkit-scrollbar-thumb {
-                      background: #cbd5e1;
-                      border-radius: 3px;
-                    }
-                    .max-h-80::-webkit-scrollbar-thumb:hover {
-                      background: #94a3b8;
-                    }
-                  `}</style>
-                  
-                  {user.stores.map((store, index) => (
-                    <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                      <div className="p-2 bg-custom-bg/10 rounded-lg">
-                        <Store className="h-4 w-4 text-custom-bg" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-sm font-medium text-gray-900">{store.StoreName}</h3>
-                        {store.StoreAddress && (
-                          <p className="text-xs text-gray-600 mt-1">{store.StoreAddress}</p>
-                        )}
-                        {store.StorePhone && (
-                          <p className="text-xs text-gray-600 mt-1">{store.StorePhone}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-6">
-                  <Store className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-sm text-gray-500">
-                    {t("PROFILE.NO_STORES_ASSIGNED")}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
+         
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
               <h2 className="text-lg font-semibold text-gray-900">
@@ -653,37 +594,9 @@ const ProfileDetails = () => {
                 </div>
                 <Edit className="h-4 w-4 text-gray-400 group-hover:text-caption" />
               </button>
-              <button
-                onClick={() => handleOpenModal("twoFactor")}
-                disabled
-                className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-xl group cursor-not-allowed opacity-50"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-custom-bg/10 rounded-lg">
-                    <Shield className="h-5 w-5 text-custom-bg" />
-                  </div>
-                  <span className="text-sm font-medium text-gray-900">
-                    {t("PROFILE.TWO_FACTOR_AUTH")}
-                  </span>
-                </div>
-                <Edit className="h-4 w-4 text-gray-400" />
-              </button>
+            
 
-              <button
-                onClick={() => handleOpenModal("privacy")}
-                disabled
-                className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-xl group cursor-not-allowed opacity-50"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-custom-bg/10 rounded-lg">
-                    <User className="h-5 w-5 text-custom-bg" />
-                  </div>
-                  <span className="text-sm font-medium text-gray-900">
-                    {t("PROFILE.PRIVACY_SETTINGS")}
-                  </span>
-                </div>
-                <Edit className="h-4 w-4 text-gray-400" />
-              </button>
+            
             </div>
           </div>
         </div>

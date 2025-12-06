@@ -124,7 +124,7 @@ const SelectWithIcon = forwardRef(
       };
     }, []);
 
-    // ✅ FIX HERE: prevent focus from causing scroll jump
+    
     useEffect(() => {
       if (isOpen && inputRef.current) {
         inputRef.current.focus({ preventScroll: true });

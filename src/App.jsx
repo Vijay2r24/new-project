@@ -1,365 +1,78 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { Routes, Route, useLocation } from "react-router-dom";
-import { TitleProvider } from "./context/TitleContext";
-import { AllDataProvider } from "./context/AllDataContext";
-import LocationDataProvider from "./context/LocationDataProvider";
-import ProtectedRoute from './components/ProtectedRoute';
-import NotAuthorized from './pages/NotAuthorized';
-import { getPermissionCode } from './utils/permissionUtils';
-import { Provider } from "react-redux";            // glue to connect Redux store to React
-import { store } from "./store/index";             // the store we made
+import { Routes, Route } from "react-router-dom";
+import { TenantProvider } from "./Tenants/tenantsContext";
+import Login from "./Pages/Login";
+import LayoutWrapper from "./layout/layoutWrapper";
+import Dashboard from "./DashBoard/dashBoard";
+import TenantList from "./Tenants/tenantList";
+import CreateTenant from "./Tenants/createTenant";
+import TenantDetails from "./Tenants/tenantDetails";
+import Users from "./Pages/Users";
+import UserRolesList from "./Pages/UserRolesList";
+import AddUser from "./Pages/AddUser";
+import AddUserRole from "./Pages/AddUserRoles";
+import ProfileDetails from "./Pages/ProfileDetails";
+import ThemeSettings from "./Pages/ThemeSettings";
+import SubscriptionUI from "./Tenants/Subscription";
+import Subscription from "./Tenants/Subscription";
+import PaymentDetails from "./Pages/payments/PaymentDetails";
+import TenantSettings from "./Tenants/tenantSettings";
+import Employees from "./Pages/EmployeeList";
+import OrderList from "./Pages/OrdersList";
+import ProductList from "./Pages/ProuctList";
+import AddProductForm from "./Pages/AddProductForm";
 
-// 🔹 Lazy-loaded pages
-const Layout = lazy(() => import("./layout/Layout"));
-const Browse = lazy(() => import("./pages/browse/Browse"));
-const Dashboard = lazy(() => import("./pages/dashboard/Dashboard"));
-const Users = lazy(() => import("./pages/Users"));
-const Orders = lazy(() => import("./pages/orders/OrderList"));
-const AddUser = lazy(() => import("./pages/AddUser"));
-const ProductList = lazy(() => import("./pages/products/ProductList"));
-const Addproduct = lazy(() => import("./pages/products/AddProductForm"));
-const ProfileDetails = lazy(() => import("./pages/ProfileDetails"));
-const Stores = lazy(() => import("./pages/Stores"));
-const AddStore = lazy(() => import("./pages/AddStore"));
-const Notifications = lazy(() => import("./pages/Notifications"));
-const Login = lazy(() => import("./pages/Login"));
-const Payments = lazy(() => import('./pages/payments/Payments'));
-const PaymentDetailsWrapper = lazy(() => import('./pages/payments/PaymentDetails'));
-const AddUserRole = lazy(() => import("./pages/AddUserRole"));
-const Banners = lazy(() => import("./pages/Banners"));
-const Bannerscreate = lazy(() => import("./pages/BannersCreate"));
-const UserRoles = lazy(() => import("../src/pages/UserRolesList"));
-const OrderDetailPage = lazy(() => import("./pages/orders/OrderView"));
-const CreateBrand = lazy(() => import("./pages/browse/brands/CreateBrand"));
-const CreateCategory = lazy(() => import("./pages/browse/categories/CreateCategory"));
-const CreateAttributeType = lazy(() => import("./pages/browse/attributeTypes/CreateAttributeType"));
-const CreateColor = lazy(() => import("./pages/browse/colors/CreateColor"));
-const CreateAttribute = lazy(() => import("./pages/browse/AttributeTypeValues/CreateAttributeTypeValuesList"));
-const CreateProductGroup = lazy(() => import("./pages/browse/productGroups/CreateProductGroup"));
-const ActiveBanners = lazy(() => import("./pages/ActiveBannersWithSequence"));
-const ProductDetails = lazy(()=>import("./pages/products/ProductDetails"));
-
-// 🔹 Permission codes
-const dashboardPermission = getPermissionCode('Dashboard Management', 'View Dashboard');
-const ordersPermission = getPermissionCode('Order Management', 'View Orders');
-const orderDetailPermission = getPermissionCode('Order Management', 'View Orders');
-const storesPermission = getPermissionCode('Store Management', 'View Store');
-const addStorePermission = getPermissionCode('Store Management', 'Add Store');
-const editStorePermission = getPermissionCode('Store Management', 'Update Store');
-const usersPermission = getPermissionCode('User Management', 'View User');
-const addUserPermission = getPermissionCode('User Management', 'Add User');
-const editUserPermission = getPermissionCode('User Management', 'Update user');
-const userRolesPermission = getPermissionCode('Role Management', 'View Role');
-const addUserRolePermission = getPermissionCode('Role Management', 'Add Role');
-const editUserRolePermission = getPermissionCode('Role Management', 'Update Role');
-const bannersPermission = getPermissionCode('Content Management', 'View Banners');
-const bannersCreatePermission = getPermissionCode('Content Management', 'Create Banner');
-const bannersEditPermission = getPermissionCode('Content Management', 'Update Banner');
-const notificationsPermission = getPermissionCode('Content Management', 'Send Push Notification');
-const productsPermission = getPermissionCode('Product Management', 'View Products');
-const addProductPermission = getPermissionCode('Product Management', 'Create Product');
-const editProductPermission = getPermissionCode('Product Management', 'Update Product');
-const viewBrandPermission = getPermissionCode('Product Management', 'View Brands');
-const updateBrandPermission = getPermissionCode('Product Management', 'Update Brand');
-const viewCategoryPermission = getPermissionCode('Product Management', 'View Categories');
-const updateCategoryPermission = getPermissionCode('Product Management', 'Update Category');
-const viewAttributeTypePermission = getPermissionCode('Product Management', 'View Attribute Types');
-const updateAttributeTypePermission = getPermissionCode('Product Management', 'Update Attribute Type');
-const viewColorPermission = getPermissionCode('Product Management', 'View Colours');
-const updateColorPermission = getPermissionCode('Product Management', 'Update Colour');
-const viewAttributePermission = getPermissionCode('Product Management', 'View Attributes');
-const updateAttributePermission = getPermissionCode('Product Management', 'Update Attribute');
-const viewProductGroupPermission = getPermissionCode('Product Management', 'View Product Groups');
-const updateProductGroupPermission = getPermissionCode('Product Management', 'Update Product Group');
-
-const App = () => {
-  const location = useLocation();
-
+function App() {
   return (
-    <Provider store={store}>
-    <AllDataProvider>
-      <TitleProvider>
-        <LocationDataProvider>
-          <Suspense>
-            <Routes>
-              <Route path="/" element={<Login />} />
+    <TenantProvider>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/register-tenant" element={<CreateTenant isPublic={true} />} />
+        <Route path="/*" element={<LayoutWrapper><Routes>
+          {/* Dashboard */}
+          <Route path="layout" element={<Dashboard />} />
+          <Route path="dashboard/dashboard" element={<Dashboard />} />
+          {/* Tenants */}
+          <Route path="/tenants/tenant-list" element={<TenantList />} />
+        
+          <Route path="/tenants/create" element={<CreateTenant />} />
+           <Route path="/tenants/tenant-settings" element={<TenantSettings/>} />
+           <Route path="/employees/employee-list" element={<Employees />} />
 
-              {/* Dashboard */}
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute permissionCode={dashboardPermission}>
-                    <Dashboard />
-                  </ProtectedRoute>
-                }
-              />
+          <Route path="tenants/edit/:id" element={<CreateTenant />} />
+          <Route path="tenants/details/:id" element={<TenantDetails />} />
+          <Route path="tenants/tenant-settings" element={<TenantSettings />} />
+          <Route path="tenants/subscription" element={<Subscription />} />
+          <Route path="/orders/order-list" element={<OrderList />} />
+          <Route path="/roles" element={<UserRolesList />} />
+          <Route path="/addUserRole" element={<AddUserRole />} />
+          <Route path="/products" element={<ProductList/>} />
+          <Route path ="/AddProuct" element={<AddProductForm />} />
+          {/* Payments */}
+          <Route path="/pages/paymentdetails" element={<PaymentDetails/>} />
+          {/* Profile */}
+          <Route path="pages/profile-details" element={<ProfileDetails />} />
+          {/* <Route path="pages/edit-profile/:id" element={<ProfileDetails />} /> */}
+          {/* Users */}
+          <Route path="users" element={<Users />} />
+          <Route path="pages/users" element={<Users />} />
+          <Route path="editUser/:id" element={<AddUser />} />
+          <Route path="pages/editUser/:id" element={<AddUser />} />
+          {/* User Roles */}
+          <Route path="pages/userRolesList" element={<UserRolesList />} />
+          <Route path="/addUser" element={<AddUser />} />
+          <Route path="pages/addUserRole" element={<AddUserRole />} />
+          {/* Theme Settings */}
+          <Route path="pages/theme-settings" element={<ThemeSettings />} />
+        
 
-              {/* Browse/Product Setup */}
-              <Route
-                path="/browse"
-                element={
-                  <ProtectedRoute permissionCode={productsPermission}>
-                    <Browse />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-              path="/payments"
-              element={
-                <ProtectedRoute permissionCode={notificationsPermission}>
-                  <Payments />
-                </ProtectedRoute>
-              }
-              />
-               <Route path="/payment-details/:id" 
-               element={
-                <ProtectedRoute permissionCode={notificationsPermission}>
-                 <PaymentDetailsWrapper />
-                </ProtectedRoute>
-               } />
-              <Route
-                path="/activeBanners"
-                element={
-                  <ProtectedRoute permissionCode={productsPermission}>
-                    <ActiveBanners />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/browse/editbrand/:id"
-                element={
-                  <ProtectedRoute permissionCode={updateBrandPermission}>
-                    <CreateBrand />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/browse/editcatagiry/:id"
-                element={
-                  <ProtectedRoute permissionCode={updateCategoryPermission}>
-                    <CreateCategory />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/browse/editattributetype/:id"
-                element={
-                  <ProtectedRoute permissionCode={updateAttributeTypePermission}>
-                    <CreateAttributeType />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/browse/editcolor/:id"
-                element={
-                  <ProtectedRoute permissionCode={updateColorPermission}>
-                    <CreateColor />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/browse/editattribute/:id"
-                element={
-                  <ProtectedRoute permissionCode={updateAttributePermission}>
-                    <CreateAttribute />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/browse/editgroup/:id"
-                element={
-                  <ProtectedRoute permissionCode={updateProductGroupPermission}>
-                    <CreateProductGroup />
-                  </ProtectedRoute>
-                }
-              />
+        </Routes>
+        </LayoutWrapper>
+        }
+        />
 
-              {/* Orders */}
-              <Route
-                path="/orders"
-                element={
-                  <ProtectedRoute permissionCode={ordersPermission}>
-                    <Orders />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/orders/:orderId"
-                element={
-                  <ProtectedRoute permissionCode={orderDetailPermission}>
-                    <OrderDetailPage />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* User Roles */}
-              <Route
-                path="/userRoles"
-                element={
-                  <ProtectedRoute permissionCode={userRolesPermission}>
-                    <UserRoles />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* Products */}
-              <Route
-                path="/productList"
-                element={
-                  <ProtectedRoute permissionCode={productsPermission}>
-                    <ProductList />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/Addproduct"
-                element={
-                  <ProtectedRoute permissionCode={addProductPermission}>
-                    <Addproduct />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/edit-product/:productId?"
-                element={
-                  <ProtectedRoute permissionCode={editProductPermission}>
-                    <Addproduct />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* Banners */}
-              <Route
-                path="/banners-create"
-                element={
-                  <ProtectedRoute permissionCode={bannersCreatePermission}>
-                    <Bannerscreate />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/banners-edit/:bannerId?"
-                element={
-                  <ProtectedRoute permissionCode={bannersEditPermission}>
-                    <Bannerscreate />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/banners"
-                element={
-                  <ProtectedRoute permissionCode={bannersPermission}>
-                    <Banners />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* Profile */}
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <ProfileDetails />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* User Role Management */}
-              <Route
-                path="/addUserRole"
-                element={
-                  <ProtectedRoute permissionCode={addUserRolePermission}>
-                    <AddUserRole />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/edit-UserRole/:roleId"
-                element={
-                  <ProtectedRoute permissionCode={editUserRolePermission}>
-                    <AddUserRole />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* Stores */}
-              <Route
-                path="/stores"
-                element={
-                  <ProtectedRoute permissionCode={storesPermission}>
-                    <Stores />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/add-store"
-                element={
-                  <ProtectedRoute permissionCode={addStorePermission}>
-                    <AddStore />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/editStore/:id"
-                element={
-                  <ProtectedRoute permissionCode={editStorePermission}>
-                    <AddStore />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* Users */}
-              <Route
-                path="/add-user"
-                element={
-                  <ProtectedRoute permissionCode={addUserPermission}>
-                    <AddUser />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/editUser/:id"
-                element={
-                  <ProtectedRoute permissionCode={editUserPermission}>
-                    <AddUser />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/users"
-                element={
-                  <ProtectedRoute permissionCode={usersPermission}>
-                    <Users />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* Notifications */}
-              <Route
-                path="/notifications"
-                element={
-                  <ProtectedRoute permissionCode={notificationsPermission}>
-                    <Notifications />
-                  </ProtectedRoute>
-                }
-              />
-            <Route
-                path="/productdetails/:productId?"
-                element={
-                  <ProtectedRoute>
-                    <ProductDetails />
-                  </ProtectedRoute>
-                }
-              />
-              {/* Not Authorized */}
-              <Route path="/not-authorized" element={<NotAuthorized />} />
-            </Routes>
-          </Suspense>
-        </LocationDataProvider>
-      </TitleProvider>
-    </AllDataProvider>
-    </Provider>
+      </Routes>
+    </TenantProvider>
   );
-};
+}
 
 export default App;

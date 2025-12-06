@@ -1,1067 +1,718 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useState, useEffect } from "react";
 import {
   User,
   Mail,
   Phone,
   MapPin,
-  Lock,
   Building,
-  CheckCircle,
-  XCircle,
-  Store,
   Users,
+  Globe,
+  Navigation,
+  Hash,
 } from "lucide-react";
 import TextInputWithIcon from "../components/TextInputWithIcon";
 import SelectWithIcon from "../components/SelectWithIcon";
+import PhoneInputWithIcon from "../components/PhoneInputWithIcon";
 import { useTranslation } from "react-i18next";
 import { FaCamera, FaTimes } from "react-icons/fa";
 import { useParams, useNavigate } from "react-router-dom";
-import { apiGet, apiPost, apiPut } from "../utils/ApiUtils";
-import {
-  CREATE_USER,
-  GET_USER_BY_ID,
-  UPDATE_USER,
-} from "../contants/apiRoutes";
-import { showEmsg } from "../utils/ShowEmsg";
-import { useTitle } from "../context/TitleContext";
-import { GENDER_OPTIONS, STATUS } from "../contants/constants";
-import md5 from "md5";
-import BackButton from "../components/BackButton";
-import { ToastContainer } from "react-toastify";
 import userProfile from "../../assets/images/userProfile.svg";
-import Loader from "../components/Loader";
-import { hideLoaderWithDelay } from "../utils/loaderUtils";
-import {
-  fetchResource,
-  fetchStatesByCountryId,
-  fetchCitiesByStateId,
-  clearStates,
-  clearCities,
-} from "../store/slices/allDataSlice";
+import BackButton from "../components/BackButton";
+import { useTitle } from "../context/TitleContext";
+import { GENDER_OPTIONS } from "../contants/constants";
 
-// Import password utilities
-import {
-  passwordRequirements,
-  calculatePasswordStrength,
-  getPasswordStrengthText,
-  validateFormPassword,
-} from "../utils/passwordUtils";
-
-const getArray = (data) =>
-  Array.isArray(data)
-    ? data
-    : data && Array.isArray(data.data)
-    ? data.data
-    : [];
+// IMPORT TOASTIFY
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const AddUser = () => {
-  const [oFormData, setFormData] = useState({
+  const { t } = useTranslation();
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { setTitle, setBackButton } = useTitle();
+
+  const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
-    role: "",
-    stores: [],
-    password: "",
-    confirmPassword: "",
+    gender: "",
     streetAddress: "",
     city: "",
     state: "",
     pincode: "",
     country: "",
-    countryName: "",
-    stateName: "",
-    cityName: "",
-    documentIds: [],
-    IsActive: true,
-    gender: "", // Added gender field
   });
-  const [nProfileImage, setProfileImage] = useState(null);
-  const [nProfileImagePreview, setProfileImagePreview] = useState(null);
-  const [existingDocuments, setExistingDocuments] = useState([]);
-  const [removedDocumentIds, setRemovedDocumentIds] = useState([]);
-  const { t } = useTranslation();
-  const { id } = useParams();
-  const [bImgLoading, setImgLoading] = useState(true);
-  const [bImgError, setImgError] = useState(false);
-  const [fetchUserError, setFetchUserError] = useState("");
 
-  // Redux hooks
-  const dispatch = useDispatch();
+  const [profileImagePreview, setProfileImagePreview] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPersonalInfoEditable, setIsPersonalInfoEditable] = useState(!id);
+  const [isAddressInfoEditable, setIsAddressInfoEditable] = useState(!id);
 
-  // Get data from the allDataSlice
-  const rolesData = useSelector((state) => state.allData.resources.roles || {});
-  const storesData = useSelector(
-    (state) => state.allData.resources.stores || {}
-  );
-  const countriesData = useSelector(
-    (state) => state.allData.resources.countries || {}
-  );
-  const statesData = useSelector(
-    (state) => state.allData.resources.states || {}
-  );
-  const citiesData = useSelector(
-    (state) => state.allData.resources.cities || {}
-  );
+  // --- DUMMY DATA (Fallback) ---
+  const dummyUsers = [
+    {
+      UserID: 1,
+      FirstName: "John",
+      LastName: "Doe",
+      Email: "john.doe@company.com",
+      PhoneNumber: "+1 (555) 123-4567",
+      RoleName: "Admin",
+      IsActive: true,
+      ProfileImageUrl: "",
+      Stores: [{ StoreName: "Main Store" }],
+    },
+  ];
 
-  const roles = rolesData.data || [];
-  const stores = storesData.data || [];
-  const countries = countriesData.data || [];
-  const states = statesData.data || [];
-  const cities = citiesData.data || [];
+  const mockCountries = [
+    { CountryID: 1, CountryName: "India" },
+    { CountryID: 2, CountryName: "USA" },
+  ];
+  const mockStates = [
+    { StateID: 1, StateName: "Maharashtra" },
+    { StateID: 2, StateName: "Karnataka" },
+  ];
+  const mockCities = [
+    { CityID: 1, CityName: "Mumbai" },
+    { CityID: 2, CityName: "Pune" },
+  ];
+  const genderOptions = GENDER_OPTIONS.map((option) => ({
+    value: option.value,
+    label: t(option.labelKey),
+  }));
 
-  const rolesLoading = rolesData.loading || false;
-  const storesLoading = storesData.loading || false;
-  const countriesLoading = countriesData.loading || false;
-  const statesLoading = statesData.loading || false;
-  const citiesLoading = citiesData.loading || false;
+  // --- HELPER: Compress Image ---
+  const compressImage = (file) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const MAX_WIDTH = 300;
+          const MAX_HEIGHT = 300;
+          let width = img.width;
+          let height = img.height;
 
-  const rolesError = rolesData.error || null;
-  const storesError = storesData.error || null;
-  const countriesError = countriesData.error || null;
-  const statesError = statesData.error || null;
-  const citiesError = citiesData.error || null;
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
 
-  const [oErrors, setErrors] = useState({});
-  const { setTitle, setBackButton } = useTitle();
-  const navigate = useNavigate();
-  const [bSubmitting, setSubmitting] = useState(false);
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", 0.7));
+        };
+      };
+    });
+  };
 
-  // Gender options
-  const genderOptions = useMemo(
-    () =>
-      GENDER_OPTIONS.map((option) => ({
-        value: option.value,
-        label: t(option.labelKey),
-      })),
-    [t]
-  );
+  const getSafeImageUrl = (imgData) => {
+    if (!imgData) return null;
+    if (typeof imgData === "string") return imgData;
+    if (Array.isArray(imgData) && imgData.length > 0) {
+      return imgData[0].documentUrl || imgData[0].url || null;
+    }
+    return null;
+  };
 
-  // Refs to track if data has been fetched to prevent multiple API calls
-  const hasFetchedRoles = useRef(false);
-  const hasFetchedStores = useRef(false);
-  const hasFetchedCountries = useRef(false);
-  const hasFetchedUser = useRef(false);
-  const hasFetchedInitialData = useRef(false);
+  useEffect(() => {
+    if (id) {
+      let storedUsers = JSON.parse(localStorage.getItem("usersList"));
 
-  // Password strength calculation using the imported utility
-  const passwordStrength = useMemo(
-    () => calculatePasswordStrength(oFormData.password),
-    [oFormData.password]
-  );
+      if (!storedUsers || storedUsers.length === 0) {
+        storedUsers = dummyUsers;
+        localStorage.setItem("usersList", JSON.stringify(dummyUsers));
+      }
 
-  // Get password strength text using the imported utility
-  const passwordStrengthText = useMemo(
-    () => getPasswordStrengthText(passwordStrength, t),
-    [passwordStrength, t]
-  );
+      const foundUser = storedUsers.find(
+        (u) => String(u.UserID) === String(id) || String(u.id) === String(id)
+      );
+
+      if (foundUser) {
+        setFormData({
+          firstName: foundUser.FirstName || "",
+          lastName: foundUser.LastName || "",
+          email: foundUser.Email || "",
+          phone: foundUser.PhoneNumber || "",
+          gender: foundUser.Gender || "",
+          streetAddress: foundUser.Address || "",
+          city: foundUser.City || "",
+          state: foundUser.State || "",
+          pincode: foundUser.Zipcode || "",
+          country: foundUser.Country || "",
+        });
+        setProfileImagePreview(getSafeImageUrl(foundUser.ProfileImageUrl));
+      }
+    }
+  }, [id]);
 
   useEffect(() => {
     setTitle(id ? t("USERS.EDIT_USER") : t("USERS.ADD_NEW_USER"));
-    setBackButton(<BackButton onClick={() => navigate("/users")} />);
-    return () => {
-      setBackButton(null);
-      setTitle("");
-    };
-  }, [setTitle, setBackButton, t, id, navigate]);
+    setBackButton(<BackButton />);
+  }, [setTitle, setBackButton, t, id]);
 
-  // Validation function - updated to include gender validation
-  const validate = useCallback(() => {
-    const errors = {};
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
-    if (!oFormData.firstName?.trim()) {
-      errors.firstName = t("ADD_USER.VALIDATION.FIRST_NAME_REQUIRED");
-    }
+  const handlePhoneChange = (phoneNumber) => {
+    setFormData((prev) => ({ ...prev, phone: phoneNumber }));
+  };
 
-    if (!oFormData.lastName?.trim()) {
-      errors.lastName = t("ADD_USER.VALIDATION.LAST_NAME_REQUIRED");
-    }
-
-    if (!oFormData.email?.trim()) {
-      errors.email = t("ADD_USER.VALIDATION.EMAIL_REQUIRED");
-    } else if (!emailRegex.test(oFormData.email)) {
-      errors.email = t("ADD_USER.VALIDATION.EMAIL_INVALID");
-    }
-
-    if (!oFormData.phone?.trim()) {
-      errors.phone = t("ADD_USER.PHONE_REQUIRED");
-    } else if (!phoneRegex.test(oFormData.phone)) {
-      errors.phone = t("ADD_USER.VALIDATION.PHONE_INVALID");
-    }
-
-    // Gender validation
-    if (!oFormData.gender) {
-      errors.gender = t("ADD_USER.VALIDATION.GENDER_REQUIRED");
-    }
-
-    if (!oFormData.role) {
-      errors.role = t("ADD_USER.VALIDATION.ROLE_REQUIRED");
-    }
-
-    if (!oFormData.stores || oFormData.stores.length === 0) {
-      errors.stores = t("ADD_USER.VALIDATION.STORES_REQUIRED");
-    }
-
-    // Password validation only for new users
-    if (!id) {
-      const passwordErrors = validateFormPassword(
-        oFormData.password,
-        oFormData.confirmPassword,
-        t,
-        true // isNewUser = true when creating new user
-      );
-      Object.assign(errors, passwordErrors);
-    }
-
-    if (!oFormData.streetAddress?.trim()) {
-      errors.streetAddress = t("ADD_USER.VALIDATION.ADDRESS_REQUIRED");
-    }
-
-    if (!oFormData.country) {
-      errors.country = t("ADD_USER.VALIDATION.COUNTRY_REQUIRED");
-    }
-
-    if (!oFormData.state) {
-      errors.state = t("ADD_USER.VALIDATION.STATE_REQUIRED");
-    }
-
-    if (!oFormData.city) {
-      errors.city = t("ADD_USER.VALIDATION.CITY_REQUIRED");
-    }
-
-    if (!oFormData.pincode?.trim()) {
-      errors.pincode = t("ADD_USER.VALIDATION.PINCODE_REQUIRED");
-    }
-
-    return errors;
-  }, [oFormData, t, id]);
-
-  useEffect(() => {
-    if (!hasFetchedInitialData.current) {
-      hasFetchedInitialData.current = true;
-      if (!countries.length && !countriesLoading) {
-        hasFetchedCountries.current = true;
-        dispatch(fetchResource({ key: "countries" }));
-      }
-      if (!roles.length && !rolesLoading && !hasFetchedRoles.current) {
-        hasFetchedRoles.current = true;
-        dispatch(
-          fetchResource({
-            key: "roles",
-            params: { searchText: "" },
-          })
-        );
-      }
-      if (!stores.length && !storesLoading && !hasFetchedStores.current) {
-        hasFetchedStores.current = true;
-        dispatch(
-          fetchResource({
-            key: "stores",
-            params: { searchText: "" },
-          })
-        );
-      }
-    }
-  }, [
-    dispatch,
-    countries,
-    countriesLoading,
-    roles,
-    rolesLoading,
-    stores,
-    storesLoading,
-  ]);
-
-  useEffect(() => {
-    if (oFormData.country) {
-      dispatch(fetchStatesByCountryId(oFormData.country))
-        .unwrap()
-        .then((result) => {
-          // States loaded successfully
-        })
-        .catch((error) => {
-          console.error("Error fetching states:", error);
-        });
-    } else {
-      dispatch(clearStates());
-      setFormData((prev) => ({ ...prev, state: "", city: "" }));
-    }
-  }, [dispatch, oFormData.country]);
-
-  useEffect(() => {
-    if (oFormData.state) {
-      dispatch(fetchCitiesByStateId(oFormData.state))
-        .unwrap()
-        .then((result) => {
-          // Cities loaded successfully
-        })
-        .catch((error) => {
-          console.error("Error fetching cities:", error);
-        });
-    } else {
-      dispatch(clearCities());
-      setFormData((prev) => ({ ...prev, city: "" }));
-    }
-  }, [dispatch, oFormData.state]);
-
-  // Optimized fetchUser function - updated to handle gender field
-  const fetchUser = useCallback(async () => {
-    if (!id || hasFetchedUser.current) return;
-
-    hasFetchedUser.current = true;
-    const token = localStorage.getItem("token");
-
-    try {
-      const oResponse = await apiGet(`${GET_USER_BY_ID}/${id}`, {}, token);
-      const resData = oResponse.data;
-
-      if (resData?.status === STATUS.SUCCESS.toUpperCase() && resData.data) {
-        const user = resData.data;
-
-        // Set basic form data immediately
-        setFormData((prev) => ({
-          ...prev,
-          firstName: user.FirstName || "",
-          lastName: user.LastName || "",
-          email: user.Email || "",
-          phone: user.PhoneNumber || "",
-          role: user.RoleID || "",
-          IsActive: user.IsActive !== undefined ? user.IsActive : true,
-          stores: user.Stores ? user.Stores.map((store) => store.StoreId) : [],
-          streetAddress: user.AddressLine || "",
-          pincode: user.Zipcode || "",
-          countryName: user.CountryName || "",
-          stateName: user.StateName || "",
-          cityName: user.CityName || "",
-          documentIds: user.ProfileImageUrl
-            ? user.ProfileImageUrl.map((doc) => doc.documentId)
-            : [],
-          gender: user.Gender || "", // Set gender from API response
-        }));
-
-        // For the profile image
-        if (user.ProfileImageUrl && user.ProfileImageUrl.length > 0) {
-          setImgLoading(true);
-          setProfileImagePreview(user.ProfileImageUrl[0].documentUrl);
-          setExistingDocuments(user.ProfileImageUrl);
-        } else {
-          setImgLoading(false);
-          setExistingDocuments([]);
-        }
-
-        // Store location names for later population
-        const locationData = {
-          countryName: user.CountryName,
-          stateName: user.StateName,
-          cityName: user.CityName,
-        };
-
-        // Find and set country ID if available
-        const countriesArray = getArray(countries);
-        if (countriesArray.length > 0) {
-          const foundCountry = countriesArray.find(
-            (c) => c.CountryName === user.CountryName
-          );
-          if (foundCountry) {
-            setFormData((prev) => ({
-              ...prev,
-              country: foundCountry.CountryID,
-            }));
-          }
-        } else {
-          // If countries aren't loaded yet, store the names for later
-          setTimeout(() => {
-            setFormData((prev) => ({
-              ...prev,
-              countryName: user.CountryName,
-              stateName: user.StateName,
-              cityName: user.CityName,
-            }));
-          }, 100);
-        }
-
-        setRemovedDocumentIds([]);
-        setFetchUserError("");
-      } else {
-        setFetchUserError(resData?.message || t("COMMON.FAILED_OPERATION"));
-      }
-    } catch (error) {
-      const backendMessage = error?.response?.data?.message;
-      setFetchUserError(backendMessage || t("COMMON.ERROR_MESSAGE"));
-    }
-  }, [id, t, countries]);
-
-  useEffect(() => {
-    const populateStateAndCity = async () => {
-      if (
-        !id ||
-        !oFormData.country ||
-        !oFormData.stateName ||
-        !oFormData.countryName
-      )
-        return;
-
-      try {
-        const statesArray = getArray(states);
-        const foundState = statesArray.find(
-          (s) => s.StateName === oFormData.stateName
-        );
-
-        if (foundState && !oFormData.state) {
-          setFormData((prev) => ({
-            ...prev,
-            state: foundState.StateID,
-          }));
-        }
-      } catch (error) {
-        console.error("Error populating state:", error);
-      }
-    };
-
-    populateStateAndCity();
-  }, [
-    id,
-    oFormData.country,
-    oFormData.stateName,
-    oFormData.countryName,
-    states,
-  ]);
-
-  useEffect(() => {
-    const populateCity = async () => {
-      if (!id || !oFormData.state || !oFormData.cityName) return;
-
-      try {
-        const citiesArray = getArray(cities);
-        const foundCity = citiesArray.find(
-          (c) => c.CityName === oFormData.cityName
-        );
-
-        if (foundCity && !oFormData.city) {
-          setFormData((prev) => ({
-            ...prev,
-            city: foundCity.CityID,
-          }));
-        }
-      } catch (error) {
-        console.error("Error populating city:", error);
-      }
-    };
-
-    populateCity();
-  }, [id, oFormData.state, oFormData.cityName, cities]);
-
-  useEffect(() => {
-    if (id && !hasFetchedUser.current && countries.length > 0) {
-      const timer = setTimeout(() => {
-        fetchUser();
-      }, 100);
-
-      return () => clearTimeout(timer);
-    }
-  }, [id, countries.length, fetchUser]);
-
-  const handleChange = useCallback(
-    (e) => {
-      const { name, value } = e.target;
-
-      if (name === "country") {
-        setFormData((prev) => ({
-          ...prev,
-          [name]: value,
-          state: "",
-          city: "",
-          stateName: "",
-          cityName: "",
-        }));
-      } else if (name === "state") {
-        setFormData((prev) => ({
-          ...prev,
-          [name]: value,
-          city: "",
-          cityName: "",
-        }));
-      }
-      // For all other fields
-      else {
-        setFormData((prev) => ({
-          ...prev,
-          [name]: value,
-        }));
-      }
-
-      // Clear error when user starts typing
-      if (oErrors[name]) {
-        setErrors((prev) => ({ ...prev, [name]: "" }));
-      }
-    },
-    [oErrors]
-  );
-
-  const handleImageChange = useCallback((e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      setProfileImage(file);
-      setRemovedDocumentIds([]);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setProfileImagePreview(e.target.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  }, []);
-
-  const handleSubmit = useCallback(
-    async (e) => {
-      e.preventDefault();
-      const validationErrors = validate();
-      setErrors(validationErrors);
-      if (Object.keys(validationErrors).length > 0) return;
-
-      setSubmitting(true);
-      const token = localStorage.getItem("token");
-      const userId = localStorage.getItem("userId");
-      const formData = new FormData();
-
-      let documentMetadata = [];
-      if (nProfileImage) {
-        if (existingDocuments.length > 0 && existingDocuments[0]?.documentId) {
-          documentMetadata.push({
-            image: "profile-image",
-            sortOrder: 1,
-            DocumentID: existingDocuments[0].documentId,
-          });
-        } else {
-          documentMetadata.push({
-            image: "profile-image",
-            sortOrder: 1,
-          });
-        }
-      } else if (removedDocumentIds.length > 0) {
-        const remainingDocuments = existingDocuments.filter(
-          (doc) => !removedDocumentIds.includes(doc.documentId)
-        );
-        documentMetadata = remainingDocuments.map((doc, index) => ({
-          image: "profile-image",
-          sortOrder: doc.sortOrder || index + 1,
-          DocumentID: doc.documentId,
-        }));
-      }
-
-      // Base user data structure - updated to include gender
-      const userData = {
-        FirstName: oFormData.firstName || "",
-        LastName: oFormData.lastName || "",
-        Email: oFormData.email || "",
-        PhoneNumber: oFormData.phone || "",
-        AddressLine: oFormData.streetAddress || "",
-        CityID: oFormData.city ? parseInt(oFormData.city, 10) : 0,
-        StateID: oFormData.state ? parseInt(oFormData.state, 10) : 0,
-        CountryID: oFormData.country ? parseInt(oFormData.country, 10) : 0,
-        Zipcode: oFormData.pincode || "",
-        RoleID: oFormData.role || "",
-        StoreIDs: oFormData.stores || [],
-        IsActive: oFormData.IsActive !== undefined ? oFormData.IsActive : true,
-        documentMetadata: documentMetadata,
-        Gender: oFormData.gender || "", // Include gender in API payload
-      };
-
-      // Add UserID for update and handle password differently
-      if (id) {
-        // Update operation - hide password field
-        userData.UserID = id;
-        userData.UpdatedBy = userId;
-
-        // Only include password if provided during update (optional field)
-        if (oFormData.password && oFormData.password.trim() !== "") {
-          userData.Password = md5(oFormData.password);
-        }
-        // If password is not provided, don't include it in the payload
-      } else {
-        // Create operation - password is required
-        userData.Password = oFormData.password ? md5(oFormData.password) : "";
-        userData.CreatedBy = userId;
-      }
-
-      formData.append("data", JSON.stringify(userData));
-
-      if (nProfileImage) {
-        formData.append("profile-image", nProfileImage);
-      }
-
       try {
-        let oResponse;
-
-        if (id) {
-          // Use PUT for update with updateUser endpoint
-          oResponse = await apiPut(
-            UPDATE_USER,
-            formData,
-            token,
-            true // multipart/form-data
-          );
-        } else {
-          // Use POST for create with createUser endpoint
-          oResponse = await apiPost(
-            CREATE_USER,
-            formData,
-            token,
-            true // multipart/form-data
-          );
-        }
-
-        const resData = oResponse?.data;
-
-        if (resData?.status === STATUS.SUCCESS.toUpperCase()) {
-          setRemovedDocumentIds([]);
-          showEmsg(resData?.message, STATUS.SUCCESS, 3000, async () => {
-            navigate("/users");
-          });
-        } else {
-          showEmsg(
-            resData?.message || t("COMMON.FAILED_OPERATION"),
-            STATUS.WARNING
-          );
-        }
+        const compressedBase64 = await compressImage(file);
+        // Updating state immediately to show preview
+        setProfileImagePreview(compressedBase64);
+        console.log("New Image set in preview state");
       } catch (error) {
-        console.error("API Error:", error);
-        const backendMessage = error?.response?.data?.message;
-        showEmsg(backendMessage || t("COMMON.ERROR_MESSAGE"), STATUS.ERROR);
-      } finally {
-        hideLoaderWithDelay(setSubmitting);
+        console.error("Image processing error", error);
+        toast.error("Failed to process image");
       }
-    },
-    [
-      validate,
-      id,
-      oFormData,
-      nProfileImage,
-      existingDocuments,
-      removedDocumentIds,
-      t,
-      navigate,
-    ]
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    const existingUsers =
+      JSON.parse(localStorage.getItem("usersList")) || dummyUsers;
+
+    const handleSuccessParams = {
+      position: "top-right",
+      autoClose: 1500,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: "light",
+      onClose: () => {
+        setIsSubmitting(false);
+        navigate("/users");
+      },
+    };
+
+    try {
+      if (id) {
+        // UPDATE EXISTING USER
+        const updatedList = existingUsers.map((u) => {
+          if (String(u.UserID) === String(id) || String(u.id) === String(id)) {
+            
+            // Logic to determine which image to use
+            const oldImage =
+              typeof u.ProfileImageUrl === "string"
+                ? u.ProfileImageUrl
+                : getSafeImageUrl(u.ProfileImageUrl) || "";
+
+            const newImage =
+              typeof profileImagePreview === "string" && profileImagePreview !== ""
+                ? profileImagePreview
+                : oldImage;
+
+     
+
+            return {
+              ...u,
+              FirstName: formData.firstName,
+              LastName: formData.lastName,
+              Email: formData.email,
+              PhoneNumber: formData.phone,
+              Gender: formData.gender,
+              Address: formData.streetAddress,
+              City: formData.city,
+              State: formData.state,
+              Country: formData.country,
+              Zipcode: formData.pincode,
+              ProfileImageUrl: newImage, // Assigning the new image here
+            };
+          }
+          return u;
+        });
+
+        localStorage.setItem("usersList", JSON.stringify(updatedList));
+        toast.success("User Updated Successfully!", handleSuccessParams);
+      } else {
+        // CREATE NEW USER
+        const newUser = {
+          id: Date.now(),
+          UserID: Date.now(),
+          FirstName: formData.firstName,
+          LastName: formData.lastName,
+          Email: formData.email,
+          PhoneNumber: formData.phone,
+          Gender: formData.gender,
+          Address: formData.streetAddress,
+          City: formData.city,
+          State: formData.state,
+          Country: formData.country,
+          Zipcode: formData.pincode,
+          ProfileImageUrl:
+            typeof profileImagePreview === "string" ? profileImagePreview : "",
+          RoleName: "Staff",
+          IsActive: true,
+          Stores: [{ StoreName: "Main Store" }],
+        };
+        const updatedUsers = [newUser, ...existingUsers];
+        localStorage.setItem("usersList", JSON.stringify(updatedUsers));
+        toast.success("User Created Successfully!", handleSuccessParams);
+      }
+    } catch (error) {
+      console.error("Save failed:", error);
+      setIsSubmitting(false);
+      if (error.name === "QuotaExceededError" || error.code === 22) {
+        toast.error(
+          "Storage full! Image is too big. We tried to compress it but it didn't fit."
+        );
+      } else {
+        toast.error("Failed to save changes.");
+      }
+    }
+  };
+
+  const handleCancel = () => {
+    navigate("/users");
+  };
+
+  const toggleSectionEdit = (section) => {
+    switch (section) {
+      case "personal":
+        setIsPersonalInfoEditable(!isPersonalInfoEditable);
+        break;
+      case "address":
+        setIsAddressInfoEditable(!isAddressInfoEditable);
+        break;
+    }
+  };
+
+  const SectionHeader = ({ title, isEditable, onEditToggle, sectionKey }) => (
+    <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100 flex justify-between items-center">
+      <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+      {id && !isEditable && (
+        <button
+          type="button"
+          onClick={() => onEditToggle(sectionKey)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-[#FF5A5F] text-white hover:bg-[#e04a4f] transition-colors"
+        >
+          {t("COMMON.EDIT")}
+        </button>
+      )}
+    </div>
   );
 
+  const SectionFooter = ({ isEditable, onEditToggle, sectionKey }) =>
+    id &&
+    isEditable && (
+      <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={() => onEditToggle(sectionKey)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300 transition-colors"
+        >
+          {t("COMMON.CANCEL")}
+        </button>
+        <button
+          type="submit"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-[#FF5A5F] text-white hover:bg-[#e04a4f] transition-colors"
+        >
+          {t("COMMON.UPDATE")}
+        </button>
+      </div>
+    );
+
+  const DataField = ({ label, value, placeholder = "-", icon: Icon = User }) => (
+    <div className="flex flex-col mb-2">
+      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+        <Icon size={16} className="text-gray-500" />
+        {label}
+      </label>
+      <div className="pl-6">
+        <span className="text-gray-900 text-base font-medium align-middle">
+          {value || <span className="text-gray-400 italic">{placeholder}</span>}
+        </span>
+      </div>
+    </div>
+  );
+
+  const DataSelectField = ({
+    label,
+    value,
+    options,
+    placeholder = "-",
+    icon: Icon = User,
+  }) => {
+    const displayValue =
+      options.find((opt) => opt.value == value)?.label || value || "-";
+    return (
+      <div className="flex flex-col mb-2">
+        <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+          <Icon size={16} className="text-gray-500" />
+          {label}
+        </label>
+        <div className="pl-6">
+          <span className="text-gray-900 text-base font-medium align-middle">
+            {displayValue !== "-" ? (
+              displayValue
+            ) : (
+              <span className="text-gray-400 italic">{placeholder}</span>
+            )}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="max-w-8xl mx-auto">
+    <div className="max-w-8xl mx-auto pb-20">
       <ToastContainer />
-      <div className="mb-8">
-        <div className="flex items-center gap-4 mb-4">
-          <p className="text-gray-500">
-            {id ? t("USERS.EDIT_USER_DESCRIPTION") : t("USERS.DESCRIPTION")}
-          </p>
-        </div>
-      </div>
 
-      <div className="flex items-center gap-6 mb-8 relative">
-        <div className="relative" style={{ minWidth: 80, minHeight: 80 }}>
-          {bImgLoading && !bImgError && (
-            <div className="h-20 w-20 rounded-full bg-gray-200 animate-pulse flex items-center justify-center">
-              <User className="h-10 w-10 text-gray-400" />
-            </div>
-          )}
-          <img
-            src={
-              !bImgError &&
-              (nProfileImagePreview ||
-                (existingDocuments.length > 0 &&
-                  existingDocuments[0].documentUrl))
-                ? nProfileImagePreview || existingDocuments[0].documentUrl
-                : userProfile
-            }
-            alt={t("ADD_USER.PROFILE_PREVIEW")}
-            className={`h-20 w-20 rounded-full object-cover border ${
-              bImgLoading ? "hidden" : ""
-            }`}
-            style={{ display: bImgLoading ? "none" : "block" }}
-            onLoad={() => setImgLoading(false)}
-            onError={() => {
-              setImgError(true);
-              setImgLoading(false);
-            }}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t("ADD_USER.PROFILE_IMAGE")}
-          </label>
-          <input
-            id="profile-image-upload"
-            type="file"
-            accept="image/*"
-            onChange={handleImageChange}
-            className="hidden"
-          />
-          <label
-            htmlFor="profile-image-upload"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-full cursor-pointer"
-          >
-            <FaCamera className="text-lg" />
-            {t("COMMON.UPLOAD")}
-          </label>
-
-          <p className="text-xs text-gray-400 mt-1">
-            {t("ADD_USER.IMAGE_UPLOAD_NOTE")}
-          </p>
-        </div>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900">
-              {t("ADD_USER.PERSONAL_INFO")}
-            </h2>
-          </div>
-          <div className="p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <TextInputWithIcon
-                label={t("ADD_USER.FIRST_NAME")}
-                id="firstName"
-                name="firstName"
-                value={oFormData.firstName}
-                onChange={handleChange}
-                placeholder={t("ADD_USER.ENTER_FIRST_NAME")}
-                Icon={User}
-                error={oErrors.firstName}
-              />
-              <TextInputWithIcon
-                label={t("ADD_USER.LAST_NAME")}
-                id="lastName"
-                name="lastName"
-                value={oFormData.lastName}
-                onChange={handleChange}
-                placeholder={t("ADD_USER.ENTER_LAST_NAME")}
-                Icon={User}
-                error={oErrors.lastName}
-              />
-              <SelectWithIcon
-                label={t("ADD_USER.GENDER")}
-                id="gender"
-                name="gender"
-                value={oFormData.gender}
-                onChange={handleChange}
-                options={genderOptions}
-                Icon={Users}
-                error={oErrors.gender}
-                placeholder={t("ADD_USER.SELECT_GENDER")}
-              />
-              <TextInputWithIcon
-                label={t("COMMON.EMAIL_ADDRESS")}
-                id="email"
-                name="email"
-                value={oFormData.email}
-                onChange={handleChange}
-                placeholder={t("COMMON.ENTER_EMAIL_ADDRESS")}
-                Icon={Mail}
-                type="email"
-                error={oErrors.email}
-              />
-              <TextInputWithIcon
-                label={t("COMMON.PHONE_NUMBER")}
-                id="phone"
-                name="phone"
-                value={oFormData.phone}
-                onChange={handleChange}
-                placeholder={t("COMMON.ENTER_PHONE_NUMBER")}
-                Icon={Phone}
-                type="tel"
-                error={oErrors.phone}
-              />
-            </div>
+      <form onSubmit={handleSubmit}>
+        <div className="mb-8">
+          <div className="flex items-center gap-4 mb-4">
+            <p className="text-gray-600 text-sm">
+              {id ? t("USERS.EDIT_USER_DESCRIPTION") : t("USERS.DESCRIPTION")}
+            </p>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900">
-              {t("ADD_USER.ACCOUNT_SECURITY")}
-            </h2>
-          </div>
-          <div className="p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <SelectWithIcon
-                label={t("ADD_USER.USER_ROLE")}
-                id="role"
-                name="role"
-                value={oFormData.role}
-                onChange={handleChange}
-                options={roles.map((r) => ({
-                  value: r.RoleID,
-                  label: r.RoleName,
-                }))}
-                Icon={Building}
-                disabled={rolesLoading}
-                error={oErrors.role || rolesError}
-                placeholder={
-                  rolesLoading ? t("COMMON.LOADING") : t("ADD_USER.SELECT_ROLE")
-                }
-                searchable
-                searchPlaceholder={t("COMMON.SEARCH_ROLE") || "Search role"}
-                onInputChange={(inputValue) => {
-                  dispatch(
-                    fetchResource({
-                      key: "roles",
-                      params: {
-                        searchText: inputValue,
-                      },
-                    })
-                  );
-                }}
-              />
-
-              <SelectWithIcon
-                label={t("ADD_USER.ASSIGNED_STORES")}
-                id="stores"
-                name="stores"
-                value={oFormData.stores}
-                onChange={handleChange}
-                options={stores.map((s) => ({
-                  value: s.StoreID,
-                  label: s.StoreName,
-                }))}
-                Icon={Store}
-                disabled={storesLoading}
-                error={oErrors.stores || storesError}
-                placeholder={
-                  storesLoading
-                    ? t("COMMON.LOADING")
-                    : t("ADD_USER.SELECT_STORES")
-                }
-                multiple={true}
-                searchable
-                searchPlaceholder={t("COMMON.SEARCH_STORES") || "Search stores"}
-                onInputChange={(inputValue) => {
-                  dispatch(
-                    fetchResource({
-                      key: "stores",
-                      params: {
-                        searchText: inputValue,
-                      },
-                    })
-                  );
-                }}
-              />
-
-              {/* Password Section - Only show for new users */}
-              {!id && (
-                <div className="col-span-1 md:col-span-2">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <TextInputWithIcon
-                      label={t("COMMON.PASSWORD")}
-                      id="password"
-                      name="password"
-                      value={oFormData.password}
-                      onChange={handleChange}
-                      placeholder={t("COMMON.ENTER_PASSWORD")}
-                      Icon={Lock}
-                      type="password"
-                      error={oErrors.password}
-                    />
-                    <TextInputWithIcon
-                      label={t("COMMON.CONFIRM_PASSWORD")}
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      value={oFormData.confirmPassword}
-                      onChange={handleChange}
-                      placeholder={t("COMMON.CONFIRM_PASSWORD")}
-                      Icon={Lock}
-                      type="password"
-                      error={oErrors.confirmPassword}
-                    />
-                  </div>
-
-                  {typeof oFormData.password === "string" &&
-                    oFormData.password.length > 0 && (
-                      <div
-                        className="col-span-1 md:col-span-2"
-                        style={{ marginTop: 4 }}
-                      >
-                        <span
-                          style={{
-                            color:
-                              passwordStrength === "strong"
-                                ? "#16a34a"
-                                : passwordStrength === "medium"
-                                ? "#f59e42"
-                                : "#dc2626",
-                            fontWeight: 600,
-                            fontSize: 13,
-                          }}
-                        >
-                          {passwordStrengthText}
-                        </span>
-                        <ul
-                          style={{
-                            margin: "8px 0 0 0",
-                            padding: 0,
-                            listStyle: "none",
-                          }}
-                        >
-                          {passwordRequirements(t).map((req, idx) => {
-                            const passed = req.test(oFormData.password);
-                            return (
-                              <li
-                                key={idx}
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  color: passed ? "#16a34a" : "#dc2626",
-                                  fontSize: 13,
-                                  marginBottom: 2,
-                                }}
-                              >
-                                {passed ? (
-                                  <CheckCircle
-                                    size={16}
-                                    color="#16a34a"
-                                    style={{ marginRight: 6 }}
-                                  />
-                                ) : (
-                                  <XCircle
-                                    size={16}
-                                    color="#dc2626"
-                                    style={{ marginRight: 6 }}
-                                  />
-                                )}
-                                {req.label}
-                              </li>
-                            );
-                          })}
-                        </ul>
-                        {passwordStrength !== "strong" && (
-                          <div
-                            style={{
-                              color: "#dc2626",
-                              fontSize: 12,
-                              marginTop: 2,
-                            }}
-                          >
-                            {t("COMMON.PASSWORD_SUGGESTION")}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900">
-              {t("ADD_USER.ADDRESS_INFO")}
-            </h2>
-          </div>
-          <div className="p-6 space-y-6">
-            <TextInputWithIcon
-              label={t("COMMON.STREET_ADDRESS")}
-              id="streetAddress"
-              name="streetAddress"
-              value={oFormData.streetAddress}
-              onChange={handleChange}
-              placeholder={t("COMMON.ENTER_STREET_ADDRESS")}
-              Icon={MapPin}
-              error={oErrors.streetAddress}
+        <div className="flex items-center gap-6 mb-8 relative">
+          <div className="relative" style={{ minWidth: 80, minHeight: 80 }}>
+            {/* Added a key to force re-render if preview changes */}
+            <img
+              key={profileImagePreview}
+              src={profileImagePreview || userProfile}
+              alt={t("ADD_USER.PROFILE_PREVIEW")}
+              className="h-20 w-20 rounded-full object-cover border-2 border-gray-200 shadow-sm"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = userProfile;
+              }}
             />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <SelectWithIcon
-                  label={t("COMMON.COUNTRY")}
-                  id="country"
-                  name="country"
-                  value={oFormData.country}
-                  onChange={handleChange}
-                  options={countries.map((c) => ({
-                    value: c.CountryID,
-                    label: c.CountryName,
-                  }))}
-                  Icon={Building}
-                  error={oErrors.country || countriesError}
-                  placeholder={
-                    countriesLoading
-                      ? t("COMMON.LOADING")
-                      : t("COMMON.SELECT_COUNTRY")
-                  }
-                  disabled={countriesLoading}
-                />
-              </div>
-              <div>
-                <SelectWithIcon
-                  label={t("COMMON.STATE")}
-                  id="state"
-                  name="state"
-                  value={oFormData.state}
-                  onChange={handleChange}
-                  options={states.map((s) => ({
-                    value: s.StateID,
-                    label: s.StateName,
-                  }))}
-                  Icon={Building}
-                  error={oErrors.state || statesError}
-                  placeholder={
-                    statesLoading
-                      ? t("COMMON.LOADING")
-                      : t("COMMON.SELECT_STATE")
-                  }
-                  disabled={statesLoading || !oFormData.country}
-                />
-              </div>
-              <div>
-                <SelectWithIcon
-                  label={t("COMMON.CITY")}
-                  id="city"
-                  name="city"
-                  value={oFormData.city}
-                  onChange={handleChange}
-                  options={cities.map((c) => ({
-                    value: c.CityID,
-                    label: c.CityName,
-                  }))}
-                  Icon={Building}
-                  error={oErrors.city || citiesError}
-                  placeholder={
-                    citiesLoading
-                      ? t("COMMON.LOADING")
-                      : t("COMMON.SELECT_CITY")
-                  }
-                  disabled={citiesLoading || !oFormData.state}
-                />
-              </div>
-              <TextInputWithIcon
-                label={t("COMMON.PINCODE")}
-                id="pincode"
-                name="pincode"
-                value={oFormData.pincode}
-                onChange={handleChange}
-                placeholder={t("ADD_USER.ENTER_PINCODE")}
-                Icon={MapPin}
-                error={oErrors.pincode}
-              />
-            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t("ADD_USER.PROFILE_IMAGE")}
+            </label>
+            <input
+              id="profile-image-upload"
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="hidden"
+            />
+            <label
+              htmlFor="profile-image-upload"
+              className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg cursor-pointer transition-colors text-white bg-blue-600 hover:bg-blue-700 border border-blue-600"
+            >
+              <FaCamera className="text-sm" />
+              {t("COMMON.UPLOAD")}
+            </label>
+            <p className="text-xs text-gray-500 mt-2">
+              {t("ADD_USER.IMAGE_UPLOAD_NOTE")}
+            </p>
           </div>
         </div>
 
-        <div className="flex justify-end space-x-4">
-          <button
-            type="button"
-            onClick={() => window.history.back()}
-            className="btn-cancel"
-          >
-            {t("COMMON.CANCEL")}
-          </button>
-          <button type="submit" className="btn-primary" disabled={bSubmitting}>
-            {bSubmitting
-              ? t("COMMON.SAVING")
-              : id
-              ? t("COMMON.SAVE_BUTTON")
-              : t("ADD_USER.CREATE_USER")}
-          </button>
+        <div className="space-y-8">
+          {/* Personal Info */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <SectionHeader
+              title={t("ADD_USER.PERSONAL_INFO")}
+              isEditable={isPersonalInfoEditable}
+              onEditToggle={toggleSectionEdit}
+              sectionKey="personal"
+            />
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {isPersonalInfoEditable ? (
+                  <TextInputWithIcon
+                    label={t("ADD_USER.FIRST_NAME")}
+                    id="firstName"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    placeholder={t("ADD_USER.ENTER_FIRST_NAME")}
+                    Icon={User}
+                  />
+                ) : (
+                  <DataField
+                    label={t("ADD_USER.FIRST_NAME")}
+                    value={formData.firstName}
+                    icon={User}
+                  />
+                )}
+                {isPersonalInfoEditable ? (
+                  <TextInputWithIcon
+                    label={t("ADD_USER.LAST_NAME")}
+                    id="lastName"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    placeholder={t("ADD_USER.ENTER_LAST_NAME")}
+                    Icon={User}
+                  />
+                ) : (
+                  <DataField
+                    label={t("ADD_USER.LAST_NAME")}
+                    value={formData.lastName}
+                    icon={User}
+                  />
+                )}
+                {isPersonalInfoEditable ? (
+                  <SelectWithIcon
+                    label={t("ADD_USER.GENDER")}
+                    id="gender"
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleChange}
+                    options={genderOptions}
+                    Icon={Users}
+                    placeholder={t("ADD_USER.SELECT_GENDER")}
+                  />
+                ) : (
+                  <DataSelectField
+                    label={t("ADD_USER.GENDER")}
+                    value={formData.gender}
+                    options={genderOptions}
+                    icon={Users}
+                  />
+                )}
+                {isPersonalInfoEditable ? (
+                  <TextInputWithIcon
+                    label={t("COMMON.EMAIL_ADDRESS")}
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder={t("COMMON.ENTER_EMAIL_ADDRESS")}
+                    Icon={Mail}
+                    type="email"
+                  />
+                ) : (
+                  <DataField
+                    label={t("COMMON.EMAIL_ADDRESS")}
+                    value={formData.email}
+                    icon={Mail}
+                  />
+                )}
+                {isPersonalInfoEditable ? (
+                  <PhoneInputWithIcon
+                    label={t("COMMON.PHONE_NUMBER")}
+                    id="phone"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handlePhoneChange}
+                    placeholder={t("COMMON.ENTER_PHONE_NUMBER")}
+                    Icon={Phone}
+                    defaultCountry="IN"
+                  />
+                ) : (
+                  <DataField
+                    label={t("COMMON.PHONE_NUMBER")}
+                    value={formData.phone}
+                    icon={Phone}
+                  />
+                )}
+              </div>
+            </div>
+            <SectionFooter
+              isEditable={isPersonalInfoEditable}
+              onEditToggle={toggleSectionEdit}
+              sectionKey="personal"
+            />
+          </div>
+
+          {/* Address Info */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <SectionHeader
+              title={t("ADD_USER.ADDRESS_INFO")}
+              isEditable={isAddressInfoEditable}
+              onEditToggle={toggleSectionEdit}
+              sectionKey="address"
+            />
+            <div className="p-6 space-y-6">
+              {isAddressInfoEditable ? (
+                <TextInputWithIcon
+                  label={t("COMMON.STREET_ADDRESS")}
+                  id="streetAddress"
+                  name="streetAddress"
+                  value={formData.streetAddress}
+                  onChange={handleChange}
+                  placeholder={t("COMMON.ENTER_STREET_ADDRESS")}
+                  Icon={MapPin}
+                />
+              ) : (
+                <DataField
+                  label={t("COMMON.STREET_ADDRESS")}
+                  value={formData.streetAddress}
+                  icon={MapPin}
+                />
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {isAddressInfoEditable ? (
+                  <SelectWithIcon
+                    label={t("COMMON.COUNTRY")}
+                    id="country"
+                    name="country"
+                    value={formData.country}
+                    onChange={handleChange}
+                    options={mockCountries.map((c) => ({
+                      value: c.CountryID,
+                      label: c.CountryName,
+                    }))}
+                    Icon={Globe}
+                    placeholder={t("COMMON.SELECT_COUNTRY")}
+                  />
+                ) : (
+                  <DataSelectField
+                    label={t("COMMON.COUNTRY")}
+                    value={formData.country}
+                    options={mockCountries.map((c) => ({
+                      value: c.CountryID,
+                      label: c.CountryName,
+                    }))}
+                    icon={Globe}
+                  />
+                )}
+                {isAddressInfoEditable ? (
+                  <SelectWithIcon
+                    label={t("COMMON.STATE")}
+                    id="state"
+                    name="state"
+                    value={formData.state}
+                    onChange={handleChange}
+                    options={mockStates.map((s) => ({
+                      value: s.StateID,
+                      label: s.StateName,
+                    }))}
+                    Icon={Navigation}
+                    placeholder={t("COMMON.SELECT_STATE")}
+                  />
+                ) : (
+                  <DataSelectField
+                    label={t("COMMON.STATE")}
+                    value={formData.state}
+                    options={mockStates.map((s) => ({
+                      value: s.StateID,
+                      label: s.StateName,
+                    }))}
+                    icon={Navigation}
+                  />
+                )}
+                {isAddressInfoEditable ? (
+                  <SelectWithIcon
+                    label={t("COMMON.CITY")}
+                    id="city"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleChange}
+                    options={mockCities.map((c) => ({
+                      value: c.CityID,
+                      label: c.CityName,
+                    }))}
+                    Icon={Building}
+                    placeholder={t("COMMON.SELECT_CITY")}
+                  />
+                ) : (
+                  <DataSelectField
+                    label={t("COMMON.CITY")}
+                    value={formData.city}
+                    options={mockCities.map((c) => ({
+                      value: c.CityID,
+                      label: c.CityName,
+                    }))}
+                    icon={Building}
+                  />
+                )}
+                {isAddressInfoEditable ? (
+                  <TextInputWithIcon
+                    label={t("COMMON.PINCODE")}
+                    id="pincode"
+                    name="pincode"
+                    value={formData.pincode}
+                    onChange={handleChange}
+                    placeholder={t("ADD_USER.ENTER_PINCODE")}
+                    Icon={Hash}
+                  />
+                ) : (
+                  <DataField
+                    label={t("COMMON.PINCODE")}
+                    value={formData.pincode}
+                    icon={Hash}
+                  />
+                )}
+              </div>
+            </div>
+            <SectionFooter
+              isEditable={isAddressInfoEditable}
+              onEditToggle={toggleSectionEdit}
+              sectionKey="address"
+            />
+
+            {/* Main Bottom Submit Button */}
+            <div className="mt-12 pt-8 border-t border-gray-200 bg-gray-50 px-6 pb-6">
+              <div className="flex justify-end gap-4">
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  disabled={isSubmitting}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+                >
+                  <FaTimes className="w-4 h-4" />
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={
+                    isSubmitting ||
+                    (!id &&
+                      (!formData.firstName.trim() ||
+                        !formData.email.trim()))
+                  }
+                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold bg-[#FF5A5F] text-white hover:bg-[#e04a4f] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      {id ? "Updating..." : "Creating..."}
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                      </svg>
+                      {id ? "Update User" : "Create"}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </form>
     </div>

@@ -1,11 +1,18 @@
 import { useState } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
+import { useTitle } from "../context/TitleContext";
+import { useEffect } from "react";
 
 const Layout = ({ children }) => {
   const [bIsSidebarOpen, setIsSidebarOpen] = useState(true);
   const [bIsCollapsed, setIsCollapsed] = useState(false);
   const [bIsMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+   const { setTitle } = useTitle();
+  
+    useEffect(() => {
+      setTitle("DashBoard");
+    }, []);
 
   const toggleSidebar = () => {
     setIsCollapsed(!bIsCollapsed);
