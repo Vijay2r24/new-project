@@ -57,7 +57,7 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
       name: t('SIDEBAR.ROLE_MANAGEMENT'),
       href: '/roles',
       icon: ShieldCheck,      
-      relatedPaths: ['/roles','/addUserRole']
+      relatedPaths: ['/roles','/addRole']
     },
      {
       name: t('SIDEBAR.EMPLOYEE_MANAGEMENT'),

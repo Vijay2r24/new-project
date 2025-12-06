@@ -1,32 +1,190 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Toolbar from "../components/Toolbar";
-import ExportPanel from "../components/ExportPanel";
 import Pagination from "../components/Pagination";
 import { useTranslation } from "react-i18next";
 import { useTitle } from "../context/TitleContext";
 import Loader from "../components/Loader";
+import * as XLSX from "xlsx";
 
 const OrderList = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const { setTitle } = useTitle();
 
-    // State
+    // Define dummyOrders inside the component function
+    const dummyOrders = [
+        {
+            orderId: "ORD001",
+            formattedOrderDate: "2025-12-05, 10:30 AM",
+            customerName: "John Doe",
+            email: "john@example.com",
+            phoneNumber: "9876543210",
+            deliveryStatus: "Delivered",
+            totalOrderItems: 3,
+            totalPoints: "245 points",
+            shippingAddress: "123 Main St, New York, NY 10001",
+            orderItems: [
+                { OrderItemID: "OI001", ProductName: "Wireless Headphones", Quantity: 1, OrderStatus: "Delivered", Points: 129 },
+                { OrderItemID: "OI002", ProductName: "Phone Case", Quantity: 2, OrderStatus: "Delivered", Points: 29 },
+                { OrderItemID: "OI003", ProductName: "Screen Protector", Quantity: 1, OrderStatus: "Delivered", Points: 15 },
+            ],
+        },
+        {
+            orderId: "ORD004",
+            formattedOrderDate: "2025-12-02, 04:20 PM",
+            customerName: "Emily Wilson",
+            email: "emily@example.com",
+            phoneNumber: "9871234567",
+            deliveryStatus: "Pending",
+            totalPoints: "129 points",
+            shippingAddress: "321 Elm St, Houston, TX 77001",
+            totalOrderItems: 1,
+            orderItems: [
+                { OrderItemID: "OI010", ProductName: "Yoga Mat", Quantity: 1, OrderStatus: "Pending", Points: 39 },
+                { OrderItemID: "OI011", ProductName: "Resistance Bands", Quantity: 1, OrderStatus: "Pending", Points: 24 },
+                { OrderItemID: "OI012", ProductName: "Water Bottle", Quantity: 2, OrderStatus: "Pending", Points: 19 },
+            ],
+        },
+        {
+            orderId: "ORD005",
+            formattedOrderDate: "2025-12-01, 11:10 AM",
+            customerName: "Michael Brown",
+            email: "michael@example.com",
+            phoneNumber: "9123987456",
+            deliveryStatus: "Cancelled",
+            totalPoints: "199 points",
+            shippingAddress: "654 Maple Dr, Phoenix, AZ 85001",
+            totalOrderItems: 2,
+            orderItems: [
+                { OrderItemID: "OI013", ProductName: "Bluetooth Speaker", Quantity: 1, OrderStatus: "Cancelled", Points: 129 },
+                { OrderItemID: "OI014", ProductName: "AUX Cable", Quantity: 1, OrderStatus: "Cancelled", Points: 19 },
+            ],
+        },
+        {
+            orderId: "ORD006",
+            formattedOrderDate: "2025-11-30, 03:45 PM",
+            customerName: "Sarah Davis",
+            email: "sarah@example.com",
+            phoneNumber: "9987654321",
+            deliveryStatus: "Out for Delivery",
+            totalPoints: "75 points",
+            shippingAddress: "987 Cedar Ln, Miami, FL 33101",
+            totalOrderItems: 3,
+            orderItems: [
+                { OrderItemID: "OI015", ProductName: "Bookshelf", Quantity: 1, OrderStatus: "Out for Delivery", Points: 49 },
+                { OrderItemID: "OI016", ProductName: "Book Ends", Quantity: 2, OrderStatus: "Out for Delivery", Points: 25 },
+            ],
+        },
+        {
+            orderId: "ORD007",
+            formattedOrderDate: "2025-11-29, 01:30 PM",
+            customerName: "David Miller",
+            email: "david@example.com",
+            phoneNumber: "9123459876",
+            deliveryStatus: "Delivered",
+            totalPoints: "320 points",
+            shippingAddress: "147 Birch Blvd, Seattle, WA 98101",
+            totalOrderItems: 4,
+            orderItems: [
+                { OrderItemID: "OI017", ProductName: "Desk Lamp", Quantity: 1, OrderStatus: "Delivered", Points: 45 },
+                { OrderItemID: "OI018", ProductName: "Notebook Set", Quantity: 3, OrderStatus: "Delivered", Points: 24 },
+                { OrderItemID: "OI019", ProductName: "Pen Holder", Quantity: 1, OrderStatus: "Delivered", Points: 12 },
+            ],
+        },
+        {
+            orderId: "ORD008",
+            formattedOrderDate: "2025-11-28, 10:00 AM",
+            customerName: "Lisa Anderson",
+            email: "lisa@example.com",
+            phoneNumber: "9876547890",
+            deliveryStatus: "Processing",
+            totalPoints: "550 points",
+            shippingAddress: "258 Walnut St, Denver, CO 80201",
+            totalOrderItems: 2,
+            orderItems: [
+                { OrderItemID: "OI020", ProductName: "Smart Watch", Quantity: 1, OrderStatus: "Processing", Points: 299 },
+                { OrderItemID: "OI021", ProductName: "Watch Band", Quantity: 2, OrderStatus: "Processing", Points: 125 },
+            ],
+        },
+        {
+            orderId: "ORD009",
+            formattedOrderDate: "2025-11-27, 05:15 PM",
+            customerName: "James Wilson",
+            email: "james@example.com",
+            phoneNumber: "9123789456",
+            deliveryStatus: "Shipped",
+            totalPoints: "89 points",
+            shippingAddress: "369 Spruce Ave, Boston, MA 02101",
+            totalOrderItems: 1,
+            orderItems: [
+                { OrderItemID: "OI022", ProductName: "Backpack", Quantity: 1, OrderStatus: "Shipped", Points: 89 },
+            ],
+        },
+        {
+            orderId: "ORD010",
+            formattedOrderDate: "2025-11-26, 08:45 AM",
+            customerName: "Maria Garcia",
+            email: "maria@example.com",
+            phoneNumber: "9987456123",
+            deliveryStatus: "Delivered",
+            totalPoints: "210 points",
+            shippingAddress: "741 Ash Dr, Atlanta, GA 30301",
+            totalOrderItems: 5,
+            orderItems: [
+                { OrderItemID: "OI023", ProductName: "Kitchen Knife Set", Quantity: 1, OrderStatus: "Delivered", Points: 149 },
+                { OrderItemID: "OI024", ProductName: "Cutting Board", Quantity: 2, OrderStatus: "Delivered", Points: 60 },
+            ],
+        },
+        {
+            orderId: "ORD011",
+            formattedOrderDate: "2025-11-25, 02:30 PM",
+            customerName: "Thomas Lee",
+            email: "thomas@example.com",
+            phoneNumber: "9123654789",
+            deliveryStatus: "Returned",
+            totalPoints: "179 points",
+            shippingAddress: "852 Poplar Rd, Dallas, TX 75201",
+            totalOrderItems: 2,
+            orderItems: [
+                { OrderItemID: "OI025", ProductName: "Running Shoes", Quantity: 1, OrderStatus: "Returned", Points: 129 },
+                { OrderItemID: "OI026", ProductName: "Shoe Laces", Quantity: 1, OrderStatus: "Returned", Points: 9 },
+            ],
+        },
+        {
+            orderId: "ORD012",
+            formattedOrderDate: "2025-11-24, 12:00 PM",
+            customerName: "Jennifer Taylor",
+            email: "jennifer@example.com",
+            phoneNumber: "9876123450",
+            deliveryStatus: "Partially Delivered",
+            totalPoints: "340 points",
+            shippingAddress: "963 Fir St, San Francisco, CA 94101",
+            totalOrderItems: 3,
+            orderItems: [
+                { OrderItemID: "OI027", ProductName: "Wireless Earbuds", Quantity: 1, OrderStatus: "Delivered", Points: 199 },
+                { OrderItemID: "OI028", ProductName: "Charging Case", Quantity: 1, OrderStatus: "Shipped", Points: 49 },
+                { OrderItemID: "OI029", ProductName: "Ear Tips", Quantity: 3, OrderStatus: "Processing", Points: 29 },
+            ],
+        },
+    ];
+
+    // State declarations
     const [sSearchTerm, setSearchTerm] = useState("");
     const [sFilterStatus, setFilterStatus] = useState("all");
     const [sViewMode, setViewMode] = useState("table");
     const [nCurrentPage, setCurrentPage] = useState(1);
     const [nProductsPerPage, setProductsPerPage] = useState(10);
     const [expandedRows, setExpandedRows] = useState(new Set());
-    const [bShowExportPanel, setShowExportPanel] = useState(false);
-    const [oExportDate, setExportDate] = useState({ startDate: null, endDate: null });
-
+    
     // New state for status update dialog
     const [oSelectedOrder, setSelectedOrder] = useState(null);
     const [bShowStatusDialog, setShowStatusDialog] = useState(false);
     const [sNewStatus, setNewStatus] = useState("");
     const [bUpdatingStatus, setUpdatingStatus] = useState(false);
+
+    // State for export loading
+    const [bExporting, setExporting] = useState(false);
 
     // Status options
     const statusOptions = [
@@ -40,162 +198,6 @@ const OrderList = () => {
         "Partially Delivered"
     ];
 
-    const dummyOrders = [
-        {
-            orderId: "ORD001",
-            formattedOrderDate: "2025-12-05, 10:30 AM",
-            customerName: "John Doe",
-            email: "john@example.com",
-            phoneNumber: "9876543210",
-            deliveryStatus: "Delivered",
-            totalOrderItems: 3,
-            totalAmount: "$245.99",
-            shippingAddress: "123 Main St, New York, NY 10001",
-            orderItems: [
-                { OrderItemID: "OI001", ProductName: "Wireless Headphones", Quantity: 1, OrderStatus: "Delivered", Price: "$129.99" },
-                { OrderItemID: "OI002", ProductName: "Phone Case", Quantity: 2, OrderStatus: "Delivered", Price: "$29.99" },
-                { OrderItemID: "OI003", ProductName: "Screen Protector", Quantity: 1, OrderStatus: "Delivered", Price: "$15.99" },
-            ],
-        },
-        {
-            orderId: "ORD004",
-            formattedOrderDate: "2025-12-02, 04:20 PM",
-            customerName: "Emily Wilson",
-            email: "emily@example.com",
-            phoneNumber: "9871234567",
-            deliveryStatus: "Pending",
-            totalAmount: "$129.99",
-            shippingAddress: "321 Elm St, Houston, TX 77001",
-            totalOrderItems: 1,
-            orderItems: [
-                { OrderItemID: "OI010", ProductName: "Yoga Mat", Quantity: 1, OrderStatus: "Pending", Price: "$39.99" },
-                { OrderItemID: "OI011", ProductName: "Resistance Bands", Quantity: 1, OrderStatus: "Pending", Price: "$24.99" },
-                { OrderItemID: "OI012", ProductName: "Water Bottle", Quantity: 2, OrderStatus: "Pending", Price: "$19.99" },
-            ],
-        },
-        {
-            orderId: "ORD005",
-            formattedOrderDate: "2025-12-01, 11:10 AM",
-            customerName: "Michael Brown",
-            email: "michael@example.com",
-            phoneNumber: "9123987456",
-            deliveryStatus: "Cancelled",
-            totalAmount: "$199.98",
-            shippingAddress: "654 Maple Dr, Phoenix, AZ 85001",
-            totalOrderItems: 2,
-            orderItems: [
-                { OrderItemID: "OI013", ProductName: "Bluetooth Speaker", Quantity: 1, OrderStatus: "Cancelled", Price: "$129.99" },
-                { OrderItemID: "OI014", ProductName: "AUX Cable", Quantity: 1, OrderStatus: "Cancelled", Price: "$19.99" },
-            ],
-        },
-        {
-            orderId: "ORD006",
-            formattedOrderDate: "2025-11-30, 03:45 PM",
-            customerName: "Sarah Davis",
-            email: "sarah@example.com",
-            phoneNumber: "9987654321",
-            deliveryStatus: "Out for Delivery",
-            totalAmount: "$75.25",
-            shippingAddress: "987 Cedar Ln, Miami, FL 33101",
-            totalOrderItems: 3,
-            orderItems: [
-                { OrderItemID: "OI015", ProductName: "Bookshelf", Quantity: 1, OrderStatus: "Out for Delivery", Price: "$49.99" },
-                { OrderItemID: "OI016", ProductName: "Book Ends", Quantity: 2, OrderStatus: "Out for Delivery", Price: "$25.26" },
-            ],
-        },
-        {
-            orderId: "ORD007",
-            formattedOrderDate: "2025-11-29, 01:30 PM",
-            customerName: "David Miller",
-            email: "david@example.com",
-            phoneNumber: "9123459876",
-            deliveryStatus: "Delivered",
-            totalAmount: "$320.50",
-            shippingAddress: "147 Birch Blvd, Seattle, WA 98101",
-            totalOrderItems: 4,
-            orderItems: [
-                { OrderItemID: "OI017", ProductName: "Desk Lamp", Quantity: 1, OrderStatus: "Delivered", Price: "$45.99" },
-                { OrderItemID: "OI018", ProductName: "Notebook Set", Quantity: 3, OrderStatus: "Delivered", Price: "$24.99" },
-                { OrderItemID: "OI019", ProductName: "Pen Holder", Quantity: 1, OrderStatus: "Delivered", Price: "$12.99" },
-            ],
-        },
-        {
-            orderId: "ORD008",
-            formattedOrderDate: "2025-11-28, 10:00 AM",
-            customerName: "Lisa Anderson",
-            email: "lisa@example.com",
-            phoneNumber: "9876547890",
-            deliveryStatus: "Processing",
-            totalAmount: "$550.00",
-            shippingAddress: "258 Walnut St, Denver, CO 80201",
-            totalOrderItems: 2,
-            orderItems: [
-                { OrderItemID: "OI020", ProductName: "Smart Watch", Quantity: 1, OrderStatus: "Processing", Price: "$299.99" },
-                { OrderItemID: "OI021", ProductName: "Watch Band", Quantity: 2, OrderStatus: "Processing", Price: "$125.01" },
-            ],
-        },
-        {
-            orderId: "ORD009",
-            formattedOrderDate: "2025-11-27, 05:15 PM",
-            customerName: "James Wilson",
-            email: "james@example.com",
-            phoneNumber: "9123789456",
-            deliveryStatus: "Shipped",
-            totalAmount: "$89.99",
-            shippingAddress: "369 Spruce Ave, Boston, MA 02101",
-            totalOrderItems: 1,
-            orderItems: [
-                { OrderItemID: "OI022", ProductName: "Backpack", Quantity: 1, OrderStatus: "Shipped", Price: "$89.99" },
-            ],
-        },
-        {
-            orderId: "ORD010",
-            formattedOrderDate: "2025-11-26, 08:45 AM",
-            customerName: "Maria Garcia",
-            email: "maria@example.com",
-            phoneNumber: "9987456123",
-            deliveryStatus: "Delivered",
-            totalAmount: "$210.75",
-            shippingAddress: "741 Ash Dr, Atlanta, GA 30301",
-            totalOrderItems: 5,
-            orderItems: [
-                { OrderItemID: "OI023", ProductName: "Kitchen Knife Set", Quantity: 1, OrderStatus: "Delivered", Price: "$149.99" },
-                { OrderItemID: "OI024", ProductName: "Cutting Board", Quantity: 2, OrderStatus: "Delivered", Price: "$60.76" },
-            ],
-        },
-        {
-            orderId: "ORD011",
-            formattedOrderDate: "2025-11-25, 02:30 PM",
-            customerName: "Thomas Lee",
-            email: "thomas@example.com",
-            phoneNumber: "9123654789",
-            deliveryStatus: "Returned",
-            totalAmount: "$179.98",
-            shippingAddress: "852 Poplar Rd, Dallas, TX 75201",
-            totalOrderItems: 2,
-            orderItems: [
-                { OrderItemID: "OI025", ProductName: "Running Shoes", Quantity: 1, OrderStatus: "Returned", Price: "$129.99" },
-                { OrderItemID: "OI026", ProductName: "Shoe Laces", Quantity: 1, OrderStatus: "Returned", Price: "$9.99" },
-            ],
-        },
-        {
-            orderId: "ORD012",
-            formattedOrderDate: "2025-11-24, 12:00 PM",
-            customerName: "Jennifer Taylor",
-            email: "jennifer@example.com",
-            phoneNumber: "9876123450",
-            deliveryStatus: "Partially Delivered",
-            totalAmount: "$340.25",
-            shippingAddress: "963 Fir St, San Francisco, CA 94101",
-            totalOrderItems: 3,
-            orderItems: [
-                { OrderItemID: "OI027", ProductName: "Wireless Earbuds", Quantity: 1, OrderStatus: "Delivered", Price: "$199.99" },
-                { OrderItemID: "OI028", ProductName: "Charging Case", Quantity: 1, OrderStatus: "Shipped", Price: "$49.99" },
-                { OrderItemID: "OI029", ProductName: "Ear Tips", Quantity: 3, OrderStatus: "Processing", Price: "$29.99" },
-            ],
-        },
-    ];
-
     const [aOrders, setOrders] = useState(dummyOrders);
     const [bLoading, setLoading] = useState(false);
     const [bFilterLoading, setFilterLoading] = useState(false);
@@ -206,6 +208,111 @@ const OrderList = () => {
     useEffect(() => {
         setTitle(t("ORDERS.TITLE"));
     }, [setTitle, t]);
+
+    // Function to export orders to Excel
+    const handleExportToExcel = useCallback(async () => {
+        try {
+            setExporting(true);
+            
+            // Prepare data for export
+            const exportData = aOrders.flatMap(order => {
+                if (order.orderItems && order.orderItems.length > 0) {
+                    return order.orderItems.map(item => ({
+                        "Order ID": order.orderId,
+                        "Order Date": order.formattedOrderDate,
+                        "Customer Name": order.customerName,
+                        "Customer Email": order.email,
+                        "Customer Phone": order.phoneNumber,
+                        "Order Status": order.deliveryStatus,
+                        "Shipping Address": order.shippingAddress,
+                        "Item ID": item.OrderItemID,
+                        "Product Name": item.ProductName,
+                        "Quantity": item.Quantity,
+                        "Item Status": item.OrderStatus,
+                        "Points per Item": item.Points,
+                        "Total Points": item.Points * item.Quantity
+                    }));
+                }
+                
+                return [{
+                    "Order ID": order.orderId,
+                    "Order Date": order.formattedOrderDate,
+                    "Customer Name": order.customerName,
+                    "Customer Email": order.email,
+                    "Customer Phone": order.phoneNumber,
+                    "Order Status": order.deliveryStatus,
+                    "Shipping Address": order.shippingAddress,
+                    "Item ID": "",
+                    "Product Name": "",
+                    "Quantity": "",
+                    "Item Status": "",
+                    "Points per Item": "",
+                    "Total Points": ""
+                }];
+            });
+
+            // Create workbook and worksheet
+            const workbook = XLSX.utils.book_new();
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+
+            // Auto-size columns
+            const maxWidths = {};
+            XLSX.utils.sheet_to_json(worksheet, { header: 1 }).forEach(row => {
+                row.forEach((cell, colIndex) => {
+                    const cellLength = cell ? String(cell).length : 0;
+                    maxWidths[colIndex] = Math.max(maxWidths[colIndex] || 0, cellLength);
+                });
+            });
+
+            worksheet['!cols'] = Object.keys(maxWidths).map(col => ({
+                wch: Math.min(maxWidths[col] + 2, 50)
+            }));
+
+            // Add worksheet to workbook
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Orders");
+
+            // Add summary sheet
+            const summaryData = aOrders.map(order => ({
+                "Order ID": order.orderId,
+                "Order Date": order.formattedOrderDate,
+                "Customer Name": order.customerName,
+                "Total Items": order.totalOrderItems,
+                "Order Status": order.deliveryStatus,
+                "Total Points": order.totalPoints,
+                "Shipping Address": order.shippingAddress
+            }));
+
+            const summaryWorksheet = XLSX.utils.json_to_sheet(summaryData);
+            
+            // Auto-size summary columns
+            const summaryMaxWidths = {};
+            XLSX.utils.sheet_to_json(summaryWorksheet, { header: 1 }).forEach(row => {
+                row.forEach((cell, colIndex) => {
+                    const cellLength = cell ? String(cell).length : 0;
+                    summaryMaxWidths[colIndex] = Math.max(summaryMaxWidths[colIndex] || 0, cellLength);
+                });
+            });
+
+            summaryWorksheet['!cols'] = Object.keys(summaryMaxWidths).map(col => ({
+                wch: Math.min(summaryMaxWidths[col] + 2, 50)
+            }));
+
+            XLSX.utils.book_append_sheet(workbook, summaryWorksheet, "Summary");
+
+            // Generate file name with timestamp
+            const timestamp = new Date().toISOString().split('T')[0];
+            const fileName = `orders_export_${timestamp}.xlsx`;
+
+            // Generate and download Excel file
+            XLSX.writeFile(workbook, fileName);
+            
+        } catch (error) {
+            console.error("Export error:", error);
+            // Silent fail - no alert
+        } finally {
+            setExporting(false);
+        }
+    }, [aOrders]);
 
     const toggleRowExpansion = (orderId) => {
         setExpandedRows(prev => {
@@ -245,11 +352,10 @@ const OrderList = () => {
                 )
             );
 
-            // Show success message
-            alert(t("ORDERS.STATUS_UPDATED_SUCCESS"));
+            // No alert for success
             setShowStatusDialog(false);
         } catch (error) {
-            setError(t("ORDERS.STATUS_UPDATE_FAILED"));
+            // Silent fail
         } finally {
             setUpdatingStatus(false);
         }
@@ -297,9 +403,6 @@ const OrderList = () => {
         setFilterStatus("all");
         setCurrentPage(1);
     };
-
-    const handleExportOrders = () => setShowExportPanel(true);
-    const handleConfirmExportOrders = () => setShowExportPanel(false);
 
     return (
         <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-2">
@@ -380,19 +483,9 @@ const OrderList = () => {
                 handleFilterChange={() => { }}
                 searchPlaceholder={t("ORDERS.SEARCH_PLACEHOLDER")}
                 onClearFilters={handleClearFilters}
-                onExport={handleExportOrders}
+                onExport={handleExportToExcel}
+                exportLoading={bExporting}
             />
-
-            {bShowExportPanel && (
-                <ExportPanel
-                    title={t("ORDERS.TITLE") + " – " + t("ORDERS.FILTERS.DATE_RANGE")}
-                    value={oExportDate}
-                    onChange={(val) => setExportDate(val)}
-                    onCancel={() => setShowExportPanel(false)}
-                    onConfirm={handleConfirmExportOrders}
-                    confirmLabel={t("COMMON.DOWNLOAD")}
-                />
-            )}
 
             {sViewMode === "table" ? (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100">
@@ -406,7 +499,7 @@ const OrderList = () => {
                                     <th className="table-head-cell">{t("ORDERS.TABLE.CUSTOMER_NAME")}</th>
                                     <th className="table-head-cell">{t("ORDERS.TABLE.PHONE_NUMBER")}</th>
                                     <th className="table-head-cell">{t("ORDERS.TABLE.DELIVERY_STATUS")}</th>
-                                    <th className="table-head-cell">{t("ORDERS.TABLE.TOTAL_AMOUNT")}</th>
+                                    <th className="table-head-cell">{t("ORDERS.TABLE.TOTAL_POINTS")}</th>
                                     <th className="table-head-cell">{t("COMMON.TOTAL_ORDER_ITEMS")}</th>
                                     <th className="table-head-cell">{t("COMMON.ACTIONS")}</th>
                                 </tr>
@@ -454,7 +547,7 @@ const OrderList = () => {
                                                         </span>
                                                     </div>
                                                 </td>
-                                               <td className="table-cell text-right font-semibold">{order.totalAmount}</td>
+                                                <td className="table-cell text-right font-semibold">{order.totalPoints}</td>
                                                 <td className="table-cell text-center">{order.totalOrderItems}</td>
                                                 <td className="table-cell">
                                                     <div className="flex flex-col space-y-2">
@@ -482,17 +575,17 @@ const OrderList = () => {
                                                                     </div>
                                                                     <div className="flex items-center space-x-6">
                                                                         <div className="text-sm">
-                                                                            <span className="text-gray-500">Price:</span>{" "}
-                                                                            <span className="font-medium ml-1">{item.Price}</span>
+                                                                            <span className="text-gray-500">Points:</span>{" "}
+                                                                            <span className="font-medium ml-1">{item.Points} points</span>
                                                                         </div>
                                                                         <div className="text-sm">
                                                                             <span className="text-gray-500">Quantity:</span>{" "}
                                                                             <span className="font-medium ml-1">{item.Quantity}</span>
                                                                         </div>
                                                                         <div className="text-sm">
-                                                                            <span className="text-gray-500">Subtotal:</span>{" "}
+                                                                            <span className="text-gray-500">Total Points:</span>{" "}
                                                                             <span className="font-medium ml-1">
-                                                                                ${(parseFloat(item.Price.replace('$', '')) * item.Quantity).toFixed(2)}
+                                                                                {item.Points * item.Quantity} points
                                                                             </span>
                                                                         </div>
                                                                         <div className="flex flex-col items-center">
@@ -557,8 +650,8 @@ const OrderList = () => {
                                             <div className="text-sm font-semibold">{order.totalOrderItems} items</div>
                                         </div>
                                         <div className="text-right">
-                                            <span className="text-xs text-gray-500">{t("ORDERS.TABLE.TOTAL_AMOUNT")}</span>
-                                            <div className="text-lg font-bold text-gray-900">{order.totalAmount}</div>
+                                            <span className="text-xs text-gray-500">{t("ORDERS.TABLE.TOTAL_POINTS")}</span>
+                                            <div className="text-lg font-bold text-gray-900">{order.totalPoints}</div>
                                         </div>
                                     </div>
                                 </div>

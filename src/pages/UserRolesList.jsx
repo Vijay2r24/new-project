@@ -202,7 +202,7 @@ const Roles = () => {
         handleFilterChange={handleFilterChange}
         searchPlaceholder={t("ROLES.SEARCH_PLACEHOLDER")}
         onClearFilters={handleClearFilters}
-        onCreate={() => navigate("/addUserRole")}
+        onCreate={() => navigate("/addRole")}
         createLabel={t("ROLES.ADD_ROLE")}
       />
 

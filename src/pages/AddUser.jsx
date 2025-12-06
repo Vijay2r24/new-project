@@ -9,7 +9,8 @@ import {
   Globe,
   Navigation,
   Hash,
-} from "lucide-react";
+  Shield,
+} from "lucide-react"; // Added Shield icon for role
 import TextInputWithIcon from "../components/TextInputWithIcon";
 import SelectWithIcon from "../components/SelectWithIcon";
 import PhoneInputWithIcon from "../components/PhoneInputWithIcon";
@@ -31,12 +32,14 @@ const AddUser = () => {
   const navigate = useNavigate();
   const { setTitle, setBackButton } = useTitle();
 
+  // Add role to formData
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
     gender: "",
+    role: "", // Added role field
     streetAddress: "",
     city: "",
     state: "",
@@ -48,6 +51,13 @@ const AddUser = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPersonalInfoEditable, setIsPersonalInfoEditable] = useState(!id);
   const [isAddressInfoEditable, setIsAddressInfoEditable] = useState(!id);
+
+  // --- ROLE OPTIONS ---
+  const roleOptions = [
+    { value: "Admin", label: t("ROLES.ADMIN") },
+    { value: "HR", label: t("ROLES.HR") },
+    { value: "User", label: t("ROLES.USER") },
+  ];
 
   // --- DUMMY DATA (Fallback) ---
   const dummyUsers = [
@@ -147,6 +157,7 @@ const AddUser = () => {
           email: foundUser.Email || "",
           phone: foundUser.PhoneNumber || "",
           gender: foundUser.Gender || "",
+          role: foundUser.RoleName || "", // Set role from user data
           streetAddress: foundUser.Address || "",
           city: foundUser.City || "",
           state: foundUser.State || "",
@@ -226,8 +237,6 @@ const AddUser = () => {
                 ? profileImagePreview
                 : oldImage;
 
-     
-
             return {
               ...u,
               FirstName: formData.firstName,
@@ -235,6 +244,7 @@ const AddUser = () => {
               Email: formData.email,
               PhoneNumber: formData.phone,
               Gender: formData.gender,
+              RoleName: formData.role, // Update role
               Address: formData.streetAddress,
               City: formData.city,
               State: formData.state,
@@ -258,6 +268,7 @@ const AddUser = () => {
           Email: formData.email,
           PhoneNumber: formData.phone,
           Gender: formData.gender,
+          RoleName: formData.role || "User", // Default to "User" if not selected
           Address: formData.streetAddress,
           City: formData.city,
           State: formData.state,
@@ -265,7 +276,6 @@ const AddUser = () => {
           Zipcode: formData.pincode,
           ProfileImageUrl:
             typeof profileImagePreview === "string" ? profileImagePreview : "",
-          RoleName: "Staff",
           IsActive: true,
           Stores: [{ StoreName: "Main Store" }],
         };
@@ -491,6 +501,26 @@ const AddUser = () => {
                     value={formData.gender}
                     options={genderOptions}
                     icon={Users}
+                  />
+                )}
+                {/* Role Field - Added here */}
+                {isPersonalInfoEditable ? (
+                  <SelectWithIcon
+                    label={t("ADD_USER.ROLE")}
+                    id="role"
+                    name="role"
+                    value={formData.role}
+                    onChange={handleChange}
+                    options={roleOptions}
+                    Icon={Shield}
+                    placeholder={t("ADD_USER.SELECT_ROLE")}
+                  />
+                ) : (
+                  <DataSelectField
+                    label={t("ADD_USER.ROLE")}
+                    value={formData.role}
+                    options={roleOptions}
+                    icon={Shield}
                   />
                 )}
                 {isPersonalInfoEditable ? (

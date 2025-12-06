@@ -44,7 +44,7 @@ function App() {
           <Route path="tenants/subscription" element={<Subscription />} />
           <Route path="/orders/order-list" element={<OrderList />} />
           <Route path="/roles" element={<UserRolesList />} />
-          <Route path="/addUserRole" element={<AddUserRole />} />
+          <Route path="/addRole" element={<AddUserRole />} />
           <Route path="/products" element={<ProductList/>} />
           <Route path ="/AddProuct" element={<AddProductForm />} />
           {/* Payments */}

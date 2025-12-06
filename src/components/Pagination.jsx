@@ -13,7 +13,7 @@ const Pagination = ({
     <div className="px-6 py-4 border-t border-gray-100 print:px-3 print:py-2 print:border-t print:border-gray-300">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <div className="text-secondary print:text-xs">
-          {t("COMMON.SHOWING")}
+          {t("COMMON.SHOWING")}&nbsp;
           <span className="font-medium">
             {(currentPage - 1) * itemsPerPage + 1}
           </span>{" "}
