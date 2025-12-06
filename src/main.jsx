@@ -6,7 +6,7 @@ import store from "./store/store";
 import App from "./App.jsx";
 import "./index.css";
 import "./i18n.js";
-import { UsersProvider } from "./Pages/usersContext.jsx";
+import { UsersProvider } from "./pages/usersContext.jsx";
 import { TitleProvider } from "./context/TitleContext.jsx";
 
 createRoot(document.getElementById("root")).render(
