@@ -10,6 +10,202 @@ import Switch from "../components/Switch";
 import userProfile from "../../assets/images/userProfile.svg";
 import Loader from "../components/Loader";
 
+// Shared initial users data
+const initialUsers = [
+  {
+    UserID: "U001",
+    FirstName: "John",
+    LastName: "Doe",
+    Email: "john.doe@example.com",
+    PhoneNumber: "+1 (555) 123-4567",
+    RoleName: "Admin",
+    Gender: "Male",
+    IsActive: true,
+    ProfileImageUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop",
+    Address: "123 Main Street",
+    City: "New York",
+    State: "NY",
+    Country: "USA",
+    Zipcode: "10001"
+  },
+  {
+    UserID: "U002",
+    FirstName: "Jane",
+    LastName: "Smith",
+    Email: "jane.smith@example.com",
+    PhoneNumber: "+1 (555) 987-6543",
+    RoleName: "HR",
+    Gender: "Female",
+    IsActive: true,
+    ProfileImageUrl: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400&h=400&fit=crop",
+    Address: "456 Oak Avenue",
+    City: "Los Angeles",
+    State: "CA",
+    Country: "USA",
+    Zipcode: "90001"
+  },
+  {
+    UserID: "U003",
+    FirstName: "Robert",
+    LastName: "Johnson",
+    Email: "robert.j@example.com",
+    PhoneNumber: "+1 (555) 456-7890",
+    RoleName: "User",
+    Gender: "Male",
+    IsActive: true,
+    ProfileImageUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
+    Address: "789 Pine Road",
+    City: "Chicago",
+    State: "IL",
+    Country: "USA",
+    Zipcode: "60601"
+  },
+  {
+    UserID: "U004",
+    FirstName: "Emily",
+    LastName: "Wilson",
+    Email: "emily.w@example.com",
+    PhoneNumber: "+1 (555) 321-6547",
+    RoleName: "User",
+    Gender: "Female",
+    IsActive: false,
+    ProfileImageUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop",
+    Address: "101 Elm Street",
+    City: "Houston",
+    State: "TX",
+    Country: "USA",
+    Zipcode: "77001"
+  },
+  {
+    UserID: "U005",
+    FirstName: "Michael",
+    LastName: "Brown",
+    Email: "michael.b@example.com",
+    PhoneNumber: "+1 (555) 654-3210",
+    RoleName: "User",
+    Gender: "Male",
+    IsActive: true,
+    ProfileImageUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop",
+    Address: "202 Maple Drive",
+    City: "Phoenix",
+    State: "AZ",
+    Country: "USA",
+    Zipcode: "85001"
+  },
+  {
+    UserID: "U006",
+    FirstName: "Sarah",
+    LastName: "Davis",
+    Email: "sarah.d@example.com",
+    PhoneNumber: "+1 (555) 789-0123",
+    RoleName: "HR",
+    Gender: "Female",
+    IsActive: true,
+    ProfileImageUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop",
+    Address: "303 Cedar Lane",
+    City: "Philadelphia",
+    State: "PA",
+    Country: "USA",
+    Zipcode: "19101"
+  },
+  {
+    UserID: "U007",
+    FirstName: "David",
+    LastName: "Miller",
+    Email: "david.m@example.com",
+    PhoneNumber: "+1 (555) 012-3456",
+    RoleName: "Admin",
+    Gender: "Male",
+    IsActive: true,
+    ProfileImageUrl: "https://images.unsplash.com/photo-1504593811423-6dd665756598?w=400&h=400&fit=crop",
+    Address: "404 Birch Court",
+    City: "San Antonio",
+    State: "TX",
+    Country: "USA",
+    Zipcode: "78201"
+  },
+  {
+    UserID: "U008",
+    FirstName: "Lisa",
+    LastName: "Anderson",
+    Email: "lisa.a@example.com",
+    PhoneNumber: "+1 (555) 234-5678",
+    RoleName: "User",
+    Gender: "Female",
+    IsActive: false,
+    ProfileImageUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=400&fit=crop",
+    Address: "505 Walnut Street",
+    City: "San Diego",
+    State: "CA",
+    Country: "USA",
+    Zipcode: "92101"
+  },
+  {
+    UserID: "U009",
+    FirstName: "James",
+    LastName: "Wilson",
+    Email: "james.w@example.com",
+    PhoneNumber: "+1 (555) 345-6789",
+    RoleName: "User",
+    Gender: "Male",
+    IsActive: true,
+    ProfileImageUrl: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=400&fit=crop",
+    Address: "606 Spruce Avenue",
+    City: "Dallas",
+    State: "TX",
+    Country: "USA",
+    Zipcode: "75201"
+  },
+  {
+    UserID: "U010",
+    FirstName: "Maria",
+    LastName: "Garcia",
+    Email: "maria.g@example.com",
+    PhoneNumber: "+1 (555) 456-7891",
+    RoleName: "User",
+    Gender: "Female",
+    IsActive: true,
+    ProfileImageUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop",
+    Address: "707 Poplar Drive",
+    City: "San Jose",
+    State: "CA",
+    Country: "USA",
+    Zipcode: "95101"
+  },
+  {
+    UserID: "U011",
+    FirstName: "Thomas",
+    LastName: "Lee",
+    Email: "thomas.l@example.com",
+    PhoneNumber: "+1 (555) 567-8901",
+    RoleName: "User",
+    Gender: "Male",
+    IsActive: false,
+    ProfileImageUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop",
+    Address: "808 Ash Street",
+    City: "Austin",
+    State: "TX",
+    Country: "USA",
+    Zipcode: "73301"
+  },
+  {
+    UserID: "U012",
+    FirstName: "Jennifer",
+    LastName: "Taylor",
+    Email: "jennifer.t@example.com",
+    PhoneNumber: "+1 (555) 678-9012",
+    RoleName: "HR",
+    Gender: "Female",
+    IsActive: true,
+    ProfileImageUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=400&fit=crop",
+    Address: "909 Fir Road",
+    City: "Jacksonville",
+    State: "FL",
+    Country: "USA",
+    Zipcode: "32201"
+  },
+];
+
 const Users = () => {
   const navigate = useNavigate();
   const [sSearchTerm, setSearchTerm] = useState("");
@@ -20,140 +216,47 @@ const Users = () => {
   const [sShowFilterDropdown, setShowFilterDropdown] = useState(false);
   const itemsPerPage = 10;
 
-  // Dummy users data with images
- const dummyUsers = [
-  {
-    UserID: "U001",
-    FirstName: "John",
-    LastName: "Doe",
-    Email: "john.doe@example.com",
-    PhoneNumber: "+1 (555) 123-4567",
-    RoleName: "Admin",
-    IsActive: true,
-    ProfileImageUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop",
-  },
-  {
-    UserID: "U002",
-    FirstName: "Jane",
-    LastName: "Smith",
-    Email: "jane.smith@example.com",
-    PhoneNumber: "+1 (555) 987-6543",
-    RoleName: "HR",
-    IsActive: true,
-    ProfileImageUrl: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400&h=400&fit=crop",
-  },
-  {
-    UserID: "U003",
-    FirstName: "Robert",
-    LastName: "Johnson",
-    Email: "robert.j@example.com",
-    PhoneNumber: "+1 (555) 456-7890",
-    RoleName: "User",
-    IsActive: true,
-    ProfileImageUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
-  },
-  {
-    UserID: "U004",
-    FirstName: "Emily",
-    LastName: "Wilson",
-    Email: "emily.w@example.com",
-    PhoneNumber: "+1 (555) 321-6547",
-    RoleName: "User",
-    IsActive: false,
-    ProfileImageUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop",
-  },
-  {
-    UserID: "U005",
-    FirstName: "Michael",
-    LastName: "Brown",
-    Email: "michael.b@example.com",
-    PhoneNumber: "+1 (555) 654-3210",
-    RoleName: "User",
-    IsActive: true,
-    ProfileImageUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop",
-  },
-  {
-    UserID: "U006",
-    FirstName: "Sarah",
-    LastName: "Davis",
-    Email: "sarah.d@example.com",
-    PhoneNumber: "+1 (555) 789-0123",
-    RoleName: "HR",
-    IsActive: true,
-    ProfileImageUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop",
-  },
-  {
-    UserID: "U007",
-    FirstName: "David",
-    LastName: "Miller",
-    Email: "david.m@example.com",
-    PhoneNumber: "+1 (555) 012-3456",
-    RoleName: "Admin",
-    IsActive: true,
-    ProfileImageUrl: "https://images.unsplash.com/photo-1504593811423-6dd665756598?w=400&h=400&fit=crop",
-  },
-  {
-    UserID: "U008",
-    FirstName: "Lisa",
-    LastName: "Anderson",
-    Email: "lisa.a@example.com",
-    PhoneNumber: "+1 (555) 234-5678",
-    RoleName: "User",
-    IsActive: false,
-    ProfileImageUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=400&fit=crop",
-  },
-  {
-    UserID: "U009",
-    FirstName: "James",
-    LastName: "Wilson",
-    Email: "james.w@example.com",
-    PhoneNumber: "+1 (555) 345-6789",
-    RoleName: "User",
-    IsActive: true,
-    ProfileImageUrl: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=400&fit=crop",
-  },
-  {
-    UserID: "U010",
-    FirstName: "Maria",
-    LastName: "Garcia",
-    Email: "maria.g@example.com",
-    PhoneNumber: "+1 (555) 456-7891",
-    RoleName: "User",
-    IsActive: true,
-    ProfileImageUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop",
-  },
-  {
-    UserID: "U011",
-    FirstName: "Thomas",
-    LastName: "Lee",
-    Email: "thomas.l@example.com",
-    PhoneNumber: "+1 (555) 567-8901",
-    RoleName: "User",
-    IsActive: false,
-    ProfileImageUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop",
-  },
-  {
-    UserID: "U012",
-    FirstName: "Jennifer",
-    LastName: "Taylor",
-    Email: "jennifer.t@example.com",
-    PhoneNumber: "+1 (555) 678-9012",
-    RoleName: "HR",
-    IsActive: true,
-    ProfileImageUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=400&fit=crop",
-  },
-];
-
-  const [aUsers, setUsers] = useState(dummyUsers);
-  const [bLoading, setLoading] = useState(false);
-  const [nTotalpages, setTotalpages] = useState(Math.ceil(dummyUsers.length / itemsPerPage));
-  const [nTotalRecords, setTotalRecords] = useState(dummyUsers.length);
+  const [aUsers, setUsers] = useState([]);
+  const [bLoading, setLoading] = useState(true);
+  const [nTotalpages, setTotalpages] = useState(1);
+  const [nTotalRecords, setTotalRecords] = useState(0);
 
   const defaultFilters = {
     role: "all",
     status: "all",
   };
   const [oFilters, setFilters] = useState(defaultFilters);
+
+  // Load users from localStorage on component mount
+  useEffect(() => {
+    const loadUsers = () => {
+      setLoading(true);
+      try {
+        const storedUsers = localStorage.getItem("usersList");
+        if (storedUsers) {
+          const parsedUsers = JSON.parse(storedUsers);
+          setUsers(parsedUsers);
+          setTotalRecords(parsedUsers.length);
+          setTotalpages(Math.ceil(parsedUsers.length / itemsPerPage));
+        } else {
+          // Initialize with initial users
+          localStorage.setItem("usersList", JSON.stringify(initialUsers));
+          setUsers(initialUsers);
+          setTotalRecords(initialUsers.length);
+          setTotalpages(Math.ceil(initialUsers.length / itemsPerPage));
+        }
+      } catch (error) {
+        console.error("Error loading users:", error);
+        setUsers(initialUsers);
+        setTotalRecords(initialUsers.length);
+        setTotalpages(Math.ceil(initialUsers.length / itemsPerPage));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUsers();
+  }, []);
 
   // Helper function to get profile image URL
   const getProfileImageUrl = (user) => {
@@ -163,12 +266,9 @@ const Users = () => {
   // Helper function to get role color
   const getRoleColor = (roleName) => {
     const roleColors = {
-      Admini: "bg-purple-100 text-purple-800",
+      "Admin": "bg-purple-100 text-purple-800",
       "HR": "bg-blue-100 text-blue-800",
       "User": "bg-green-100 text-green-800",
-      "Inventory Manager": "bg-yellow-100 text-yellow-800",
-      "Customer Service": "bg-indigo-100 text-indigo-800",
-      "Marketing Manager": "bg-pink-100 text-pink-800",
     };
     return roleColors[roleName] || "bg-gray-100 text-gray-800";
   };
@@ -180,7 +280,7 @@ const Users = () => {
       user.FirstName.toLowerCase().includes(sSearchTerm.toLowerCase()) ||
       user.LastName.toLowerCase().includes(sSearchTerm.toLowerCase()) ||
       user.Email.toLowerCase().includes(sSearchTerm.toLowerCase()) ||
-      user.PhoneNumber.includes(sSearchTerm) ||
+      (user.PhoneNumber && user.PhoneNumber.includes(sSearchTerm)) ||
       user.RoleName.toLowerCase().includes(sSearchTerm.toLowerCase());
 
     const matchesRole = 
@@ -216,12 +316,9 @@ const Users = () => {
 
   const roleOptions = [
     { value: "all", label: t("COMMON.ALL") },
-    { value: "Administrator", label: "Administrator" },
-    { value: "Store Manager", label: "Store Manager" },
-    { value: "Sales Associate", label: "Sales Associate" },
-    { value: "Inventory Manager", label: "Inventory Manager" },
-    { value: "Customer Service", label: "Customer Service" },
-    { value: "Marketing Manager", label: "Marketing Manager" },
+    { value: "Admin", label: "Admin" },
+    { value: "HR", label: "HR" },
+    { value: "User", label: "User" },
   ];
 
   const statusOptions = [
@@ -251,16 +348,25 @@ const Users = () => {
     setCurrentPage(prev => Math.min(prev + 1, totalFilteredpages));
   const handlePageClick = (page) => setCurrentPage(page);
 
-  const handleEdit = (userId) => navigate(`/editUser/${userId}`);
+  const handleEdit = (userId) => {
+    navigate(`/addUser/${userId}`);
+  };
 
   const handleStatusChange = (userId, newStatus) => {
-    setUsers(prevUsers => 
-      prevUsers.map(user => 
-        user.UserID === userId 
-          ? { ...user, IsActive: newStatus }
-          : user
-      )
+    const updatedUsers = aUsers.map(user => 
+      user.UserID === userId 
+        ? { ...user, IsActive: newStatus }
+        : user
     );
+    
+    setUsers(updatedUsers);
+    
+    // Update localStorage
+    try {
+      localStorage.setItem("usersList", JSON.stringify(updatedUsers));
+    } catch (error) {
+      console.error("Error saving to localStorage:", error);
+    }
   };
 
   useEffect(() => {

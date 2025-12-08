@@ -27,7 +27,15 @@ const Header = ({ onMenuClick }) => {
   const profileDropdownRef = useRef();
   const navigate = useNavigate();
 
+  // Get user from localStorage on component mount
+  const [currentUser, setCurrentUser] = useState(null);
 
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setCurrentUser(JSON.parse(userData));
+    }
+  }, []);
 
   // Get user details from Redux store on component mount
   useEffect(() => {
@@ -52,7 +60,8 @@ const Header = ({ onMenuClick }) => {
     return user;
   };
 
-  const oUserDetails = userDetails || {};
+  // Use currentUser from localStorage as fallback if Redux userDetails is not available
+  const oUserDetails = userDetails || currentUser || {};
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -106,6 +115,9 @@ const Header = ({ onMenuClick }) => {
         case "logout":
           localStorage.removeItem("token");
           localStorage.removeItem("userDetails");
+          localStorage.removeItem('user');
+          localStorage.removeItem('isAuthenticated');
+          localStorage.removeItem('userRole');
           dispatch(clearUserDetails());
           navigate("/");
           break;
@@ -210,10 +222,10 @@ const Header = ({ onMenuClick }) => {
               </div>
               <div className="hidden sm:block text-left ml-2">
                 <div className="text-sm font-medium text-gray-900 truncate max-w-[120px] whitespace-nowrap overflow-hidden text-ellipsis">
-                  {oUserDetails?.FirstName} {oUserDetails?.LastName}
+                  {oUserDetails?.FirstName || oUserDetails?.name || 'User'} {oUserDetails?.LastName || ''}
                 </div>
                 <div className="text-xs text-gray-500 truncate max-w-[120px] whitespace-nowrap overflow-hidden text-ellipsis">
-                  {oUserDetails?.RoleName}
+                  {oUserDetails?.RoleName || oUserDetails?.role || 'Role'}
                 </div>
               </div>
             </button>
@@ -234,10 +246,13 @@ const Header = ({ onMenuClick }) => {
                     }}
                   />
                   <div className="text-sm font-semibold text-gray-900 text-center">
-                    {oUserDetails?.FirstName} {oUserDetails?.LastName}
+                    {oUserDetails?.FirstName || oUserDetails?.name || 'User'} {oUserDetails?.LastName || ''}
                   </div>
                   <div className="text-xs text-gray-500 mb-1">
-                    {oUserDetails?.RoleName}
+                    {oUserDetails?.RoleName || oUserDetails?.role || 'Role'}
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    {oUserDetails?.email || ''}
                   </div>
                 </div>
                 <div className="py-1">

@@ -12,6 +12,25 @@ const OrderList = () => {
     const navigate = useNavigate();
     const { setTitle } = useTitle();
 
+    // Helper function to format points in thousands
+    const formatPoints = (points) => {
+        // If points is a string like "245 points", extract the number
+        if (typeof points === 'string') {
+            // Extract the numeric part from strings like "245 points" or "1,245 points"
+            const match = points.match(/([\d,]+)/);
+            if (match) {
+                const number = parseInt(match[1].replace(/,/g, ''), 10);
+                return `${number.toLocaleString()} points`;
+            }
+            return points;
+        }
+        // If points is a number
+        if (typeof points === 'number') {
+            return `${points.toLocaleString()} points`;
+        }
+        return points;
+    };
+
     // Define dummyOrders inside the component function
     const dummyOrders = [
         {
@@ -22,12 +41,12 @@ const OrderList = () => {
             phoneNumber: "9876543210",
             deliveryStatus: "Delivered",
             totalOrderItems: 3,
-            totalPoints: "245 points",
+            totalPoints: 2450, // Changed to number without "points"
             shippingAddress: "123 Main St, New York, NY 10001",
             orderItems: [
-                { OrderItemID: "OI001", ProductName: "Wireless Headphones", Quantity: 1, OrderStatus: "Delivered", Points: 129 },
-                { OrderItemID: "OI002", ProductName: "Phone Case", Quantity: 2, OrderStatus: "Delivered", Points: 29 },
-                { OrderItemID: "OI003", ProductName: "Screen Protector", Quantity: 1, OrderStatus: "Delivered", Points: 15 },
+                { OrderItemID: "OI001", ProductName: "Wireless Headphones", Quantity: 1, OrderStatus: "Delivered", Points: 1290 },
+                { OrderItemID: "OI002", ProductName: "Phone Case", Quantity: 2, OrderStatus: "Delivered", Points: 290 },
+                { OrderItemID: "OI003", ProductName: "Screen Protector", Quantity: 1, OrderStatus: "Delivered", Points: 150 },
             ],
         },
         {
@@ -37,13 +56,13 @@ const OrderList = () => {
             email: "emily@example.com",
             phoneNumber: "9871234567",
             deliveryStatus: "Pending",
-            totalPoints: "129 points",
+            totalPoints: 1290, // Changed to number without "points"
             shippingAddress: "321 Elm St, Houston, TX 77001",
             totalOrderItems: 1,
             orderItems: [
-                { OrderItemID: "OI010", ProductName: "Yoga Mat", Quantity: 1, OrderStatus: "Pending", Points: 39 },
-                { OrderItemID: "OI011", ProductName: "Resistance Bands", Quantity: 1, OrderStatus: "Pending", Points: 24 },
-                { OrderItemID: "OI012", ProductName: "Water Bottle", Quantity: 2, OrderStatus: "Pending", Points: 19 },
+                { OrderItemID: "OI010", ProductName: "Yoga Mat", Quantity: 1, OrderStatus: "Pending", Points: 390 },
+                { OrderItemID: "OI011", ProductName: "Resistance Bands", Quantity: 1, OrderStatus: "Pending", Points: 240 },
+                { OrderItemID: "OI012", ProductName: "Water Bottle", Quantity: 2, OrderStatus: "Pending", Points: 190 },
             ],
         },
         {
@@ -53,12 +72,12 @@ const OrderList = () => {
             email: "michael@example.com",
             phoneNumber: "9123987456",
             deliveryStatus: "Cancelled",
-            totalPoints: "199 points",
+            totalPoints: 1990, // Changed to number without "points"
             shippingAddress: "654 Maple Dr, Phoenix, AZ 85001",
             totalOrderItems: 2,
             orderItems: [
-                { OrderItemID: "OI013", ProductName: "Bluetooth Speaker", Quantity: 1, OrderStatus: "Cancelled", Points: 129 },
-                { OrderItemID: "OI014", ProductName: "AUX Cable", Quantity: 1, OrderStatus: "Cancelled", Points: 19 },
+                { OrderItemID: "OI013", ProductName: "Bluetooth Speaker", Quantity: 1, OrderStatus: "Cancelled", Points: 1290 },
+                { OrderItemID: "OI014", ProductName: "AUX Cable", Quantity: 1, OrderStatus: "Cancelled", Points: 190 },
             ],
         },
         {
@@ -68,12 +87,12 @@ const OrderList = () => {
             email: "sarah@example.com",
             phoneNumber: "9987654321",
             deliveryStatus: "Out for Delivery",
-            totalPoints: "75 points",
+            totalPoints: 750, // Changed to number without "points"
             shippingAddress: "987 Cedar Ln, Miami, FL 33101",
             totalOrderItems: 3,
             orderItems: [
-                { OrderItemID: "OI015", ProductName: "Bookshelf", Quantity: 1, OrderStatus: "Out for Delivery", Points: 49 },
-                { OrderItemID: "OI016", ProductName: "Book Ends", Quantity: 2, OrderStatus: "Out for Delivery", Points: 25 },
+                { OrderItemID: "OI015", ProductName: "Bookshelf", Quantity: 1, OrderStatus: "Out for Delivery", Points: 490 },
+                { OrderItemID: "OI016", ProductName: "Book Ends", Quantity: 2, OrderStatus: "Out for Delivery", Points: 250 },
             ],
         },
         {
@@ -83,13 +102,13 @@ const OrderList = () => {
             email: "david@example.com",
             phoneNumber: "9123459876",
             deliveryStatus: "Delivered",
-            totalPoints: "320 points",
+            totalPoints: 3200, // Changed to number without "points"
             shippingAddress: "147 Birch Blvd, Seattle, WA 98101",
             totalOrderItems: 4,
             orderItems: [
-                { OrderItemID: "OI017", ProductName: "Desk Lamp", Quantity: 1, OrderStatus: "Delivered", Points: 45 },
-                { OrderItemID: "OI018", ProductName: "Notebook Set", Quantity: 3, OrderStatus: "Delivered", Points: 24 },
-                { OrderItemID: "OI019", ProductName: "Pen Holder", Quantity: 1, OrderStatus: "Delivered", Points: 12 },
+                { OrderItemID: "OI017", ProductName: "Desk Lamp", Quantity: 1, OrderStatus: "Delivered", Points: 450 },
+                { OrderItemID: "OI018", ProductName: "Notebook Set", Quantity: 3, OrderStatus: "Delivered", Points: 240 },
+                { OrderItemID: "OI019", ProductName: "Pen Holder", Quantity: 1, OrderStatus: "Delivered", Points: 120 },
             ],
         },
         {
@@ -99,12 +118,12 @@ const OrderList = () => {
             email: "lisa@example.com",
             phoneNumber: "9876547890",
             deliveryStatus: "Processing",
-            totalPoints: "550 points",
+            totalPoints: 5500, // Changed to number without "points"
             shippingAddress: "258 Walnut St, Denver, CO 80201",
             totalOrderItems: 2,
             orderItems: [
-                { OrderItemID: "OI020", ProductName: "Smart Watch", Quantity: 1, OrderStatus: "Processing", Points: 299 },
-                { OrderItemID: "OI021", ProductName: "Watch Band", Quantity: 2, OrderStatus: "Processing", Points: 125 },
+                { OrderItemID: "OI020", ProductName: "Smart Watch", Quantity: 1, OrderStatus: "Processing", Points: 2990 },
+                { OrderItemID: "OI021", ProductName: "Watch Band", Quantity: 2, OrderStatus: "Processing", Points: 1250 },
             ],
         },
         {
@@ -114,11 +133,11 @@ const OrderList = () => {
             email: "james@example.com",
             phoneNumber: "9123789456",
             deliveryStatus: "Shipped",
-            totalPoints: "89 points",
+            totalPoints: 890, // Changed to number without "points"
             shippingAddress: "369 Spruce Ave, Boston, MA 02101",
             totalOrderItems: 1,
             orderItems: [
-                { OrderItemID: "OI022", ProductName: "Backpack", Quantity: 1, OrderStatus: "Shipped", Points: 89 },
+                { OrderItemID: "OI022", ProductName: "Backpack", Quantity: 1, OrderStatus: "Shipped", Points: 890 },
             ],
         },
         {
@@ -128,12 +147,12 @@ const OrderList = () => {
             email: "maria@example.com",
             phoneNumber: "9987456123",
             deliveryStatus: "Delivered",
-            totalPoints: "210 points",
+            totalPoints: 2100, // Changed to number without "points"
             shippingAddress: "741 Ash Dr, Atlanta, GA 30301",
             totalOrderItems: 5,
             orderItems: [
-                { OrderItemID: "OI023", ProductName: "Kitchen Knife Set", Quantity: 1, OrderStatus: "Delivered", Points: 149 },
-                { OrderItemID: "OI024", ProductName: "Cutting Board", Quantity: 2, OrderStatus: "Delivered", Points: 60 },
+                { OrderItemID: "OI023", ProductName: "Kitchen Knife Set", Quantity: 1, OrderStatus: "Delivered", Points: 1490 },
+                { OrderItemID: "OI024", ProductName: "Cutting Board", Quantity: 2, OrderStatus: "Delivered", Points: 600 },
             ],
         },
         {
@@ -143,12 +162,12 @@ const OrderList = () => {
             email: "thomas@example.com",
             phoneNumber: "9123654789",
             deliveryStatus: "Returned",
-            totalPoints: "179 points",
+            totalPoints: 1790, // Changed to number without "points"
             shippingAddress: "852 Poplar Rd, Dallas, TX 75201",
             totalOrderItems: 2,
             orderItems: [
-                { OrderItemID: "OI025", ProductName: "Running Shoes", Quantity: 1, OrderStatus: "Returned", Points: 129 },
-                { OrderItemID: "OI026", ProductName: "Shoe Laces", Quantity: 1, OrderStatus: "Returned", Points: 9 },
+                { OrderItemID: "OI025", ProductName: "Running Shoes", Quantity: 1, OrderStatus: "Returned", Points: 1290 },
+                { OrderItemID: "OI026", ProductName: "Shoe Laces", Quantity: 1, OrderStatus: "Returned", Points: 90 },
             ],
         },
         {
@@ -158,13 +177,13 @@ const OrderList = () => {
             email: "jennifer@example.com",
             phoneNumber: "9876123450",
             deliveryStatus: "Partially Delivered",
-            totalPoints: "340 points",
+            totalPoints: 3400, // Changed to number without "points"
             shippingAddress: "963 Fir St, San Francisco, CA 94101",
             totalOrderItems: 3,
             orderItems: [
-                { OrderItemID: "OI027", ProductName: "Wireless Earbuds", Quantity: 1, OrderStatus: "Delivered", Points: 199 },
-                { OrderItemID: "OI028", ProductName: "Charging Case", Quantity: 1, OrderStatus: "Shipped", Points: 49 },
-                { OrderItemID: "OI029", ProductName: "Ear Tips", Quantity: 3, OrderStatus: "Processing", Points: 29 },
+                { OrderItemID: "OI027", ProductName: "Wireless Earbuds", Quantity: 1, OrderStatus: "Delivered", Points: 1990 },
+                { OrderItemID: "OI028", ProductName: "Charging Case", Quantity: 1, OrderStatus: "Shipped", Points: 490 },
+                { OrderItemID: "OI029", ProductName: "Ear Tips", Quantity: 3, OrderStatus: "Processing", Points: 290 },
             ],
         },
     ];
@@ -278,7 +297,7 @@ const OrderList = () => {
                 "Customer Name": order.customerName,
                 "Total Items": order.totalOrderItems,
                 "Order Status": order.deliveryStatus,
-                "Total Points": order.totalPoints,
+                "Total Points": formatPoints(order.totalPoints),
                 "Shipping Address": order.shippingAddress
             }));
 
@@ -547,7 +566,7 @@ const OrderList = () => {
                                                         </span>
                                                     </div>
                                                 </td>
-                                                <td className="table-cell text-right font-semibold">{order.totalPoints}</td>
+                                                <td className="table-cell text-right font-semibold">{formatPoints(order.totalPoints)}</td>
                                                 <td className="table-cell text-center">{order.totalOrderItems}</td>
                                                 <td className="table-cell">
                                                     <div className="flex flex-col space-y-2">
@@ -576,7 +595,7 @@ const OrderList = () => {
                                                                     <div className="flex items-center space-x-6">
                                                                         <div className="text-sm">
                                                                             <span className="text-gray-500">Points:</span>{" "}
-                                                                            <span className="font-medium ml-1">{item.Points} points</span>
+                                                                            <span className="font-medium ml-1">{formatPoints(item.Points)}</span>
                                                                         </div>
                                                                         <div className="text-sm">
                                                                             <span className="text-gray-500">Quantity:</span>{" "}
@@ -585,7 +604,7 @@ const OrderList = () => {
                                                                         <div className="text-sm">
                                                                             <span className="text-gray-500">Total Points:</span>{" "}
                                                                             <span className="font-medium ml-1">
-                                                                                {item.Points * item.Quantity} points
+                                                                                {formatPoints(item.Points * item.Quantity)}
                                                                             </span>
                                                                         </div>
                                                                         <div className="flex flex-col items-center">
@@ -651,7 +670,7 @@ const OrderList = () => {
                                         </div>
                                         <div className="text-right">
                                             <span className="text-xs text-gray-500">{t("ORDERS.TABLE.TOTAL_POINTS")}</span>
-                                            <div className="text-lg font-bold text-gray-900">{order.totalPoints}</div>
+                                            <div className="text-lg font-bold text-gray-900">{formatPoints(order.totalPoints)}</div>
                                         </div>
                                     </div>
                                 </div>

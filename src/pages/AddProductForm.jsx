@@ -1,10 +1,11 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Plus, X, Upload, Tag, ShoppingBag, ArrowLeft } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import TextInputWithIcon from "../components/TextInputWithIcon";
 import SelectWithIcon from "../components/SelectWithIcon";
-import { useNavigate } from "react-router-dom";
-import { ToastContainer } from "react-toastify";
+import { useNavigate, useParams } from "react-router-dom";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Loader from "../components/Loader";
 import ImageCropperModal from "../components/ImageCropperModal";
 
@@ -25,16 +26,18 @@ const staticCategories = [
   { CategoryID: "5", CategoryName: "Shoes", ParentCategoryID: "4" },
 ];
 
-// Points configuration - define how points are calculated
+// Updated Points configuration - 1 rupee = 4 points
 const POINTS_CONFIG = {
-  BASE_POINTS_PER_RUPEE: 1, // 1 point per ₹1 of MRP
+  BASE_POINTS_PER_RUPEE: 4, // Changed from 1 to 4
   DISCOUNT_MULTIPLIER: 2, // Points multiplier for discounted products
 };
 
 const AddProductForm = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
   
   const [formData, setFormData] = useState({
+    id: "",
     ProductName: "",
     ProductDescription: "",
     BrandID: "",
@@ -42,12 +45,13 @@ const AddProductForm = () => {
     Quantity: "",
     MRP: "",
     ProductDiscount: "",
-    CalculatedPoints: "", // Changed from SellingPrice to Points
+    CalculatedPoints: "",
   });
   
   const [images, setImages] = useState([]);
   const [validationErrors, setValidationErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
   
   const [cropperModal, setCropperModal] = useState({
     isOpen: false,
@@ -55,23 +59,68 @@ const AddProductForm = () => {
     originalFile: null,
   });
 
-  // Calculate Points based on MRP and ProductDiscount
+  // Load product data when editing
+  useEffect(() => {
+    if (id) {
+      const loadProduct = () => {
+        setLoading(true);
+        try {
+          const storedProducts = JSON.parse(localStorage.getItem("productsList")) || [];
+          const productToEdit = storedProducts.find(product => product.id === id);
+          
+          if (productToEdit) {
+            const brand = staticBrands.find(b => b.BrandName === productToEdit.brand);
+            const category = staticCategories.find(c => c.CategoryName === productToEdit.category);
+            
+            setFormData({
+              id: productToEdit.id,
+              ProductName: productToEdit.name || "",
+              ProductDescription: productToEdit.description || "",
+              BrandID: brand ? brand.BrandID : "",
+              CategoryID: category ? category.CategoryID : "",
+              Quantity: productToEdit.stock?.toString() || "",
+              MRP: productToEdit.mrp?.toString() || productToEdit.price?.toString() || "",
+              ProductDiscount: productToEdit.discount?.toString() || "",
+              CalculatedPoints: productToEdit.points?.toString() || "",
+            });
+            
+            if (productToEdit.image) {
+              setImages([{
+                id: '1',
+                preview: productToEdit.image,
+                sortOrder: 1,
+              }]);
+            }
+          } else {
+            toast.error("Product not found");
+            navigate("/products");
+          }
+        } catch (error) {
+          console.error("Error loading product:", error);
+          toast.error("Failed to load product data");
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      loadProduct();
+    }
+  }, [id, navigate]);
+
+  // Calculate Points based on MRP and ProductDiscount - 1 rupee = 4 points
   const calculatePoints = (mrp, discount) => {
     const mrpValue = parseFloat(mrp) || 0;
     const discountValue = parseFloat(discount) || 0;
     
     if (mrpValue <= 0) return "";
     
-    // Base points calculation: 1 point per rupee of MRP
     let basePoints = mrpValue * POINTS_CONFIG.BASE_POINTS_PER_RUPEE;
     
-    // If there's a discount, apply multiplier to the discounted amount
     if (discountValue > 0) {
       const discountedPrice = mrpValue - (mrpValue * discountValue) / 100;
-      basePoints = discountedPrice * POINTS_CONFIG.DISCOUNT_MULTIPLIER;
+      basePoints = discountedPrice * POINTS_CONFIG.BASE_POINTS_PER_RUPEE * POINTS_CONFIG.DISCOUNT_MULTIPLIER;
     }
     
-    // Round to nearest whole number
     return Math.round(basePoints).toString();
   };
 
@@ -80,7 +129,6 @@ const AddProductForm = () => {
     setFormData((prev) => {
       const updated = { ...prev, [name]: value };
       
-      // Auto-calculate points if MRP or discount changes
       if (name === "MRP" || name === "ProductDiscount") {
         const mrp = name === "MRP" ? value : prev.MRP;
         const discount = name === "ProductDiscount" ? value : prev.ProductDiscount;
@@ -156,7 +204,6 @@ const AddProductForm = () => {
     e.preventDefault();
     setSubmitting(true);
 
-    // Simple validation
     const errors = {};
     if (!formData.ProductName) errors.ProductName = "Product name is required";
     if (!formData.BrandID) errors.BrandID = "Brand is required";
@@ -172,35 +219,58 @@ const AddProductForm = () => {
       return;
     }
 
-    // Prepare mock payload - removed StoreID, added Points
-    const payload = {
-      ProductName: formData.ProductName,
-      BrandID: formData.BrandID,
-      CategoryID: formData.CategoryID,
-      ProductDescription: formData.ProductDescription,
-      Quantity: parseInt(formData.Quantity),
-      MRP: parseFloat(formData.MRP),
-      ProductDiscount: formData.ProductDiscount ? parseFloat(formData.ProductDiscount) : 0,
-      Points: parseInt(formData.CalculatedPoints), // Added points field
-      Images: images.length,
-    };
+    try {
+      const existingProducts = JSON.parse(localStorage.getItem("productsList")) || [];
+      
+      const brand = staticBrands.find(b => b.BrandID === formData.BrandID);
+      const category = staticCategories.find(c => c.CategoryID === formData.CategoryID);
+      
+      const productData = {
+        id: id || Date.now().toString(),
+        name: formData.ProductName,
+        description: formData.ProductDescription,
+        brand: brand ? brand.BrandName : "",
+        category: category ? category.CategoryName : "",
+        stock: parseInt(formData.Quantity),
+        mrp: parseFloat(formData.MRP),
+        discount: formData.ProductDiscount ? parseFloat(formData.ProductDiscount) : 0,
+        points: parseInt(formData.CalculatedPoints),
+        image: images.length > 0 ? images[0].preview : "",
+        status: "active",
+      };
 
-    console.log("Form submitted with data:", payload);
-    console.log("Points Configuration:", POINTS_CONFIG);
-    console.log("Calculated Points Breakdown:", {
-      mrp: formData.MRP,
-      discount: formData.ProductDiscount || 0,
-      basePointsPerRupee: POINTS_CONFIG.BASE_POINTS_PER_RUPEE,
-      discountMultiplier: POINTS_CONFIG.DISCOUNT_MULTIPLIER,
-      finalPoints: formData.CalculatedPoints
-    });
-    
-    // Simulate API call
-    setTimeout(() => {
-      alert("Product saved successfully with points system!");
-      navigate("/productList");
+      if (id) {
+        const updatedProducts = existingProducts.map(product => 
+          product.id === id ? { ...product, ...productData } : product
+        );
+        
+        localStorage.setItem("productsList", JSON.stringify(updatedProducts));
+        toast.success("Product updated successfully!", {
+          position: "top-right",
+          autoClose: 1500,
+          onClose: () => {
+            setSubmitting(false);
+            navigate("/products");
+          }
+        });
+      } else {
+        const updatedProducts = [productData, ...existingProducts];
+        localStorage.setItem("productsList", JSON.stringify(updatedProducts));
+        
+        toast.success("Product created successfully!", {
+          position: "top-right",
+          autoClose: 1500,
+          onClose: () => {
+            setSubmitting(false);
+            navigate("/products");
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Save failed:", error);
       setSubmitting(false);
-    }, 1500);
+      toast.error("Failed to save product.");
+    }
   };
 
   const ImageUpload = () => {
@@ -267,15 +337,16 @@ const AddProductForm = () => {
     );
   };
 
-  const loaderOverlay = submitting ? (
-    <div className="global-loader-overlay">
-      <Loader />
-    </div>
-  ) : null;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader className="h-12 w-12 text-blue-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
-      {loaderOverlay}
       <ToastContainer />
       
       {cropperModal.isOpen && (
@@ -313,7 +384,9 @@ const AddProductForm = () => {
             >
               <ArrowLeft className="h-6 w-6 text-gray-600" />
             </button>
-           <p className="text-xl font-bold text-gray-900">Add Product Form</p>
+            <p className="text-xl font-bold text-gray-900">
+              {id ? "Edit Product" : "Add Product Form"}
+            </p>
           </div>
         </div>
         
@@ -339,6 +412,7 @@ const AddProductForm = () => {
                     placeholder="Enter product name"
                     Icon={Tag}
                     error={validationErrors.ProductName}
+                    required
                   />
                 </div>
                 
@@ -356,6 +430,7 @@ const AddProductForm = () => {
                     Icon={Tag}
                     error={validationErrors.BrandID}
                     placeholder="Select brand"
+                    required
                   />
                 </div>
               </div>
@@ -377,6 +452,7 @@ const AddProductForm = () => {
                     Icon={Tag}
                     error={validationErrors.CategoryID}
                     placeholder="Select category"
+                    required
                   />
                 </div>
                 
@@ -391,6 +467,7 @@ const AddProductForm = () => {
                       <span className="text-lg font-bold text-gray-400">#</span>
                     )}
                     error={validationErrors.Quantity}
+                    required
                   />
                 </div>
               </div>
@@ -440,6 +517,7 @@ const AddProductForm = () => {
                       <span className="text-lg font-bold text-gray-400">₹</span>
                     )}
                     error={validationErrors.MRP}
+                    required
                   />
                 </div>
                 
@@ -458,10 +536,15 @@ const AddProductForm = () => {
               </div>
               
               {/* Points Calculation Section */}
-              <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                  <span className="mr-2">🎯</span> Points Calculation
-                </h3>
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+                    <span className="mr-2">🎯</span> Points Calculation
+                  </h3>
+                  <div className="bg-white px-3 py-1 rounded-full border border-blue-200">
+                    <span className="text-sm font-semibold text-blue-600">1 Rupee = 4 Points</span>
+                  </div>
+                </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
@@ -476,20 +559,32 @@ const AddProductForm = () => {
                       )}
                       error={validationErrors.CalculatedPoints}
                       readOnly
-                      className="bg-white"
+                      className="bg-white font-semibold text-lg"
                     />
+                    <p className="text-xs text-gray-500 mt-1 text-right">
+                      {formData.CalculatedPoints ? `${formData.CalculatedPoints} Points` : "Waiting for MRP"}
+                    </p>
                   </div>
                   
-                  <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
                     <h4 className="text-sm font-semibold text-gray-700 mb-2">Points Formula:</h4>
-                    <ul className="text-sm text-gray-600 space-y-1">
-                      <li className="flex items-center">
-                        <span className="mr-2">•</span>
-                        Base: {POINTS_CONFIG.BASE_POINTS_PER_RUPEE} point per ₹1 MRP
+                    <ul className="text-sm text-gray-600 space-y-2">
+                      <li className="flex items-center bg-blue-50 p-2 rounded">
+                        <span className="mr-2 text-blue-600 font-bold">•</span>
+                        <div>
+                          <span className="font-semibold">Base Points:</span> 
+                          <span className="ml-1">{POINTS_CONFIG.BASE_POINTS_PER_RUPEE} points per ₹1 MRP</span>
+                        </div>
                       </li>
-                      <li className="flex items-center">
-                        <span className="mr-2">•</span>
-                        With Discount: {POINTS_CONFIG.DISCOUNT_MULTIPLIER}x points on discounted price
+                      <li className="flex items-center bg-green-50 p-2 rounded">
+                        <span className="mr-2 text-green-600 font-bold">•</span>
+                        <div>
+                          <span className="font-semibold">With Discount:</span> 
+                          <span className="ml-1">{POINTS_CONFIG.DISCOUNT_MULTIPLIER}x points on discounted price</span>
+                          <div className="text-xs text-gray-500 mt-1">
+                            (Total: {POINTS_CONFIG.BASE_POINTS_PER_RUPEE * POINTS_CONFIG.DISCOUNT_MULTIPLIER} points per ₹1)
+                          </div>
+                        </div>
                       </li>
                     </ul>
                   </div>
@@ -497,29 +592,52 @@ const AddProductForm = () => {
                 
                 {/* Points Calculation Breakdown */}
                 {formData.MRP && (
-                  <div className="mt-4 text-sm text-gray-700">
-                    <p className="font-medium mb-1">Calculation:</p>
+                  <div className="mt-6 bg-white rounded-lg p-4 border border-gray-200">
+                    <h4 className="text-md font-semibold text-gray-800 mb-3 border-b pb-2">Calculation Breakdown</h4>
                     {formData.ProductDiscount ? (
-                      <div className="space-y-1">
-                        <p>MRP: ₹{formData.MRP}</p>
-                        <p>Discount: {formData.ProductDiscount}%</p>
-                        <p>Discounted Price: ₹{(
-                          parseFloat(formData.MRP) - 
-                          (parseFloat(formData.MRP) * parseFloat(formData.ProductDiscount)) / 100
-                        ).toFixed(2)}</p>
-                        <p className="font-semibold">
-                          Points = ₹{(
-                            parseFloat(formData.MRP) - 
-                            (parseFloat(formData.MRP) * parseFloat(formData.ProductDiscount)) / 100
-                          ).toFixed(2)} × {POINTS_CONFIG.DISCOUNT_MULTIPLIER} = {formData.CalculatedPoints} points
-                        </p>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">MRP:</span>
+                          <span className="font-medium">₹{formData.MRP}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Discount:</span>
+                          <span className="font-medium text-green-600">{formData.ProductDiscount}%</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Discounted Price:</span>
+                          <span className="font-medium">
+                            ₹{(
+                              parseFloat(formData.MRP) - 
+                              (parseFloat(formData.MRP) * parseFloat(formData.ProductDiscount)) / 100
+                            ).toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center border-t pt-2 mt-2">
+                          <span className="text-sm font-semibold text-gray-700">Points Calculation:</span>
+                          <span className="font-bold text-blue-700 text-lg">
+                            {formData.CalculatedPoints} Points
+                          </span>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-2 bg-gray-50 p-2 rounded">
+                          Formula: ₹{(parseFloat(formData.MRP) - (parseFloat(formData.MRP) * parseFloat(formData.ProductDiscount)) / 100).toFixed(2)} × {POINTS_CONFIG.BASE_POINTS_PER_RUPEE} × {POINTS_CONFIG.DISCOUNT_MULTIPLIER} = {formData.CalculatedPoints} points
+                        </div>
                       </div>
                     ) : (
-                      <div className="space-y-1">
-                        <p>MRP: ₹{formData.MRP}</p>
-                        <p className="font-semibold">
-                          Points = ₹{formData.MRP} × {POINTS_CONFIG.BASE_POINTS_PER_RUPEE} = {formData.CalculatedPoints} points
-                        </p>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">MRP:</span>
+                          <span className="font-medium">₹{formData.MRP}</span>
+                        </div>
+                        <div className="flex justify-between items-center border-t pt-2 mt-2">
+                          <span className="text-sm font-semibold text-gray-700">Points Calculation:</span>
+                          <span className="font-bold text-blue-700 text-lg">
+                            {formData.CalculatedPoints} Points
+                          </span>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-2 bg-gray-50 p-2 rounded">
+                          Formula: ₹{formData.MRP} × {POINTS_CONFIG.BASE_POINTS_PER_RUPEE} = {formData.CalculatedPoints} points
+                        </div>
                       </div>
                     )}
                   </div>
@@ -555,12 +673,24 @@ const AddProductForm = () => {
             <button
               type="button"
               className="btn-cancel"
-              onClick={() => navigate("/productList")}
+              onClick={() => navigate("/products")}
+              disabled={submitting}
             >
               Cancel
             </button>
-            <button type="submit" className="btn-primary" disabled={submitting}>
-              {submitting ? "Saving..." : "Save Product"}
+            <button 
+              type="submit" 
+              className="btn-primary" 
+              disabled={submitting}
+            >
+              {submitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  {id ? "Updating..." : "Saving..."}
+                </>
+              ) : (
+                id ? "Update Product" : "Save Product"
+              )}
             </button>
           </div>
         </form>

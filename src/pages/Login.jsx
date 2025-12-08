@@ -27,7 +27,6 @@ import {
   validateConfirmPassword
 } from "../utils/passwordUtils";
 
-
 const Login = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -54,9 +53,34 @@ const Login = () => {
   const [sConfirmPassword, setConfirmPassword] = useState("");
   const [bShowNewPassword, setShowNewPassword] = useState(false);
   const [bShowConfirmPassword, setShowConfirmPassword] = useState(false);
- 
 
-
+  // Dummy credentials with roles and permissions
+  const dummyCredentials = [
+    {
+      email: "admin@gmail.com",
+      password: "admin@123",
+      role: "admin",
+      name: "Administrator",
+      permissions: ["dashboard", "products", "orders", "users", "roles", "employees", "analytics", "settings"],
+      avatar: "A"
+    },
+    {
+      email: "hr@gmail.com",
+      password: "hr@123",
+      role: "hr",
+      name: "HR Manager",
+      permissions: ["dashboard", "users", "employees", "settings"],
+      avatar: "H"
+    },
+    {
+      email: "user@gmail.com",
+      password: "user@123",
+      role: "user",
+      name: "Regular User",
+      permissions: ["dashboard", "products", "orders"],
+      avatar: "U"
+    }
+  ];
 
   const validateEmail = (email) => {
     if (!email.trim()) return t("LOGIN.ERRORS.EMAIL_REQUIRED");
@@ -101,46 +125,52 @@ const Login = () => {
     setError((prev) => ({ ...prev, [field]: fieldError, submit: "" }));
   };
 
+  const loginUser = async () => {
+    const { email, password } = oFormData;
 
-const loginUser = async () => {
-  const { email, password } = oFormData;
+    let newErrors = {};
+    let authenticatedUser = null;
 
- 
-  const validEmail = "admin@gmail.com";
-  const validPassword = "admin@123";
+    // Check against dummy credentials
+    const user = dummyCredentials.find(
+      cred => cred.email === email.trim() && cred.password === password.trim()
+    );
 
-  let newErrors = {};
+    if (!email) {
+      newErrors.email = "Email is required";
+    } else if (!user) {
+      newErrors.email = "Invalid email or password";
+    }
 
-  // Email validation
-  if (!email) {
-    newErrors.email = "Email is required";
-  } else if (email.trim() !== validEmail) {
-    newErrors.email = "Invalid email. Please try again.";
-  }
+    if (!password) {
+      newErrors.password = "Password is required";
+    } else if (!user) {
+      newErrors.password = "Invalid email or password";
+    }
 
-  // Password validation
-  if (!password) {
-    newErrors.password = "Password is required";
-  } else if (password.trim() !== validPassword) {
-    newErrors.password = "Incorrect password";
-  }
+    setError((prev) => ({ ...prev, ...newErrors }));
 
-  setError((prev) => ({ ...prev, ...newErrors }));
+    // Stop if errors
+    if (Object.keys(newErrors).length > 0) {
+      toast.error("Login failed! Check your credentials.");
+      return;
+    }
 
-  // Stop if errors
-  if (Object.keys(newErrors).length > 0) {
-    toast.error("Login failed! Check your credentials.");
-    return;
-  }
+    // Success - Store user info in localStorage
+    if (user) {
+      // Store user data (excluding password for security)
+      const { password: _, ...userWithoutPassword } = user;
+      localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+      localStorage.setItem('isAuthenticated', 'true');
+      localStorage.setItem('userRole', user.role);
+      
+      toast.success(`Welcome ${user.name}! Login Successful!`);
 
-  // Success
-  toast.success("Login Successful!");
-
-  setTimeout(() => {
-    navigate("/dashboard/dashBoard");
-  }, 1500);
-};
-
+      setTimeout(() => {
+        navigate("/dashboard/dashBoard");
+      }, 1500);
+    }
+  };
 
   const handleForgotPasswordClick = () => {
     setCurrentView("forgotPassword");
@@ -155,11 +185,43 @@ const loginUser = async () => {
   };
 
   const handleSendOtp = async () => {
+    if (!sForgotPasswordEmail) {
+      setError((prev) => ({ ...prev, email: t("LOGIN.ERRORS.EMAIL_REQUIRED") }));
+      return;
+    }
+    
+    const emailError = validateEmail(sForgotPasswordEmail);
+    if (emailError) {
+      setError((prev) => ({ ...prev, email: emailError }));
+      return;
+    }
 
+    // Dummy OTP for demo
+    setOtp("123456");
+    setbShowOtpDialog(true);
+    setTimerActive(true);
+    setTimerCount(60);
+    setResendEnabled(false);
+    
+    toast.info(`OTP sent to ${sForgotPasswordEmail} (Demo: 123456)`);
   };
 
   const handleVerifyOtp = async () => {
+    if (sOtp.length !== 6) {
+      setError((prev) => ({ ...prev, otp: "Please enter 6-digit OTP" }));
+      return;
+    }
 
+    // Demo verification - accept 123456
+    if (sOtp === "123456") {
+      toast.success("OTP Verified Successfully!");
+      setbShowOtpDialog(false);
+      setCurrentView("resetPassword");
+      setError((prev) => ({ ...prev, otp: "" }));
+    } else {
+      setError((prev) => ({ ...prev, otp: "Invalid OTP. Try 123456 for demo." }));
+      toast.error("Invalid OTP. Try 123456 for demo.");
+    }
   };
 
   const handleOtpInputChange = (index, value) => {
@@ -185,7 +247,33 @@ const loginUser = async () => {
   };
 
   const handlePasswordReset = async () => {
+    if (sError.newPassword || sError.confirmPassword) {
+      toast.error("Please fix password errors before resetting.");
+      return;
+    }
 
+    if (sNewPassword !== sConfirmPassword) {
+      setError((prev) => ({ 
+        ...prev, 
+        confirmPassword: "Passwords do not match" 
+      }));
+      return;
+    }
+
+    // Demo password reset
+    toast.success("Password reset successfully! You can now login with new password.");
+    setCurrentView("login");
+    setNewPassword("");
+    setConfirmPassword("");
+    setForgotPasswordEmail("");
+    setError({
+      email: "",
+      password: "",
+      submit: "",
+      otp: "",
+      newPassword: "",
+      confirmPassword: "",
+    });
   };
 
   useEffect(() => {

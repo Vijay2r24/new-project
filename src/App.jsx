@@ -20,12 +20,15 @@ import Employees from "./pages/EmployeeList";
 import OrderList from "./pages/OrdersList";
 import ProductList from "./pages/ProuctList";
 import AddProductForm from "./pages/AddProductForm";
+import ProtectedRoute from '../src/utils/ProtectedRoute';
+import { AuthProvider } from './context/AuthContext';
 
 function App() {
   return (
     <TenantProvider>
+      <AuthProvider>
       <Routes>
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={ <Login />} />
         <Route path="/register-tenant" element={<CreateTenant isPublic={true} />} />
         <Route path="/*" element={<LayoutWrapper><Routes>
           {/* Dashboard */}
@@ -47,6 +50,7 @@ function App() {
           <Route path="/addRole" element={<AddUserRole />} />
           <Route path="/products" element={<ProductList/>} />
           <Route path ="/AddProuct" element={<AddProductForm />} />
+          <Route path="addProduct/:id" element={<AddProductForm />} />
           {/* Payments */}
           <Route path="/pages/paymentdetails" element={<PaymentDetails/>} />
           {/* Profile */}
@@ -60,6 +64,7 @@ function App() {
           {/* User Roles */}
           <Route path="pages/userRolesList" element={<UserRolesList />} />
           <Route path="/addUser" element={<AddUser />} />
+           <Route path="/addUser/:id?" element={<AddUser />} />
           <Route path="pages/addUserRole" element={<AddUserRole />} />
           {/* Theme Settings */}
           <Route path="pages/theme-settings" element={<ThemeSettings />} />
@@ -71,6 +76,7 @@ function App() {
         />
 
       </Routes>
+      </AuthProvider>
     </TenantProvider>
   );
 }

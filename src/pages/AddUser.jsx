@@ -10,7 +10,7 @@ import {
   Navigation,
   Hash,
   Shield,
-} from "lucide-react"; // Added Shield icon for role
+} from "lucide-react";
 import TextInputWithIcon from "../components/TextInputWithIcon";
 import SelectWithIcon from "../components/SelectWithIcon";
 import PhoneInputWithIcon from "../components/PhoneInputWithIcon";
@@ -21,8 +21,6 @@ import userProfile from "../../assets/images/userProfile.svg";
 import BackButton from "../components/BackButton";
 import { useTitle } from "../context/TitleContext";
 import { GENDER_OPTIONS } from "../contants/constants";
-
-// IMPORT TOASTIFY
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -32,14 +30,13 @@ const AddUser = () => {
   const navigate = useNavigate();
   const { setTitle, setBackButton } = useTitle();
 
-  // Add role to formData
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     phone: "",
     gender: "",
-    role: "", // Added role field
+    role: "",
     streetAddress: "",
     city: "",
     state: "",
@@ -52,46 +49,110 @@ const AddUser = () => {
   const [isPersonalInfoEditable, setIsPersonalInfoEditable] = useState(!id);
   const [isAddressInfoEditable, setIsAddressInfoEditable] = useState(!id);
 
-  // --- ROLE OPTIONS ---
+  // Role options - must match Users component
   const roleOptions = [
-    { value: "Admin", label: t("ROLES.ADMIN") },
-    { value: "HR", label: t("ROLES.HR") },
-    { value: "User", label: t("ROLES.USER") },
+    { value: "Admin", label: "Admin" },
+    { value: "HR", label: "HR" },
+    { value: "User", label: "User" },
   ];
 
-  // --- DUMMY DATA (Fallback) ---
-  const dummyUsers = [
-    {
-      UserID: 1,
-      FirstName: "John",
-      LastName: "Doe",
-      Email: "john.doe@company.com",
-      PhoneNumber: "+1 (555) 123-4567",
-      RoleName: "Admin",
-      IsActive: true,
-      ProfileImageUrl: "",
-      Stores: [{ StoreName: "Main Store" }],
-    },
-  ];
-
+  // Dummy data for dropdowns
   const mockCountries = [
-    { CountryID: 1, CountryName: "India" },
-    { CountryID: 2, CountryName: "USA" },
+    { CountryID: 1, CountryName: "USA" },
+    { CountryID: 2, CountryName: "India" },
+    { CountryID: 3, CountryName: "UK" },
   ];
   const mockStates = [
-    { StateID: 1, StateName: "Maharashtra" },
-    { StateID: 2, StateName: "Karnataka" },
+    { StateID: 1, StateName: "California" },
+    { StateID: 2, StateName: "New York" },
+    { StateID: 3, StateName: "Texas" },
+    { StateID: 4, StateName: "Maharashtra" },
+    { StateID: 5, StateName: "Karnataka" },
   ];
   const mockCities = [
-    { CityID: 1, CityName: "Mumbai" },
-    { CityID: 2, CityName: "Pune" },
+    { CityID: 1, CityName: "New York" },
+    { CityID: 2, CityName: "Los Angeles" },
+    { CityID: 3, CityName: "Chicago" },
+    { CityID: 4, CityName: "Mumbai" },
+    { CityID: 5, CityName: "Bangalore" },
   ];
+  
   const genderOptions = GENDER_OPTIONS.map((option) => ({
     value: option.value,
     label: t(option.labelKey),
   }));
 
-  // --- HELPER: Compress Image ---
+  // Helper: Generate new UserID
+  const generateNewUserId = (existingUsers) => {
+    if (!existingUsers || existingUsers.length === 0) return "U001";
+    
+    // Extract numeric part from existing UserIDs
+    const userIds = existingUsers.map(user => {
+      const match = user.UserID?.match(/U(\d+)/);
+      return match ? parseInt(match[1]) : 0;
+    });
+    
+    const maxId = Math.max(...userIds, 0);
+    const newId = maxId + 1;
+    return `U${String(newId).padStart(3, '0')}`;
+  };
+
+  // Load user data when editing
+  useEffect(() => {
+    if (id) {
+      try {
+        const storedUsers = JSON.parse(localStorage.getItem("usersList"));
+        
+        if (storedUsers && storedUsers.length > 0) {
+          // Find user by UserID (format: "U001") or numeric id
+          const foundUser = storedUsers.find(
+            (u) => String(u.UserID) === String(id) || String(u.id) === String(id)
+          );
+
+          if (foundUser) {
+            setFormData({
+              firstName: foundUser.FirstName || "",
+              lastName: foundUser.LastName || "",
+              email: foundUser.Email || "",
+              phone: foundUser.PhoneNumber || "",
+              gender: foundUser.Gender || "",
+              role: foundUser.RoleName || "",
+              streetAddress: foundUser.Address || "",
+              city: foundUser.City || "",
+              state: foundUser.State || "",
+              pincode: foundUser.Zipcode || "",
+              country: foundUser.Country || "",
+            });
+            
+            if (foundUser.ProfileImageUrl) {
+              setProfileImagePreview(foundUser.ProfileImageUrl);
+            }
+          } else {
+            toast.error("User not found");
+            navigate("/users");
+          }
+        }
+      } catch (error) {
+        console.error("Error loading user:", error);
+        toast.error("Failed to load user data");
+      }
+    }
+  }, [id, navigate]);
+
+  useEffect(() => {
+    setTitle(id ? t("USERS.EDIT_USER") : t("USERS.ADD_NEW_USER"));
+    setBackButton(<BackButton />);
+  }, [setTitle, setBackButton, t, id]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handlePhoneChange = (phoneNumber) => {
+    setFormData((prev) => ({ ...prev, phone: phoneNumber }));
+  };
+
   const compressImage = (file) => {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -128,69 +189,12 @@ const AddUser = () => {
     });
   };
 
-  const getSafeImageUrl = (imgData) => {
-    if (!imgData) return null;
-    if (typeof imgData === "string") return imgData;
-    if (Array.isArray(imgData) && imgData.length > 0) {
-      return imgData[0].documentUrl || imgData[0].url || null;
-    }
-    return null;
-  };
-
-  useEffect(() => {
-    if (id) {
-      let storedUsers = JSON.parse(localStorage.getItem("usersList"));
-
-      if (!storedUsers || storedUsers.length === 0) {
-        storedUsers = dummyUsers;
-        localStorage.setItem("usersList", JSON.stringify(dummyUsers));
-      }
-
-      const foundUser = storedUsers.find(
-        (u) => String(u.UserID) === String(id) || String(u.id) === String(id)
-      );
-
-      if (foundUser) {
-        setFormData({
-          firstName: foundUser.FirstName || "",
-          lastName: foundUser.LastName || "",
-          email: foundUser.Email || "",
-          phone: foundUser.PhoneNumber || "",
-          gender: foundUser.Gender || "",
-          role: foundUser.RoleName || "", // Set role from user data
-          streetAddress: foundUser.Address || "",
-          city: foundUser.City || "",
-          state: foundUser.State || "",
-          pincode: foundUser.Zipcode || "",
-          country: foundUser.Country || "",
-        });
-        setProfileImagePreview(getSafeImageUrl(foundUser.ProfileImageUrl));
-      }
-    }
-  }, [id]);
-
-  useEffect(() => {
-    setTitle(id ? t("USERS.EDIT_USER") : t("USERS.ADD_NEW_USER"));
-    setBackButton(<BackButton />);
-  }, [setTitle, setBackButton, t, id]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handlePhoneChange = (phoneNumber) => {
-    setFormData((prev) => ({ ...prev, phone: phoneNumber }));
-  };
-
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
       try {
         const compressedBase64 = await compressImage(file);
-        // Updating state immediately to show preview
         setProfileImagePreview(compressedBase64);
-        console.log("New Image set in preview state");
       } catch (error) {
         console.error("Image processing error", error);
         toast.error("Failed to process image");
@@ -202,96 +206,82 @@ const AddUser = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    const existingUsers =
-      JSON.parse(localStorage.getItem("usersList")) || dummyUsers;
-
-    const handleSuccessParams = {
-      position: "top-right",
-      autoClose: 1500,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-      progress: undefined,
-      theme: "light",
-      onClose: () => {
-        setIsSubmitting(false);
-        navigate("/users");
-      },
-    };
-
     try {
+      // Get existing users from localStorage
+      const existingUsers = JSON.parse(localStorage.getItem("usersList")) || [];
+      
       if (id) {
         // UPDATE EXISTING USER
-        const updatedList = existingUsers.map((u) => {
-          if (String(u.UserID) === String(id) || String(u.id) === String(id)) {
-            
-            // Logic to determine which image to use
-            const oldImage =
-              typeof u.ProfileImageUrl === "string"
-                ? u.ProfileImageUrl
-                : getSafeImageUrl(u.ProfileImageUrl) || "";
-
-            const newImage =
-              typeof profileImagePreview === "string" && profileImagePreview !== ""
-                ? profileImagePreview
-                : oldImage;
-
+        const updatedUsers = existingUsers.map((user) => {
+          if (String(user.UserID) === String(id)) {
             return {
-              ...u,
+              ...user,
               FirstName: formData.firstName,
               LastName: formData.lastName,
               Email: formData.email,
               PhoneNumber: formData.phone,
               Gender: formData.gender,
-              RoleName: formData.role, // Update role
+              RoleName: formData.role,
               Address: formData.streetAddress,
               City: formData.city,
               State: formData.state,
               Country: formData.country,
               Zipcode: formData.pincode,
-              ProfileImageUrl: newImage, // Assigning the new image here
+              ProfileImageUrl: profileImagePreview || user.ProfileImageUrl || "",
+              IsActive: user.IsActive !== undefined ? user.IsActive : true,
             };
           }
-          return u;
+          return user;
         });
 
-        localStorage.setItem("usersList", JSON.stringify(updatedList));
-        toast.success("User Updated Successfully!", handleSuccessParams);
+        localStorage.setItem("usersList", JSON.stringify(updatedUsers));
+        toast.success("User updated successfully!", {
+          position: "top-right",
+          autoClose: 1500,
+          onClose: () => {
+            setIsSubmitting(false);
+            navigate("/users");
+          }
+        });
       } else {
         // CREATE NEW USER
+        const newUserId = generateNewUserId(existingUsers);
         const newUser = {
-          id: Date.now(),
-          UserID: Date.now(),
+          UserID: newUserId,
           FirstName: formData.firstName,
           LastName: formData.lastName,
           Email: formData.email,
           PhoneNumber: formData.phone,
           Gender: formData.gender,
-          RoleName: formData.role || "User", // Default to "User" if not selected
+          RoleName: formData.role || "User",
           Address: formData.streetAddress,
           City: formData.city,
           State: formData.state,
           Country: formData.country,
           Zipcode: formData.pincode,
-          ProfileImageUrl:
-            typeof profileImagePreview === "string" ? profileImagePreview : "",
+          ProfileImageUrl: profileImagePreview || "",
           IsActive: true,
-          Stores: [{ StoreName: "Main Store" }],
         };
+
         const updatedUsers = [newUser, ...existingUsers];
         localStorage.setItem("usersList", JSON.stringify(updatedUsers));
-        toast.success("User Created Successfully!", handleSuccessParams);
+        
+        toast.success("User created successfully!", {
+          position: "top-right",
+          autoClose: 1500,
+          onClose: () => {
+            setIsSubmitting(false);
+            navigate("/users");
+          }
+        });
       }
     } catch (error) {
       console.error("Save failed:", error);
       setIsSubmitting(false);
       if (error.name === "QuotaExceededError" || error.code === 22) {
-        toast.error(
-          "Storage full! Image is too big. We tried to compress it but it didn't fit."
-        );
+        toast.error("Storage full! Image is too large.");
       } else {
-        toast.error("Failed to save changes.");
+        toast.error("Failed to save user.");
       }
     }
   };
@@ -403,9 +393,7 @@ const AddUser = () => {
 
         <div className="flex items-center gap-6 mb-8 relative">
           <div className="relative" style={{ minWidth: 80, minHeight: 80 }}>
-            {/* Added a key to force re-render if preview changes */}
             <img
-              key={profileImagePreview}
               src={profileImagePreview || userProfile}
               alt={t("ADD_USER.PROFILE_PREVIEW")}
               className="h-20 w-20 rounded-full object-cover border-2 border-gray-200 shadow-sm"
@@ -459,6 +447,7 @@ const AddUser = () => {
                     onChange={handleChange}
                     placeholder={t("ADD_USER.ENTER_FIRST_NAME")}
                     Icon={User}
+                    required={!id}
                   />
                 ) : (
                   <DataField
@@ -503,7 +492,6 @@ const AddUser = () => {
                     icon={Users}
                   />
                 )}
-                {/* Role Field - Added here */}
                 {isPersonalInfoEditable ? (
                   <SelectWithIcon
                     label={t("ADD_USER.ROLE")}
@@ -514,6 +502,7 @@ const AddUser = () => {
                     options={roleOptions}
                     Icon={Shield}
                     placeholder={t("ADD_USER.SELECT_ROLE")}
+                    required={!id}
                   />
                 ) : (
                   <DataSelectField
@@ -533,6 +522,7 @@ const AddUser = () => {
                     placeholder={t("COMMON.ENTER_EMAIL_ADDRESS")}
                     Icon={Mail}
                     type="email"
+                    required={!id}
                   />
                 ) : (
                   <DataField
@@ -550,7 +540,7 @@ const AddUser = () => {
                     onChange={handlePhoneChange}
                     placeholder={t("COMMON.ENTER_PHONE_NUMBER")}
                     Icon={Phone}
-                    defaultCountry="IN"
+                    defaultCountry="US"
                   />
                 ) : (
                   <DataField
@@ -603,7 +593,7 @@ const AddUser = () => {
                     value={formData.country}
                     onChange={handleChange}
                     options={mockCountries.map((c) => ({
-                      value: c.CountryID,
+                      value: c.CountryName,
                       label: c.CountryName,
                     }))}
                     Icon={Globe}
@@ -614,7 +604,7 @@ const AddUser = () => {
                     label={t("COMMON.COUNTRY")}
                     value={formData.country}
                     options={mockCountries.map((c) => ({
-                      value: c.CountryID,
+                      value: c.CountryName,
                       label: c.CountryName,
                     }))}
                     icon={Globe}
@@ -628,7 +618,7 @@ const AddUser = () => {
                     value={formData.state}
                     onChange={handleChange}
                     options={mockStates.map((s) => ({
-                      value: s.StateID,
+                      value: s.StateName,
                       label: s.StateName,
                     }))}
                     Icon={Navigation}
@@ -639,7 +629,7 @@ const AddUser = () => {
                     label={t("COMMON.STATE")}
                     value={formData.state}
                     options={mockStates.map((s) => ({
-                      value: s.StateID,
+                      value: s.StateName,
                       label: s.StateName,
                     }))}
                     icon={Navigation}
@@ -653,7 +643,7 @@ const AddUser = () => {
                     value={formData.city}
                     onChange={handleChange}
                     options={mockCities.map((c) => ({
-                      value: c.CityID,
+                      value: c.CityName,
                       label: c.CityName,
                     }))}
                     Icon={Building}
@@ -664,7 +654,7 @@ const AddUser = () => {
                     label={t("COMMON.CITY")}
                     value={formData.city}
                     options={mockCities.map((c) => ({
-                      value: c.CityID,
+                      value: c.CityName,
                       label: c.CityName,
                     }))}
                     icon={Building}
@@ -713,7 +703,8 @@ const AddUser = () => {
                     isSubmitting ||
                     (!id &&
                       (!formData.firstName.trim() ||
-                        !formData.email.trim()))
+                        !formData.email.trim() ||
+                        !formData.role.trim()))
                   }
                   className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold bg-[#FF5A5F] text-white hover:bg-[#e04a4f] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
                 >
@@ -736,7 +727,7 @@ const AddUser = () => {
                         <line x1="12" y1="5" x2="12" y2="19"></line>
                         <line x1="5" y1="12" x2="19" y2="12"></line>
                       </svg>
-                      {id ? "Update User" : "Create"}
+                      {id ? "Update User" : "Create User"}
                     </>
                   )}
                 </button>
