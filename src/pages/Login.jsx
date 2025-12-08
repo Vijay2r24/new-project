@@ -137,7 +137,7 @@ const loginUser = async () => {
   toast.success("Login Successful!");
 
   setTimeout(() => {
-    navigate("/layout");
+    navigate("/dashboard/dashBoard");
   }, 1500);
 };
 

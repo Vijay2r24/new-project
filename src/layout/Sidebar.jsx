@@ -39,7 +39,7 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
       name: t('SIDEBAR.PRODUCT_MANAGEMENT'),
       href: '/products',
       icon: Users,
-      relatedPaths: ['/products', '/add-products','/edit-product','/product-details']
+      relatedPaths: ['/products', '/AddProuct']
     },
     {
       name: t('SIDEBAR.ORDERS_MANAGEMENT'),
