@@ -554,9 +554,6 @@ const AddProductForm = () => {
                       value={formData.CalculatedPoints}
                       onChange={handleInputChange}
                       placeholder="Points will auto-calculate"
-                      Icon={() => (
-                        <span className="text-lg font-bold text-blue-600">⭐</span>
-                      )}
                       error={validationErrors.CalculatedPoints}
                       readOnly
                       className="bg-white font-semibold text-lg"

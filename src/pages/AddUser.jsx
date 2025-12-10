@@ -706,7 +706,7 @@ const AddUser = () => {
                         !formData.email.trim() ||
                         !formData.role.trim()))
                   }
-                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold bg-[#FF5A5F] text-white hover:bg-[#e04a4f] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold bg-custom-bg text-white hover:bg-hover transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
                 >
                   {isSubmitting ? (
                     <>

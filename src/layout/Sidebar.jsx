@@ -63,7 +63,7 @@ const Sidebar = ({ onClose, isCollapsed, onToggle, isMobileOpen }) => {
       href: '/products',
       icon: Package,
       permission: 'products',
-      relatedPaths: ['/products', '/AddProuct', '/products/edit']
+      relatedPaths: ['/products', '/addProduct', '/products/edit']
     },
     {
       name: t('SIDEBAR.ORDERS_MANAGEMENT'),

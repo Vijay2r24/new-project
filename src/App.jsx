@@ -49,7 +49,7 @@ function App() {
           <Route path="/roles" element={<UserRolesList />} />
           <Route path="/addRole" element={<AddUserRole />} />
           <Route path="/products" element={<ProductList/>} />
-          <Route path ="/AddProuct" element={<AddProductForm />} />
+          <Route path ="/addProduct" element={<AddProductForm />} />
           <Route path="addProduct/:id" element={<AddProductForm />} />
           {/* Payments */}
           <Route path="/pages/paymentdetails" element={<PaymentDetails/>} />

@@ -364,9 +364,9 @@ const Roles = () => {
                   <div className="flex items-center space-x-4">
                     <div className="text-right">
                       <div className="flex items-center space-x-2">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getPriorityColor(role.Priority)}`}>
+                        {/* <span className={`px-3 py-1 rounded-full text-xs font-medium ${getPriorityColor(role.Priority)}`}>
                           {getPriorityLabel(role.Priority)}
-                        </span>
+                        </span> */}
                         <Switch
                           checked={role.IsActive}
                           onChange={(e) =>
